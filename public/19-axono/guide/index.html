@@ -9,7 +9,8 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;700;800&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
-<!-- PASS: teaser cut mid-sentence at ~45 words, fade overlay matches ink panel; no full prompt anywhere in this file; links /19-axono/ + / verified; lock-box pattern matches guides 16-20; grid collapses to one column at 390px. -->
+<!-- PASS: teaser cut mid-sentence at ~45 words, fade overlay matches ink panel; no full prompt anywhere in this file; links /19-axono/ + / verified; lock-box pattern matches guides 16-20; grid collapses to one column at 390px.
+     PASS 2: technique description + teaser rewritten for the WebGL axonometric tower build (three.js ortho scene, scroll-scrubbed assembly, exploded sheet A-21, title-block ending); prompt word count updated. -->
 <style>
 :root{
   --paper:#F6F5F1;--ink:#23252B;--blue:#2E5EAA;--coral:#FF6A5C;--paper-hi:#FDFDFB;
@@ -86,17 +87,17 @@ p strong{color:var(--ink);font-weight:700}
   <h1>How AXONO<br>was <em>drawn.</em></h1>
 
   <h2>How it was built</h2>
-  <p>The hero city does not exist in any file: fourteen buildings are defined purely as <strong>data</strong> &mdash; grid position, footprint, height, name, programme &mdash; and projected at runtime with true 30&deg; axonometric math into SVG polygons: a top face and two side faces per volume, plus faint facade floor lines, painter-sorted by depth so nearer blocks always overlap correctly. On first view each building drops in from above with a springy overshoot ease and an 80ms stagger; hovering or focusing one draws a leader line out to a mono spec label, and dimension lines with proper arrowheads sketch themselves around the block. Further down, a 280vh pinned section performs the studio's thesis: a 1:100 floor plan is interpolated via a lerped matrix() from flat identity to the isometric frame, then <strong>extruded</strong> &mdash; side walls hang from the transformed outline while a live mono readout reports elevation and phase (PLAN &rarr; AXONOMETRY &rarr; EXTRUSION &rarr; VOLUME). Project stats roll in on digit-column counters, and reduced motion unpins everything and shows final states.</p>
+  <p>The hero city does not exist in any file: fourteen buildings are defined purely as <strong>data</strong> &mdash; grid position, footprint, height, name, programme &mdash; and projected at runtime with true 30&deg; axonometric math into SVG polygons, painter-sorted by depth, dropping in with a springy stagger and sprouting leader-line spec labels on hover. The centerpiece, though, is a real <strong>3D axonometric tower</strong>: a three.js scene on a fixed full-viewport canvas behind the sheet, shot through an OrthographicCamera locked to the classic 30&deg;/45&deg; drawing angle. Every volume is a flat-shaded box with three fixed face tones (paper top, two facade greys) plus an EdgesGeometry wireframe in drafting blue &mdash; drawn, not lit. Scrolling the project index <strong>assembles it storey by storey</strong>, scrubbed to scroll: slabs glide in from offset positions, columns rise from their slabs, facade panels snap onto the two visible faces, while a coral service core climbs as the grounded spine. Hovering a project row lifts and coral-tints its storey band; pointer-x rotates the whole model a few degrees with inertia. After the pinned plan&rarr;volume SVG morph (a 1:100 plan lerped via matrix() into isometry and extruded), a second pinned sheet pulls all the floors apart into an <strong>exploded axonometric</strong> along a dashed datum axis and reassembles them, and by the contact block the finished building settles into the title-block corner, gently orbiting. No WebGL falls back to the flat drawing; reduced motion shows the completed tower as a static frame; the DPR is capped at 2 and the render loop pauses offscreen.</p>
 
   <h2>Reproduction <em>prompt</em></h2>
   <div class="sheet">
     <div class="ph">SHEET A-01 · PROMPT — PREVIEW</div>
     <div class="teaser">
-      <p>Build a single-file HTML site for AXONO, a Zürich studio for architecture and urban design. Palette: warm paper #F6F5F1, ink #23252B, drafting blue #2E5EAA, coral accent #FF6A5C, building faces #E9ECF3 / #D6DDEB. Fonts: Manrope (800 for tight headlines) plus JetBrains Mono&hellip;</p>
+      <p>Build a single-file HTML site for AXONO, a Zürich studio for architecture and urban design. Palette: warm paper #F6F5F1, ink #23252B, drafting blue #2E5EAA, coral accent #FF6A5C, building faces #E9ECF3 / #D6DDEB. The centerpiece: a real 3D axonometric tower rendered with three.js through an OrthographicCamera locked to the classic 30&deg;/45&deg; drawing angle, assembling storey by storey as you scroll&hellip;</p>
     </div>
     <div class="lockline">
       <svg width="12" height="14" viewBox="0 0 12 14" fill="none" aria-hidden="true"><rect x="1" y="6" width="10" height="7" rx="1" stroke="#8FA9D6"/><path d="M3.5 6V4.5a2.5 2.5 0 0 1 5 0V6" stroke="#8FA9D6"/></svg>
-      Full prompt (≈260 words) included with purchase.
+      Full prompt (≈550 words) included with purchase.
     </div>
   </div>
 

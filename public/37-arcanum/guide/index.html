@@ -80,23 +80,29 @@ footer{margin-top:4rem;padding-top:1.6rem;border-top:1px solid rgba(201,162,39,.
   <h1>How the Foil Was Forged</h1>
 
   <h2>How it was built</h2>
-  <p>Each card is a single element tilted in 3D: the pointer's position inside the card is normalized to 0–1,
-  then mapped to <b>rotateX/rotateY under perspective</b> so the card leans toward your cursor like real cardstock,
-  with writes coalesced through requestAnimationFrame for a steady 60fps.</p>
-  <p>The holo shimmer is <b>three stacked light layers</b> driven by that same pointer value: a rainbow gradient whose
-  background position pans with the tilt, a field of tiny sparkle dots in color-dodge blend that only ignites inside
-  a radial mask following your fingertip, and a soft glare streak sweeping the diagonal.</p>
-  <p>A faint counter-panned copy of the rainbow keeps the hue drift visible over the midnight frame, and a masked
-  falloff concentrates the energy in the art window so the rules text stays legible.
-  On release, a spring-eased settle returns the card to its idle bob.</p>
-  <p>The booster pack tears along a <b>jagged clip-path seam</b>: the lid flies off rotated, a burst ring and foil
-  sparks scatter on transform/opacity only, and the three cards deal into a fan with overshoot easing before
-  flipping from their guilloché backs. Reduced-motion visitors get the cards pinned at a flattering angle and
-  a quiet cross-fade instead of the tear.</p>
+  <p>Every card face is rendered live by its own small <b>WebGL canvas</b> running a single fragment shader.
+  The vector art is split into two SVG planes — environment and subject — rasterized into textures with
+  overscan bleed and sampled at <b>different parallax depths</b>, the subject casting a soft shadow onto the
+  background while the DOM frame and rules text sit on top as a third, nearest plane.</p>
+  <p>The foil itself is procedural and <b>differs per rarity</b>: scallop-rimmed serpent scales for the Gilded
+  card, moonbeam rays for the Umbral Spire, a full-art galaxy swirl for the Arcanum phoenix. A cosine-palette
+  thin-film rainbow is keyed to the tilt vector so hue genuinely shifts with viewing angle, gated so it ignites
+  as the card leans; hash-cell <b>sparkle glints pop in and out</b> at angles of their own choosing, and the
+  subject plane masks the shimmer so the creature stays printed in front of it.</p>
+  <p>Tilt runs through an <b>under-damped spring</b> — the pointer sets a target, inertia does the rare-card
+  wiggle — writing both the CSS 3D transform and the shader uniforms from one rAF loop that pauses for
+  offscreen cards (IntersectionObserver), hidden tabs, and idles at a low frame rate. Pointer events bind to an
+  untransformed wrapper so the tilted card can't slide out from under the cursor. On touch devices you drag the
+  card to tilt it; the hero trio <b>summons in with a flip, a foil flash and a spark burst</b> on load.</p>
+  <p>The booster pack still tears along a <b>jagged clip-path seam</b>: the lid flies off rotated, a burst ring
+  and foil sparks scatter on transform/opacity only, and the three cards deal into a fan (their WebGL contexts
+  boot lazily at the moment of the tear) before flipping from guilloché backs. No WebGL? The original CSS foil
+  layers take over. Reduced motion? Static cards at a flattering angle, subtle CSS-only foil, no loops at all.
+  DPR is capped at 2 and small screens drop a sparkle layer.</p>
 
   <h2>Steal this spell</h2>
   <div class="prompt-box">
-    <p id="prompt">Build a single-page showcase for ARCANUM, a fictional trading card game with tangible holographic foil cards. Palette: midnight #0E0B18 background, card-frame gold #C9A227, mist lavender #B9B4CC body text, near-white #EFEAF7 headings, and a vivid iridescent rainbow gradient (pink, amber, yellow, mint, cyan, violet) reserved for foil. Fonts: Cinzel Decorative for the logotype and card titles, Sora for UI and body. Hero: the ARCANUM wordmark filled with the rainbow gradient above three collectible cards — a golden-green ouroboros serpent sigil, a moonlit indigo tower, and a flame-winged phoenix, each drawn as elegant inline vector art. Cards tilt in 3D toward the pointer with perspective and bob gently when idle. Foil recipe: a panning rainbow gradient layer tracking the tilt, a sparkle dot-grid layer in color-dodge blend revealed only through a radial mask that follows the cursor, and a soft moving glare streak — together producing a believable Pokémon-style holo shimmer. Second act: a sealed iridescent booster pack that tears open on click along a jagged seam, releasing a golden burst and dealing the three cards into a fan with springy overshoot, guilloché-rosette card backs flipping face-up in sequence. Add a mythic-but-witty lore section, four expansion sets, rarity tiers (Ash, Ember, Gilded, Arcanum) with gem badges, and a footer. Animate only transform and opacity; honor prefers-reduced-motion with static flattering angles.</p>
+    <p id="prompt">Build a single-file page for ARCANUM, a fictional trading card game whose featured cards are true holographic foils rendered in WebGL. Palette: midnight #0E0B18 background, card-frame gold #C9A227, mist lavender #B9B4CC body text, near-white #EFEAF7 headings, and a vivid iridescent rainbow gradient (pink, amber, yellow, mint, cyan, violet) reserved for foil. Fonts: Cinzel Decorative for the logotype and card titles, Sora for UI and body. Hero: the ARCANUM wordmark filled with the rainbow gradient above three collectible cards — a golden-green ouroboros serpent sigil (rare), a moonlit indigo tower (epic), and a flame-winged phoenix (mythic, center) — each drawn as elegant inline vector art, summoned on load with a rising flip, a foil flash and a burst of rainbow sparks. Card rendering: give every card its own small WebGL canvas behind its HTML frame and text. In the fragment shader, draw the art window from two textures made by splitting the card's SVG into a background plane and a subject plane (rasterize with overscan bleed), sample them at different parallax offsets driven by tilt, and let the subject cast a soft drop shadow — the DOM frame acts as the nearest third layer. Over that, composite a procedural holo-foil pattern that differs per rarity — scallop-rimmed scales for the serpent, radial moonbeam rays for the tower, a full-art galaxy swirl for the phoenix — colored by a cosine-palette thin-film rainbow whose phase is keyed to the tilt vector so the hue truly shifts with viewing angle, gated to ignite as the card leans, and masked by the subject's alpha so the creature stays in front of the shimmer. Add hash-cell sparkle glints thresholded on a per-cell random angle so individual sparkles pop in and out while wiggling, plus a glossy specular streak (CSS overlay) sweeping with the pointer. Tilt: pointer position maps to rotateX/rotateY under perspective through an under-damped spring for real cardstock inertia; bind pointer events to an untransformed wrapper so the tilted card never slips out from under the cursor; on touch, tilt from a drag and fall back to a gentle auto-sway or device orientation. Second act: a sealed iridescent booster pack that tears open on click along a jagged clip-path seam, releasing a golden burst and dealing the three cards into a centered fan with springy overshoot, guilloché-rosette card backs flipping face-up in sequence, their WebGL contexts booting lazily at the tear. Add a mythic-but-witty lore section, four expansion sets, rarity tiers (Ash, Ember, Gilded, Arcanum) with gem badges, and a footer. Engineering bar: cap devicePixelRatio at 2, pause rendering for offscreen cards via IntersectionObserver and when the tab is hidden, drop a sparkle layer at or below 768px, keep pure-CSS foil layers as the no-WebGL fallback, honor prefers-reduced-motion with static flattering angles and zero loops, animate only transform and opacity, and allow no page errors and no horizontal overflow at 390px.</p>
   </div>
   <button class="copy" id="copyBtn">Copy prompt</button>
 

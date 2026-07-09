@@ -21,6 +21,14 @@
           page-edge texture, re-tuned footnote indents; (d) :focus-visible styles for footnote and
           return links; (e) verified reduced-motion path: draw-in, flicker, sway, smooth-scroll and
           rise choreography all collapse to static.
+  PASS 4: WebGL depth vitrine (three.js r147 via cdnjs) behind the whole page — a fog-drowned hall with
+          ~2400 shader dust motes (depth-faded, softly scattering away from the cursor in NDC space),
+          six low-poly lost artifacts (key, paper plane, pocket watch, button, umbrella, folded letter)
+          drifting underwater-slow past two following light shafts (one cold, one candle-warm); scroll
+          glides the camera ~70 units deeper down a colonnaded aisle; hovering near an artifact lifts it
+          toward the light with an emissive glint. DPR capped at 2, mote count cut at ≤768px, rAF paused
+          via IntersectionObserver + visibilitychange, no-WebGL/no-CDN bails to the intact candle page,
+          prefers-reduced-motion renders single static frames (re-rendered discretely on scroll/resize).
 -->
 <meta name="description" content="A dark-academia digital museum for objects that no longer exist. Four exhibits, one candle, no photographs.">
 <meta name="theme-color" content="#23201B">
@@ -89,6 +97,9 @@
     74%{opacity:.83;transform:scale(.992)}
     88%{opacity:.97;transform:scale(1.008)}
   }
+
+  /* ---------- WebGL hall (behind everything) ---------- */
+  #hall3d{position:fixed;inset:0;z-index:0;display:block;pointer-events:none}
 
   main{position:relative;z-index:2}
 
@@ -348,6 +359,7 @@
 </head>
 <body>
 <a class="back" href="/">&larr;&nbsp;25</a>
+<canvas id="hall3d" aria-hidden="true"></canvas>
 <div class="candle" aria-hidden="true"></div>
 <div class="candle two" aria-hidden="true"></div>
 <div class="vignette" aria-hidden="true"></div>
@@ -633,6 +645,400 @@
     });
   }, { threshold: 0.18, rootMargin: '0px 0px -6% 0px' });
   targets.forEach(function(el){ io.observe(el); });
+})();
+</script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/0.147.0/three.min.js"></script>
+<script>
+/* The Hall of Ephemera — a WebGL vitrine behind the page.
+   Dust, cold light, and six lost things suspended in the dark. */
+(function(){
+  'use strict';
+  var canvas = document.getElementById('hall3d');
+  function bail(){ if (canvas && canvas.parentNode) canvas.parentNode.removeChild(canvas); }
+  if (!canvas || typeof THREE === 'undefined') { bail(); return; }
+
+  /* -------- capability probe (never throw) -------- */
+  var probeOK = false;
+  try {
+    var probe = document.createElement('canvas');
+    probeOK = !!(window.WebGLRenderingContext &&
+      (probe.getContext('webgl') || probe.getContext('experimental-webgl')));
+  } catch (e) { probeOK = false; }
+  if (!probeOK) { bail(); return; }
+
+  var renderer;
+  try {
+    renderer = new THREE.WebGLRenderer({ canvas: canvas, antialias: true, alpha: false, powerPreference: 'high-performance' });
+  } catch (e) { bail(); return; }
+
+  var reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  var small   = window.matchMedia('(max-width: 768px)').matches;
+  var DPR     = Math.min(window.devicePixelRatio || 1, 2);
+  var MOTES   = small ? 850 : 2400;
+  var INK     = 0x16120e;
+
+  renderer.setPixelRatio(DPR);
+  renderer.setSize(window.innerWidth, window.innerHeight);
+  renderer.setClearColor(INK, 1);
+  renderer.outputEncoding = THREE.sRGBEncoding;
+
+  var scene = new THREE.Scene();
+  scene.fog = new THREE.Fog(INK, 5, 44);
+
+  var camera = new THREE.PerspectiveCamera(55, window.innerWidth / window.innerHeight, 0.1, 130);
+  var CAM_Z0 = 9, CAM_TRAVEL = 70;
+  camera.position.set(0, 0.4, CAM_Z0);
+
+  /* -------- ambient hall light -------- */
+  scene.add(new THREE.AmbientLight(0x2a221a, 0.55));
+  scene.add(new THREE.HemisphereLight(0x2e2417, 0x080604, 0.4));
+
+  /* -------- the floor of the hall -------- */
+  var floor = new THREE.Mesh(
+    new THREE.PlaneGeometry(90, 220),
+    new THREE.MeshStandardMaterial({ color: 0x141009, roughness: 0.95, metalness: 0.02 })
+  );
+  floor.rotation.x = -Math.PI / 2;
+  floor.position.set(0, -5.2, -40);
+  scene.add(floor);
+
+  /* -------- colonnade: dark pillars marching into fog -------- */
+  var colGeo = new THREE.BoxGeometry(1.7, 24, 1.7);
+  var colMat = new THREE.MeshStandardMaterial({ color: 0x1e1812, roughness: 0.88, metalness: 0.05 });
+  for (var ci = 0; ci < 16; ci++) {
+    var col = new THREE.Mesh(colGeo, colMat);
+    var side = (ci % 2 === 0) ? -1 : 1;
+    col.position.set(side * (9.6 + (ci % 3) * 0.5), 5.4, 8 - ci * 6.2);
+    scene.add(col);
+  }
+
+  /* -------- light shafts (following rig) -------- */
+  function makeShaft(rTop, rBot, h, tint, op) {
+    var g = new THREE.CylinderGeometry(rTop, rBot, h, 20, 1, true);
+    var m = new THREE.ShaderMaterial({
+      transparent: true, depthWrite: false, blending: THREE.AdditiveBlending, side: THREE.DoubleSide,
+      uniforms: { uTint: { value: new THREE.Color(tint) }, uOp: { value: op } },
+      vertexShader: 'varying vec2 vUv;void main(){vUv=uv;gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.0);}',
+      fragmentShader: 'varying vec2 vUv;uniform vec3 uTint;uniform float uOp;' +
+        'void main(){float a=pow(vUv.y,1.7)*uOp;a*=smoothstep(0.0,0.18,vUv.y);gl_FragColor=vec4(uTint*a,a);}'
+    });
+    return new THREE.Mesh(g, m);
+  }
+
+  var rig = new THREE.Group();
+  var spotCold = new THREE.SpotLight(0xcfd8e4, 1.7, 48, 0.55, 0.65, 1.1);
+  spotCold.position.set(1.6, 13, 0);
+  spotCold.target.position.set(0.4, -5, -0.5);
+  rig.add(spotCold); rig.add(spotCold.target);
+  var shaftCold = makeShaft(0.5, 3.6, 19, 0xb9c4d4, 0.17);
+  shaftCold.position.set(1.2, 3.4, -0.2);
+  rig.add(shaftCold);
+
+  var spotWarm = new THREE.SpotLight(0xe2b774, 1.15, 42, 0.6, 0.8, 1.3);
+  spotWarm.position.set(-2.4, 12, -17);
+  spotWarm.target.position.set(-0.8, -5, -17.5);
+  rig.add(spotWarm); rig.add(spotWarm.target);
+  var shaftWarm = makeShaft(0.45, 3.1, 18, 0xc9a06a, 0.12);
+  shaftWarm.position.set(-1.9, 2.9, -17.2);
+  rig.add(shaftWarm);
+  scene.add(rig);
+
+  var lamp = new THREE.PointLight(0xe2b774, 0.35, 18, 1.6);
+  scene.add(lamp);
+
+  /* -------- dust motes: one shader, thousands of grains -------- */
+  var moteGeo = new THREE.BufferGeometry();
+  var mPos = new Float32Array(MOTES * 3), mSeed = new Float32Array(MOTES), mSize = new Float32Array(MOTES);
+  for (var i = 0; i < MOTES; i++) {
+    mPos[i * 3]     = (Math.random() * 2 - 1) * 13;
+    mPos[i * 3 + 1] = -5 + Math.random() * 14.5;
+    mPos[i * 3 + 2] = 13 - Math.random() * 92;
+    mSeed[i] = Math.random();
+    mSize[i] = 0.6 + Math.random() * 1.8;
+  }
+  moteGeo.setAttribute('position', new THREE.BufferAttribute(mPos, 3));
+  moteGeo.setAttribute('aSeed', new THREE.BufferAttribute(mSeed, 1));
+  moteGeo.setAttribute('aSize', new THREE.BufferAttribute(mSize, 1));
+  var moteMat = new THREE.ShaderMaterial({
+    transparent: true, depthWrite: false, blending: THREE.AdditiveBlending,
+    uniforms: {
+      uTime: { value: 0 },
+      uPointer: { value: new THREE.Vector2(10, 10) },
+      uPx: { value: DPR }
+    },
+    vertexShader: [
+      'attribute float aSeed;attribute float aSize;',
+      'uniform float uTime;uniform vec2 uPointer;uniform float uPx;',
+      'varying float vA;',
+      'void main(){',
+      '  vec3 p=position;',
+      '  float t=uTime*0.05+aSeed*19.0;',
+      '  p.x+=sin(t*1.3+aSeed*6.2831)*0.9;',
+      '  p.y+=sin(t*0.8+aSeed*12.0)*0.75+sin(uTime*0.028+aSeed*40.0)*0.4;',
+      '  p.z+=cos(t*1.1+aSeed*9.0)*0.9;',
+      '  vec4 mv=modelViewMatrix*vec4(p,1.0);',
+      '  vec4 clip=projectionMatrix*mv;',
+      '  float dcam=-mv.z;',
+      '  vec2 ndc=clip.xy/max(clip.w,0.0001);',
+      '  vec2 d=ndc-uPointer;',
+      '  float push=smoothstep(0.5,0.0,length(d))*0.24*smoothstep(30.0,4.0,dcam);',
+      '  clip.xy+=normalize(d+vec2(0.0001))*push*clip.w;',
+      '  gl_Position=clip;',
+      '  float fade=smoothstep(1.2,4.0,dcam)*smoothstep(46.0,18.0,dcam);',
+      '  vA=fade*(0.3+0.7*fract(aSeed*7.31));',
+      '  gl_PointSize=clamp(aSize*uPx*(110.0/max(dcam,1.0)),1.0,9.0*uPx);',
+      '}'
+    ].join('\n'),
+    fragmentShader: [
+      'varying float vA;',
+      'void main(){',
+      '  float d=length(gl_PointCoord-0.5);',
+      '  float a=smoothstep(0.5,0.06,d)*vA*0.55;',
+      '  gl_FragColor=vec4(vec3(0.93,0.86,0.70)*a,a);',
+      '}'
+    ].join('\n')
+  });
+  scene.add(new THREE.Points(moteGeo, moteMat));
+
+  /* -------- artifact materials -------- */
+  function brassMat(){ return new THREE.MeshStandardMaterial({ color: 0x9c7c46, metalness: 0.82, roughness: 0.38, emissive: 0xc79b58, emissiveIntensity: 0 }); }
+  function parchMat(){ return new THREE.MeshStandardMaterial({ color: 0xe9e2d0, metalness: 0.04, roughness: 0.82, emissive: 0xe9e2d0, emissiveIntensity: 0 }); }
+  function oxMat(){    return new THREE.MeshStandardMaterial({ color: 0x5c1f1f, metalness: 0.15, roughness: 0.55, emissive: 0x7a2c2c, emissiveIntensity: 0 }); }
+  function darkMat(){  return new THREE.MeshStandardMaterial({ color: 0x241c14, metalness: 0.3, roughness: 0.6, emissive: 0x9c7c46, emissiveIntensity: 0 }); }
+
+  /* -------- the six lost things, from primitives -------- */
+  function buildKey() {
+    var g = new THREE.Group(), m = brassMat();
+    var bow = new THREE.Mesh(new THREE.TorusGeometry(0.55, 0.13, 10, 26), m);
+    bow.position.y = 1.15; g.add(bow);
+    var shaft = new THREE.Mesh(new THREE.CylinderGeometry(0.1, 0.1, 2.3, 10), m);
+    shaft.position.y = -0.4; g.add(shaft);
+    var t1 = new THREE.Mesh(new THREE.BoxGeometry(0.5, 0.17, 0.17), m);
+    t1.position.set(0.3, -1.32, 0); g.add(t1);
+    var t2 = new THREE.Mesh(new THREE.BoxGeometry(0.34, 0.17, 0.17), m);
+    t2.position.set(0.22, -1.05, 0); g.add(t2);
+    return g;
+  }
+  function buildPlane() {
+    var g = new THREE.Group(), m = parchMat();
+    m.side = THREE.DoubleSide; m.flatShading = true;
+    var v = new Float32Array([
+      1.35,0,0,  -1.1,0.28,-1.05,  -1.0,0,0,      /* left wing */
+      1.35,0,0,  -1.0,0,0,        -1.1,0.28,1.05, /* right wing */
+      1.35,0,0,  -1.0,0,0,        -1.05,-0.5,0    /* keel */
+    ]);
+    var geo = new THREE.BufferGeometry();
+    geo.setAttribute('position', new THREE.BufferAttribute(v, 3));
+    geo.computeVertexNormals();
+    g.add(new THREE.Mesh(geo, m));
+    return g;
+  }
+  function buildWatch() {
+    var g = new THREE.Group(), m = brassMat(), fm = parchMat(), hm = darkMat();
+    var caseMesh = new THREE.Mesh(new THREE.CylinderGeometry(0.75, 0.75, 0.2, 36), m);
+    caseMesh.rotation.x = Math.PI / 2; g.add(caseMesh);
+    var rim = new THREE.Mesh(new THREE.TorusGeometry(0.75, 0.07, 10, 40), m); g.add(rim);
+    var face = new THREE.Mesh(new THREE.CircleGeometry(0.64, 32), fm);
+    face.position.z = 0.11; g.add(face);
+    var hH = new THREE.Mesh(new THREE.BoxGeometry(0.4, 0.05, 0.02), hm);
+    hH.position.set(0.14, 0.1, 0.13); hH.rotation.z = 0.5; g.add(hH);
+    var hM = new THREE.Mesh(new THREE.BoxGeometry(0.55, 0.045, 0.02), hm);
+    hM.position.set(-0.05, 0.22, 0.13); hM.rotation.z = 1.9; g.add(hM);
+    var stem = new THREE.Mesh(new THREE.CylinderGeometry(0.09, 0.09, 0.22, 10), m);
+    stem.position.y = 0.88; g.add(stem);
+    var crown = new THREE.Mesh(new THREE.TorusGeometry(0.14, 0.04, 8, 18), m);
+    crown.position.y = 1.12; g.add(crown);
+    return g;
+  }
+  function buildButton() {
+    var g = new THREE.Group(), m = oxMat(), hm = darkMat();
+    var disc = new THREE.Mesh(new THREE.CylinderGeometry(0.62, 0.62, 0.13, 28), m);
+    disc.rotation.x = Math.PI / 2; g.add(disc);
+    var rim = new THREE.Mesh(new THREE.TorusGeometry(0.56, 0.055, 8, 32), m); g.add(rim);
+    for (var q = 0; q < 4; q++) {
+      var hole = new THREE.Mesh(new THREE.CylinderGeometry(0.06, 0.06, 0.18, 8), hm);
+      hole.rotation.x = Math.PI / 2;
+      hole.position.set(q % 2 ? 0.17 : -0.17, q < 2 ? 0.17 : -0.17, 0);
+      g.add(hole);
+    }
+    return g;
+  }
+  function buildUmbrella() {
+    var g = new THREE.Group(), cm = oxMat(), m = brassMat();
+    cm.flatShading = true;
+    var canopy = new THREE.Mesh(new THREE.ConeGeometry(1.15, 0.75, 8), cm);
+    canopy.position.y = 0.85; g.add(canopy);
+    var tip = new THREE.Mesh(new THREE.CylinderGeometry(0.04, 0.04, 0.4, 8), m);
+    tip.position.y = 1.4; g.add(tip);
+    var shaft = new THREE.Mesh(new THREE.CylinderGeometry(0.05, 0.05, 1.9, 8), m);
+    shaft.position.y = -0.5; g.add(shaft);
+    var hook = new THREE.Mesh(new THREE.TorusGeometry(0.24, 0.05, 8, 16, Math.PI), m);
+    hook.position.set(-0.24, -1.45, 0); hook.rotation.z = Math.PI; g.add(hook);
+    return g;
+  }
+  function buildLetter() {
+    var g = new THREE.Group(), m = parchMat(), s = oxMat();
+    var a = new THREE.Mesh(new THREE.BoxGeometry(1.15, 0.03, 0.8), m);
+    a.rotation.z = 0.12; a.position.x = -0.55; g.add(a);
+    var b = new THREE.Mesh(new THREE.BoxGeometry(1.15, 0.03, 0.8), m);
+    b.rotation.z = -0.12; b.position.x = 0.55; g.add(b);
+    var seal = new THREE.Mesh(new THREE.CylinderGeometry(0.11, 0.11, 0.07, 12), s);
+    seal.position.set(0, 0.09, 0); g.add(seal);
+    return g;
+  }
+
+  var ghostMat = new THREE.MeshBasicMaterial({ visible: false });
+  var artifacts = [];
+  function placeArtifact(build, x, y, z, s, spinY) {
+    var inner = build();
+    inner.scale.setScalar(s);
+    var wrap = new THREE.Group();
+    wrap.add(inner);
+    var halo = new THREE.Mesh(new THREE.SphereGeometry(1.9 * s, 8, 8), ghostMat);
+    wrap.add(halo);
+    var mats = [];
+    inner.traverse(function(o){ if (o.isMesh) { o.material.transparent = true; mats.push(o.material); } });
+    wrap.position.set(x, y, z);
+    wrap.userData = { inner: inner, baseX: x, baseY: y, glow: 0, hover: false,
+                      spinY: spinY, phase: Math.random() * 6.283, mats: mats };
+    scene.add(wrap);
+    artifacts.push(wrap);
+  }
+  placeArtifact(buildKey,      -3.1,  0.6,   0.5, 1.0,  0.10);
+  placeArtifact(buildPlane,     3.8,  1.8, -10.0, 1.15, 0.07);
+  placeArtifact(buildWatch,    -4.0, -0.4, -21.0, 1.05, 0.09);
+  placeArtifact(buildButton,    3.6, -1.4, -32.0, 1.1,  0.12);
+  placeArtifact(buildUmbrella, -3.3,  0.7, -43.0, 1.1,  0.06);
+  placeArtifact(buildLetter,    0.7,  0.2, -55.5, 1.25, 0.08);
+
+  /* -------- input state -------- */
+  var mouse = new THREE.Vector2(10, 10);   /* NDC; parked offscreen until first move */
+  var mSm = new THREE.Vector2(10, 10);
+  var camX = 0, camY = 0;
+  var prog = 0, targProg = 0;
+  var raycaster = new THREE.Raycaster();
+  var halos = artifacts.map(function(a){ return a.children[1]; });
+
+  function readScroll() {
+    var m = document.documentElement.scrollHeight - window.innerHeight;
+    targProg = m > 0 ? Math.min(1, Math.max(0, (window.scrollY || window.pageYOffset || 0) / m)) : 0;
+  }
+  readScroll();
+
+  /* -------- frame step -------- */
+  var clock = new THREE.Clock();
+  var elapsed = 0;
+  function step() {
+    var dt = Math.min(clock.getDelta(), 0.05);
+    elapsed += dt;
+    prog += (targProg - prog) * 0.05;
+    if (mouse.x < 5) {
+      mSm.x += (mouse.x - mSm.x) * 0.06;
+      mSm.y += (mouse.y - mSm.y) * 0.06;
+    }
+    var px = mSm.x < 5 ? mSm.x : 0, py = mSm.y < 5 ? mSm.y : 0;
+    camX += (px * 0.9 - camX) * 0.04;
+    camY += (py * 0.5 - camY) * 0.04;
+
+    var cz = CAM_Z0 - prog * CAM_TRAVEL;
+    camera.position.set(camX, 0.4 + camY + Math.sin(elapsed * 0.1) * 0.14, cz);
+    camera.lookAt(camX * 0.3, 0.1 + camY * 0.3, cz - 11);
+
+    rig.position.z = cz - 12;
+    lamp.position.set(camX, 1.4, cz - 3);
+    moteMat.uniforms.uTime.value = elapsed;
+    moteMat.uniforms.uPointer.value.copy(mSm);
+
+    if (mouse.x < 5) {
+      raycaster.setFromCamera(mouse, camera);
+      var hits = raycaster.intersectObjects(halos, false);
+      var hit = hits.length ? hits[0].object.parent : null;
+      for (var k = 0; k < artifacts.length; k++) artifacts[k].userData.hover = (artifacts[k] === hit);
+    }
+    for (var j = 0; j < artifacts.length; j++) {
+      var u = artifacts[j].userData, a = artifacts[j];
+      u.glow += ((u.hover ? 1 : 0) - u.glow) * 0.05;
+      u.inner.rotation.y += dt * u.spinY * (1 + u.glow * 2.0);
+      u.inner.rotation.x = Math.sin(elapsed * 0.13 + u.phase) * 0.18 + u.glow * 0.12;
+      u.inner.rotation.z = Math.cos(elapsed * 0.1 + u.phase * 1.7) * 0.12;
+      var ty = u.baseY + Math.sin(elapsed * 0.21 + u.phase) * 0.35 + u.glow * 1.4;
+      var tx = u.baseX * (1 - u.glow * 0.25) + Math.cos(elapsed * 0.16 + u.phase * 2.0) * 0.25;
+      a.position.y += (ty - a.position.y) * 0.04;
+      a.position.x += (tx - a.position.x) * 0.04;
+      /* fade out as the camera glides past, so nothing smears across the lens */
+      var near = a.position.z - cz;               /* negative while still ahead */
+      var op = Math.min(1, Math.max(0, (-near - 2.5) / 3.5));
+      a.visible = op > 0.01;
+      for (var n = 0; n < u.mats.length; n++) {
+        u.mats[n].emissiveIntensity = u.glow * 0.5;
+        u.mats[n].opacity = op;
+      }
+    }
+    renderer.render(scene, camera);
+  }
+
+  function renderStatic() {
+    prog = targProg;
+    var cz = CAM_Z0 - prog * CAM_TRAVEL;
+    camera.position.set(0, 0.4, cz);
+    camera.lookAt(0, 0.1, cz - 11);
+    rig.position.z = cz - 12;
+    lamp.position.set(0, 1.4, cz - 3);
+    renderer.render(scene, camera);
+  }
+
+  function resize() {
+    var w = window.innerWidth, h = window.innerHeight;
+    camera.aspect = w / h;
+    camera.updateProjectionMatrix();
+    renderer.setSize(w, h);
+    moteMat.uniforms.uPx.value = Math.min(window.devicePixelRatio || 1, 2);
+  }
+
+  /* -------- reduced motion: a still hall, re-composed discretely -------- */
+  if (reduced) {
+    renderStatic();
+    var still = 0;
+    function queueStill() {
+      if (still) return;
+      still = requestAnimationFrame(function(){ still = 0; readScroll(); renderStatic(); });
+    }
+    window.addEventListener('scroll', queueStill, { passive: true });
+    window.addEventListener('resize', function(){ resize(); queueStill(); });
+    return;
+  }
+
+  /* -------- live loop with visibility + viewport pausing -------- */
+  var raf = 0, running = false, inView = true;
+  function loop() {
+    raf = 0;
+    step();
+    if (running) raf = requestAnimationFrame(loop);
+  }
+  function start() {
+    if (running || !inView || document.hidden) return;
+    running = true;
+    clock.getDelta();
+    raf = requestAnimationFrame(loop);
+  }
+  function stop() {
+    running = false;
+    if (raf) { cancelAnimationFrame(raf); raf = 0; }
+  }
+  document.addEventListener('visibilitychange', function(){ document.hidden ? stop() : start(); });
+  if ('IntersectionObserver' in window) {
+    new IntersectionObserver(function(es){
+      inView = es[es.length - 1].isIntersecting;
+      inView ? start() : stop();
+    }).observe(canvas);
+  }
+  window.addEventListener('scroll', readScroll, { passive: true });
+  window.addEventListener('resize', resize);
+  window.addEventListener('pointermove', function(e){
+    mouse.x = (e.clientX / window.innerWidth) * 2 - 1;
+    mouse.y = -(e.clientY / window.innerHeight) * 2 + 1;
+  }, { passive: true });
+  start();
 })();
 </script>
 </body>

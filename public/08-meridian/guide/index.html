@@ -57,16 +57,16 @@ p{color:var(--cream-dim);max-width:66ch;margin:0 auto 14px}
   </div>
 
   <h2 class="gold-txt">The Craft</h2>
-  <p>Every golden headline in The Meridian is a background-clipped linear gradient — bronze into gold into pale gold and back — that slowly sheens across the type, so the lettering catches light like leaf under a chandelier. The art-deco emblems are inline SVGs that draw themselves: each ray, arc and keystone diamond carries pathLength=1 with a stroke-dashoffset transition and its own CSS-variable delay, so the sunburst assembles stroke by stroke as it scrolls into view, fills fading in last. Navigation is a fixed brass elevator panel whose round floor buttons glow gold when lit, driven by a scroll-spy IntersectionObserver tuned with a −42%/−52% rootMargin band so the correct floor is always illuminated. A faint feTurbulence film grain flickers over everything while conic-gradient ray patterns parallax behind the hero and bar at rAF-gated compositor speed. The wide-tracked Poiret One headings stay optically centered through matching text-indent compensation, and prefers-reduced-motion freezes the grain, pre-draws every ornament and drops the parallax entirely.</p>
+  <p>The lobby is lit by a raw-WebGL atmosphere canvas — no library — composited additively between the CSS background and the type. A fullscreen shader pass renders three depth layers of diagonal volumetric light shafts, each a sum of Gaussian band profiles across the beam-perpendicular axis modulated by fbm noise that streams slowly along the beam, with a faint art-deco sunburst of cosine-power rays parallaxing deeper in the scene and an elliptical guard dimming the light behind the title so the type stays crisp. Through the beams drift some 2,400 CPU-simulated gold motes (900 on phones) drawn as depth-of-field point sprites — nearer motes larger and softer — whose brightness is masked by the very same GLSL shaft function, so the dust glitters only where light falls; the pointer swirls nearby motes with a decaying tangential impulse and they resettle into their drift, while scrolling eases the camera for parallax. The loop pauses whenever the hero leaves the viewport or the tab hides, devicePixelRatio is capped at 2, and static CSS gradient shafts stand in when WebGL is absent or motion is reduced. Around it, the original craft remains: every golden headline is a background-clipped linear gradient that slowly sheens across the type; the art-deco emblems are inline SVGs that draw themselves stroke by stroke via pathLength=1, stroke-dashoffset transitions and per-stroke CSS-variable delays; navigation is a fixed brass elevator panel scroll-spied by a −42%/−52% rootMargin IntersectionObserver; a faint feTurbulence film grain flickers over conic-gradient ray patterns that parallax at rAF-gated compositor speed; and the wide-tracked Poiret One headings stay optically centered through matching text-indent compensation.</p>
 
   <h2 class="gold-txt">Reproduction Prompt</h2>
   <div class="lockbox">
     <div class="lb-head"><span>House Prompt</span><span>Sealed</span></div>
     <div class="teaser">
-      <p>Build a single-file HTML site for The Meridian, a fictional art-deco grand hotel established 1928, restored 2024. Palette: deep emeralds #0B3D2E / #072A20 / #051F17, gold #D4AF6A with pale highlight #F2DFAE, cream #F4EDDF, and a burgundy bar section #6E1E2B. Fonts: Poiret One for all display type — wide letter-spacing with…</p>
+      <p>Build a single-file HTML site for The Meridian, a fictional art-deco grand hotel established 1928, restored 2024. Palette: deep emeralds #0B3D2E / #072A20 / #051F17, gold #D4AF6A with pale highlight #F2DFAE, cream #F4EDDF, and a burgundy bar section #6E1E2B. Centerpiece: a raw-WebGL “lobby light” behind the hero type — three depth layers of diagonal volumetric shafts and thousands of gold dust motes that glitter only…</p>
       <div class="fade" aria-hidden="true"></div>
     </div>
-    <div class="lockline">◆ Full prompt (≈250 words) included with purchase.</div>
+    <div class="lockline">◆ Full prompt (≈460 words) included with purchase.</div>
   </div>
 
   <div class="cta-row">
@@ -80,5 +80,9 @@ p{color:var(--cream-dim);max-width:66ch;margin:0 auto 14px}
   </div>
 </main>
 <!-- PASS: teaser stops mid-sentence at ~47 words under the fade; no hidden full-prompt text in this file; corner-bracket plaque, gold gradient text and Poiret tracking match the parent site; links /08-meridian/, /shop/, / and Gumroad fable-08 verified; tracking reduced under 640px so headings never overflow. -->
+<!-- PASS (lobby light): craft paragraph rewritten around the new raw-WebGL volumetric
+     shaft + masked dust-mote hero (depth-of-field sprites, pointer swirl, offscreen
+     pause, static-shaft fallbacks); teaser re-cut to lead with the WebGL centerpiece
+     and word count updated to ≈460 to match the revised sealed prompt. -->
 </body>
 </html>

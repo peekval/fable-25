@@ -87,21 +87,21 @@ h2{font-size:clamp(1.6rem,4.5vw,2.2rem);font-weight:800;margin:56px 0 14px}
   <div class="candy" aria-hidden="true"></div>
   <p class="kicker">Guide · site 24 of 25</p>
   <h1>How <span class="c1">W</span><span class="c2">O</span><span class="c3">B</span><span class="c4">B</span><span class="c1">L</span><span class="c3">E</span> got its jiggle</h1>
-  <p class="lede">No canvas, no libraries, no sprite sheets. Every gummy on that page is a plain div doing cartoon physics in pure CSS — here&rsquo;s the recipe, and the prompt that rebuilds it.</p>
+  <p class="lede">The hero is now a bowl of real soft-body WebGL gummies — poke one and it squishes, squints and puffs sugar dust. Below the fold it&rsquo;s still divs doing cartoon physics in pure CSS. Here&rsquo;s the recipe, and the prompt that rebuilds it.</p>
 
   <h2>How it was built</h2>
   <div class="card">
-    <p>The candies are divs wearing <strong>layered radial gradients</strong> — a bright gloss kiss top-left, deeper shading below — while a 5.5-second keyframe loop morphs their asymmetric border-radius corners and rotation so they read as soft solids, each with a ground-shadow pseudo-element that squashes in sync. All the personality comes from one springy easing curve, cubic-bezier(.34,1.86,.44,1): hover anything jelly and a squash keyframe scales X up while Y compresses, then overshoots back — classic animation-school squash-and-stretch.</p>
-    <p>The hero letters drop from above the viewport one by one and jiggle on landing; the wave dividers between sections animate the SVG <strong>d:path()</strong> property directly in CSS; floating candies parallax against the mouse via per-element depth values. The dark flavor lab spawns fourteen confetti dots per press, steering each with CSS custom properties for vector, size and rotation, and a counter unlocks milestone microcopy at 10, 25 and 50 wobbles. Reduced-motion visitors get everything settled and still.</p>
+    <p>The hero gummies are <strong>soft-body blobs in three.js</strong> (r147, loaded async from a CDN) wearing one custom shader. The vertex shader keeps them alive: idle breathing, a faint surface ripple, a traveling wobble ring that radiates from the last poke and decays in space and time, spring-driven squash along the poke axis with a volume-preserving bulge, and velocity stretch while flung. The fragment shader fakes edible translucency — depth-tinted transmission (thick center chews deep, thin rim goes light), a tinted fresnel rim whose alpha drops so edges go see-through, twin wet speculars, broad sheen, a backlight glow — plus a squinty little face that fades in on poked blobs. CPU-side damped springs drive position and squash, so a click squishes with overshoot, a drag flings with a settle wobble, and sugar-dust particles (THREE.Points) puff on impact. DPR is capped at 2, the rAF loop pauses offscreen and on hidden tabs, small screens get three lower-poly blobs, and if WebGL or the CDN is missing the original CSS candy divs simply stay.</p>
+    <p>Everything else keeps the CSS squash-and-stretch language on one springy curve, cubic-bezier(.34,1.86,.44,1) — hero letters drop and squash on landing, jelly buttons compress on press — but every loop is now <strong>transform/opacity-only</strong>: the old border-radius morphs and SVG d:path() wave animations repainted gradients and shadows every frame (~17fps), so the candies wobble via rotate/scale and the wave dividers drift a double-width path with translateX. The dark flavor lab still bursts fourteen confetti dots per press and unlocks milestone microcopy at 10, 25 and 50 wobbles. Reduced-motion visitors get static gummies, rendered once, with no jiggle loop.</p>
   </div>
 
   <h2>Reproduction prompt</h2>
   <div class="prompt-teaser">
     <p class="ph">A taste — the first spoonful only</p>
-    <div class="tz">Build a single-file HTML site for "WOBBLE", a premium gummy-candy brand that takes joy very seriously. Palette: cream #FFF6E9, bubblegum #FF9EC7, pistachio #A8E6CF, grape #B39DDB, cherry #FF6B81, plum ink #4A2B47 for text and dark sections, soft white #FFFDF9. Fonts: Baloo 2 (600–800) for every headline and button, Quicksand for body. Signature technique: squash-and-stretch physics done entirely in CSS…
+    <div class="tz">Build a single-file HTML site for "WOBBLE", a premium gummy-candy brand that takes joy very seriously. Palette: cream #FFF6E9, bubblegum #FF9EC7, pistachio #A8E6CF, grape #B39DDB, cherry #FF6B81, plum ink #4A2B47 for text and dark sections, soft white #FFFDF9. Fonts: Baloo 2 (600–800) for every headline and button, Quicksand for body. Centerpiece: a hero full of pokeable soft-body 3D gummies — load three.js r147 async and render five oversized gummy blobs…
       <div class="fade" aria-hidden="true"></div>
     </div>
-    <p class="lockline">&#128274; Full prompt (&asymp;250 words) included with purchase.</p>
+    <p class="lockline">&#128274; Full prompt (&asymp;300 words) included with purchase.</p>
   </div>
   <div class="cta-row">
     <a class="jelly-btn" href="https://laserfabio.gumroad.com/l/fable-24">Get this prompt — CHF 9</a>
@@ -114,5 +114,6 @@ h2{font-size:clamp(1.6rem,4.5vw,2.2rem);font-weight:800;margin:56px 0 14px}
   </div>
 </main>
 <!-- PASS: lock-box verified (45-word teaser, fade to ink #4A2B47, no full prompt in DOM); gumroad fable-24 + /shop/ + back links OK; cards reduce radius at 520px; all animation killed under reduced motion. -->
+<!-- PASS (webgl update): technique card + teaser rewritten for the soft-body three.js gummy hero (spring squash, wobble harmonics, fake subsurface material, poke face, sugar dust) and the transform-only CSS jank fix; word count in lockline bumped to ~300. -->
 </body>
 </html>

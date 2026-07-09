@@ -3,6 +3,7 @@
 PASS 1 (structure/design): fixed .find-emoji animation referencing undefined @keyframes floatDrift (added keyframes); raised text contrast on dark lab/footer sections (.lab-counter #b391ad->#cfaec9, .footer-small #9a7794->#bfa0ba, both were below WCAG AA on the ink background); lowered hero-title clamp min 4rem->3.2rem + max-width:100% to stop "WOBBLE" overflowing at <=390px viewports; merged the duplicated .hero-title span rule blocks.
 PASS 2 (motion): hover states on jelly/lab buttons now use real squash physics (scaleX up while scaleY down) instead of uniform scale; flavor-card hover triggers the candy's squash so the blob reacts with the card; added staggered transition-delays so grid cards bounce in sequentially; confetti gained per-dot random size + rotation for juicier bursts, plus a setTimeout cleanup fallback so dots can never orphan if animationend is missed; reduced-motion preference now tracked live via matchMedia change listener.
 PASS 3 (polish/complexify): added .candy::before ground shadows that squash/stretch in sync with the 5.5s wobble cycle (suppressed on airborne floaties); dead "launch bag" link (#top + onclick return false) replaced with a real button that reserves a bag with tasty microcopy + squash feedback; flavor-lab counter now unlocks milestone microcopy at 10/25/50 wobbles; footer completed with wavy-underline nav links (Flavors/Lab/Find Us) and a "renewable jiggle" sign-off; gave the lab section an id for anchor navigation.
+PASS 4 (webgl gummies + jank fix): hero floaties replaced with pokeable soft-body WebGL gummies (three.js r147 via cdnjs, loaded async; CSS candies kept as no-webgl/no-network fallback) — spring-driven squash + traveling wobble harmonics in the vertex shader, fresnel rim / depth-tinted transmission / dual wet speculars + squinty poke-face in the fragment shader, sugar-dust puffs on impact, drag-to-fling with settle wobble; FIXED the ~17fps jank: the infinite border-radius morph on every .candy (forced gradient+box-shadow repaints each frame) is now transform-only, and the three SVG d:path() wave morphs are now seamless translateX loops on a tiled path; DPR capped at 2, rAF paused offscreen (IntersectionObserver) and on hidden tab, 3 lower-poly blobs at <=768px, reduced-motion renders one static frame with no jiggle loop.
 -->
 <html lang="en">
 <head>
@@ -71,7 +72,27 @@ main{position:relative;z-index:1}
   min-height:100svh;
   display:flex;flex-direction:column;justify-content:center;align-items:center;
   text-align:center;position:relative;padding:96px 20px 120px;
+  touch-action:pan-y; /* vertical scroll stays native; horizontal gummy-drags are ours */
 }
+#gummyGL{
+  position:absolute;inset:0;width:100%;height:100%;
+  z-index:0;pointer-events:none;display:block;
+  opacity:0;transition:opacity .8s var(--ease-out) .1s;
+}
+body.webgl #gummyGL{opacity:1}
+body.webgl .floaties{opacity:0;transition:opacity .45s}
+.hero-badge,.hero-title,.hero-sub,.hero-cta{position:relative;z-index:2}
+.poke-hint{
+  position:absolute;left:0;right:0;bottom:26px;z-index:2;
+  text-align:center;pointer-events:none;
+  font-family:'Baloo 2',cursive;font-weight:700;font-size:.85rem;letter-spacing:.06em;
+  color:var(--ink-soft);opacity:0;
+}
+body.webgl .poke-hint{
+  animation:hintIn .9s var(--ease-out) 2.2s both,hintBob 3.2s ease-in-out 3.1s infinite alternate;
+}
+@keyframes hintIn{from{opacity:0;transform:translateY(14px)}to{opacity:.85;transform:translateY(0)}}
+@keyframes hintBob{from{transform:translateY(0)}to{transform:translateY(-6px)}}
 .hero-badge{
   font-weight:700;font-size:.8rem;letter-spacing:.18em;text-transform:uppercase;
   color:var(--ink-soft);
@@ -172,7 +193,7 @@ main{position:relative;z-index:1}
     inset 8px 10px 18px rgba(255,255,255,.5),
     0 24px 44px -16px rgba(74,43,71,.32);
   animation:wobble 5.5s ease-in-out infinite;
-  will-change:transform,border-radius;
+  will-change:transform;
   position:relative;
 }
 .candy::before{ /* ground shadow that squashes in sync with the wobble */
@@ -197,11 +218,13 @@ main{position:relative;z-index:1}
   transform:rotate(-24deg);
   filter:blur(1px);
 }
+/* transform-only wobble: animating border-radius forced full gradient+shadow repaints
+   every frame (measured ~17fps with several candies on screen); rotate/scale composites */
 @keyframes wobble{
-  0%,100%{border-radius:46% 54% 58% 42% / 48% 44% 56% 52%;transform:rotate(0deg) scale(1,1)}
-  25%{border-radius:56% 44% 46% 54% / 42% 56% 44% 58%;transform:rotate(2.5deg) scale(1.03,.97)}
-  50%{border-radius:44% 56% 52% 48% / 56% 42% 58% 44%;transform:rotate(-2deg) scale(.97,1.03)}
-  75%{border-radius:52% 48% 44% 56% / 46% 54% 46% 54%;transform:rotate(1.5deg) scale(1.02,.98)}
+  0%,100%{transform:rotate(0deg) scale(1,1)}
+  25%{transform:rotate(2.5deg) scale(1.05,.95)}
+  50%{transform:rotate(-2deg) scale(.95,1.05)}
+  75%{transform:rotate(1.5deg) scale(1.03,.97)}
 }
 .candy:hover{animation:squash .65s var(--spring)}
 
@@ -210,14 +233,14 @@ main{position:relative;z-index:1}
 .candy.cherry{--c1:#ffc2cc;--c2:var(--cherry);--c3:#e04a63}
 
 /* ---------- wavy divider ---------- */
+/* waves drift via transform (a 2x-wide tiled path sliding one period) instead of
+   animating d:path(), which re-rasterized three full-width SVGs every frame */
 .wave-divider{display:block;width:100%;height:90px;margin-bottom:-2px}
 .wave-divider path{
-  animation:waveMorph 6s ease-in-out infinite alternate;
+  animation:waveSlide 13s linear infinite;
+  will-change:transform;
 }
-@keyframes waveMorph{
-  from{d:path("M0,40 C240,90 480,-10 720,40 C960,90 1200,-10 1440,40 L1440,100 L0,100 Z")}
-  to{d:path("M0,50 C240,0 480,95 720,45 C960,-5 1200,90 1440,50 L1440,100 L0,100 Z")}
-}
+@keyframes waveSlide{from{transform:translateX(0)}to{transform:translateX(-1440px)}}
 
 /* ---------- sections ---------- */
 section{position:relative;padding:96px 24px}
@@ -420,6 +443,7 @@ footer{
 <main>
 <!-- ================= HERO ================= -->
 <header class="hero">
+  <canvas id="gummyGL" aria-hidden="true"></canvas>
   <div class="floaties" aria-hidden="true">
     <div class="floaty" data-depth="0.05" style="top:14%;left:8%"><div class="candy pistachio" style="width:70px;height:70px"></div></div>
     <div class="floaty" data-depth="0.12" style="top:22%;right:10%"><div class="candy grape" style="width:96px;height:96px"></div></div>
@@ -435,10 +459,11 @@ footer{
   </h1>
   <p class="hero-sub">Premium gummy candy engineered to jiggle. We take joy very, very seriously — our lawyers made us say that.</p>
   <p class="hero-cta"><a class="jelly-btn" href="#flavors">Meet the flavors ↓</a></p>
+  <p class="poke-hint">psst — poke the gummies. It counts as research.</p>
 </header>
 
 <svg class="wave-divider" viewBox="0 0 1440 100" preserveAspectRatio="none" aria-hidden="true">
-  <path fill="#FFFDF9" d="M0,40 C240,90 480,-10 720,40 C960,90 1200,-10 1440,40 L1440,100 L0,100 Z"/>
+  <path fill="#FFFDF9" d="M0,40 C240,90 480,-10 720,40 C960,90 1200,-10 1440,40 C1680,90 1920,-10 2160,40 C2400,90 2640,-10 2880,40 L2880,100 L0,100 Z"/>
 </svg>
 
 <!-- ================= FLAVORS ================= -->
@@ -478,7 +503,7 @@ footer{
 </section>
 
 <svg class="wave-divider" viewBox="0 0 1440 100" preserveAspectRatio="none" aria-hidden="true" style="background:var(--white)">
-  <path fill="#FFF6E9" d="M0,40 C240,90 480,-10 720,40 C960,90 1200,-10 1440,40 L1440,100 L0,100 Z"/>
+  <path fill="#FFF6E9" d="M0,40 C240,90 480,-10 720,40 C960,90 1200,-10 1440,40 C1680,90 1920,-10 2160,40 C2400,90 2640,-10 2880,40 L2880,100 L0,100 Z"/>
 </svg>
 
 <!-- ================= TEXTURE PROMISE ================= -->
@@ -529,7 +554,7 @@ footer{
 </section>
 
 <svg class="wave-divider" viewBox="0 0 1440 100" preserveAspectRatio="none" aria-hidden="true" style="background:var(--ink)">
-  <path fill="#FFF6E9" d="M0,40 C240,90 480,-10 720,40 C960,90 1200,-10 1440,40 L1440,100 L0,100 Z"/>
+  <path fill="#FFF6E9" d="M0,40 C240,90 480,-10 720,40 C960,90 1200,-10 1440,40 C1680,90 1920,-10 2160,40 C2400,90 2640,-10 2880,40 L2880,100 L0,100 Z"/>
 </svg>
 
 <!-- ================= FIND US ================= -->
@@ -603,6 +628,7 @@ footer{
   if(!reduceMotion && floaties.length && matchMedia('(pointer:fine)').matches){
     var mx=0,my=0,ticking=false;
     document.querySelector('.hero').addEventListener('mousemove',function(ev){
+      if(document.body.classList.contains('webgl')) return; /* 3D gummies replace the CSS floaties */
       mx = (ev.clientX / window.innerWidth - .5);
       my = (ev.clientY / window.innerHeight - .5);
       if(!ticking){
@@ -686,6 +712,498 @@ footer{
       }
     });
   }
+})();
+</script>
+<script>
+/* ============================================================
+   WOBBLE gummy engine — soft-body WebGL gummies (three.js r147)
+   Spring squash + traveling wobble harmonics in the vertex
+   shader; fresnel rim, depth-tinted transmission and wet
+   speculars in the fragment shader. Poke to squish, drag to
+   fling. Falls back to the CSS floaties when WebGL/CDN is out.
+   ============================================================ */
+(function(){
+'use strict';
+var canvas = document.getElementById('gummyGL');
+var hero = document.querySelector('.hero');
+if(!canvas || !hero || !window.WebGLRenderingContext) return;
+
+var motionMQ = window.matchMedia('(prefers-reduced-motion: reduce)');
+var CDN = 'https://cdnjs.cloudflare.com/ajax/libs/three.js/0.147.0/three.min.js';
+var tag = document.createElement('script');
+tag.src = CDN;
+tag.onload = function(){ try{ init(); }catch(err){ console.warn('WOBBLE gummies stayed 2D:', err.message); } };
+tag.onerror = function(){ /* CDN unreachable: CSS candies keep the hero */ };
+document.head.appendChild(tag);
+
+function init(){
+  if(typeof THREE === 'undefined') return;
+  var renderer;
+  try{
+    renderer = new THREE.WebGLRenderer({canvas:canvas, alpha:true, antialias:true, powerPreference:'high-performance'});
+  }catch(e){ return; }
+
+  var reduced = motionMQ.matches;
+  var isSmall = window.innerWidth <= 768;
+  renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2)); /* DPR cap 2 */
+
+  var scene = new THREE.Scene();
+  var camera = new THREE.PerspectiveCamera(38, 1, 0.1, 80);
+  camera.position.set(0, 0, 15);
+
+  /* ---------- shaders ---------- */
+  var VERT = [
+    'uniform float uTime;','uniform float uSeed;','uniform float uSquash;',
+    'uniform float uStretch;','uniform float uWobbleT;','uniform float uWobbleAmp;',
+    'uniform vec3 uPokeDir;','uniform vec3 uPokePoint;','uniform vec3 uStretchDir;',
+    'varying vec3 vN;','varying vec3 vW;','varying vec3 vL;',
+    'void main(){',
+    '  vec3 p = position;',
+    '  vL = position;',
+    /* idle breathing + faint surface ripple: the gummies are alive */
+    '  float br = 1.0 + 0.02*sin(uTime*1.5+uSeed) + 0.012*sin(uTime*2.4+uSeed*1.7);',
+    '  p *= br;',
+    '  p += normal * (0.022*sin(position.x*2.6+uTime*1.3+uSeed)*sin(position.y*2.3-uTime*1.1+uSeed*0.6));',
+    /* traveling wobble ring from the poke point, decaying in space and time */
+    '  float d = distance(position, uPokePoint);',
+    '  float wob = sin(9.0*d - uWobbleT*13.0) * exp(-1.5*d) * exp(-uWobbleT*2.4);',
+    '  p += normal * (wob * uWobbleAmp * 0.24);',
+    /* spring squash along poke axis, volume-ish preserving bulge */
+    '  float s = clamp(uSquash, -0.7, 0.7);',
+    '  float along = dot(p, uPokeDir);',
+    '  vec3 ax = uPokeDir * along;',
+    '  p = ax*(1.0-s) + (p-ax)*(1.0+0.55*s);',
+    /* velocity stretch while flung */
+    '  float st = clamp(uStretch, 0.0, 0.5);',
+    '  float a2 = dot(p, uStretchDir);',
+    '  vec3 ax2 = uStretchDir * a2;',
+    '  p = ax2*(1.0+st) + (p-ax2)*(1.0-0.35*st);',
+    '  vec4 wp = modelMatrix * vec4(p, 1.0);',
+    '  vW = wp.xyz;',
+    '  vN = normalize(normalMatrix * normal);',
+    '  gl_Position = projectionMatrix * viewMatrix * wp;',
+    '}'
+  ].join('\n');
+
+  var FRAG = [
+    'uniform vec3 uCLight;','uniform vec3 uCMid;','uniform vec3 uCDeep;',
+    'uniform float uFace;','uniform float uSquint;','uniform float uHasFace;',
+    'varying vec3 vN;','varying vec3 vW;','varying vec3 vL;',
+    'float eyeM(vec2 p, vec2 c, float sq){',
+    '  vec2 q = p - c;',
+    '  q.y += sq * 2.0 * q.x * q.x;', /* squint arcs the slit */
+    '  q /= vec2(0.105, mix(0.15, 0.05, sq));',
+    '  return 1.0 - smoothstep(0.75, 1.15, length(q));',
+    '}',
+    'void main(){',
+    '  vec3 N = normalize(vN);',
+    '  vec3 V = normalize(cameraPosition - vW);',
+    '  float ndv = clamp(dot(N,V), 0.0, 1.0);',
+    /* depth-tinted transmission: thick center chews deep, thin rim goes light */
+    '  vec3 col = mix(uCMid, uCDeep, smoothstep(0.15, 0.92, ndv));',
+    '  float fr = pow(1.0 - ndv, 2.8);',
+    '  col = mix(col, uCLight, fr * 0.72);', /* tinted subsurface rim, no white halo */
+    '  col *= 1.0 - 0.12*clamp(-N.y, 0.0, 1.0);', /* a little weight underneath */
+    '  vec3 L1 = normalize(vec3(-0.45, 0.85, 0.55));',
+    '  vec3 L2 = normalize(vec3(0.7, -0.35, 0.5));',
+    '  float df = max(dot(N,L1), 0.0);',
+    '  col += uCLight * pow(df, 2.0) * 0.2;', /* inner glow toward the key light */
+    '  vec3 H1 = normalize(L1 + V);',
+    '  float sp1 = pow(max(dot(N,H1), 0.0), 160.0);', /* wet kiss highlight */
+    '  float sp2 = pow(max(dot(N, normalize(L2+V)), 0.0), 60.0);',
+    '  col += vec3(1.0, 0.99, 0.97) * (sp1 * 0.95 + sp2 * 0.3);',
+    '  col += uCLight * pow(max(dot(N,H1), 0.0), 8.0) * 0.14;', /* broad sheen */
+    '  vec3 Lb = normalize(vec3(0.15, 0.3, -1.0));',
+    '  col += uCLight * pow(max(dot(V,-Lb), 0.0), 3.0) * fr * 0.5;', /* backlight through the jelly */
+    /* poked gummies squint (front hemisphere only) */
+    '  float faceA = uFace * uHasFace * smoothstep(0.25, 0.55, vL.z);',
+    '  if(faceA > 0.003){',
+    '    vec2 fp = vL.xy;',
+    '    float m = eyeM(fp, vec2(-0.33, 0.2), uSquint) + eyeM(fp, vec2(0.33, 0.2), uSquint);',
+    '    vec2 mq = (fp - vec2(0.0, -0.18)) / vec2(mix(0.06, 0.1, uSquint), mix(0.085, 0.05, uSquint));',
+    '    m += 1.0 - smoothstep(0.75, 1.1, length(mq));',
+    '    col = mix(col, uCDeep * 0.32, clamp(m, 0.0, 1.0) * faceA * 0.92);',
+    '  }',
+    '  gl_FragColor = vec4(col, 0.97 - fr * 0.28);', /* thin edges go see-through: jelly, not rubber */
+    '}'
+  ].join('\n');
+
+  /* ---------- gummies ---------- */
+  var PAL = {
+    bubblegum:{light:0xffd6e8, mid:0xff9ec7, deep:0xdb5590},
+    pistachio:{light:0xdcf7ea, mid:0xa8e6cf, deep:0x46b389},
+    grape:{light:0xe4daf6, mid:0xb39ddb, deep:0x6f4aad},
+    cherry:{light:0xffc9d2, mid:0xff6b81, deep:0xd23553}
+  };
+  var detail = isSmall ? 3 : 4; /* lower poly on small screens */
+  var sphereGeo = new THREE.IcosahedronGeometry(1, detail);
+  var torusGeo = new THREE.TorusGeometry(0.72, 0.42, isSmall ? 18 : 26, isSmall ? 36 : 52);
+
+  var LAYOUT = isSmall ? [
+    {c:'grape', shape:'sphere', nx:-0.62, ny:0.58, z:-0.4, r:0.95},
+    {c:'cherry', shape:'torus', nx:0.68, ny:-0.30, z:0, r:0.80},
+    {c:'bubblegum', shape:'sphere', nx:-0.52, ny:-0.66, z:0, r:0.98}
+  ] : [
+    {c:'grape', shape:'sphere', nx:-0.70, ny:0.18, z:-0.2, r:1.55},
+    {c:'bubblegum', shape:'sphere', nx:0.72, ny:0.38, z:-0.6, r:1.35},
+    {c:'cherry', shape:'torus', nx:-0.60, ny:-0.62, z:0.2, r:1.05},
+    {c:'pistachio', shape:'bean', nx:0.64, ny:-0.56, z:0.1, r:1.30},
+    {c:'bubblegum', shape:'sphere', nx:-0.33, ny:0.86, z:-1.6, r:0.62}
+  ];
+
+  var blobs = [], meshList = [];
+  LAYOUT.forEach(function(cfg, i){
+    var pal = PAL[cfg.c];
+    var mat = new THREE.ShaderMaterial({
+      vertexShader:VERT, fragmentShader:FRAG, transparent:true,
+      uniforms:{
+        uTime:{value:0}, uSeed:{value:Math.random()*10},
+        uSquash:{value:0}, uStretch:{value:0},
+        uWobbleT:{value:9}, uWobbleAmp:{value:0},
+        uPokeDir:{value:new THREE.Vector3(0,1,0)},
+        uPokePoint:{value:new THREE.Vector3(0,1,0)},
+        uStretchDir:{value:new THREE.Vector3(1,0,0)},
+        uCLight:{value:new THREE.Color(pal.light)},
+        uCMid:{value:new THREE.Color(pal.mid)},
+        uCDeep:{value:new THREE.Color(pal.deep)},
+        uFace:{value:0}, uSquint:{value:0},
+        uHasFace:{value:cfg.shape === 'torus' ? 0 : 1}
+      }
+    });
+    var mesh = new THREE.Mesh(cfg.shape === 'torus' ? torusGeo : sphereGeo, mat);
+    if(cfg.shape === 'torus') mesh.rotation.x = 0.45; /* show the ring, keep some tilt */
+    var b = {
+      cfg:cfg, mesh:mesh, u:mat.uniforms,
+      home:new THREE.Vector3(), vel:new THREE.Vector3(),
+      scaleVec:new THREE.Vector3(1,1,1), baseScale:1,
+      squash:0, squashV:0, wobbleT:9, faceT:0, brushCd:0, wasFast:false,
+      dragTarget:null, intro:-(0.25 + i*0.14),
+      seed:Math.random()*Math.PI*2, bobSpeed:0.55 + Math.random()*0.4,
+      rotZ:(Math.random()-0.5)*0.2
+    };
+    mesh.userData.blob = b;
+    blobs.push(b); meshList.push(mesh); scene.add(mesh);
+  });
+
+  /* ---------- sugar-dust particles ---------- */
+  var PC = isSmall ? 90 : 160, pCursor = 0;
+  var pPos = new Float32Array(PC*3), pVel = new Float32Array(PC*3);
+  var pLife = new Float32Array(PC), pSize = new Float32Array(PC), pCol = new Float32Array(PC*3);
+  var pGeo = new THREE.BufferGeometry();
+  pGeo.setAttribute('position', new THREE.BufferAttribute(pPos,3).setUsage(THREE.DynamicDrawUsage));
+  pGeo.setAttribute('aLife', new THREE.BufferAttribute(pLife,1).setUsage(THREE.DynamicDrawUsage));
+  pGeo.setAttribute('aSize', new THREE.BufferAttribute(pSize,1));
+  pGeo.setAttribute('aCol', new THREE.BufferAttribute(pCol,3));
+  var pMat = new THREE.ShaderMaterial({
+    transparent:true, depthWrite:false,
+    uniforms:{uPR:{value:Math.min(window.devicePixelRatio||1,2)}},
+    vertexShader:[
+      'attribute float aLife;','attribute float aSize;','attribute vec3 aCol;',
+      'uniform float uPR;','varying float vLife;','varying vec3 vCol;',
+      'void main(){',
+      '  vLife = aLife; vCol = aCol;',
+      '  vec4 mv = modelViewMatrix * vec4(position, 1.0);',
+      '  gl_PointSize = aSize * uPR * (9.0/max(1.0,-mv.z)) * (0.5+0.5*clamp(aLife*2.0,0.0,1.0));',
+      '  gl_Position = projectionMatrix * mv;',
+      '}'
+    ].join('\n'),
+    fragmentShader:[
+      'varying float vLife;','varying vec3 vCol;',
+      'void main(){',
+      '  if(vLife <= 0.0) discard;',
+      '  float a = smoothstep(0.5, 0.12, length(gl_PointCoord - 0.5)) * clamp(vLife*1.8, 0.0, 1.0);',
+      '  if(a < 0.02) discard;',
+      '  gl_FragColor = vec4(vCol, a);',
+      '}'
+    ].join('\n')
+  });
+  var points = new THREE.Points(pGeo, pMat);
+  points.frustumCulled = false;
+  scene.add(points);
+  var WHITE = new THREE.Color(0xfffdf9), tmpC = new THREE.Color();
+
+  function puff(worldPos, palName, count){
+    var pal = PAL[palName];
+    for(var i=0;i<count;i++){
+      var idx = (pCursor++) % PC, j = idx*3;
+      pPos[j] = worldPos.x + (Math.random()-0.5)*0.3;
+      pPos[j+1] = worldPos.y + (Math.random()-0.5)*0.3;
+      pPos[j+2] = worldPos.z + (Math.random()-0.5)*0.3;
+      pVel[j] = (Math.random()-0.5)*3.4;
+      pVel[j+1] = 0.6 + Math.random()*2.6;
+      pVel[j+2] = (Math.random()-0.2)*2.0;
+      pLife[idx] = 0.5 + Math.random()*0.35;
+      pSize[idx] = 6 + Math.random()*10;
+      tmpC.setHex(pal.light).lerp(WHITE, 0.55 + Math.random()*0.35);
+      pCol[j] = tmpC.r; pCol[j+1] = tmpC.g; pCol[j+2] = tmpC.b;
+    }
+    pGeo.attributes.aSize.needsUpdate = true;
+    pGeo.attributes.aCol.needsUpdate = true;
+  }
+  function stepParticles(dt){
+    var live = false;
+    for(var i=0;i<PC;i++){
+      if(pLife[i] <= 0) continue;
+      live = true;
+      var j = i*3;
+      pLife[i] -= dt;
+      pPos[j] += pVel[j]*dt; pPos[j+1] += pVel[j+1]*dt; pPos[j+2] += pVel[j+2]*dt;
+      pVel[j+1] -= 5.5*dt;
+      pVel[j] *= 1 - 1.6*dt; pVel[j+2] *= 1 - 1.6*dt;
+    }
+    if(live){
+      pGeo.attributes.position.needsUpdate = true;
+      pGeo.attributes.aLife.needsUpdate = true;
+    }
+  }
+
+  /* ---------- layout / resize ---------- */
+  var bounds = {x:6, y:5};
+  function layout(){
+    var w = hero.clientWidth || window.innerWidth;
+    var h = hero.clientHeight || window.innerHeight;
+    renderer.setSize(w, h, false);
+    camera.aspect = w/h;
+    camera.updateProjectionMatrix();
+    var halfH = Math.tan(camera.fov*Math.PI/360) * camera.position.z;
+    var halfW = halfH * camera.aspect;
+    var fit = Math.max(0.55, Math.min(1.12, halfW/(isSmall ? 2.7 : 5.4)));
+    bounds.x = halfW*0.95; bounds.y = halfH*0.92;
+    blobs.forEach(function(b){
+      b.home.set(b.cfg.nx*halfW*0.92, b.cfg.ny*halfH*0.86, b.cfg.z);
+      var s = b.cfg.r * fit;
+      b.baseScale = s;
+      if(b.cfg.shape === 'bean') b.scaleVec.set(s*1.18, s*0.86, s*0.96);
+      else b.scaleVec.set(s, s, s);
+      if(!b.dragTarget && b.vel.lengthSq() < 0.01 && b.squash === 0) b.mesh.position.copy(b.home);
+    });
+  }
+
+  /* ---------- interaction ---------- */
+  var raycaster = new THREE.Raycaster();
+  var ndc = new THREE.Vector2();
+  var tmpV = new THREE.Vector3(), tmpQ = new THREE.Quaternion(), tmpW = new THREE.Vector3();
+  var drag = null, lastX = 0, lastY = 0, lastMT = 0, lastRayT = 0, ptrSpeed = 0;
+
+  function setNDC(e){
+    var r = canvas.getBoundingClientRect();
+    if(!r.width || !r.height) return false;
+    ndc.x = ((e.clientX - r.left)/r.width)*2 - 1;
+    ndc.y = -((e.clientY - r.top)/r.height)*2 + 1;
+    return true;
+  }
+  function pick(e){
+    if(!setNDC(e)) return null;
+    raycaster.setFromCamera(ndc, camera);
+    var hits = raycaster.intersectObjects(meshList, false);
+    return hits.length ? hits[0] : null;
+  }
+  function ptrWorld(e, z, out){
+    var r = canvas.getBoundingClientRect();
+    out.set(((e.clientX - r.left)/r.width)*2 - 1, -((e.clientY - r.top)/r.height)*2 + 1, 0.5).unproject(camera);
+    out.sub(camera.position).normalize();
+    var t = (z - camera.position.z)/out.z;
+    return out.multiplyScalar(t).add(camera.position);
+  }
+  function poke(b, worldPoint, strength){
+    tmpW.copy(worldPoint);
+    b.mesh.worldToLocal(tmpW);
+    if(tmpW.lengthSq() > 0.0001){
+      var len = Math.min(tmpW.length(), 1.4);
+      b.u.uPokeDir.value.copy(tmpW).normalize().negate();
+      b.u.uPokePoint.value.copy(tmpW).setLength(len);
+    }
+    b.squashV += 4.2*strength;
+    b.wobbleT = 0;
+    b.u.uWobbleAmp.value = Math.min(1.3, 0.5 + 0.8*strength);
+    if(b.u.uHasFace.value > 0 && strength > 0.5) b.faceT = 1.25;
+    puff(worldPoint, b.cfg.c, Math.round(6 + 10*strength));
+  }
+
+  hero.addEventListener('pointerdown', function(e){
+    if(reduced || !running) return;
+    if(e.target && e.target.closest && e.target.closest('a,button')) return;
+    var hit = pick(e);
+    if(!hit) return;
+    var b = hit.object.userData.blob;
+    poke(b, hit.point, 1);
+    drag = {b:b, z:b.mesh.position.z, sx:e.clientX, sy:e.clientY};
+    b.dragTarget = b.dragTarget || new THREE.Vector3();
+    b.dragTarget.copy(b.mesh.position);
+    hero.style.cursor = 'grabbing';
+    try{ hero.setPointerCapture(e.pointerId); }catch(_){}
+    if(e.cancelable) e.preventDefault();
+  });
+  hero.addEventListener('pointermove', function(e){
+    if(reduced || !running) return;
+    var now = performance.now();
+    var dtm = Math.max(now - lastMT, 1);
+    ptrSpeed = Math.min(3, Math.hypot(e.clientX - lastX, e.clientY - lastY)/dtm);
+    lastX = e.clientX; lastY = e.clientY; lastMT = now;
+    if(drag){
+      ptrWorld(e, drag.z, drag.b.dragTarget);
+      drag.b.dragTarget.x = Math.max(-bounds.x, Math.min(bounds.x, drag.b.dragTarget.x));
+      drag.b.dragTarget.y = Math.max(-bounds.y, Math.min(bounds.y, drag.b.dragTarget.y));
+      return;
+    }
+    if(now - lastRayT < 45) return;
+    lastRayT = now;
+    var hit = pick(e);
+    hero.style.cursor = hit ? 'grab' : '';
+    if(hit && ptrSpeed > 0.35){
+      var b = hit.object.userData.blob;
+      if(b.brushCd <= 0){ b.brushCd = 0.35; poke(b, hit.point, 0.35); }
+    }
+  });
+  function endDrag(){
+    if(!drag) return;
+    drag.b.dragTarget = null;
+    drag = null;
+    hero.style.cursor = '';
+  }
+  hero.addEventListener('pointerup', endDrag);
+  hero.addEventListener('pointercancel', endDrag);
+
+  /* ---------- simulation ---------- */
+  var simT = 0;
+  function easeOutBack(x){ var c1 = 1.70158, c3 = c1 + 1; return 1 + c3*Math.pow(x-1,3) + c1*Math.pow(x-1,2); }
+  function step(dt){
+    simT += dt;
+    blobs.forEach(function(b){
+      var p = b.mesh.position, v = b.vel;
+      var stiff, damp, tx, ty, tz;
+      if(b.dragTarget){
+        tx = b.dragTarget.x; ty = b.dragTarget.y; tz = b.dragTarget.z;
+        stiff = 70; damp = 11;
+      }else{
+        var bob = Math.sin(simT*b.bobSpeed + b.seed) * 0.16;
+        tx = b.home.x; ty = b.home.y + bob; tz = b.home.z;
+        stiff = 22; damp = 5;
+      }
+      v.x += ((tx - p.x)*stiff - v.x*damp)*dt;
+      v.y += ((ty - p.y)*stiff - v.y*damp)*dt;
+      v.z += ((tz - p.z)*stiff - v.z*damp)*dt;
+      p.x += v.x*dt; p.y += v.y*dt; p.z += v.z*dt;
+      if(Math.abs(p.x) > bounds.x){ p.x = Math.sign(p.x)*bounds.x; v.x *= -0.4; }
+      if(Math.abs(p.y) > bounds.y){ p.y = Math.sign(p.y)*bounds.y; v.y *= -0.4; }
+
+      b.squashV += (-95*b.squash - 6.8*b.squashV)*dt;
+      b.squash = Math.max(-0.75, Math.min(0.75, b.squash + b.squashV*dt));
+      b.wobbleT += dt;
+      b.brushCd -= dt;
+      b.faceT = Math.max(0, b.faceT - dt);
+
+      var sp = v.length();
+      if(sp > 2.6) b.wasFast = true;
+      else if(b.wasFast && sp < 1.1){
+        b.wasFast = false;
+        b.squashV += 2.4; b.wobbleT = 0;
+        b.u.uWobbleAmp.value = Math.max(b.u.uWobbleAmp.value, 0.9);
+      }
+      var st = Math.min(0.38, sp*0.045);
+      if(st > 0.015){
+        tmpV.copy(v).normalize();
+        tmpQ.copy(b.mesh.quaternion).invert();
+        tmpV.applyQuaternion(tmpQ);
+        b.u.uStretchDir.value.copy(tmpV);
+      }else{ st = 0; }
+      b.u.uStretch.value = st;
+
+      b.mesh.rotation.z = b.rotZ + Math.sin(simT*0.35 + b.seed)*0.08;
+      if(b.cfg.shape === 'torus') b.mesh.rotation.x = 0.45 + Math.sin(simT*0.3 + b.seed)*0.12;
+
+      if(b.intro < 1){
+        b.intro += dt*1.15;
+        var m = b.intro <= 0 ? 0 : easeOutBack(Math.min(1, b.intro));
+        b.mesh.scale.copy(b.scaleVec).multiplyScalar(Math.max(0.0001, m));
+      }else{
+        b.mesh.scale.copy(b.scaleVec);
+      }
+
+      b.u.uTime.value = simT;
+      b.u.uSquash.value = b.squash;
+      b.u.uWobbleT.value = b.wobbleT;
+      b.u.uFace.value = b.faceT > 0 ? Math.min(1, Math.min((1.25 - b.faceT)*10, b.faceT*3)) : 0;
+      b.u.uSquint.value = Math.min(1, Math.abs(b.squash)*2.4);
+    });
+    stepParticles(dt);
+  }
+  function settleNeutral(){
+    blobs.forEach(function(b){
+      b.mesh.position.copy(b.home);
+      b.mesh.scale.copy(b.scaleVec);
+      b.intro = 1;
+      b.vel.set(0,0,0);
+      b.squash = 0; b.squashV = 0; b.faceT = 0; b.dragTarget = null;
+      b.u.uSquash.value = 0; b.u.uStretch.value = 0;
+      b.u.uWobbleAmp.value = 0; b.u.uFace.value = 0;
+    });
+    for(var i=0;i<PC;i++) pLife[i] = 0;
+    pGeo.attributes.aLife.needsUpdate = true;
+  }
+
+  /* ---------- run lifecycle: pause offscreen / hidden / reduced ---------- */
+  var running = false, raf = 0, lastFrame = 0;
+  var inView = true, pageVis = !document.hidden;
+  function frame(t){
+    raf = 0;
+    if(!running) return;
+    var dt = Math.min((t - lastFrame)/1000, 0.05) || 0.016;
+    lastFrame = t;
+    step(dt);
+    renderer.render(scene, camera);
+    raf = requestAnimationFrame(frame);
+  }
+  function updateRun(){
+    var should = inView && pageVis && !reduced;
+    if(should && !running){
+      running = true;
+      lastFrame = performance.now();
+      raf = requestAnimationFrame(frame);
+    }else if(!should && running){
+      running = false;
+      if(raf){ cancelAnimationFrame(raf); raf = 0; }
+    }
+  }
+  if('IntersectionObserver' in window){
+    new IntersectionObserver(function(entries){
+      inView = entries[entries.length-1].isIntersecting;
+      updateRun();
+    }, {threshold:0.01}).observe(canvas);
+  }
+  document.addEventListener('visibilitychange', function(){
+    pageVis = !document.hidden;
+    updateRun();
+  });
+  var onMotion = function(e){
+    reduced = e.matches;
+    if(reduced){ endDrag(); settleNeutral(); renderer.render(scene, camera); }
+    updateRun();
+  };
+  if(motionMQ.addEventListener) motionMQ.addEventListener('change', onMotion);
+
+  var resizeT = 0;
+  window.addEventListener('resize', function(){
+    clearTimeout(resizeT);
+    resizeT = setTimeout(function(){
+      layout();
+      if(!running) renderer.render(scene, camera);
+    }, 120);
+  });
+
+  /* ---------- go ---------- */
+  layout();
+  if(reduced) settleNeutral(); /* static gummies, no jiggle loop */
+  else blobs.forEach(function(b){
+    b.mesh.position.copy(b.home);
+    b.mesh.scale.copy(b.scaleVec).multiplyScalar(0.0001); /* pop in via intro spring */
+  });
+  renderer.render(scene, camera);
+  document.body.classList.add('webgl');
+  var floaties = document.querySelector('.floaties');
+  if(floaties) setTimeout(function(){ floaties.style.display = 'none'; }, 600);
+  updateRun();
+}
 })();
 </script>
 </body>

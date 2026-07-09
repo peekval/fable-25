@@ -49,17 +49,17 @@ p{font-family:var(--type);font-size:.88rem;color:var(--smoke);line-height:1.85;m
   <h1>How this was built. <em>Off the record.</em></h1>
 
   <h2>The method, <em>in daylight</em></h2>
-  <p>The flashlight is the whole trick, and it costs almost nothing: the darkness is ONE oversized fixed element — a 300vmax square carrying two stacked radial gradients, a faint warm core inside a falloff that reaches 87% black — moved exclusively with transform:translate3d toward eased cursor coordinates, so the browser composites instead of repainting a fullscreen gradient every frame. On touch screens the beam pans on its own; under reduced motion it is removed, because a torch you cannot steer is a lie. The typewriter copy lives in the markup for no-JS visitors — a script stashes it, blanks it, and retypes it character by character with randomized delays and longer pauses after periods, caret blinking in blood red. Around that: redacted spans that clear on hover or focus, manila case folders whose covers hinge open through rotateX(−72°) with perspective on the parent so the tilt actually reads as 3D, drifting venetian-blind stripes over the bureau, and animated feTurbulence grain over the lot. Playfair Display speaks; Special Elite testifies.</p>
+  <p>The flashlight now has a body: a raw-WebGL fragment shader on a fullscreen premultiplied-alpha canvas renders volumetric cigarette smoke — two layers of domain-warped fbm (value noise under a rotation matrix, amplitude-normalized so 3 octaves on phones matches 5 on desktop) that drift, curl, and brighten only where light reaches them. The pointer is the desk lamp: a warm scattering core, a working beam, and a wide halo illuminate the fog from inside, while the smoke recoils around a second, lagged copy of the light position and slowly re-forms once the beam moves on. Venetian-blind stripes rake diagonally through the haze, and every so often a passing car sweeps a band of light along them; the lamp flickers in occasional storms; an iris vignette closes the frame. Everything composites in the shader — shadow falloff, unlit wisps silhouetting inside the beam, luminous fog — and outputs premultiplied RGBA straight over the page, so the hero copy burns through legibly at the beam's core. The pointer drives it, touch drives it, and after 3.5 idle seconds the beam wanders a slow lissajous so the office never looks dead. DPR is capped at 2, the loop pauses when the tab hides or the canvas leaves view, and when WebGL is missing the original compositor-only CSS torch (one 300vmax translate3d element) takes over; reduced motion gets a still office. The typewriter copy lives in the markup for no-JS visitors — a script stashes it and retypes it with randomized delays, caret blinking in blood red. Around that: hover-to-reveal redacted spans, manila case folders hinging open through rotateX(−72°), and animated feTurbulence grain over the lot. Playfair Display speaks; Special Elite testifies.</p>
 
   <h2>Reproduction prompt. <em>Sealed.</em></h2>
   <div class="dossier">
     <span class="stamp">Confidential</span>
     <span class="caseno">Exhibit A — Prompt · No. 09</span>
     <div class="teaser">
-      <p>Build a single-file HTML site for Veil &amp; Shadow, a fictional private-investigation bureau established 1947, in full film-noir style. Palette: ink-black #0C0C0E, smoke grey #8A8A92, aged paper #E8E6E1, blood red #A11D2A used only for accents and stamps. Fonts: Playfair Display for headlines, Special Elite typewriter face for everything…</p>
+      <p>Build a single-file HTML site for Veil &amp; Shadow, a fictional private-investigation bureau established 1947, in full film-noir style. Palette: ink-black #0C0C0E, smoke grey #8A8A92, aged paper #E8E6E1, blood red #A11D2A. Centerpiece: a raw-WebGL fullscreen fragment shader on a premultiplied-alpha canvas renders volumetric cigarette smoke — two layers of domain-warped fbm — over the whole page, and the pointer is a desk-lamp beam that lights the fog from inside…</p>
       <div class="fade" aria-hidden="true"></div>
     </div>
-    <div class="lockline">Full prompt (≈250 words) included with purchase.</div>
+    <div class="lockline">Full prompt (≈330 words) included with purchase.</div>
   </div>
 
   <div class="cta-row">
@@ -72,6 +72,6 @@ p{font-family:var(--type);font-size:.88rem;color:var(--smoke);line-height:1.85;m
     <a href="/">Index of all sites</a>
   </div>
 </main>
-<!-- PASS: dossier lock-box shows ~47 words then fades into the paper background; the full prompt is not present anywhere in this HTML; links /09-veil/, /shop/, / and Gumroad fable-09 verified; single-column typewriter layout holds at 320px. -->
+<!-- PASS: dossier lock-box shows ~70 words then fades into the paper background; the full prompt is not present anywhere in this HTML; links /09-veil/, /shop/, / and Gumroad fable-09 verified; single-column typewriter layout holds at 320px. Updated for the WebGL fog rebuild: technique paragraph and teaser now describe the volumetric-smoke shader. -->
 </body>
 </html>

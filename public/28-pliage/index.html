@@ -87,6 +87,10 @@ a{color:inherit}
   position:absolute;inset:0;
   display:grid;place-items:center;
 }
+/* WebGL canvas — shown only once three.js boots; the CSS rig below stays as fallback */
+.gl{position:absolute;inset:0;width:100%;height:100%;display:none;pointer-events:none}
+.webgl .gl{display:block}
+.webgl .persp,.webgl .crane{display:none}
 .persp{
   width:300px;height:300px;position:relative;
   perspective:1300px;
@@ -478,6 +482,8 @@ a:focus-visible,button:focus-visible{outline:2px solid var(--red);outline-offset
   .hero-copy .tag{padding:0 1.4rem}
   .seq-head{font-size:.58rem;letter-spacing:.3em}
   .seq-head b{display:none}
+  /* at rest the scroll hint owns the bottom of the frame; the first caption waits for the first fold */
+  [data-step="0"] .cap-0{opacity:0;transform:translateY(18px)}
   .stats{display:grid;grid-template-columns:1fr 1fr;border-top:none}
   .stat{border-top:1px dashed var(--shadow)}
   .stat+.stat{border-left:none}
@@ -535,6 +541,7 @@ a:focus-visible,button:focus-visible{outline:2px solid var(--red);outline-offset
 
     <!-- 3D rig -->
     <div class="scene" aria-hidden="true">
+      <canvas class="gl" id="gl"></canvas>
       <div class="persp">
         <div class="tilt">
           <div class="floor"></div>
@@ -643,6 +650,7 @@ a:focus-visible,button:focus-visible{outline:2px solid var(--red);outline-offset
   <div class="sentinel" data-s="1"></div>
   <div class="sentinel" data-s="2"></div>
   <div class="sentinel" data-s="3"></div>
+  <div class="sentinel" data-s="4"></div>
   <div class="sentinel" data-s="4"></div>
 </div>
 
@@ -813,19 +821,36 @@ a:focus-visible,button:focus-visible{outline:2px solid var(--red);outline-offset
   </div>
 </footer>
 
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/0.147.0/three.min.js"></script>
 <script>
 (function(){
+  "use strict";
   var body = document.body;
   var scroller = document.getElementById('foldScroll');
   var sentinels = scroller.querySelectorAll('.sentinel');
   var reduced = window.matchMedia('(prefers-reduced-motion: reduce)');
+  var webgl = false;
+  var lastStep = -1;
 
   function setStep(n){
+    if (n === lastStep) return;
+    lastStep = n;
     body.dataset.step = String(n);
-    var cls = 'fold-body';
+    var cls = 'fold-body' + (webgl ? ' webgl' : '');
     for (var i = 1; i <= n; i++) cls += ' s' + i;
     if (n >= 1) cls += ' in-sequence';
     body.className = cls;
+  }
+
+  /* rest the gallery spinners while their cards are off-screen */
+  if ('IntersectionObserver' in window) {
+    var cards = document.querySelectorAll('.card');
+    var cio = new IntersectionObserver(function(entries){
+      entries.forEach(function(e){
+        e.target.classList.toggle('offstage', !e.isIntersecting);
+      });
+    }, { rootMargin: '80px' });
+    cards.forEach(function(c){ c.classList.add('offstage'); cio.observe(c); });
   }
 
   if (reduced.matches || !('IntersectionObserver' in window)) {
@@ -833,27 +858,366 @@ a:focus-visible,button:focus-visible{outline:2px solid var(--red);outline-offset
     return;
   }
 
-  var io = new IntersectionObserver(function(entries){
-    entries.forEach(function(e){
-      if (e.isIntersecting) setStep(parseInt(e.target.dataset.s, 10));
-    });
-  }, { threshold: 0.5 });
+  /* =====================================================
+     WebGL origami — a real sheet folded by scroll.
+     If three.js or a context is unavailable, the original
+     CSS 3D rig below keeps the whole choreography alive.
+     ===================================================== */
+  var rig = null;
+  try { rig = initThree(); } catch (err) { rig = null; }
 
-  sentinels.forEach(function(s){ io.observe(s); });
+  if (!rig) {
+    var io = new IntersectionObserver(function(entries){
+      entries.forEach(function(e){
+        if (e.isIntersecting) setStep(parseInt(e.target.dataset.s, 10));
+      });
+    }, { threshold: 0.5 });
+    sentinels.forEach(function(s){ io.observe(s); });
+    return;
+  }
 
-  /* rest the gallery spinners while their cards are off-screen */
-  var cards = document.querySelectorAll('.card');
-  var cio = new IntersectionObserver(function(entries){
-    entries.forEach(function(e){
-      e.target.classList.toggle('offstage', !e.isIntersecting);
-    });
-  }, { rootMargin: '80px' });
-  cards.forEach(function(c){ c.classList.add('offstage'); cio.observe(c); });
+  webgl = true;
+  setStep(0);
+  rig.resize();
+
+  var stageVisible = true;
+  var vio = new IntersectionObserver(function(entries){
+    entries.forEach(function(e){ stageVisible = e.isIntersecting; sync(); });
+  }, { rootMargin: '120px' });
+  vio.observe(scroller);
+  document.addEventListener('visibilitychange', sync);
+  function sync(){ if (stageVisible && !document.hidden) rig.start(); else rig.stop(); }
+  sync();
+
+  function initThree(){
+    if (typeof THREE === 'undefined') return null;
+    var canvas = document.getElementById('gl');
+    var renderer;
+    try {
+      renderer = new THREE.WebGLRenderer({ canvas: canvas, antialias: true, alpha: true });
+    } catch (e) { return null; }
+
+    var small = Math.min(window.innerWidth, window.innerHeight) <= 768;
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
+    renderer.outputEncoding = THREE.sRGBEncoding;
+    renderer.shadowMap.enabled = true;
+    renderer.shadowMap.type = small ? THREE.PCFShadowMap : THREE.PCFSoftShadowMap;
+
+    var scene = new THREE.Scene();
+    var camera = new THREE.PerspectiveCamera(38, 1, 0.1, 60);
+
+    /* --- studio light: warm key with soft shadow + cool fill + hemisphere --- */
+    scene.add(new THREE.HemisphereLight(0xfff9ee, 0xcfc4ae, 0.48));
+    var key = new THREE.DirectionalLight(0xfff1dd, 0.68);
+    key.position.set(2.4, 4.2, 1.8);
+    key.castShadow = true;
+    key.shadow.mapSize.set(small ? 512 : 1024, small ? 512 : 1024);
+    key.shadow.camera.left = -2.8; key.shadow.camera.right = 2.8;
+    key.shadow.camera.top = 2.8;   key.shadow.camera.bottom = -2.8;
+    key.shadow.camera.near = 0.5;  key.shadow.camera.far = 12;
+    key.shadow.radius = 4;
+    key.shadow.bias = -0.0015;
+    scene.add(key);
+    var fill = new THREE.DirectionalLight(0xe9efff, 0.18);
+    fill.position.set(-2.2, 1.6, -1.4);
+    scene.add(fill);
+
+    /* --- shadow-catching table --- */
+    var floor = new THREE.Mesh(new THREE.PlaneGeometry(16, 16), new THREE.ShadowMaterial({ opacity: 0.24 }));
+    floor.rotation.x = -Math.PI / 2;
+    floor.receiveShadow = true;
+    scene.add(floor);
+
+    /* --- procedural washi: warm white front, one tone darker back --- */
+    function paperTexture(base, fibre, fibreAlpha, seams){
+      var c = document.createElement('canvas'); c.width = c.height = 512;
+      var g = c.getContext('2d');
+      g.fillStyle = base; g.fillRect(0, 0, 512, 512);
+      /* soft diagonal falloff, like light raking a sheet */
+      var grad = g.createLinearGradient(60, 0, 512, 512);
+      grad.addColorStop(0, 'rgba(255,255,252,0.10)');
+      grad.addColorStop(0.55, 'rgba(120,110,90,0.03)');
+      grad.addColorStop(1, 'rgba(96,88,70,0.12)');
+      g.fillStyle = grad; g.fillRect(0, 0, 512, 512);
+      for (var i = 0; i < 2200; i++){
+        var x = Math.random() * 512, y = Math.random() * 512;
+        var a = Math.random() * Math.PI, l = 5 + Math.random() * 15;
+        g.strokeStyle = 'rgba(' + fibre + ',' + (fibreAlpha * (0.4 + Math.random() * 0.6)).toFixed(3) + ')';
+        g.lineWidth = 0.7 + Math.random() * 0.8;
+        g.beginPath(); g.moveTo(x, y); g.lineTo(x + Math.cos(a) * l, y + Math.sin(a) * l); g.stroke();
+      }
+      if (seams){
+        /* the closed blintz shows its four landed flaps: seams + quadrant tone shifts */
+        g.fillStyle = 'rgba(90,85,72,0.05)';  g.fillRect(256, 0, 256, 256);
+        g.fillStyle = 'rgba(90,85,72,0.09)';  g.fillRect(256, 256, 256, 256);
+        g.fillStyle = 'rgba(255,255,250,0.05)'; g.fillRect(0, 0, 256, 256);
+        g.strokeStyle = 'rgba(146,136,114,0.6)'; g.lineWidth = 2;
+        g.beginPath(); g.moveTo(256, 0); g.lineTo(256, 512); g.moveTo(0, 256); g.lineTo(512, 256); g.stroke();
+      }
+      var t = new THREE.CanvasTexture(c);
+      t.encoding = THREE.sRGBEncoding;
+      t.anisotropy = Math.min(4, renderer.capabilities.getMaxAnisotropy());
+      return t;
+    }
+    var texF = paperTexture('#FCFAF5', '122,112,92', 0.10, false);
+    var texB = paperTexture('#EBE3D1', '106,96,76', 0.15, false);
+    var texBird = paperTexture('#EBE3D1', '106,96,76', 0.15, true);
+    function paperMat(tex, side){
+      /* shadowSide: zero-thickness paper must render its lit face into the depth map */
+      return new THREE.MeshStandardMaterial({ map: tex, roughness: 0.94, metalness: 0, side: side, shadowSide: THREE.DoubleSide });
+    }
+    var matFront = paperMat(texF, THREE.FrontSide);
+    var matBack  = paperMat(texB, THREE.BackSide);
+    var matBirdTop = paperMat(texBird, THREE.FrontSide);
+    var matBirdBot = paperMat(texB, THREE.BackSide);
+
+    /* --- flat paper facet: polygon in the XZ plane, +Y normal, two faces --- */
+    function facetGeo(pts){
+      var ux = pts[1][0] - pts[0][0], uz = pts[1][1] - pts[0][1];
+      var wx = pts[2][0] - pts[0][0], wz = pts[2][1] - pts[0][1];
+      if (uz * wx - ux * wz < 0) pts = pts.slice().reverse();
+      var pos = [], uv = [], idx = [];
+      for (var i = 0; i < pts.length; i++){
+        pos.push(pts[i][0], 0, pts[i][1]);
+        uv.push((pts[i][0] + 1) / 2, 1 - (pts[i][1] + 1) / 2);
+      }
+      for (var j = 1; j < pts.length - 1; j++) idx.push(0, j, j + 1);
+      var g = new THREE.BufferGeometry();
+      g.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3));
+      g.setAttribute('uv', new THREE.Float32BufferAttribute(uv, 2));
+      g.setIndex(idx);
+      g.computeVertexNormals();
+      return g;
+    }
+    function addPaper(parent, pts, top, bottom, origin){
+      var g = facetGeo(pts);
+      if (origin) g.translate(-origin[0], 0, -origin[1]);
+      var m1 = new THREE.Mesh(g, top);    m1.castShadow = true; m1.receiveShadow = true;
+      var m2 = new THREE.Mesh(g, bottom); m2.receiveShadow = true;
+      parent.add(m1); parent.add(m2);
+    }
+
+    var stageRoot = new THREE.Group(); scene.add(stageRoot);
+
+    /* =============== the flat sheet, four hinged corner flaps =============== */
+    var sheetRoot = new THREE.Group();
+    sheetRoot.position.y = 0.012;
+    stageRoot.add(sheetRoot);
+
+    addPaper(sheetRoot, [[0, -1], [1, 0], [0, 1], [-1, 0]], matFront, matBack, null);
+
+    var heart = new THREE.Mesh(
+      new THREE.PlaneGeometry(0.16, 0.16),
+      new THREE.MeshBasicMaterial({ color: 0xD9302F })
+    );
+    heart.rotation.x = -Math.PI / 2;
+    heart.rotation.z = Math.PI / 4;
+    heart.position.y = 0.004;
+    sheetRoot.add(heart);
+
+    var flaps = [];
+    function makeFlap(corner, A, B, restGap, tint){
+      var hinge = new THREE.Group();
+      hinge.position.set(A[0], 0, A[1]);
+      sheetRoot.add(hinge);
+      var axis = new THREE.Vector3(B[0] - A[0], 0, B[1] - A[1]).normalize();
+      var probe = new THREE.Vector3(corner[0] - A[0], 0, corner[1] - A[1]).applyAxisAngle(axis, 0.25);
+      var sign = probe.y > 0 ? 1 : -1;   /* valley fold lifts the corner first */
+      var back = matBack.clone();        /* each landed back one tone deeper, like the CSS rig */
+      back.color.setScalar(tint);
+      addPaper(hinge, [A, corner, B], matFront, back, A);
+      var f = { hinge: hinge, axis: axis, sign: sign,
+                corner: new THREE.Vector3(corner[0], 0, corner[1]),
+                restGap: restGap, curl: 0 };
+      flaps.push(f);
+      return f;
+    }
+    /* midpoints: N(0,-1) E(1,0) S(0,1) W(-1,0) — later flaps rest a touch higher (paper stacks) */
+    var fNW = makeFlap([-1, -1], [-1, 0], [0, -1], 0.045, 1.0);
+    var fNE = makeFlap([ 1, -1], [0, -1], [1, 0], 0.075, 0.97);
+    var fSW = makeFlap([-1,  1], [0, 1], [-1, 0], 0.105, 0.94);
+    var fSE = makeFlap([ 1,  1], [1, 0], [0, 1], 0.135, 0.91);
+
+    /* --- dashed score lines, drawn on just before each fold, red target dot --- */
+    function makeGuide(A, B, dot){
+      var pts = [];
+      for (var i = 0; i <= 31; i++){
+        var t = i / 31;
+        pts.push(new THREE.Vector3(A[0] + (B[0] - A[0]) * t, 0.008, A[1] + (B[1] - A[1]) * t));
+      }
+      var g = new THREE.BufferGeometry().setFromPoints(pts);
+      var lm = new THREE.LineDashedMaterial({ color: 0x8f8877, dashSize: 0.07, gapSize: 0.055, transparent: true, opacity: 0 });
+      var line = new THREE.Line(g, lm);
+      line.computeLineDistances();
+      line.frustumCulled = false;
+      sheetRoot.add(line);
+      var dm = new THREE.MeshBasicMaterial({ color: 0xD9302F, transparent: true, opacity: 0 });
+      var disc = new THREE.Mesh(new THREE.CircleGeometry(0.035, 20), dm);
+      disc.rotation.x = -Math.PI / 2;
+      disc.position.set(dot[0], 0.009, dot[1]);
+      sheetRoot.add(disc);
+      return { geo: g, lm: lm, dm: dm };
+    }
+    var gNW = makeGuide([-1, 0], [0, -1], [-0.5, -0.5]);
+    var gNE = makeGuide([0, -1], [1, 0], [ 0.5, -0.5]);
+    var gSW = makeGuide([0, 1], [-1, 0], [-0.5,  0.5]);
+    var gSE = makeGuide([1, 0], [0, 1],  [ 0.5,  0.5]);
+
+    /* =============== the bird: the closed packet takes flight ===============
+       Shares the packet's exact silhouette at the hand-off, then folds:
+       neck up at z=-0.58, wings droop about the spine, wingtips flick up. */
+    var birdRoot = new THREE.Group();
+    birdRoot.visible = false;
+    stageRoot.add(birdRoot);
+    var Z = new THREE.Vector3(0, 0, 1), X = new THREE.Vector3(1, 0, 0);
+
+    function mirror(pts){ return pts.map(function(p){ return [-p[0], p[1]]; }); }
+    var innerPts = [[0, -0.58], [0.42, -0.58], [0.55, -0.448], [0.55, 0.45], [0, 1]];
+    var headPts  = [[0, -1], [0.42, -0.58], [0, -0.58]];
+    var tipPts   = [[0.55, -0.448], [1, 0], [0.55, 0.45]];
+
+    function makeWing(sgn){
+      var wing = new THREE.Group(); birdRoot.add(wing);
+      var inner = sgn > 0 ? innerPts : mirror(innerPts);
+      var headP = sgn > 0 ? headPts : mirror(headPts);
+      var tipP  = sgn > 0 ? tipPts : mirror(tipPts);
+      addPaper(wing, inner, matBirdTop, matBirdBot, null);
+      var head = new THREE.Group(); head.position.set(0, 0, -0.58); wing.add(head);
+      addPaper(head, headP, matBirdTop, matBirdBot, [0, -0.58]);
+      var tip = new THREE.Group(); tip.position.set(sgn * 0.55, 0, 0); wing.add(tip);
+      addPaper(tip, tipP, matBirdTop, matBirdBot, [sgn * 0.55, 0]);
+      return { wing: wing, head: head, tip: tip, sgn: sgn };
+    }
+    var wingR = makeWing(1), wingL = makeWing(-1);
+
+    /* =============== choreography helpers =============== */
+    function clamp01(v){ return v < 0 ? 0 : v > 1 ? 1 : v; }
+    function seg(p, a, b){ return clamp01((p - a) / (b - a)); }
+    function easeIO(t){ return t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2; }
+    function kf(p, pairs){
+      if (p <= pairs[0][0]) return pairs[0][1];
+      for (var i = 1; i < pairs.length; i++){
+        if (p <= pairs[i][0]){
+          var t = (p - pairs[i - 1][0]) / (pairs[i][0] - pairs[i - 1][0]);
+          t = t * t * (3 - 2 * t);
+          return pairs[i - 1][1] + (pairs[i][1] - pairs[i - 1][1]) * t;
+        }
+      }
+      return pairs[pairs.length - 1][1];
+    }
+
+    var foldDef = [
+      { f: fNW, a: 0.14, b: 0.30, g: gNW, ga: 0.055, gb: 0.125 },
+      { f: fNE, a: 0.30, b: 0.44, g: gNE, ga: 0.235, gb: 0.295 },
+      { f: fSW, a: 0.34, b: 0.48, g: gSW, ga: 0.265, gb: 0.325 },
+      { f: fSE, a: 0.50, b: 0.64, g: gSE, ga: 0.435, gb: 0.495 }
+    ];
+    var yawKF = [[0, -0.30], [0.13, -0.32], [0.29, 0.42], [0.33, 0.42], [0.47, -0.35],
+                 [0.62, 0.10], [0.80, 1.55], [1, 2.30]];
+
+    /* pointer static: free corners curl toward the cursor */
+    var pointer = { x: 0, y: 0, has: false };
+    window.addEventListener('pointermove', function(ev){
+      pointer.x = (ev.clientX / window.innerWidth) * 2 - 1;
+      pointer.y = -(ev.clientY / window.innerHeight) * 2 + 1;
+      pointer.has = true;
+    }, { passive: true });
+    var v3 = new THREE.Vector3();
+
+    function update(p, time){
+      setStep(p < 0.135 ? 0 : p < 0.295 ? 1 : p < 0.495 ? 2 : p < 0.64 ? 3 : 4);
+
+      stageRoot.rotation.y = kf(p, yawKF);
+
+      var flight = p >= 0.645;
+      sheetRoot.visible = !flight;
+      birdRoot.visible = flight;
+
+      if (!flight){
+        /* the whole packet is pressed flat just before it takes flight */
+        var press = seg(p, 0.615, 0.645);
+        for (var i = 0; i < foldDef.length; i++){
+          var d = foldDef[i], f = d.f;
+          var fp = easeIO(seg(p, d.a, d.b));
+          /* corner curl, only while this flap is still free */
+          var target = 0;
+          if (pointer.has && fp < 0.1){
+            v3.copy(f.corner).applyMatrix4(sheetRoot.matrixWorld).project(camera);
+            var dist = Math.hypot(v3.x - pointer.x, v3.y - pointer.y);
+            target = Math.max(0, 1 - dist / 0.45) * 0.16 * (1 - fp / 0.1);
+          }
+          f.curl += (target - f.curl) * 0.1;
+          var gap = f.restGap * (1 - 0.78 * press);
+          f.hinge.quaternion.setFromAxisAngle(f.axis, f.sign * (fp * (Math.PI - gap) + f.curl));
+          /* score line draws on, then fades as the fold commits */
+          var drawn = seg(p, d.ga, d.gb);
+          d.g.geo.setDrawRange(0, Math.max(2, Math.round(drawn * 32)));
+          var fade = 1 - seg(p, d.a + (d.b - d.a) * 0.3, d.a + (d.b - d.a) * 0.85);
+          d.g.lm.opacity = drawn * fade * 0.9;
+          d.g.dm.opacity = seg(p, d.ga + 0.02, d.gb) * fade * 0.9;
+        }
+      } else {
+        var lift  = kf(p, [[0.645, 0.04], [0.80, 0.62], [1, 0.82]]);
+        var headA = easeIO(seg(p, 0.70, 0.80)) * 1.28;
+        var wingA = easeIO(seg(p, 0.78, 0.90)) * 0.60;
+        var tipA  = easeIO(seg(p, 0.86, 0.95)) * 0.85;
+        var settle = seg(p, 0.955, 1);
+        var beat = settle > 0 ? Math.sin(time * 0.0021) * 0.075 * settle : 0;
+        birdRoot.position.y = lift + (settle > 0 ? Math.sin(time * 0.0015) * 0.035 * settle : 0);
+        birdRoot.rotation.x = kf(p, [[0.645, 0], [0.85, 0.16], [1, 0.12]]);
+        wingR.wing.quaternion.setFromAxisAngle(Z, -(wingA + beat));
+        wingL.wing.quaternion.setFromAxisAngle(Z, (wingA + beat));
+        wingR.head.quaternion.setFromAxisAngle(X, headA);
+        wingL.head.quaternion.setFromAxisAngle(X, headA);
+        wingR.tip.quaternion.setFromAxisAngle(Z, tipA);
+        wingL.tip.quaternion.setFromAxisAngle(Z, -tipA);
+      }
+
+      /* camera drifts: sheet parked low under the hero, centred while folding, pulled back for flight;
+         portrait screens frame wider so the sheet clears the captions */
+      var pr = camera.aspect < 0.75;
+      var ty   = kf(p, [[0, pr ? 1.6 : 1.30], [0.16, pr ? 0.52 : 0.42], [0.64, pr ? 0.52 : 0.42], [0.85, pr ? 0.86 : 0.78], [1, pr ? 0.92 : 0.86]]);
+      var elev = kf(p, [[0, 0.74], [0.16, 0.66], [0.64, 0.62], [1, 0.50]]);
+      var rad  = kf(p, [[0, pr ? 8.6 : 6.6], [0.16, pr ? 6.8 : 5.1], [0.60, pr ? 6.8 : 5.1], [1, pr ? 7.2 : 5.6]]);
+      camera.position.set(0, ty + Math.sin(elev) * rad, Math.cos(elev) * rad);
+      camera.lookAt(0, ty, 0);
+    }
+
+    function progress(){
+      var r = scroller.getBoundingClientRect();
+      var total = r.height - window.innerHeight;
+      if (total <= 0) return 0;
+      return clamp01(-r.top / total);
+    }
+
+    var rafId = 0, running = false;
+    function frame(t){
+      rafId = requestAnimationFrame(frame);
+      update(progress(), t);
+      renderer.render(scene, camera);
+    }
+    function resize(){
+      var w = canvas.clientWidth || window.innerWidth;
+      var h = canvas.clientHeight || window.innerHeight;
+      renderer.setSize(w, h, false);
+      camera.aspect = w / h;
+      camera.updateProjectionMatrix();
+    }
+    window.addEventListener('resize', resize);
+    resize();
+
+    return {
+      resize: resize,
+      start: function(){ if (!running){ running = true; rafId = requestAnimationFrame(frame); } },
+      stop:  function(){ if (running){ running = false; cancelAnimationFrame(rafId); } }
+    };
+  }
 })();
 </script>
 
 <!-- PASS 1: fold believability + rig correctness — lifted the guides SVG 1px off the paper plane to kill z-fighting with coplanar flap fronts; added a packet-shade edge-occlusion layer that settles over the closed blintz so stacked paper reads as depth; made the floor shadow tighten step by step as the paper footprint halves (s1 .94 / s2 .88 / s3 .8 / s4 .6); parked the sheet low at step 0 so it glides up out of the hero copy when folding begins; kept the progress rail alive through the final step and fixed reduced-motion specificity so the finished crane and hero always win over .s1 fold states.
      PASS 2: mobile — repositioned the rig per step on small screens (11vh at rest, -7vh during folds, -4vh at flight) so captions never collide with the paper; captions re-anchored with safe bottom margin and tighter type; the bilingual running head drops its English half and shrinks below 560px so it clears the back pill; stats re-laid as a 2x2 grid with corrected dashed borders; crane raised to -72% translate at flight on phones; footer collapses to one column.
-     PASS 3: polish + performance — crane bob and wing-flap animations now sit paused until step 4 (and gallery spinners pause off-screen via IntersectionObserver) so nothing composites invisibly; added a noscript fallback that presents the finished crane; will-change kept surgical (4 flaps, crane, spinners only); focus-visible outlines on all interactive elements; verified back-face clip regions mirror each fold axis exactly so landed flaps cover their quadrant of the base diamond. -->
+     PASS 3: polish + performance — crane bob and wing-flap animations now sit paused until step 4 (and gallery spinners pause off-screen via IntersectionObserver) so nothing composites invisibly; added a noscript fallback that presents the finished crane; will-change kept surgical (4 flaps, crane, spinners only); focus-visible outlines on all interactive elements; verified back-face clip regions mirror each fold axis exactly so landed flaps cover their quadrant of the base diamond.
+     PASS 4: real 3D paper — the hero is now a three.js (r147, cdnjs) origami rig scrubbed bidirectionally by scroll: a segmented sheet with four hinged corner flaps executes the blintz (NW, then NE+SW one breath apart, then SE) about true crease axes with procedural washi textures (warm-white front, one tone darker back), studio key/fill lighting with soft self-shadowing, dashed score lines that draw on just before each fold, and pointer-proximity corner curl; at l'envol the closed packet hands off seamlessly to a segmented bird model that lifts, folds a neck, droops its wings about the spine and flicks its wingtips into a crane silhouette with a gentle wing beat; DPR capped at 2, rAF paused off-screen and on hidden tabs, 512px shadows on small screens, and the original CSS 3D rig + SVG crane retained wholesale as the no-WebGL / noscript / reduced-motion fallback. -->
 </body>
 </html>

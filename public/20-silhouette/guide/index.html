@@ -9,7 +9,8 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Archivo+Narrow:wght@400;500;600&family=Bodoni+Moda:ital,opsz,wght@0,6..96,400;0,6..96,600;1,6..96,400;1,6..96,500&display=swap" rel="stylesheet">
-<!-- PASS: teaser cut mid-sentence at ~45 words, fade overlay uses carbon panel tone; no full prompt anywhere in this file; links /20-silhouette/ + / verified; lock-box pattern matches guides 16-19; single column mobile-safe at 390px. -->
+<!-- PASS: teaser cut mid-sentence at ~45 words, fade overlay uses carbon panel tone; no full prompt anywhere in this file; links /20-silhouette/ + / verified; lock-box pattern matches guides 16-19; single column mobile-safe at 390px.
+     PASS 2: technique description + teaser refreshed for the WebGL living-cloth build (curl-noise silk banner, type projected onto the fabric, gauze band); word count updated. -->
 <style>
 :root{
   --bone:#EDEAE4;--carbon:#161616;--rust:#B04A2F;
@@ -84,15 +85,16 @@ p strong{font-weight:600;color:var(--carbon)}
   <h1>How <em>Absence</em><br>was cut</h1>
 
   <h2>How it was built</h2>
-  <p>SILHOUETTE is a fashion lookbook with <strong>no photographs</strong>: every "garment" is a thin-stroke SVG line drawing that sways a degree or two on a slow alternating loop, and each of the eight looks is dominated by a giant Bodoni numeral drawn as transparent fill with a 1px text-stroke outline &mdash; on hover it skews, stretches vertically and floods rust. The runway itself is a horizontal strip on carbon that hijacks the vertical mouse wheel into sideways glide (releasing it at either end so the page never traps you), adds drag-to-scroll with a grab cursor and scroll-snap, and keeps a live "01 / 08" counter; below 820px it simply restacks vertically. Fabric swatches are small CSS gradients blended with an inline fractal-noise SVG filter so they read as cloth, and the same noise sits at 4.5% over the whole runway. The site opens like a show: two carbon curtain panels part along a rust seam after the letterspaced wordmark fades. Reduced motion removes the curtain, the sway and the marquee entirely.</p>
+  <p>The hero is <strong>living cloth</strong>: a tall carbon silk banner rendered with three.js &mdash; a high-resolution plane hung from the masthead rail and displaced every frame in the vertex shader by layered curl-noise wind (a simplex potential differentiated into a flow field that advects three octaves of folds), pinned at the top, free at a frayed hem that swings. The shading sells the material: wrap diffuse, crease shadow keyed to displacement depth, an anisotropic sheen band across the folds and a bone rim light. The collection word AB&ndash;SENCE is drawn to an offscreen canvas in Bodoni italic and texture-projected onto the fabric, so the typography warps and shades with every fold; the cursor brushes the cloth with a gaussian push and spawns slow travelling ripples (touch does the same). A quieter gauze band drifts behind the atelier note. Discipline: device-pixel ratio capped at 2, the render loop pauses offscreen and when the tab hides, the plane drops resolution on phones, no WebGL falls back to the static hero, and reduced motion gets a single draped frame with no loop.</p>
+  <p>The rest is a lookbook with <strong>no photographs</strong>: every "garment" is a thin-stroke SVG line drawing that sways a degree or two on a slow alternating loop, and each of the eight looks is dominated by a giant Bodoni numeral drawn as transparent fill with a 1px text-stroke outline &mdash; on hover it skews, stretches vertically and floods rust. The runway hijacks the vertical mouse wheel into sideways glide (releasing it at either end so the page never traps you), adds drag-to-scroll with a grab cursor and scroll-snap, and keeps a live "01 / 08" counter; below 820px it simply restacks vertically. Fabric swatches are small CSS gradients blended with an inline fractal-noise SVG filter so they read as cloth, and the same noise sits at 4.5% over the whole runway. The site opens like a show: two carbon curtain panels part along a rust seam after the letterspaced wordmark fades.</p>
 
   <h2>Reproduction <em>prompt</em></h2>
   <div class="stage">
     <p class="ph">Prompt <b>&mdash;</b> preview &middot; seating by purchase only</p>
     <div class="teaser">
-      <p>Build a single-file HTML site for SILHOUETTE, a Paris fashion house presenting "ABSENCE", Autumn/Winter 2026 &mdash; a lookbook with no photographs. Palette: bone #EDEAE4, carbon #161616, one rust accent #B04A2F, hairline rules at 22% opacity in both directions. Fonts: Bodoni Moda&hellip;</p>
+      <p>Build a single-file HTML site for SILHOUETTE, a Paris fashion house presenting "ABSENCE", Autumn/Winter 2026 &mdash; a lookbook with no photographs. Palette: bone #EDEAE4, carbon #161616, one rust accent #B04A2F. Centerpiece &mdash; the living cloth: a tall carbon silk banner rendered with three.js, a high-resolution plane hung in the hero and displaced in the vertex shader by&hellip;</p>
     </div>
-    <p class="lockline"><i>Locked</i>Full prompt (&approx;260 words) included with purchase.</p>
+    <p class="lockline"><i>Locked</i>Full prompt (&approx;320 words) included with purchase.</p>
   </div>
 
   <div class="cta-row">

@@ -105,10 +105,28 @@ section{padding:6rem clamp(1rem,5vw,4rem)}
   cursor:pointer;
   user-select:none;
 }
-.card.settle,.card.settle .l-rainbow,.card.settle .l-rainbow2,.card.settle .l-sparkle,.card.settle .l-glare{
-  transition:transform .7s cubic-bezier(.22,1,.36,1),background-position .7s cubic-bezier(.22,1,.36,1),opacity .5s ease;
+.card.settle .l-rainbow,.card.settle .l-rainbow2,.card.settle .l-sparkle,.card.settle .l-glare{
+  transition:opacity .5s ease;
 }
 .card.holo-on{transition:none}
+.card{touch-action:pan-y}
+
+/* ---------- WebGL foil canvas (JS adds .gl when a live context renders the card) ---------- */
+.holo-gl{position:absolute;inset:0;width:100%;height:100%;border-radius:inherit;pointer-events:none}
+.card:not(.gl) .holo-gl{display:none}
+.card.gl .l-rainbow,.card.gl .l-rainbow2,.card.gl .l-sparkle{display:none}
+.card.gl .c-art{background:transparent}
+.card.gl .c-art svg{visibility:hidden}
+
+/* ---------- hero summon ---------- */
+.card-scene{position:relative}
+.summon{transform-style:preserve-3d;transition:transform 1.05s cubic-bezier(.24,1.28,.36,1) var(--sd,0s),opacity .6s ease var(--sd,0s)}
+.card-scene.pre:not(.in) .summon{transform:translateY(3.4rem) rotateY(126deg) scale(.88);opacity:0}
+.hspark{
+  position:absolute;left:50%;top:46%;width:.42rem;height:.42rem;margin:-.21rem;border-radius:50%;
+  background:var(--foil);background-size:400% 400%;background-position:var(--sp,50%) 50%;
+  pointer-events:none;z-index:6;animation:fly .95s cubic-bezier(.15,.6,.4,1) forwards;
+}
 
 .c-frame{
   position:absolute;inset:.42em;border-radius:.7em;
@@ -139,6 +157,7 @@ section{padding:6rem clamp(1rem,5vw,4rem)}
   aspect-ratio:300/220;flex:none;position:relative;background:#0a0716;
 }
 .c-art svg{width:100%;height:100%}
+.c-art svg+svg{position:absolute;left:0;top:0}
 .c-type{
   display:flex;justify-content:space-between;align-items:center;
   margin:.45em .55em 0;padding:.22em .55em;
@@ -312,6 +331,7 @@ h2{font-size:clamp(1.7rem,4.4vw,2.8rem);font-weight:700;color:var(--ink);line-he
   transform:translate(-50%,-50%) translateX(var(--tx)) translateY(var(--ty,0)) rotate(var(--rot)) scale(1);
   opacity:1;pointer-events:auto;
 }
+.fan-slot .card{--cs:.8}
 .flip{
   position:relative;transform-style:preserve-3d;
   transition:transform .85s cubic-bezier(.4,1.3,.5,1);
@@ -321,12 +341,12 @@ h2{font-size:clamp(1.7rem,4.4vw,2.8rem);font-weight:700;color:var(--ink);line-he
 .flipped .flip{transform:rotateY(180deg)}
 .face{backface-visibility:hidden;-webkit-backface-visibility:hidden}
 .face.front{transform:rotateY(180deg);position:absolute;inset:0}
-.face.back{
+.face.cback{ /* renamed from .back — it collided with the fixed-position back-link pill and knocked the face out of flow */
   width:calc(var(--cs) * 300px);aspect-ratio:63/88;border-radius:1em;overflow:hidden;
   box-shadow:0 24px 50px -18px rgba(0,0,0,.75),0 0 0 1px rgba(201,162,39,.3);
   font-size:calc(var(--cs) * 16px);
 }
-.face.back svg{width:100%;height:100%}
+.face.cback svg{width:100%;height:100%}
 .again{
   position:absolute;left:50%;bottom:0;transform:translateX(-50%);
   background:none;border:1px solid rgba(201,162,39,.45);border-radius:999px;
@@ -389,6 +409,7 @@ footer nav a:hover{color:var(--ink)}
 @media (prefers-reduced-motion: reduce){
   *{animation:none !important}
   html{scroll-behavior:auto}
+  .summon{transition:none !important}
   .card{transform:rotateX(7deg) rotateY(-11deg)}
   .card .l-rainbow{opacity:.6;background-position:38% 62%}
   .card .l-rainbow2{opacity:.16}
@@ -401,9 +422,10 @@ footer nav a:hover{color:var(--ink)}
   .again{transition:opacity .4s ease .8s}
 }
 @media (max-width:700px){
-  .card{--cs:.82}
+  .trio .card{--cs:.82}
   .pack-stage{height:30rem}
-  .fan-slot{--tx:var(--txm) !important}
+  .fan-slot{--tx:calc(var(--txm) * .55) !important;--cs:.6 !important}
+  .fan-slot .card{--cs:.6}
   section{padding:4.5rem 1rem}
 }
 </style>
@@ -556,18 +578,30 @@ footer nav a:hover{color:var(--ink)}
 const RM = matchMedia('(prefers-reduced-motion: reduce)').matches;
 const COARSE = matchMedia('(hover: none) and (pointer: coarse)').matches;
 
-/* ---------- card data (art drawn as inline SVG) ---------- */
+/* ---------- card data (art drawn as inline SVG, split into two depth planes:
+   bg = environment (painted with bleed past the 0..300 frame for parallax overscan),
+   fg = subject on transparent ground. In the DOM the two stack to the original image;
+   in WebGL each becomes its own texture plane sampled at a different parallax depth. ---------- */
 const ART = {
-serpent:`<svg viewBox="0 0 300 220" role="img" aria-label="A golden-green serpent coiled into a perfect circle">
+serpent:{
+bg:`<svg viewBox="0 0 300 220" role="img" aria-label="A golden-green serpent coiled into a perfect circle">
 <defs>
 <radialGradient id="sbg" cx="50%" cy="42%" r="75%"><stop offset="0" stop-color="#15342b"/><stop offset="1" stop-color="#071310"/></radialGradient>
-<linearGradient id="sgr" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#8df5c8"/><stop offset=".55" stop-color="#2e9e77"/><stop offset="1" stop-color="#C9A227"/></linearGradient>
 </defs>
-<rect width="300" height="220" fill="url(#sbg)"/>
+<rect x="-30" y="-22" width="360" height="264" fill="url(#sbg)"/>
 <circle cx="52" cy="38" r="1.4" fill="#8df5c8" opacity=".5"/><circle cx="252" cy="52" r="1.1" fill="#e5c95e" opacity=".5"/>
 <circle cx="70" cy="180" r="1.2" fill="#8df5c8" opacity=".4"/><circle cx="238" cy="176" r="1.5" fill="#e5c95e" opacity=".4"/>
+<circle cx="-10" cy="120" r="1.3" fill="#8df5c8" opacity=".45"/><circle cx="312" cy="28" r="1.2" fill="#e5c95e" opacity=".45"/>
 <circle cx="150" cy="110" r="86" fill="none" stroke="#C9A227" stroke-width=".8" opacity=".45" stroke-dasharray="1 6"/>
 <circle cx="150" cy="110" r="78" fill="none" stroke="#C9A227" stroke-width="1" opacity=".55"/>
+<g fill="none" stroke="#C9A227" stroke-width="1" opacity=".55">
+<path d="M150 12 v10 M150 198 v10 M52 110 h10 M238 110 h10"/>
+</g>
+</svg>`,
+fg:`<svg viewBox="0 0 300 220" aria-hidden="true">
+<defs>
+<linearGradient id="sgr" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#8df5c8"/><stop offset=".55" stop-color="#2e9e77"/><stop offset="1" stop-color="#C9A227"/></linearGradient>
+</defs>
 <g transform="rotate(-58 150 110)">
 <circle cx="150" cy="110" r="63" fill="none" stroke="url(#sgr)" stroke-width="15" stroke-linecap="round" stroke-dasharray="342 60"/>
 <circle cx="150" cy="110" r="63" fill="none" stroke="#06110d" stroke-width="15" stroke-linecap="round" stroke-dasharray="2.5 8.5" opacity=".38"/>
@@ -580,24 +614,29 @@ serpent:`<svg viewBox="0 0 300 220" role="img" aria-label="A golden-green serpen
 <circle cx="150" cy="110" r="30" fill="none" stroke="#C9A227" stroke-width=".9" opacity=".6"/>
 <path d="M150 88 L156 104 L172 110 L156 116 L150 132 L144 116 L128 110 L144 104 Z" fill="none" stroke="#e5c95e" stroke-width="1.4"/>
 <circle cx="150" cy="110" r="4" fill="#C9A227"/>
-<g fill="none" stroke="#C9A227" stroke-width="1" opacity=".55">
-<path d="M150 12 v10 M150 198 v10 M52 110 h10 M238 110 h10"/>
-</g>
-</svg>`,
-tower:`<svg viewBox="0 0 300 220" role="img" aria-label="A slender tower reaching toward a crescent moon">
+</svg>`},
+tower:{
+bg:`<svg viewBox="0 0 300 220" role="img" aria-label="A slender tower reaching toward a crescent moon">
 <defs>
 <linearGradient id="tbg" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#1c1740"/><stop offset="1" stop-color="#0a0820"/></linearGradient>
-<linearGradient id="ttw" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#2a2350"/><stop offset="1" stop-color="#141029"/></linearGradient>
 </defs>
-<rect width="300" height="220" fill="url(#tbg)"/>
+<rect x="-30" y="-22" width="360" height="264" fill="url(#tbg)"/>
 <circle cx="40" cy="34" r="1.3" fill="#fff" opacity=".7"/><circle cx="88" cy="20" r="1" fill="#fff" opacity=".5"/>
 <circle cx="262" cy="120" r="1.2" fill="#fff" opacity=".55"/><circle cx="230" cy="24" r="1" fill="#fff" opacity=".5"/>
 <circle cx="66" cy="96" r="1" fill="#B9B4CC" opacity=".5"/><circle cx="284" cy="60" r="1.4" fill="#fff" opacity=".6"/>
+<circle cx="-12" cy="70" r="1.2" fill="#fff" opacity=".5"/><circle cx="316" cy="150" r="1.3" fill="#B9B4CC" opacity=".5"/>
 <circle cx="214" cy="54" r="27" fill="#eae6f8"/>
 <circle cx="225" cy="45" r="25" fill="url(#tbg)"/>
 <circle cx="214" cy="54" r="33" fill="none" stroke="#eae6f8" stroke-width=".7" opacity=".35" stroke-dasharray="2 5"/>
-<path d="M0 210 Q80 186 150 196 T300 200 L300 220 L0 220 Z" fill="#131029"/>
-<path d="M0 214 Q90 198 170 206 T300 210 L300 220 L0 220 Z" fill="#0c0a1d"/>
+<path d="M-30 212 Q80 186 150 196 T330 200 L330 264 L-30 264 Z" fill="#131029"/>
+<path d="M-30 216 Q90 198 170 206 T330 210 L330 264 L-30 264 Z" fill="#0c0a1d"/>
+<ellipse cx="112" cy="206" rx="60" ry="9" fill="#B9B4CC" opacity=".07"/>
+<ellipse cx="196" cy="212" rx="74" ry="10" fill="#B9B4CC" opacity=".06"/>
+</svg>`,
+fg:`<svg viewBox="0 0 300 220" aria-hidden="true">
+<defs>
+<linearGradient id="ttw" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#2a2350"/><stop offset="1" stop-color="#141029"/></linearGradient>
+</defs>
 <path d="M134 210 L139 96 L142 80 L150 58 L158 80 L161 96 L166 210 Z" fill="url(#ttw)" stroke="#6b628f" stroke-width=".8"/>
 <path d="M150 58 L150 34 M146 40 L150 34 L154 40" stroke="#C9A227" stroke-width="1.4" fill="none" stroke-linecap="round"/>
 <rect x="131" y="98" width="38" height="5" rx="1.5" fill="#241d47" stroke="#6b628f" stroke-width=".6"/>
@@ -609,24 +648,31 @@ tower:`<svg viewBox="0 0 300 220" role="img" aria-label="A slender tower reachin
 <rect x="143" y="158" width="4.6" height="7.4" rx="2" opacity=".7"/>
 <rect x="152.6" y="176" width="4.6" height="7.4" rx="2" opacity=".85"/>
 </g>
-<ellipse cx="112" cy="206" rx="60" ry="9" fill="#B9B4CC" opacity=".07"/>
-<ellipse cx="196" cy="212" rx="74" ry="10" fill="#B9B4CC" opacity=".06"/>
 <path d="M150 34 q22 -14 46 -6" stroke="#B9B4CC" stroke-width=".7" fill="none" opacity=".4" stroke-dasharray="1 4"/>
-</svg>`,
-phoenix:`<svg viewBox="0 0 300 220" role="img" aria-label="A phoenix rising with wings of flame">
+</svg>`},
+phoenix:{
+bg:`<svg viewBox="0 0 300 220" role="img" aria-label="A phoenix rising with wings of flame">
 <defs>
 <radialGradient id="pbg" cx="50%" cy="46%" r="72%"><stop offset="0" stop-color="#3a1220"/><stop offset="1" stop-color="#12060f"/></radialGradient>
-<linearGradient id="pfl" x1="0" y1="1" x2="1" y2="0"><stop offset="0" stop-color="#e5602a"/><stop offset=".5" stop-color="#ffb347"/><stop offset="1" stop-color="#ffe9a3"/></linearGradient>
-<linearGradient id="pfl2" x1="0" y1="1" x2="1" y2="0"><stop offset="0" stop-color="#a6203a"/><stop offset="1" stop-color="#ff7a3c"/></linearGradient>
-<path id="pw1" d="M148 126 C116 94 76 90 38 54 C64 104 98 122 138 138 Z"/>
-<path id="pw2" d="M148 132 C124 110 92 112 64 92 C88 128 116 136 142 146 Z"/>
 </defs>
-<rect width="300" height="220" fill="url(#pbg)"/>
+<rect x="-30" y="-22" width="360" height="264" fill="url(#pbg)"/>
 <circle cx="150" cy="112" r="58" fill="none" stroke="#C9A227" stroke-width=".9" opacity=".5" stroke-dasharray="3 6"/>
 <circle cx="150" cy="112" r="72" fill="none" stroke="#C9A227" stroke-width=".6" opacity=".3"/>
 <g stroke="#e5c95e" stroke-width=".8" opacity=".4">
 <path d="M150 26 v14 M104 40 l8 11 M196 40 l-8 11 M66 82 l12 7 M234 82 l-12 7"/>
 </g>
+<circle cx="96" cy="66" r="1.6" fill="#ffb347" opacity=".85"/><circle cx="208" cy="70" r="1.4" fill="#ffe9a3" opacity=".8"/>
+<circle cx="118" cy="150" r="1.3" fill="#ff7a3c" opacity=".7"/><circle cx="186" cy="146" r="1.6" fill="#ffb347" opacity=".75"/>
+<circle cx="150" cy="44" r="1.8" fill="#ffe9a3" opacity=".9"/>
+<circle cx="-8" cy="100" r="1.4" fill="#ff7a3c" opacity=".6"/><circle cx="310" cy="118" r="1.5" fill="#ffb347" opacity=".6"/>
+</svg>`,
+fg:`<svg viewBox="0 0 300 220" aria-hidden="true">
+<defs>
+<linearGradient id="pfl" x1="0" y1="1" x2="1" y2="0"><stop offset="0" stop-color="#e5602a"/><stop offset=".5" stop-color="#ffb347"/><stop offset="1" stop-color="#ffe9a3"/></linearGradient>
+<linearGradient id="pfl2" x1="0" y1="1" x2="1" y2="0"><stop offset="0" stop-color="#a6203a"/><stop offset="1" stop-color="#ff7a3c"/></linearGradient>
+<path id="pw1" d="M148 126 C116 94 76 90 38 54 C64 104 98 122 138 138 Z"/>
+<path id="pw2" d="M148 132 C124 110 92 112 64 92 C88 128 116 136 142 146 Z"/>
+</defs>
 <use href="#pw1" fill="url(#pfl2)"/>
 <use href="#pw2" fill="url(#pfl)" opacity=".92"/>
 <use href="#pw1" transform="translate(300 0) scale(-1 1)" fill="url(#pfl2)"/>
@@ -640,10 +686,7 @@ phoenix:`<svg viewBox="0 0 300 220" role="img" aria-label="A phoenix rising with
 <path d="M150 172 C158 192 170 200 186 208" stroke="url(#pfl)" stroke-width="2.6" fill="none" stroke-linecap="round"/>
 <path d="M150 176 C148 194 142 202 132 210" stroke="url(#pfl2)" stroke-width="1.6" fill="none" stroke-linecap="round" opacity=".8"/>
 <path d="M150 176 C152 194 158 202 168 210" stroke="url(#pfl2)" stroke-width="1.6" fill="none" stroke-linecap="round" opacity=".8"/>
-<circle cx="96" cy="66" r="1.6" fill="#ffb347" opacity=".85"/><circle cx="208" cy="70" r="1.4" fill="#ffe9a3" opacity=".8"/>
-<circle cx="118" cy="150" r="1.3" fill="#ff7a3c" opacity=".7"/><circle cx="186" cy="146" r="1.6" fill="#ffb347" opacity=".75"/>
-<circle cx="150" cy="44" r="1.8" fill="#ffe9a3" opacity=".9"/>
-</svg>`
+</svg>`}
 };
 
 const CARDS = [
@@ -691,10 +734,10 @@ const BACK_SVG = `<svg viewBox="0 0 300 420" role="img" aria-label="Arcanum card
 
 /* ---------- card factory ---------- */
 function cardHTML(c){
-  return `<article class="card ${c.rarity}" tabindex="0" aria-label="${c.name}, ${c.rarityLabel} rarity card">
+  return `<article class="card ${c.rarity}" data-id="${c.id}" tabindex="0" aria-label="${c.name}, ${c.rarityLabel} rarity card">
     <div class="c-frame">
       <header class="c-top"><span class="c-cost">${c.cost}</span><h3 class="c-name">${c.name}</h3><span class="c-gem" aria-hidden="true"></span></header>
-      <div class="c-art">${ART[c.id]}</div>
+      <div class="c-art">${ART[c.id].bg}${ART[c.id].fg}</div>
       <div class="c-type">${c.type}<span>${c.stats}</span></div>
       <div class="c-text"><p>${c.rules}</p><p class="c-flavor">${c.flavor}</p></div>
       <footer class="c-foot"><span>${c.num}</span><span>${c.set}</span><span class="c-rar">${c.rarityLabel}</span></footer>
@@ -707,46 +750,348 @@ function cardHTML(c){
   </article>`;
 }
 
-/* ---------- holo engine: pointer tilt + foil tracking ---------- */
+/* ============================================================
+   WebGL holo-foil renderer — one small canvas per card.
+   Shader layers: card base → parallax art planes (bg/fg SVG
+   textures at different depths, subject casting a soft shadow)
+   → per-rarity procedural foil mask (scales / rays / galaxy)
+   → thin-film rainbow gated by tilt angle → hash-glint sparkles
+   that pop in and out as the angle changes. The CSS foil layers
+   stay untouched as the no-WebGL fallback; reduced motion never
+   boots any of this.
+   ============================================================ */
+const VERT = 'attribute vec2 aPos;varying vec2 vUv;void main(){vUv=vec2(aPos.x*.5+.5,.5-aPos.y*.5);gl_Position=vec4(aPos,0.,1.);}';
+const FRAG = `
+#ifdef GL_FRAGMENT_PRECISION_HIGH
+precision highp float;
+#else
+precision mediump float;
+#endif
+varying vec2 vUv;
+uniform vec2 uTilt,uPointer,uSize;
+uniform float uHover,uTime,uFlash,uPattern,uSparkle;
+uniform vec4 uArt;
+uniform sampler2D uBg,uFg;
+float hash(vec2 p){p=fract(p*vec2(123.34,456.21));p+=dot(p,p+45.32);return fract(p.x*p.y);}
+vec3 iri(float t){return .5+.5*cos(6.28318*(t+vec3(0.,.33,.67)));}
+float glint(vec2 uv,float sc,float seed){
+  vec2 g=uv*vec2(sc,sc*1.397);
+  vec2 id=floor(g);vec2 f=fract(g)-.5;
+  float h=hash(id+seed*17.17);
+  if(h<.45)return 0.;
+  vec2 off=(vec2(hash(id+seed+3.1),hash(id+seed+7.7))-.5)*.6;
+  float d=length(f-off);
+  float ang=h*41.+uTilt.x*(5.+h*6.)+uTilt.y*(4.+h*7.)+uTime*.6;
+  float tw=pow(max(0.,sin(ang)),36.);
+  return (1.-smoothstep(.02,.22,d))*tw;
+}
+vec2 foil(vec2 uv){
+  if(uPattern<.5){ /* Gilded: serpent-scale scallops, thin metallic rims */
+    vec2 g=uv*vec2(12.,17.);
+    g.x+=mod(floor(g.y),2.)*.5;
+    vec2 id=floor(g);vec2 f=fract(g)-.5;
+    float d=length(f*vec2(1.,.85));
+    float rim=1.-smoothstep(.03,.10,abs(d-.40));
+    float m=rim*.9+.22*(1.-smoothstep(.15,.45,d));
+    return vec2(.22+.78*m,id.x*.043+id.y*.031+d*.35+hash(id)*.06);
+  }else if(uPattern<1.5){ /* Umbral: moonbeam rays */
+    vec2 c=uv-vec2(.5,.30);
+    float a=atan(c.x,c.y+1e-4);
+    float band=floor(a*7.639);
+    float fb=fract(a*7.639);
+    float m=.40+.60*sin(fb*3.14159);
+    return vec2(m,band*.045+length(c)*.4+hash(vec2(band,1.7))*.08);
+  } /* Arcanum: full-art galaxy swirl */
+  vec2 c=uv-vec2(.5,.42);c.y*=1.397;
+  float r=length(c);
+  float a=atan(c.y,c.x)+r*7.-uTime*.07;
+  float s=.5+.5*sin(a*3.);
+  float s2=.5+.5*sin(a*7.+r*14.);
+  return vec2(.5+.5*(s*.7+s2*.3),s*.35+r*.7+s2*.12);
+}
+void main(){
+  vec2 uv=vUv;
+  float dg=uv.x*.45+uv.y*.55;
+  vec3 col=mix(vec3(.110,.086,.200),vec3(.055,.043,.094),smoothstep(0.,.62,dg));
+  col=mix(col,vec3(.098,.070,.192),smoothstep(.62,1.,dg));
+  /* parallax art window (textures carry 10% overscan bleed) */
+  vec2 la=(uv-uArt.xy)/max(uArt.zw,vec2(1e-4));
+  vec2 base=la*.8333+.08335;
+  vec2 stB=base-uTilt*vec2(.048,.038);
+  vec2 stF=base-uTilt*vec2(.017,.013);
+  vec4 bg=texture2D(uBg,clamp(stB,0.,1.));
+  float shdw=texture2D(uFg,clamp(stF+vec2(.011,.015),0.,1.)).a;
+  vec4 fg=texture2D(uFg,clamp(stF,0.,1.));
+  vec3 art=bg.rgb*(1.-shdw*.5);
+  art=art*(1.-fg.a)+fg.rgb;
+  vec2 q=abs(la-.5)*uArt.zw*uSize;
+  vec2 hp=.5*uArt.zw*uSize;
+  float rr=.02*uSize.x;
+  vec2 dq=q-(hp-vec2(rr));
+  float dist=length(max(dq,0.))+min(max(dq.x,dq.y),0.)-rr;
+  float artMask=1.-smoothstep(-1.,1.,dist);
+  col=mix(col,art,artMask);
+  /* iridescent foil, angle-gated so it ignites as the card tilts;
+     the subject plane masks the foil so the creature stays in front of the shimmer */
+  vec2 pm=foil(uv+uTilt*.03);
+  float gate=.22+.78*smoothstep(.03,.75,length(uTilt));
+  float zone=max(artMask,.14+.45*(1.-smoothstep(.25,.80,uv.y)));
+  float strength=uPattern>1.5?1.:(uPattern>.5?.78:.68);
+  float m=pm.x*gate*zone*strength*(.30+.55*uHover+uFlash*1.4);
+  m*=1.-fg.a*(uPattern>1.5?.58:.82)*artMask;
+  float phase=pm.y+uTilt.x*.55+uTilt.y*.4+uv.x*.18-uv.y*.12+uTime*.015;
+  vec3 f=iri(phase);
+  col=1.-(1.-col)*(1.-f*m*.7);
+  col+=f*m*m*.30;
+  /* sparkle glints */
+  float sp=glint(uv,26.,1.)+glint(uv+13.7,52.,2.);
+  if(uSparkle>2.5)sp+=glint(uv+7.3,86.,3.);
+  col+=mix(vec3(1.),iri(phase+.13),.45)*sp*(.12+.95*uHover+uFlash*1.4)*zone;
+  /* pointer sheen + prismatic edge */
+  float sheen=exp(-7.*length(uv-uPointer))*uHover*.16;
+  col+=f*sheen+vec3(sheen*.4);
+  vec2 e=min(uv,1.-uv);
+  float em=min(e.x,e.y*.716);
+  float edge=(1.-smoothstep(.02,.055,em))*smoothstep(.004,.012,em);
+  col+=iri(phase+.3)*edge*(.12+.55*gate*(.3+.7*uHover));
+  col+=vec3(uFlash*.16);
+  gl_FragColor=vec4(col,1.);
+}`;
+
+let WEBGL_STATE = 0; // 0 unknown, 1 ok, -1 unavailable
+const glCards = [];
+const svgURL = s => 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(s);
+const TEXBOX = 'xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" viewBox="-30 -22 360 264" width="540" height="396"';
+const texify = s => s.replace('viewBox="0 0 300 220"', TEXBOX); // standalone SVG images need the namespace
+
+function initCardGL(card, h){
+  if (WEBGL_STATE < 0) return null;
+  const data = CARDS.find(c => c.id === card.dataset.id);
+  if (!data) return null;
+  const cv = document.createElement('canvas');
+  cv.className = 'holo-gl';
+  cv.setAttribute('aria-hidden', 'true');
+  card.insertBefore(cv, card.firstChild);
+  let gl = null;
+  try {
+    gl = cv.getContext('webgl', { alpha:false, antialias:false, depth:false, stencil:false, powerPreference:'low-power' })
+      || cv.getContext('experimental-webgl', { alpha:false });
+  } catch (err) { gl = null; }
+  if (!gl){ cv.remove(); WEBGL_STATE = -1; return null; }
+  WEBGL_STATE = 1;
+  const pattern = data.rarity === 'mythic' ? 2 : data.rarity === 'epic' ? 1 : 0;
+  const api = { dead:false };
+  let prog, loc = {};
+  function sh(type, src){
+    const s = gl.createShader(type);
+    gl.shaderSource(s, src); gl.compileShader(s);
+    if (!gl.getShaderParameter(s, gl.COMPILE_STATUS)){ console.warn('arcanum shader:', gl.getShaderInfoLog(s)); return null; }
+    return s;
+  }
+  function mkTex(unit, px){
+    const t = gl.createTexture();
+    gl.activeTexture(gl.TEXTURE0 + unit); gl.bindTexture(gl.TEXTURE_2D, t);
+    gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, 1, 1, 0, gl.RGBA, gl.UNSIGNED_BYTE, new Uint8Array(px));
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
+    return t;
+  }
+  function loadTex(t, unit, svg){
+    const img = new Image();
+    img.onload = () => {
+      if (api.dead) return;
+      gl.pixelStorei(gl.UNPACK_PREMULTIPLY_ALPHA_WEBGL, true);
+      gl.activeTexture(gl.TEXTURE0 + unit); gl.bindTexture(gl.TEXTURE_2D, t);
+      gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, img);
+      h.lastDraw = 0; wake();
+    };
+    img.onerror = () => { api.dead = true; card.classList.remove('gl'); }; // fall back to CSS foil
+    img.src = svgURL(svg);
+  }
+  function setup(){
+    const vs = sh(gl.VERTEX_SHADER, VERT), fs = sh(gl.FRAGMENT_SHADER, FRAG);
+    if (!vs || !fs) return false;
+    prog = gl.createProgram();
+    gl.attachShader(prog, vs); gl.attachShader(prog, fs); gl.linkProgram(prog);
+    if (!gl.getProgramParameter(prog, gl.LINK_STATUS)){ console.warn('arcanum link:', gl.getProgramInfoLog(prog)); return false; }
+    gl.useProgram(prog);
+    const buf = gl.createBuffer();
+    gl.bindBuffer(gl.ARRAY_BUFFER, buf);
+    gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([-1,-1, 1,-1, -1,1, 1,1]), gl.STATIC_DRAW);
+    const ap = gl.getAttribLocation(prog, 'aPos');
+    gl.enableVertexAttribArray(ap); gl.vertexAttribPointer(ap, 2, gl.FLOAT, false, 0, 0);
+    ['uTilt','uPointer','uSize','uHover','uTime','uFlash','uPattern','uSparkle','uArt','uBg','uFg']
+      .forEach(n => loc[n] = gl.getUniformLocation(prog, n));
+    gl.uniform1f(loc.uPattern, pattern);
+    gl.uniform1i(loc.uBg, 0); gl.uniform1i(loc.uFg, 1);
+    loadTex(mkTex(0, [13,10,25,255]), 0, texify(ART[data.id].bg));
+    loadTex(mkTex(1, [0,0,0,0]), 1, texify(ART[data.id].fg));
+    api.resize();
+    return true;
+  }
+  api.resize = () => {
+    if (api.dead) return;
+    const w = card.offsetWidth || 300, ht = card.offsetHeight || 419;
+    const dpr = Math.min(window.devicePixelRatio || 1, 2); // DPR cap 2
+    cv.width = Math.max(2, Math.round(w * dpr));
+    cv.height = Math.max(2, Math.round(ht * dpr));
+    gl.viewport(0, 0, cv.width, cv.height);
+    gl.useProgram(prog);
+    gl.uniform2f(loc.uSize, w, ht);
+    gl.uniform1f(loc.uSparkle, innerWidth <= 768 ? 2 : 3); // fewer sparkle layers on small screens
+    const fr = card.querySelector('.c-frame'), art = card.querySelector('.c-art');
+    if (fr && art) gl.uniform4f(loc.uArt,
+      (fr.offsetLeft + art.offsetLeft) / w, (fr.offsetTop + art.offsetTop) / ht,
+      art.offsetWidth / w, art.offsetHeight / ht);
+    h.lastDraw = 0;
+  };
+  api.draw = (time, hh) => {
+    if (api.dead) return;
+    gl.useProgram(prog);
+    gl.uniform2f(loc.uTilt, (hh.cx - .5) * 2, (hh.cy - .5) * 2);
+    gl.uniform2f(loc.uPointer, hh.cx, hh.cy);
+    gl.uniform1f(loc.uHover, hh.hover);
+    gl.uniform1f(loc.uTime, time);
+    gl.uniform1f(loc.uFlash, hh.flash);
+    gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
+  };
+  cv.addEventListener('webglcontextlost', e => { e.preventDefault(); api.dead = true; card.classList.remove('gl'); });
+  cv.addEventListener('webglcontextrestored', () => { api.dead = !setup(); if (!api.dead){ card.classList.add('gl'); wake(); } });
+  if (!setup()){ cv.remove(); return null; }
+  card.classList.add('gl');
+  glCards.push(api);
+  return api;
+}
+
+/* ---------- holo engine: spring-inertia tilt + shared render loop ---------- */
 const holo = []; // shared registry for devicemotion / auto-sway
+let rafId = 0, lastT = 0, running = false;
+const T0 = performance.now();
+function wake(){
+  if (RM || running || document.hidden) return;
+  running = true; lastT = performance.now();
+  rafId = requestAnimationFrame(tick);
+}
+function setVars(h){
+  const s = h.card.style, tx = h.cx, ty = h.cy;
+  s.setProperty('--rx', ((ty - .5) * -20).toFixed(2) + 'deg');
+  s.setProperty('--ry', ((tx - .5) * 24).toFixed(2) + 'deg');
+  s.setProperty('--mx', (tx * 100).toFixed(1) + '%');
+  s.setProperty('--my', (ty * 100).toFixed(1) + '%');
+  s.setProperty('--bx', (50 + (tx - .5) * 95).toFixed(1) + '%');
+  s.setProperty('--by', (50 + (ty - .5) * 95).toFixed(1) + '%');
+}
+function tick(now){
+  const dt = Math.min(.05, (now - lastT) / 1000 || .016);
+  lastT = now;
+  const t = (now - T0) / 1000;
+  let active = false;
+  for (let i = 0; i < holo.length; i++){
+    const h = holo[i];
+    h.hover += (h.hoverT - h.hover) * Math.min(1, dt * 7);
+    if (h.flash > 0) h.flash = Math.max(0, h.flash - dt * 1.1);
+    /* under-damped spring: the "rare card wiggle" inertia */
+    h.vx += ((h.tx - h.cx) * 130 - h.vx * 13.5) * dt;
+    h.vy += ((h.ty - h.cy) * 130 - h.vy * 13.5) * dt;
+    h.cx += h.vx * dt; h.cy += h.vy * dt;
+    const energy = Math.abs(h.vx) + Math.abs(h.vy) + Math.abs(h.tx - h.cx) + Math.abs(h.ty - h.cy);
+    const busy = h.hoverT > 0 || h.hover > .02 || energy > .002 || h.flash > 0;
+    if (busy) setVars(h);
+    const glLive = h.gl && !h.gl.dead && h.visible;
+    if (busy || glLive) active = true;
+    if (glLive && (busy || now - h.lastDraw >= 48)){ // idle foil drifts at ~20fps, full rate while handled
+      h.lastDraw = now;
+      h.gl.draw(t, h);
+    }
+  }
+  if (active && !document.hidden) rafId = requestAnimationFrame(tick);
+  else running = false;
+}
+document.addEventListener('visibilitychange', () => {
+  if (document.hidden){ cancelAnimationFrame(rafId); running = false; }
+  else wake();
+});
+const io = typeof IntersectionObserver !== 'undefined'
+  ? new IntersectionObserver(es => {
+      for (const en of es){
+        const h = holo.find(x => x.card === en.target);
+        if (h){ h.visible = en.isIntersecting; if (h.visible) wake(); }
+      }
+    }, { rootMargin: '60px' })
+  : null;
+let rsT = 0;
+addEventListener('resize', () => {
+  clearTimeout(rsT);
+  rsT = setTimeout(() => { glCards.forEach(g => g.resize()); wake(); }, 150);
+});
+if (document.fonts && document.fonts.ready)
+  document.fonts.ready.then(() => { glCards.forEach(g => g.resize()); wake(); }).catch(() => {});
+
 function attachHolo(card){
   if (card.dataset.holo) return;
   card.dataset.holo = '1';
-  if (RM) return; // reduced motion: CSS pins a flattering static angle
-  let raf = 0, tx = .5, ty = .5;
-  const apply = () => {
-    raf = 0;
-    const s = card.style;
-    s.setProperty('--rx', ((ty - .5) * -20).toFixed(2) + 'deg');
-    s.setProperty('--ry', ((tx - .5) * 24).toFixed(2) + 'deg');
-    s.setProperty('--mx', (tx * 100).toFixed(1) + '%');
-    s.setProperty('--my', (ty * 100).toFixed(1) + '%');
-    s.setProperty('--bx', (50 + (tx - .5) * 95).toFixed(1) + '%');
-    s.setProperty('--by', (50 + (ty - .5) * 95).toFixed(1) + '%');
+  if (RM) return; // reduced motion: CSS pins a flattering static angle, no GL, no loops
+  const h = {
+    card, tx:.5, ty:.5, cx:.5, cy:.5, vx:0, vy:0,
+    hover:0, hoverT:0, flash:0, visible:true, gl:null, lastDraw:0,
+    drive(x, y){ if (this.hoverT) return; this.tx = x; this.ty = y; wake(); }
   };
-  const queue = () => { if (!raf) raf = requestAnimationFrame(apply); };
-  card.addEventListener('pointerenter', () => {
-    card.classList.remove('settle', 'sway');
-    card.classList.add('holo-on');
+  h.gl = initCardGL(card, h);
+  /* events bind to the untransformed wrapper — the tilted card would slide out
+     from under the pointer near its receding corners and fire spurious leaves */
+  const zone = card.parentElement || card;
+  const engage = () => { h.hoverT = 1; card.classList.remove('sway', 'settle'); card.classList.add('holo-on'); wake(); };
+  const release = () => { h.hoverT = 0; h.tx = .5; h.ty = .5; card.classList.remove('holo-on'); card.classList.add('settle'); wake(); };
+  zone.addEventListener('pointerenter', e => { if (e.pointerType !== 'touch') engage(); });
+  zone.addEventListener('pointerdown', e => { if (e.pointerType === 'touch') engage(); }); // mobile: tilt from touch drag
+  zone.addEventListener('pointermove', e => {
+    if (!h.hoverT) return;
+    const r = zone.getBoundingClientRect();
+    h.tx = Math.min(1, Math.max(0, (e.clientX - r.left) / r.width));
+    h.ty = Math.min(1, Math.max(0, (e.clientY - r.top) / r.height));
+    wake();
   });
-  card.addEventListener('pointermove', e => {
-    const r = card.getBoundingClientRect();
-    tx = Math.min(1, Math.max(0, (e.clientX - r.left) / r.width));
-    ty = Math.min(1, Math.max(0, (e.clientY - r.top) / r.height));
-    queue();
-  });
-  card.addEventListener('pointerleave', () => {
-    card.classList.remove('holo-on');
-    card.classList.add('settle');
-    tx = .5; ty = .5; queue();
-  });
-  holo.push({ card, drive(x, y){ if (card.classList.contains('holo-on')) return; tx = x; ty = y; queue(); } });
+  zone.addEventListener('pointerleave', e => { if (e.pointerType !== 'touch') release(); });
+  zone.addEventListener('pointerup', e => { if (e.pointerType === 'touch') release(); });
+  zone.addEventListener('pointercancel', release);
+  if (io) io.observe(card);
+  holo.push(h);
+  wake();
+  return h;
 }
 
-/* ---------- build hero trio ---------- */
+/* ---------- build hero trio (mythic takes the raised center pedestal) ---------- */
 const trio = document.getElementById('trio');
-trio.innerHTML = CARDS.map(c => `<div class="card-scene"><div class="card-float">${cardHTML(c)}</div></div>`).join('');
-trio.querySelectorAll('.card').forEach(attachHolo);
+const HERO = [CARDS[0], CARDS[2], CARDS[1]];
+trio.innerHTML = HERO.map(c => `<div class="card-scene"><div class="card-float"><div class="summon">${cardHTML(c)}</div></div></div>`).join('');
+const heroHolos = Array.from(trio.querySelectorAll('.card'), c => attachHolo(c));
+
+/* ---------- card summon: the trio rises and flips in with a foil flash ---------- */
+if (!RM){
+  const scenes = Array.from(trio.children);
+  scenes.forEach((s, i) => { s.classList.add('pre'); s.style.setProperty('--sd', (.1 + i * .16).toFixed(2) + 's'); });
+  setTimeout(() => {
+    scenes.forEach((s, i) => {
+      s.classList.add('in');
+      setTimeout(() => {
+        if (heroHolos[i]){ heroHolos[i].flash = 1; wake(); }
+        for (let k = 0; k < 7; k++){
+          const sp = document.createElement('span');
+          sp.className = 'hspark';
+          sp.setAttribute('aria-hidden', 'true');
+          const a = Math.random() * 6.283, d = 4 + Math.random() * 6;
+          sp.style.setProperty('--dx', (Math.cos(a) * d).toFixed(2) + 'rem');
+          sp.style.setProperty('--dy', (Math.sin(a) * d - 3).toFixed(2) + 'rem');
+          sp.style.setProperty('--sp', (Math.random() * 100 | 0) + '%');
+          s.appendChild(sp);
+          setTimeout(() => sp.remove(), 1100);
+        }
+      }, 160 * i + 720);
+    });
+  }, 380);
+}
 
 /* ---------- build fan (pack contents) ---------- */
 const FAN = [
@@ -759,12 +1104,11 @@ fanEl.innerHTML = CARDS.map((c, i) => {
   const f = FAN[i];
   return `<div class="fan-slot" style="--i:${i};--tx:${f.tx};--txm:${f.txm};--ty:${f.ty};--rot:${f.rot};--z:${f.z};--cs:.8">
     <div class="flip">
-      <div class="face back" aria-hidden="true">${BACK_SVG}</div>
+      <div class="face cback" aria-hidden="true">${BACK_SVG}</div>
       <div class="face front">${cardHTML(c)}</div>
     </div>
   </div>`;
-}).join('');
-fanEl.querySelectorAll('.card').forEach(c => c.style.setProperty('--cs', '.8'));
+}).join(''); // cards inherit --cs from their slot so the mobile media query can rescale the whole fan
 
 /* ---------- pack opening ---------- */
 const stage = document.getElementById('stage');
@@ -774,15 +1118,21 @@ let opened = false, timers = [];
 function openPack(){
   if (opened) return;
   opened = true;
+  fanEl.querySelectorAll('.card').forEach(c => attachHolo(c)); // lazy GL boot: no contexts before the tear
   if (RM){
     stage.classList.add('torn', 'dealt', 'flipped');
-    fanEl.querySelectorAll('.card').forEach(attachHolo);
     return;
   }
   stage.classList.add('torn');
   timers.push(setTimeout(() => stage.classList.add('dealt'), 420));
   timers.push(setTimeout(() => stage.classList.add('flipped'), 1600));
-  timers.push(setTimeout(() => fanEl.querySelectorAll('.card').forEach(attachHolo), 2400));
+  timers.push(setTimeout(() => {
+    fanEl.querySelectorAll('.card').forEach(c => {
+      const h = holo.find(x => x.card === c);
+      if (h) h.flash = .9;
+    });
+    wake();
+  }, 1800));
 }
 pack.addEventListener('click', openPack);
 again.addEventListener('click', () => {
@@ -866,5 +1216,6 @@ if (!RM && COARSE){
   4. A11y/keyboard: cards are focusable with descriptive labels, the pack is a real <button> (Enter/
      Space opens it), focus-visible rings in gold, decorative layers aria-hidden, duplicate-attach
      guarded via data-holo so "Tear another" never stacks listeners. -->
+<!-- PASS 4 (WebGL holo): every card now renders on its own small WebGL canvas — fragment shader stacks parallax art planes (the SVG art split into bg/fg textures with overscan bleed, subject casting a shadow), a per-rarity procedural foil mask (serpent scales / moonbeam rays / full-art galaxy swirl), an angle-gated thin-film rainbow, and hash-cell sparkle glints that pop as the tilt changes; tilt gained under-damped spring inertia (the real holo wiggle) plus touch-drag on mobile, the hero trio summons in with a foil flash and spark burst, fan contexts boot lazily on tear; CSS foil stays as the no-WebGL fallback, reduced motion boots nothing, DPR capped at 2, IntersectionObserver + hidden-tab pause rendering, 2 sparkle layers at ≤768px. -->
 </body>
 </html>

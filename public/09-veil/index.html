@@ -20,6 +20,7 @@
   JS); contact-drop confirmation is now typed character by character like the
   rest of the office; removed a duplicate caret rule; folders got a dashed
   :focus-visible outline for keyboard users.
+  PASS 4 (WebGL noir engine): the flashlight grew a body — a raw-WebGL fullscreen premultiplied-alpha canvas now renders domain-warped fbm cigarette smoke that drifts and curls, brightens volumetrically inside the beam (warm scattering core + halo), recoils around a lagged light position and slowly re-forms, with venetian-blind shafts raked through the fog, an occasional passing-car sweep, lamp-flicker "storms" and an iris vignette; DPR capped at 2, 3 fbm octaves at ≤768px, rAF paused on tab-hide/offscreen (IntersectionObserver), idle auto-pan so the beam never sits dead, and the old CSS torch kept as the no-WebGL / context-lost fallback (reduced motion: no canvas, no loop).
 -->
 <html lang="en">
 <head>
@@ -81,6 +82,17 @@ body{
 }
 @media (prefers-reduced-motion: reduce){
   #torch{display:none;}
+}
+
+/* ---------- WebGL fog (volumetric smoke; replaces the CSS torch when GL is up) ---------- */
+#fog{
+  position:fixed; inset:0; width:100%; height:100%;
+  z-index:50; pointer-events:none; display:none;
+}
+html.gl #fog{display:block;}
+html.gl #torch{display:none;}
+@media (prefers-reduced-motion: reduce){
+  #fog{display:none !important;}
 }
 
 /* ---------- film grain ---------- */
@@ -433,8 +445,10 @@ footer p{
 
 <a class="backlink" href="/">←&nbsp;25</a>
 
-<!-- flashlight overlay -->
+<!-- flashlight overlay (CSS fallback when WebGL is unavailable) -->
 <div id="torch" aria-hidden="true"><div class="beam"></div></div>
+<!-- volumetric smoke (WebGL; hidden until the shader compiles) -->
+<canvas id="fog" aria-hidden="true"></canvas>
 <noscript><style>#torch{display:none}</style></noscript>
 
 <!-- film grain -->
@@ -624,38 +638,218 @@ footer p{
   var root = document.documentElement;
   var torch = document.getElementById("torch");
 
-  /* ---------- flashlight ---------- */
+  /* ---------- light engine ----------
+     One pointer/idle model drives either the WebGL fog shader (volumetric
+     smoke, beam, blinds) or — if GL is unavailable — the original CSS torch.
+     rAF pauses when the tab is hidden or the canvas leaves the viewport. */
+  var FRAG = [
+    "uniform vec2 uRes;",
+    "uniform float uTime;",
+    "uniform vec2 uMouse;",   // eased pointer, device px, y-down
+    "uniform vec2 uLag;",     // lagged pointer the smoke recoils from
+    "uniform float uRad;",    // beam radius, device px
+    "float h1(float n){return fract(sin(n*127.1)*43758.5453);}",
+    "float h2(vec2 p){p=fract(p*vec2(123.34,456.21));p+=dot(p,p+45.32);return fract(p.x*p.y);}",
+    "float vnoise(vec2 p){vec2 i=floor(p);vec2 f=fract(p);f=f*f*(3.0-2.0*f);",
+    " float a=h2(i);float b=h2(i+vec2(1.,0.));float c=h2(i+vec2(0.,1.));float d=h2(i+vec2(1.,1.));",
+    " return mix(mix(a,b,f.x),mix(c,d,f.x),f.y);}",
+    "float fbm(vec2 p){float v=0.;float a=.5;float tot=0.;mat2 R=mat2(.8,.6,-.6,.8);",
+    " for(int i=0;i<OCT;i++){v+=a*vnoise(p);tot+=a;p=R*p*2.03+vec2(1.7,9.2);a*=.55;}return v/tot;}",
+    "void main(){",
+    " float S=uRes.y;",
+    " vec2 frag=gl_FragCoord.xy;",
+    " vec2 p=frag/S;",
+    " vec2 m=vec2(uMouse.x,uRes.y-uMouse.y)/S;",
+    " vec2 ml=vec2(uLag.x,uRes.y-uLag.y)/S;",
+    " float r=max(uRad/S,.05);",
+    " float t=uTime;",
+    /* beam profiles: warm core, working beam, wide scatter halo */
+    " float d=length(p-m);",
+    " float core=exp(-d*d/(r*r*.18));",
+    " float beam=exp(-d*d/(r*r*.6));",
+    " float halo=exp(-d*d/(r*r*2.2));",
+    /* lamp flicker + occasional storm dip */
+    " float seg=floor(t*9.);",
+    " float fl=.94+.06*h1(seg);",
+    " float sw=floor(t*.125);",
+    " float storm=step(.7,h1(sw+4.7));",
+    " float sp=fract(t*.125);",
+    " fl*=1.-storm*exp(-pow((sp-.3)*20.,2.))*(.35+.4*h1(seg*1.3));",
+    /* smoke recoils away from the LAGGED beam position, so it trails the
+       light and slowly re-forms once the beam has moved on */
+    " float dl=length(p-ml);",
+    " vec2 push=((p-ml)/max(dl,1e-4))*exp(-dl*dl/(r*r*.7))*.105;",
+    /* narrow (portrait) screens: finer fog + a touch more light, or the
+       column of sky the phone sees is one featureless blob */
+    " float nar=clamp((1.2-uRes.x/uRes.y)*1.5,0.,1.);",
+    " float fs=1.+nar*.9;",
+    /* two layers of domain-warped fbm = curling depth */
+    " vec2 fp=(p-push)*2.6*fs+vec2(t*.028,t*.011);",
+    " vec2 q=vec2(fbm(fp+vec2(0.,t*.045)),fbm(fp+vec2(5.2,1.3)-vec2(t*.03,0.)));",
+    " float d1=fbm(fp+1.75*q+vec2(-t*.012,t*.021));",
+    " vec2 fp2=(p-push*1.6)*5.6*fs+vec2(-t*.055,t*.024);",
+    " float d2=fbm(fp2+.9*q);",
+    " float den=smoothstep(.34,1.04,d1*.72+d2*.55);",
+    " den*=1.-exp(-dl*dl/(r*r*.18))*.32;",
+    /* venetian blinds raking through the smoke; sometimes a car passes */
+    " float ang=1.79;",
+    " vec2 bd=vec2(cos(ang),sin(ang));",
+    " float sc=dot(p,bd)*8.5+sin(t*.06)*.4;",
+    " float stripe=smoothstep(.42,.72,abs(fract(sc)-.5)*2.);",
+    " float cw=floor(t*.055);",
+    " float gate=step(.4,h1(cw+2.3));",
+    " float cp=fract(t*.055);",
+    " float sweep=dot(p,vec2(bd.y,-bd.x));",
+    " float car=gate*exp(-pow((sweep+.8-2.9*cp)*3.,2.));",
+    " float blind=stripe*(.22+car*1.3);",
+    /* how much light reaches the fog at this point */
+    " float light=.05+beam*.9*fl+core*.35*fl+halo*.13;",
+    " light+=blind*(.12+beam*.55*fl);",
+    " light*=1.+nar*.35;",
+    " vec3 fogCol=mix(vec3(.58,.60,.65),vec3(1.,.9,.74),clamp(beam*1.3,0.,1.));",
+    " float lum=den*light;",
+    " vec3 fogRGB=fogCol*clamp(lum*1.45,0.,1.);",
+    " float fogA=clamp(lum*.85,0.,.52);",
+    " fogA*=1.-core*.5;",   // burn-through: text stays legible at the core
+    /* darkness falloff (mirrors the CSS torch) + iris vignette */
+    " float dark=.87*smoothstep(.3,1.05,d/r);",
+    " vec2 vp=(frag/uRes-.5)*vec2(uRes.x/S,1.);",
+    " float vig=smoothstep(.55,1.2,length(vp));",
+    " dark=clamp(dark+vig*.3,0.,.93);",
+    /* unlit wisps silhouette against the lit zone = smoke has a body */
+    " float dsA=den*(1.-clamp(light,0.,1.))*beam*.3;",
+    /* premultiplied compositing: shadow, dark smoke, then luminous fog */
+    " float a=dark;",
+    " a+=dsA*(1.-a);",
+    " vec3 c=fogRGB*fogA;",
+    " a=fogA+a*(1.-fogA);",
+    " c+=vec3(1.,.9,.75)*core*.028*fl;",  // faint additive lamp glow
+    " gl_FragColor=vec4(c,clamp(a,0.,1.));",
+    "}"
+  ].join("\n");
+
+  function initFog(canvas){
+    if (!canvas || !window.WebGLRenderingContext) return null;
+    var opts = {alpha:true, antialias:false, depth:false, stencil:false, premultipliedAlpha:true};
+    var gl = canvas.getContext("webgl", opts) || canvas.getContext("experimental-webgl", opts);
+    if (!gl) return null;
+    var oct = innerWidth <= 768 ? 3 : 5; // cheaper fbm on small screens
+    function sh(type, src){
+      var s = gl.createShader(type);
+      gl.shaderSource(s, src); gl.compileShader(s);
+      return gl.getShaderParameter(s, gl.COMPILE_STATUS) ? s : null;
+    }
+    var v = sh(gl.VERTEX_SHADER, "attribute vec2 aP;void main(){gl_Position=vec4(aP,0.,1.);}");
+    var f = sh(gl.FRAGMENT_SHADER, "precision highp float;\n#define OCT " + oct + "\n" + FRAG);
+    if (!v || !f) return null;
+    var pr = gl.createProgram();
+    gl.attachShader(pr, v); gl.attachShader(pr, f); gl.linkProgram(pr);
+    if (!gl.getProgramParameter(pr, gl.LINK_STATUS)) return null;
+    gl.useProgram(pr);
+    var buf = gl.createBuffer();
+    gl.bindBuffer(gl.ARRAY_BUFFER, buf);
+    gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([-1,-1, 3,-1, -1,3]), gl.STATIC_DRAW);
+    var loc = gl.getAttribLocation(pr, "aP");
+    gl.enableVertexAttribArray(loc);
+    gl.vertexAttribPointer(loc, 2, gl.FLOAT, false, 0, 0);
+    var ctx = {
+      gl: gl, canvas: canvas, dpr: 1, rad: 352,
+      U: {
+        res:   gl.getUniformLocation(pr, "uRes"),
+        time:  gl.getUniformLocation(pr, "uTime"),
+        mouse: gl.getUniformLocation(pr, "uMouse"),
+        lag:   gl.getUniformLocation(pr, "uLag"),
+        rad:   gl.getUniformLocation(pr, "uRad")
+      }
+    };
+    var rem = parseFloat(getComputedStyle(root).fontSize) || 16;
+    function size(){
+      var dpr = Math.min(window.devicePixelRatio || 1, 2); // DPR cap 2
+      ctx.dpr = dpr;
+      ctx.rad = (innerWidth <= 900 ? 16 : 22) * rem * dpr;  // tracks --torch-r
+      var w = Math.round(innerWidth * dpr), h = Math.round(innerHeight * dpr);
+      if (canvas.width !== w || canvas.height !== h){
+        canvas.width = w; canvas.height = h;
+        gl.viewport(0, 0, w, h);
+      }
+    }
+    size();
+    addEventListener("resize", size);
+    return ctx;
+  }
+
+  function drawFog(c, now, mx, my, lx, ly){
+    var gl = c.gl, U = c.U, dpr = c.dpr;
+    gl.uniform2f(U.res, c.canvas.width, c.canvas.height);
+    gl.uniform1f(U.time, (now % 6e5) / 1000);
+    gl.uniform2f(U.mouse, mx * dpr, my * dpr);
+    gl.uniform2f(U.lag, lx * dpr, ly * dpr);
+    gl.uniform1f(U.rad, c.rad);
+    gl.drawArrays(gl.TRIANGLES, 0, 3);
+  }
+
+  var fogCanvas = document.getElementById("fog");
   if (!reduced && torch){
     var tx = innerWidth/2, ty = innerHeight*0.4;
-    var mx = tx, my = ty;
-    var raf = null;
-    function tick(){
-      mx += (tx - mx) * 0.12;
-      my += (ty - my) * 0.12;
-      root.style.setProperty("--mx", mx.toFixed(1) + "px");
-      root.style.setProperty("--my", my.toFixed(1) + "px");
-      raf = requestAnimationFrame(tick);
-    }
-    if (fine){
-      addEventListener("pointermove", function(e){ tx = e.clientX; ty = e.clientY; }, {passive:true});
-      tick();
-    } else {
-      /* the hint text assumes a mouse — correct it for touch */
+    var mx = tx, my = ty, lx = tx, ly = ty;
+    var lastMove = -1e9;          // start idle: the beam wanders on its own
+    var t0 = performance.now();
+
+    addEventListener("pointermove", function(e){
+      tx = e.clientX; ty = e.clientY; lastMove = performance.now();
+    }, {passive:true});
+    addEventListener("pointerdown", function(e){
+      tx = e.clientX; ty = e.clientY; lastMove = performance.now();
+    }, {passive:true});
+
+    if (!fine){
       var hint = document.querySelector(".hero-hint");
-      if (hint) hint.textContent = "the light wanders · so should your eyes";
-      /* touch fallback: slow auto-panning spotlight */
-      var t0 = performance.now();
-      (function pan(now){
+      if (hint) hint.textContent = "drag the light · everything hides in the dark";
+    }
+
+    var glCtx = null;
+    try { glCtx = initFog(fogCanvas); } catch (err){ glCtx = null; }
+    if (glCtx){
+      root.classList.add("gl");
+      fogCanvas.addEventListener("webglcontextlost", function(e){
+        e.preventDefault();                 // fall back to the CSS torch
+        glCtx = null;
+        root.classList.remove("gl");
+      }, false);
+    }
+
+    var raf = null, pageVisible = !document.hidden, onScreen = true;
+    function frame(now){
+      raf = null;
+      if (now - lastMove > 3500){           // idle: slow lissajous pan
         var t = (now - t0) / 1000;
-        tx = innerWidth  * (0.5 + 0.38 * Math.sin(t * 0.35));
-        ty = innerHeight * (0.5 + 0.34 * Math.cos(t * 0.22));
-        mx += (tx - mx) * 0.06;
-        my += (ty - my) * 0.06;
+        tx = innerWidth  * (0.5 + 0.36*Math.sin(t*0.33) + 0.05*Math.sin(t*0.9));
+        ty = innerHeight * (0.46 + 0.30*Math.cos(t*0.21) + 0.04*Math.cos(t*0.7));
+      }
+      mx += (tx - mx) * 0.11;  my += (ty - my) * 0.11;
+      lx += (mx - lx) * 0.045; ly += (my - ly) * 0.045;
+      if (glCtx){
+        drawFog(glCtx, now, mx, my, lx, ly);
+      } else {
         root.style.setProperty("--mx", mx.toFixed(1) + "px");
         root.style.setProperty("--my", my.toFixed(1) + "px");
-        requestAnimationFrame(pan);
-      })(t0);
+      }
+      if (pageVisible && onScreen) raf = requestAnimationFrame(frame);
     }
+    function sync(){
+      var run = pageVisible && onScreen;
+      if (run && raf === null) raf = requestAnimationFrame(frame);
+      if (!run && raf !== null){ cancelAnimationFrame(raf); raf = null; }
+    }
+    document.addEventListener("visibilitychange", function(){
+      pageVisible = !document.hidden; sync();
+    });
+    if ("IntersectionObserver" in window){
+      new IntersectionObserver(function(en){
+        onScreen = en[0].isIntersecting; sync();
+      }).observe(glCtx ? fogCanvas : torch);
+    }
+    sync();
   }
 
   /* ---------- typewriter on scroll ----------

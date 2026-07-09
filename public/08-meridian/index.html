@@ -203,7 +203,20 @@ h2{
   -webkit-mask-image:linear-gradient(180deg,#000,transparent 62%);
   mask-image:linear-gradient(180deg,#000,transparent 62%);
 }
-.hero-burst{width:min(720px,88vw);height:auto;margin-bottom:clamp(-64px,-5vw,-38px);overflow:visible}
+.hero-gl{position:absolute;inset:0;width:100%;height:100%;z-index:2;pointer-events:none}
+.hero-shafts-static{
+  position:absolute;inset:0;z-index:2;pointer-events:none;display:none;
+  background:
+    linear-gradient(112deg,
+      transparent 7%,rgba(212,175,106,.14) 12%,transparent 19%,
+      transparent 27%,rgba(242,223,174,.17) 34%,transparent 43%,
+      transparent 49%,rgba(212,175,106,.11) 53%,transparent 59%,
+      transparent 67%,rgba(212,175,106,.13) 73%,transparent 81%);
+  -webkit-mask-image:linear-gradient(168deg,#000 12%,rgba(0,0,0,.5) 55%,transparent 88%);
+  mask-image:linear-gradient(168deg,#000 12%,rgba(0,0,0,.5) 55%,transparent 88%);
+}
+@media (prefers-reduced-motion:reduce){.hero-shafts-static{display:block}}
+.hero-burst{width:min(720px,88vw);height:auto;margin-bottom:clamp(-64px,-5vw,-38px);overflow:visible;position:relative;z-index:1}
 .hero .est{
   font-family:var(--display);font-size:clamp(.66rem,1.3vw,.82rem);
   letter-spacing:.52em;text-indent:.52em;color:var(--gold-dim);
@@ -493,6 +506,8 @@ footer{
 <header class="hero" id="lobby">
   <div class="hero-rays" data-px="0.28" aria-hidden="true"></div>
   <div class="hero-chevrons" data-px="0.14" aria-hidden="true"></div>
+  <canvas class="hero-gl" id="lobby-gl" aria-hidden="true"></canvas>
+  <div class="hero-shafts-static" id="lobby-shafts" aria-hidden="true"></div>
 
   <svg class="hero-burst draw" viewBox="0 0 800 400" aria-hidden="true" focusable="false">
     <!-- fan of rays -->
@@ -837,6 +852,307 @@ footer{
 })();
 </script>
 
+<script>
+/* ============ THE LOBBY LIGHT · volumetric WebGL hero ============ */
+(function(){
+  "use strict";
+  var reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+  var hero = document.getElementById("lobby");
+  var canvas = document.getElementById("lobby-gl");
+  var fallback = document.getElementById("lobby-shafts");
+  if (!hero || !canvas) return;
+
+  function showStatic(){
+    if (fallback) fallback.style.display = "block";
+    canvas.style.display = "none";
+  }
+  if (reduce) { canvas.style.display = "none"; return; } /* CSS shows the static shafts */
+
+  var gl = null;
+  try {
+    var opts = { alpha:true, antialias:false, depth:false, stencil:false, premultipliedAlpha:true, powerPreference:"low-power" };
+    gl = canvas.getContext("webgl", opts) || canvas.getContext("experimental-webgl", opts);
+  } catch (e) { gl = null; }
+  if (!gl) { showStatic(); return; }
+
+  /* ---- shared GLSL: beam-band mask (kept identical in both passes so the
+         motes glitter only where the shaft volume says there is light) ---- */
+  var GLSL_MASK =
+    "float bnd(float x,float c,float w){float d=(x-c)/w;return exp(-d*d);}\n" +
+    "float shaftMask(float p,float m){return bnd(p,-0.50,0.026*m)*0.75+bnd(p,-0.18,0.052*m)+bnd(p,0.14,0.021*m)*0.6+bnd(p,0.48,0.040*m)*0.85;}\n";
+  var GLSL_NOISE =
+    "float hash(vec2 p){p=fract(p*vec2(234.34,435.345));p+=dot(p,p+34.23);return fract(p.x*p.y);}\n" +
+    "float vnoise(vec2 p){vec2 i=floor(p),f=fract(p);vec2 u=f*f*(3.0-2.0*f);return mix(mix(hash(i),hash(i+vec2(1.0,0.0)),u.x),mix(hash(i+vec2(0.0,1.0)),hash(i+vec2(1.0,1.0)),u.x),u.y);}\n" +
+    "float fbm(vec2 p){float v=0.0,a=0.5;for(int i=0;i<4;i++){v+=a*vnoise(p);p=p*2.03+11.7;a*=0.5;}return v;}\n";
+
+  var VS_QUAD =
+    "attribute vec2 a;varying vec2 v_uv;void main(){v_uv=a*0.5+0.5;gl_Position=vec4(a,0.0,1.0);}";
+
+  var FS_SHAFT =
+    "precision highp float;\n" +
+    "uniform vec2 u_res;uniform float u_time;uniform vec2 u_cam;varying vec2 v_uv;\n" +
+    GLSL_NOISE + GLSL_MASK +
+    "void main(){\n" +
+    "  float aspect=u_res.x/u_res.y;\n" +
+    "  vec2 q=vec2(v_uv.x*aspect,1.0-v_uv.y);\n" +               /* y grows downward, like the light falls */
+    "  vec2 A=normalize(vec2(0.42,1.0));vec2 P=vec2(A.y,-A.x);\n" +
+    "  float pc=dot(vec2(aspect*0.5,0.5),P);\n" +
+    "  float along=dot(q,A);\n" +
+    "  float perp0=dot(q,P)-pc;\n" +
+    "  float fade=1.0-smoothstep(0.10,1.75,along);\n" +
+    "  float shaft=0.0;\n" +
+    "  for(int l=0;l<3;l++){\n" +                                 /* crisp core + two widening halo layers */
+    "    float fl=float(l);\n" +
+    "    float perp=perp0-u_cam.x*(0.035+0.05*fl)-u_cam.y*0.02*fl;\n" +
+    "    float dens=0.40+0.80*fbm(vec2(perp*16.0+fl*19.0,along*1.4-u_time*(0.022+0.012*fl)));\n" +
+    "    shaft+=shaftMask(perp,1.0+1.55*fl*fl*0.62+1.2*fl)*dens*(0.55-0.19*fl);\n" +
+    "  }\n" +
+    "  shaft*=fade;\n" +
+    "  vec2 g=(q-vec2(aspect*0.5,0.60))/vec2(0.80,0.30);\n" +     /* keep the title legible: dim light behind it */
+    "  float guard=1.0-0.55*exp(-dot(g,g));\n" +
+    "  shaft*=guard;\n" +
+    "  vec2 c=vec2(aspect*0.5-u_cam.x*0.10,1.16-u_cam.y*0.06);\n" + /* deco sunburst deep in the scene */
+    "  vec2 dv=q-c;float r=length(dv);\n" +
+    "  float ang=atan(dv.x,-dv.y);\n" +
+    "  float sun=(pow(abs(cos(ang*11.0)),18.0)*0.65+pow(abs(cos(ang*4.5+0.4)),30.0)*0.5)\n" +
+    "    *smoothstep(1.25,0.30,r)*smoothstep(0.10,0.42,r);\n" +
+    "  float haze=fbm(q*2.4+vec2(u_time*0.012,-u_time*0.007))*fade*guard;\n" +
+    "  vec3 gold=vec3(0.780,0.615,0.330);\n" +                   /* deep leaf gold */
+    "  vec3 pale=vec3(0.949,0.875,0.682);\n" +                   /* #F2DFAE */
+    "  vec3 col=mix(gold,pale,clamp(shaft*0.45,0.0,1.0))*shaft*0.55;\n" +
+    "  col+=gold*sun*0.10;\n" +
+    "  col+=pale*haze*0.035;\n" +
+    "  col+=vec3(hash(gl_FragCoord.xy+fract(u_time))-0.5)*0.008;\n" + /* dither against banding */
+    "  gl_FragColor=vec4(max(col,vec3(0.0)),0.0);\n" +           /* alpha 0 + premultiplied = additive light */
+    "}";
+
+  var VS_DUST =
+    "attribute vec2 a_p;attribute vec2 a_d;\n" +
+    "uniform vec2 u_res;uniform float u_time;uniform vec2 u_cam;\n" +
+    "varying float v_i;varying float v_b;\n" +
+    GLSL_MASK +
+    "void main(){\n" +
+    "  float z=a_d.x,seed=a_d.y;\n" +
+    "  float aspect=u_res.x/u_res.y;\n" +
+    "  vec2 uv=a_p+u_cam*vec2(0.04+0.14*z,0.02+0.10*z);\n" +      /* nearer motes parallax more */
+    "  vec2 q=vec2(uv.x*aspect,uv.y);\n" +
+    "  vec2 A=normalize(vec2(0.42,1.0));vec2 P=vec2(A.y,-A.x);\n" +
+    "  float pc=dot(vec2(aspect*0.5,0.5),P);\n" +
+    "  float perp=dot(q,P)-pc-u_cam.x*0.05;\n" +
+    "  float along=dot(q,A);\n" +
+    "  float m=shaftMask(perp,1.7);\n" +
+    "  float fade=1.0-smoothstep(0.10,1.75,along);\n" +
+    "  float tw=0.6+0.4*sin(u_time*(0.5+seed*1.3)+seed*43.0);\n" +
+    "  v_i=(0.028+min(m,1.35)*fade)*tw;\n" +                      /* lit only inside the beams */
+    "  v_b=clamp(abs(z-0.60)*1.8,0.0,1.0);\n" +                   /* depth-of-field blur factor */
+    "  gl_PointSize=(1.2+6.5*z*z)*(u_res.y/700.0);\n" +
+    "  gl_Position=vec4(uv.x*2.0-1.0,1.0-uv.y*2.0,0.0,1.0);\n" +
+    "}";
+
+  var FS_DUST =
+    "precision mediump float;\n" +
+    "varying float v_i;varying float v_b;\n" +
+    "void main(){\n" +
+    "  vec2 d=gl_PointCoord-0.5;float r=length(d);\n" +
+    "  float sig=mix(0.15,0.32,v_b);\n" +
+    "  float a=exp(-r*r/(2.0*sig*sig))*smoothstep(0.5,0.30,r);\n" +
+    "  float i=v_i*a*0.95;\n" +
+    "  vec3 col=mix(vec3(0.831,0.686,0.416),vec3(0.97,0.90,0.70),clamp(v_i*0.45,0.0,1.0))*i;\n" +
+    "  gl_FragColor=vec4(col,0.0);\n" +
+    "}";
+
+  function compile(type, src){
+    var s = gl.createShader(type);
+    gl.shaderSource(s, src); gl.compileShader(s);
+    if (!gl.getShaderParameter(s, gl.COMPILE_STATUS)) { gl.deleteShader(s); return null; }
+    return s;
+  }
+  function program(vsSrc, fsSrc){
+    var vs = compile(gl.VERTEX_SHADER, vsSrc), fs = compile(gl.FRAGMENT_SHADER, fsSrc);
+    if (!vs || !fs) return null;
+    var p = gl.createProgram();
+    gl.attachShader(p, vs); gl.attachShader(p, fs); gl.linkProgram(p);
+    if (!gl.getProgramParameter(p, gl.LINK_STATUS)) return null;
+    return p;
+  }
+
+  var shaftProg = program(VS_QUAD, FS_SHAFT);
+  var dustProg  = program(VS_DUST, FS_DUST);
+  if (!shaftProg || !dustProg) { showStatic(); return; }
+
+  var uS = {
+    res: gl.getUniformLocation(shaftProg, "u_res"),
+    time: gl.getUniformLocation(shaftProg, "u_time"),
+    cam: gl.getUniformLocation(shaftProg, "u_cam"),
+    a: gl.getAttribLocation(shaftProg, "a")
+  };
+  var uD = {
+    res: gl.getUniformLocation(dustProg, "u_res"),
+    time: gl.getUniformLocation(dustProg, "u_time"),
+    cam: gl.getUniformLocation(dustProg, "u_cam"),
+    p: gl.getAttribLocation(dustProg, "a_p"),
+    d: gl.getAttribLocation(dustProg, "a_d")
+  };
+
+  /* ---- geometry ---- */
+  var quadBuf = gl.createBuffer();
+  gl.bindBuffer(gl.ARRAY_BUFFER, quadBuf);
+  gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([-1,-1, 1,-1, -1,1, 1,1]), gl.STATIC_DRAW);
+
+  var N = (window.innerWidth <= 768) ? 900 : 2400;   /* fewer motes on small screens */
+  var pos = new Float32Array(N * 2);                  /* uv-space positions, simulated on CPU */
+  var dat = new Float32Array(N * 2);                  /* z (depth 0..1), seed */
+  var ox = new Float32Array(N), oy = new Float32Array(N); /* pointer-swirl velocity offsets */
+  for (var i = 0; i < N; i++) {
+    pos[i*2]   = Math.random() * 1.12 - 0.06;
+    pos[i*2+1] = Math.random() * 1.12 - 0.06;
+    dat[i*2]   = Math.random();
+    dat[i*2+1] = Math.random();
+  }
+  var posBuf = gl.createBuffer();
+  gl.bindBuffer(gl.ARRAY_BUFFER, posBuf);
+  gl.bufferData(gl.ARRAY_BUFFER, pos, gl.DYNAMIC_DRAW);
+  var datBuf = gl.createBuffer();
+  gl.bindBuffer(gl.ARRAY_BUFFER, datBuf);
+  gl.bufferData(gl.ARRAY_BUFFER, dat, gl.STATIC_DRAW);
+
+  gl.disable(gl.DEPTH_TEST);
+  gl.enable(gl.BLEND);
+  gl.blendFunc(gl.ONE, gl.ONE);                       /* pure additive: light on light */
+  gl.clearColor(0, 0, 0, 0);
+
+  /* ---- state ---- */
+  var DPR = Math.min(window.devicePixelRatio || 1, 2);
+  var dead = false, visible = true, inView = true, raf = 0;
+  var lastT = 0, scrollP = 0;
+  var mx = 0.5, my = 0.5, pActive = false, pSpeed = 0, lpx = 0, lpy = 0, lpt = 0;
+  var cam = { x: 0, y: 0 };
+
+  function resize(){
+    var w = hero.clientWidth, h = hero.clientHeight;
+    canvas.width  = Math.max(1, Math.round(w * DPR));
+    canvas.height = Math.max(1, Math.round(h * DPR));
+    gl.viewport(0, 0, canvas.width, canvas.height);
+  }
+  resize();
+  window.addEventListener("resize", function(){ resize(); kick(); }, { passive: true });
+
+  window.addEventListener("scroll", function(){
+    scrollP = Math.max(0, Math.min(1.2, window.scrollY / Math.max(1, hero.offsetHeight)));
+  }, { passive: true });
+
+  hero.addEventListener("pointermove", function(ev){
+    var r = canvas.getBoundingClientRect();
+    if (r.width < 2 || r.height < 2) return;
+    var x = (ev.clientX - r.left) / r.width, y = (ev.clientY - r.top) / r.height;
+    var t = performance.now();
+    if (lpt) {
+      var dt = Math.max(8, t - lpt) / 1000;
+      var v = Math.sqrt((x-lpx)*(x-lpx) + (y-lpy)*(y-lpy)) / dt;
+      pSpeed = Math.min(3, pSpeed * 0.7 + v * 0.3);
+    }
+    lpx = x; lpy = y; lpt = t;
+    mx = x; my = y; pActive = true;
+  }, { passive: true });
+  hero.addEventListener("pointerleave", function(){ pActive = false; }, { passive: true });
+
+  var AX = 0.38724, AY = 0.92198;                     /* beam direction, matches the shaders */
+  function step(dt, t){
+    var aspect = canvas.width / Math.max(1, canvas.height);
+    var damp = Math.exp(-3.0 * dt);
+    var R = 0.17, R2 = R * R;
+    var spd = 0.25 + Math.min(3, pSpeed) * 0.9;
+    for (var i = 0; i < N; i++) {
+      var ix = i * 2;
+      var px = pos[ix], py = pos[ix+1];
+      var z = dat[ix], seed = dat[ix+1];
+      var drift = 0.012 * (0.35 + 0.65 * z);
+      var vx = AX * drift + 0.007 * Math.sin(t * 0.26 + seed * 21.0 + py * 6.0);
+      var vy = AY * drift + 0.005 * Math.cos(t * 0.21 + seed * 13.0 + px * 5.0);
+      if (pActive) {
+        var dx = (px - mx) * aspect, dy = py - my;
+        var d2 = dx*dx + dy*dy;
+        if (d2 < R2 && d2 > 1e-6) {
+          var d = Math.sqrt(d2), f = (1 - d / R) * spd * dt;
+          ox[i] += (-dy / d) * f * 2.4 + (dx / d) * f * 1.4;   /* swirl + gentle push */
+          oy[i] += ( dx / d) * f * 2.4 + (dy / d) * f * 1.4;
+        }
+      }
+      ox[i] *= damp; oy[i] *= damp;                    /* motes resettle */
+      px += (vx + ox[i]) * dt; py += (vy + oy[i]) * dt;
+      if (px > 1.06) px -= 1.12; else if (px < -0.06) px += 1.12;
+      if (py > 1.06) py -= 1.12; else if (py < -0.06) py += 1.12;
+      pos[ix] = px; pos[ix+1] = py;
+    }
+    pSpeed *= Math.exp(-2.5 * dt);
+    gl.bindBuffer(gl.ARRAY_BUFFER, posBuf);
+    gl.bufferSubData(gl.ARRAY_BUFFER, 0, pos);
+  }
+
+  function render(t){
+    var camTX = (pActive ? (mx - 0.5) : 0) * 0.5;
+    var camTY = scrollP * 0.9;
+    cam.x += (camTX - cam.x) * 0.045;
+    cam.y += (camTY - cam.y) * 0.08;
+
+    gl.clear(gl.COLOR_BUFFER_BIT);
+
+    gl.useProgram(shaftProg);
+    gl.bindBuffer(gl.ARRAY_BUFFER, quadBuf);
+    gl.enableVertexAttribArray(uS.a);
+    gl.vertexAttribPointer(uS.a, 2, gl.FLOAT, false, 0, 0);
+    gl.uniform2f(uS.res, canvas.width, canvas.height);
+    gl.uniform1f(uS.time, t);
+    gl.uniform2f(uS.cam, cam.x, cam.y);
+    gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
+    gl.disableVertexAttribArray(uS.a);
+
+    gl.useProgram(dustProg);
+    gl.bindBuffer(gl.ARRAY_BUFFER, posBuf);
+    gl.enableVertexAttribArray(uD.p);
+    gl.vertexAttribPointer(uD.p, 2, gl.FLOAT, false, 0, 0);
+    gl.bindBuffer(gl.ARRAY_BUFFER, datBuf);
+    gl.enableVertexAttribArray(uD.d);
+    gl.vertexAttribPointer(uD.d, 2, gl.FLOAT, false, 0, 0);
+    gl.uniform2f(uD.res, canvas.width, canvas.height);
+    gl.uniform1f(uD.time, t);
+    gl.uniform2f(uD.cam, cam.x, cam.y);
+    gl.drawArrays(gl.POINTS, 0, N);
+    gl.disableVertexAttribArray(uD.p);
+    gl.disableVertexAttribArray(uD.d);
+  }
+
+  function active(){ return !dead && visible && inView; }
+  function frame(ts){
+    raf = 0;
+    if (!active()) return;
+    var t = ts * 0.001;
+    var dt = lastT ? Math.min(0.033, t - lastT) : 0.016;
+    lastT = t;
+    step(dt, t);
+    render(t);
+    raf = requestAnimationFrame(frame);
+  }
+  function kick(){ if (!raf && active()) { lastT = 0; raf = requestAnimationFrame(frame); } }
+
+  if ("IntersectionObserver" in window) {
+    new IntersectionObserver(function(entries){
+      inView = entries[0].isIntersecting;
+      kick();                                          /* pause when the lobby scrolls away */
+    }, { threshold: 0 }).observe(hero);
+  }
+  document.addEventListener("visibilitychange", function(){
+    visible = document.visibilityState !== "hidden";
+    kick();
+  });
+  canvas.addEventListener("webglcontextlost", function(ev){
+    ev.preventDefault(); dead = true; showStatic();
+  });
+
+  kick();
+})();
+</script>
+
 <!-- PASS 1 (structure & typography):
      1. Added letter-spacing compensation (text-indent equal to tracking) on all centered
         Poiret One headings so they sit optically centered instead of drifting left.
@@ -873,5 +1189,12 @@ footer{
      4. Card shimmer rebuilt as masked 1px gradient border with BOTH -webkit-mask-
         composite:xor and standard mask-composite:exclude, so the gold hairline sweeps
         on hover in Firefox as well as Chromium/WebKit. -->
+<!-- PASS 4 (the lobby light, WebGL): raw-WebGL hero atmosphere — three depth layers of
+     diagonal volumetric shafts (shared band-mask GLSL + fbm density) with a faint deco
+     sunburst parallaxing in the scene depth, ~2400 CPU-simulated gold motes (900 ≤768px)
+     lit only inside the shaft volume with depth-of-field point sprites, pointer swirl
+     that resettles, scroll/mouse camera drift, additive premultiplied compositing over
+     the CSS hero; DPR capped at 2, rAF paused offscreen/hidden, static CSS shafts under
+     prefers-reduced-motion and whenever WebGL is unavailable or the context is lost. -->
 </body>
 </html>

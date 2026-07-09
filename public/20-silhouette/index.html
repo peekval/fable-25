@@ -18,6 +18,7 @@
           is unsupported (they were transparent+stroke only); html background set to carbon +
           theme-color meta for clean overscroll; mobile hero retuned to clamp(64px,22vw,120px)
           and look bodies widened to full width at 390px.
+  PASS 4: living-cloth centerpiece — three.js r147 hero banner: carbon silk plane displaced by layered curl-noise wind in the vertex shader (pinned at the rail, frayed swinging hem), silk shading (wrap diffuse + crease AO + anisotropic sheen + bone rim), AB–SENCE texture-projected onto the cloth so the type warps with the folds; pointer brushes the fabric and spawns slow travelling ripples (touch too); second quieter gauze band drifts behind the atelier note; DPR capped 2, rAF paused offscreen/hidden, fewer segments ≤768px; no-WebGL keeps the static hero, reduced-motion renders one draped frame with no loop.
 -->
 <meta name="description" content="SILHOUETTE presents ABSENCE, Autumn/Winter 2026. A lookbook without photographs — eight looks cut from typography and negative space.">
 <meta name="theme-color" content="#161616">
@@ -127,6 +128,15 @@ a:focus-visible,button:focus-visible,[tabindex]:focus-visible{outline:2px solid 
   from{transform:rotate(-1.6deg)}
   to{transform:rotate(1.8deg)}
 }
+
+/* ---------- living cloth (WebGL) ---------- */
+.cloth-canvas{position:absolute;inset:0;width:100%;height:100%;display:block;pointer-events:none}
+.hero .cloth-canvas{z-index:1}
+.hero-title,.hero-sil{transition:opacity .6s ease}
+.cloth-live .hero-title{opacity:0}
+.cloth-live .hero-sil{opacity:.14}
+.atelier .cloth-canvas{z-index:0}
+.atelier>div{position:relative;z-index:1}
 
 /* ---------- marquee ---------- */
 .marquee{
@@ -318,6 +328,8 @@ a:focus-visible,button:focus-visible,[tabindex]:focus-visible{outline:2px solid 
     <path d="M100 30 C110 58 96 84 108 128 C120 176 144 224 112 278" stroke="var(--rust)" stroke-width="1" opacity=".7"/>
   </svg>
 
+  <canvas class="cloth-canvas" id="clothHero" aria-hidden="true"></canvas>
+
   <h1 class="hero-title">
     <span class="tight">AB&#8211;</span>
     <span class="tight"><em>SENCE</em></span>
@@ -503,6 +515,7 @@ a:focus-visible,button:focus-visible,[tabindex]:focus-visible{outline:2px solid 
 
 <!-- ============ ATELIER NOTE ============ -->
 <section class="atelier">
+  <canvas class="cloth-canvas" id="clothGauze" aria-hidden="true"></canvas>
   <div>
     <span class="label">Note from the atelier</span>
   </div>
@@ -593,6 +606,419 @@ a:focus-visible,button:focus-visible,[tabindex]:focus-visible{outline:2px solid 
   } else {
     document.querySelectorAll('.reveal').forEach(function(el){ el.classList.add('in'); });
   }
+})();
+</script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/0.147.0/three.min.js"></script>
+<script>
+/* ============ LIVING CLOTH ============ */
+(function(){
+'use strict';
+if (typeof THREE === 'undefined') return;                     /* CDN missing -> static hero */
+var reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
+var small  = matchMedia('(max-width: 768px)');
+var hero = document.querySelector('.hero');
+var atelier = document.querySelector('.atelier');
+var heroCanvas = document.getElementById('clothHero');
+var gauzeCanvas = document.getElementById('clothGauze');
+if (!hero || !heroCanvas) return;
+
+function makeRenderer(canvas){
+  try{
+    var r = new THREE.WebGLRenderer({canvas:canvas, antialias:true, alpha:true, powerPreference:'high-performance'});
+    r.setClearColor(0x000000, 0);
+    return r;
+  }catch(e){ return null; }
+}
+var rHero = makeRenderer(heroCanvas);
+if (!rHero) return;                                           /* no WebGL -> static hero */
+var rGauze = gauzeCanvas ? makeRenderer(gauzeCanvas) : null;
+
+/* ---------- shaders ---------- */
+var NOISE = [
+'vec3 mod289(vec3 x){return x - floor(x*(1.0/289.0))*289.0;}',
+'vec4 mod289(vec4 x){return x - floor(x*(1.0/289.0))*289.0;}',
+'vec4 permute(vec4 x){return mod289(((x*34.0)+1.0)*x);}',
+'vec4 taylorInvSqrt(vec4 r){return 1.79284291400159 - 0.85373472095314*r;}',
+'float snoise(vec3 v){',
+'  const vec2 C = vec2(1.0/6.0, 1.0/3.0);',
+'  const vec4 D = vec4(0.0, 0.5, 1.0, 2.0);',
+'  vec3 i  = floor(v + dot(v, C.yyy));',
+'  vec3 x0 = v - i + dot(i, C.xxx);',
+'  vec3 g = step(x0.yzx, x0.xyz);',
+'  vec3 l = 1.0 - g;',
+'  vec3 i1 = min(g.xyz, l.zxy);',
+'  vec3 i2 = max(g.xyz, l.zxy);',
+'  vec3 x1 = x0 - i1 + C.xxx;',
+'  vec3 x2 = x0 - i2 + C.yyy;',
+'  vec3 x3 = x0 - D.yyy;',
+'  i = mod289(i);',
+'  vec4 p = permute(permute(permute(i.z + vec4(0.0, i1.z, i2.z, 1.0)) + i.y + vec4(0.0, i1.y, i2.y, 1.0)) + i.x + vec4(0.0, i1.x, i2.x, 1.0));',
+'  float n_ = 0.142857142857;',
+'  vec3 ns = n_ * D.wyz - D.xzx;',
+'  vec4 j = p - 49.0 * floor(p * ns.z * ns.z);',
+'  vec4 x_ = floor(j * ns.z);',
+'  vec4 y_ = floor(j - 7.0 * x_);',
+'  vec4 x = x_ * ns.x + ns.yyyy;',
+'  vec4 y = y_ * ns.x + ns.yyyy;',
+'  vec4 h = 1.0 - abs(x) - abs(y);',
+'  vec4 b0 = vec4(x.xy, y.xy);',
+'  vec4 b1 = vec4(x.zw, y.zw);',
+'  vec4 s0 = floor(b0)*2.0 + 1.0;',
+'  vec4 s1 = floor(b1)*2.0 + 1.0;',
+'  vec4 sh = -step(h, vec4(0.0));',
+'  vec4 a0 = b0.xzyw + s0.xzyw*sh.xxyy;',
+'  vec4 a1 = b1.xzyw + s1.xzyw*sh.zzww;',
+'  vec3 p0 = vec3(a0.xy, h.x);',
+'  vec3 p1 = vec3(a0.zw, h.y);',
+'  vec3 p2 = vec3(a1.xy, h.z);',
+'  vec3 p3 = vec3(a1.zw, h.w);',
+'  vec4 norm = taylorInvSqrt(vec4(dot(p0,p0), dot(p1,p1), dot(p2,p2), dot(p3,p3)));',
+'  p0 *= norm.x; p1 *= norm.y; p2 *= norm.z; p3 *= norm.w;',
+'  vec4 m = max(0.6 - vec4(dot(x0,x0), dot(x1,x1), dot(x2,x2), dot(x3,x3)), 0.0);',
+'  m = m * m;',
+'  return 42.0 * dot(m*m, vec4(dot(p0,x0), dot(p1,x1), dot(p2,x2), dot(p3,x3)));',
+'}'].join('\n');
+
+var VERT = NOISE + '\n' + [
+'uniform float uTime;',
+'uniform vec2 uSize;',
+'uniform float uAmp;',
+'uniform float uAspect;',
+'uniform float uPin;',
+'uniform vec2 uPointer;',
+'uniform float uPush;',
+'uniform vec4 uRipples[6];',
+'varying vec2 vUv;',
+'varying vec3 vNormal;',
+'varying vec3 vViewDir;',
+'varying float vDisp;',
+'float cloth(vec2 uv, float t){',
+'  float hang = smoothstep(0.0, 0.30, 1.0 - uv.y);',
+'  float pin = mix(1.0, hang, uPin);',
+'  vec2 p = vec2(uv.x * uAspect, uv.y);',
+'  float e = 0.07;',
+'  float ps  = snoise(vec3(p * 1.5 + vec2(0.0, t*0.05), t*0.09));',
+'  float psx = snoise(vec3((p + vec2(e, 0.0)) * 1.5 + vec2(0.0, t*0.05), t*0.09));',
+'  float psy = snoise(vec3((p + vec2(0.0, e)) * 1.5 + vec2(0.0, t*0.05), t*0.09));',
+'  vec2 curl = vec2(psy - ps, ps - psx) / e;',
+'  vec2 q = p + curl * 0.10;',
+'  float f = 0.0;',
+'  f += 0.68 * snoise(vec3(q.x * 2.2, q.y * 1.15, t*0.10));',
+'  f += 0.24 * snoise(vec3(q.x * 4.6 + 7.31, q.y * 2.6, t*0.18));',
+'  f += 0.07 * snoise(vec3(q.x * 9.0 + 3.7, q.y * 5.5, t*0.35));',
+'  f += 0.45 * uPin * (1.0-uv.y)*(1.0-uv.y) * snoise(vec3(uv.x*1.3 + 5.0, t*0.09, 2.7));',
+'  f *= pin;',
+'  vec2 d = uv - uPointer; d.x *= uAspect;',
+'  float r2 = dot(d,d);',
+'  f -= uPush * exp(-r2 * 38.0) * pin;',
+'  for(int i=0;i<6;i++){',
+'    vec4 rp = uRipples[i];',
+'    float age = t - rp.z;',
+'    if(rp.w > 0.001 && age > 0.0 && age < 7.0){',
+'      vec2 dd = uv - rp.xy; dd.x *= uAspect;',
+'      float rr = length(dd);',
+'      float front = rr - age * 0.20;',
+'      f += rp.w * exp(-age * 0.70) * exp(-front*front*90.0) * sin(front * 24.0 - age*3.0) * pin;',
+'    }',
+'  }',
+'  return f;',
+'}',
+'void main(){',
+'  vUv = uv;',
+'  float t = uTime;',
+'  float e = 0.014;',
+'  float h0 = cloth(uv, t);',
+'  float hx = cloth(uv + vec2(e, 0.0), t);',
+'  float hy = cloth(uv + vec2(0.0, e), t);',
+'  vec3 pos = position;',
+'  pos.z += h0 * uAmp;',
+'  pos.x -= (hx - h0) * uAmp * 0.35;',
+'  pos.y -= (hy - h0) * uAmp * 0.20;',
+'  vec3 dx = vec3(uSize.x * e, 0.0, (hx - h0) * uAmp);',
+'  vec3 dy = vec3(0.0, uSize.y * e, (hy - h0) * uAmp);',
+'  vNormal = normalize(normalMatrix * normalize(cross(dx, dy)));',
+'  vDisp = h0;',
+'  vec4 mv = modelViewMatrix * vec4(pos, 1.0);',
+'  vViewDir = normalize(-mv.xyz);',
+'  gl_Position = projectionMatrix * mv;',
+'}'].join('\n');
+
+var FRAG_BANNER = [
+'precision highp float;',
+'uniform sampler2D uType;',
+'uniform float uHasType;',
+'uniform vec3 uBase;',
+'uniform vec3 uBone;',
+'varying vec2 vUv;',
+'varying vec3 vNormal;',
+'varying vec3 vViewDir;',
+'varying float vDisp;',
+'void main(){',
+'  vec3 N = normalize(vNormal);',
+'  vec3 V = normalize(vViewDir);',
+'  if (dot(N, V) < 0.0) N = -N;',
+'  vec3 L = normalize(vec3(-0.42, 0.50, 0.75));',
+'  float wrap = clamp(dot(N, L)*0.55 + 0.45, 0.0, 1.0);',
+'  float ao = 0.45 + 0.55 * smoothstep(-1.2, 0.8, vDisp);',
+'  float crease = 1.0 - 0.38 * pow(1.0 - abs(N.z), 1.6);',
+'  vec3 T = normalize(cross(N, vec3(1.0, 0.0, 0.0)));',
+'  vec3 H = normalize(L + V);',
+'  float th = dot(T, H);',
+'  float sheen = pow(max(1.0 - th*th, 0.0), 34.0) * (0.30 + 0.70*wrap);',
+'  float rim = pow(1.0 - abs(dot(N, V)), 3.5);',
+'  float weave = 0.975 + 0.012*sin(vUv.x*900.0) + 0.008*sin(vUv.y*700.0);',
+'  vec3 col = uBase * (0.35 + 1.05 * wrap) * ao * crease * weave;',
+'  col += uBone * sheen * 0.22;',
+'  col += uBone * rim * 0.13;',
+'  vec4 ty = texture2D(uType, vUv);',
+'  vec3 tcol = ty.rgb * (0.48 + 0.62 * wrap) * (0.6 + 0.4*ao) * crease + uBone * sheen * 0.16;',
+'  col = mix(col, tcol, ty.a * uHasType);',
+'  float fray = 0.028 + 0.02 * (0.5 + 0.5*sin(vUv.x*57.0) * sin(vUv.x*23.0 + 1.7));',
+'  float hem = smoothstep(0.0, fray, vUv.y);',
+'  float side = smoothstep(0.0, 0.004, vUv.x) * smoothstep(0.0, 0.004, 1.0 - vUv.x);',
+'  gl_FragColor = vec4(col, hem * side);',
+'}'].join('\n');
+
+var FRAG_GAUZE = [
+'precision highp float;',
+'uniform vec3 uBase;',
+'uniform vec3 uBone;',
+'uniform float uOpacity;',
+'varying vec2 vUv;',
+'varying vec3 vNormal;',
+'varying vec3 vViewDir;',
+'varying float vDisp;',
+'void main(){',
+'  vec3 N = normalize(vNormal);',
+'  vec3 L = normalize(vec3(-0.42, 0.50, 0.75));',
+'  float wrap = clamp(dot(N, L)*0.5 + 0.5, 0.0, 1.0);',
+'  float fold = 1.0 - abs(N.z);',
+'  float grid = 0.82 + 0.18 * sin(vUv.x*620.0) * sin(vUv.y*240.0);',
+'  float edge = smoothstep(0.0, 0.12, vUv.y) * smoothstep(0.0, 0.12, 1.0 - vUv.y)',
+'             * smoothstep(0.0, 0.05, vUv.x) * smoothstep(0.0, 0.05, 1.0 - vUv.x);',
+'  vec3 col = mix(uBase, uBone, 0.22 + 0.20*wrap);',
+'  float a = (0.035 + 0.85 * fold * fold + 0.06*(1.0 - wrap)) * grid * edge * uOpacity;',
+'  gl_FragColor = vec4(col, clamp(a, 0.0, 0.40));',
+'}'].join('\n');
+
+/* ---------- type texture (AB–SENCE woven into the cloth) ---------- */
+var typeCanvas = document.createElement('canvas');
+var typeTex = new THREE.CanvasTexture(typeCanvas);
+typeTex.anisotropy = rHero.capabilities.getMaxAnisotropy();
+function drawType(aspect){
+  var W = 1024, H = Math.max(512, Math.min(2048, Math.round(W / aspect)));
+  typeCanvas.width = W; typeCanvas.height = H;
+  var x = typeCanvas.getContext('2d');
+  if (!x) return;
+  x.clearRect(0, 0, W, H);
+  x.textAlign = 'center';
+  x.textBaseline = 'alphabetic';
+  function serif(px){ return 'italic 500 ' + Math.round(px) + 'px "Bodoni Moda", Didot, "Bodoni MT", serif'; }
+  var fs = 200;
+  x.font = serif(fs);
+  var wSence = Math.max(x.measureText('SENCE').width, 1);
+  fs = fs * (W * 0.82) / wSence;
+  x.font = serif(fs);
+  var lh = fs * 0.86;
+  var y1 = H * 0.46;
+  x.fillStyle = '#EDEAE4';
+  x.fillText('AB–', W * 0.5, y1);
+  x.fillStyle = '#B04A2F';
+  x.fillText('SENCE', W * 0.5, y1 + lh);
+  x.fillStyle = 'rgba(237,234,228,0.72)';
+  try { x.letterSpacing = Math.round(fs * 0.02) + 'px'; } catch(e){}
+  x.font = '500 ' + Math.max(18, Math.round(fs * 0.085)) + 'px "Archivo Narrow", Arial, sans-serif';
+  x.fillText('AUTUMN — WINTER 2026 · PARIS', W * 0.5, y1 + lh + fs * 0.42);
+  try { x.letterSpacing = '0px'; } catch(e){}
+  typeTex.needsUpdate = true;
+}
+
+/* ---------- scene factory ---------- */
+function makeRipples(){
+  var a = [];
+  for (var i = 0; i < 6; i++) a.push(new THREE.Vector4(0, 0, -1000, 0));
+  return a;
+}
+function makePiece(renderer, frag, pin, extra){
+  var sc = new THREE.Scene();
+  var cam = new THREE.PerspectiveCamera(2 * Math.atan(1 / 2.2) * 180 / Math.PI, 1, 0.1, 10);
+  cam.position.z = 2.2;
+  var uniforms = {
+    uTime:   {value: 0},
+    uSize:   {value: new THREE.Vector2(1, 1)},
+    uAmp:    {value: 0.1},
+    uAspect: {value: 1},
+    uPin:    {value: pin},
+    uPointer:{value: new THREE.Vector2(-10, -10)},
+    uPush:   {value: 0},
+    uRipples:{value: makeRipples()},
+    uBase:   {value: new THREE.Color(0x161616)},
+    uBone:   {value: new THREE.Color(0xEDEAE4)}
+  };
+  for (var k in extra) uniforms[k] = extra[k];
+  var mat = new THREE.ShaderMaterial({
+    vertexShader: VERT, fragmentShader: frag, uniforms: uniforms,
+    transparent: true, side: THREE.DoubleSide, depthWrite: false
+  });
+  var mesh = new THREE.Mesh(new THREE.PlaneGeometry(1, 1, 2, 2), mat);
+  sc.add(mesh);
+  return {sc: sc, cam: cam, mesh: mesh, u: uniforms, renderer: renderer, world: null};
+}
+var Hh = makePiece(rHero, FRAG_BANNER, 1, {uType: {value: typeTex}, uHasType: {value: 1}});
+var Gg = rGauze && atelier ? makePiece(rGauze, FRAG_GAUZE, 0, {uOpacity: {value: 0.55}}) : null;
+
+var DPR = Math.min(window.devicePixelRatio || 1, 2);
+
+function sizeHero(){
+  var w = hero.clientWidth, h = hero.clientHeight;
+  if (!w || !h) return;
+  rHero.setPixelRatio(DPR);
+  rHero.setSize(w, h, false);
+  Hh.cam.aspect = w / h;
+  Hh.cam.updateProjectionMatrix();
+  var worldH = 2, worldW = worldH * w / h;
+  var bh = worldH * (small.matches ? 0.64 : 0.72);
+  var bw = small.matches ? Math.min(worldW * 0.86, bh * 0.72)
+                         : Math.min(worldW * 0.50, bh * 0.62);
+  var sx = small.matches ? 88 : 140, sy = small.matches ? 128 : 200;
+  Hh.mesh.geometry.dispose();
+  Hh.mesh.geometry = new THREE.PlaneGeometry(bw, bh, sx, sy);
+  var py = worldH / 2 - worldH * (small.matches ? 0.10 : 0.115) - bh / 2;
+  Hh.mesh.position.set(0, py, 0);
+  Hh.u.uSize.value.set(bw, bh);
+  Hh.u.uAspect.value = bw / bh;
+  Hh.u.uAmp.value = bh * 0.072;
+  Hh.world = {worldW: worldW, worldH: worldH, bw: bw, bh: bh, x: 0, y: py};
+  drawType(bw / bh);
+}
+function sizeGauze(){
+  if (!Gg) return;
+  var w = atelier.clientWidth, h = atelier.clientHeight;
+  if (!w || !h) return;
+  rGauze.setPixelRatio(DPR);
+  rGauze.setSize(w, h, false);
+  Gg.cam.aspect = w / h;
+  Gg.cam.updateProjectionMatrix();
+  var worldW = 2 * w / h;
+  var gw = worldW * 1.15, gh = 0.75;
+  var sx = small.matches ? 70 : 130, sy = small.matches ? 16 : 26;
+  Gg.mesh.geometry.dispose();
+  Gg.mesh.geometry = new THREE.PlaneGeometry(gw, gh, sx, sy);
+  Gg.mesh.rotation.z = -0.055;
+  Gg.mesh.position.set(0, -0.08, 0);
+  Gg.u.uSize.value.set(gw, gh);
+  Gg.u.uAspect.value = (gw / gh) * 0.45;
+  Gg.u.uAmp.value = 0.10;
+}
+
+/* ---------- pointer: a hand brushing the cloth ---------- */
+var t0 = performance.now() - 30000;
+function tNow(){ return (performance.now() - t0) / 1000; }
+var push = 0, pushTarget = 0, ptrPrev = null, lastRip = 0, ripIdx = 0;
+function spawnRipple(u, v, s){
+  var r = Hh.u.uRipples.value[ripIdx % 6];
+  ripIdx++;
+  r.set(u, v, tNow(), s);
+}
+function toClothUV(cx, cy){
+  if (!Hh.world) return null;
+  var rect = heroCanvas.getBoundingClientRect();
+  if (!rect.width || !rect.height) return null;
+  var wx = ((cx - rect.left) / rect.width - 0.5) * Hh.world.worldW;
+  var wy = (0.5 - (cy - rect.top) / rect.height) * Hh.world.worldH;
+  return {
+    u: (wx - Hh.world.x) / Hh.world.bw + 0.5,
+    v: (wy - Hh.world.y) / Hh.world.bh + 0.5
+  };
+}
+function brush(cx, cy, pressed){
+  var uv = toClothUV(cx, cy);
+  if (!uv) return;
+  var now = performance.now();
+  var speed = 0;
+  if (ptrPrev){
+    var dt = Math.max(now - ptrPrev.t, 8) / 1000;
+    speed = Math.hypot(uv.u - ptrPrev.u, uv.v - ptrPrev.v) / dt;
+  }
+  ptrPrev = {u: uv.u, v: uv.v, t: now};
+  Hh.u.uPointer.value.set(uv.u, uv.v);
+  var on = uv.u > -0.15 && uv.u < 1.15 && uv.v > -0.15 && uv.v < 1.15;
+  if (on){
+    pushTarget = Math.max(pushTarget, Math.min(0.9, speed * 0.28 + (pressed ? 0.5 : 0)));
+    if (pressed || (now - lastRip > 320 && speed > 0.7)){
+      spawnRipple(uv.u, uv.v, pressed ? 1.0 : 0.55);
+      lastRip = now;
+    }
+  }
+  kick();
+}
+if (!reduce){
+  hero.addEventListener('pointermove', function(e){ brush(e.clientX, e.clientY, false); }, {passive: true});
+  hero.addEventListener('pointerdown', function(e){ brush(e.clientX, e.clientY, true); }, {passive: true});
+  hero.addEventListener('pointerleave', function(){
+    pushTarget = 0; ptrPrev = null;
+    Hh.u.uPointer.value.set(-10, -10);
+  });
+  hero.addEventListener('touchmove', function(e){
+    if (e.touches && e.touches[0]) brush(e.touches[0].clientX, e.touches[0].clientY, false);
+  }, {passive: true});
+}
+
+/* ---------- render loop: paused offscreen & when hidden ---------- */
+var heroVis = true, gauzeVis = true, raf = 0;
+function frame(){
+  raf = 0;
+  var t = tNow();
+  push += (pushTarget - push) * 0.14;
+  pushTarget *= 0.90;
+  Hh.u.uPush.value = push;
+  Hh.u.uTime.value = t;
+  if (heroVis) rHero.render(Hh.sc, Hh.cam);
+  if (Gg){
+    Gg.u.uTime.value = t * 0.45 + 60.0;
+    if (gauzeVis) rGauze.render(Gg.sc, Gg.cam);
+  }
+  if (!document.hidden && (heroVis || (Gg && gauzeVis))) raf = requestAnimationFrame(frame);
+}
+function kick(){
+  if (!raf && !reduce && !document.hidden && (heroVis || (Gg && gauzeVis))) raf = requestAnimationFrame(frame);
+}
+function renderStill(){
+  Hh.u.uTime.value = 33.7;
+  rHero.render(Hh.sc, Hh.cam);
+  if (Gg){ Gg.u.uTime.value = 75.2; rGauze.render(Gg.sc, Gg.cam); }
+}
+if ('IntersectionObserver' in window){
+  var io = new IntersectionObserver(function(es){
+    es.forEach(function(en){
+      if (en.target === heroCanvas) heroVis = en.isIntersecting;
+      else gauzeVis = en.isIntersecting;
+    });
+    kick();
+  }, {rootMargin: '60px'});
+  io.observe(heroCanvas);
+  if (gauzeCanvas) io.observe(gauzeCanvas);
+}
+document.addEventListener('visibilitychange', kick);
+addEventListener('resize', function(){
+  sizeHero(); sizeGauze();
+  if (reduce) renderStill();
+});
+
+/* ---------- boot ---------- */
+sizeHero();
+sizeGauze();
+document.body.classList.add('cloth-live');
+if (document.fonts && document.fonts.load){
+  Promise.all([
+    document.fonts.load('italic 500 100px "Bodoni Moda"'),
+    document.fonts.load('500 20px "Archivo Narrow"')
+  ]).then(function(){
+    if (Hh.world) drawType(Hh.world.bw / Hh.world.bh);
+    if (reduce) renderStill();
+  }).catch(function(){});
+}
+if (reduce){ renderStill(); } else { kick(); }
 })();
 </script>
 </body>

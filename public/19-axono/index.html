@@ -33,6 +33,7 @@
           (15/11) so callouts stay legible at narrow scale with hierarchy preserved;
           (3) added theme-color meta for mobile browser chrome tinting; (4) spec-label second
           line nudged +1 unit for cleaner mono baseline spacing.
+  PASS 4: WebGL axonometric tower — a three.js OrthographicCamera scene (30° elevation, 45° azimuth, flat per-face materials + EdgesGeometry line work) on a fixed canvas behind the sheet: the tower assembles storey by storey scrubbed to the project index (slabs glide in, columns rise, facade panels snap on), a new pinned sheet A-21 pulls the floors apart into an exploded axonometric and reassembles them, and by the contact block the finished building settles into the title-block corner and gently orbits; pointer-x rotates the model with inertia, hovering a project row lifts + coral-tints its storey band; DPR capped at 2, rAF paused offscreen/hidden, simplified massing ≤768px, no-WebGL falls back to the untouched flat design and reduced motion gets the completed building as a static frame; also fixed a pre-existing padding-shorthand bug where .approach/.projects/.contact zeroed the .wrap horizontal padding, leaving those sections flush against the viewport edge.
 -->
 <style>
 :root{
@@ -94,7 +95,31 @@ h1,h2{font-weight:800;letter-spacing:-.035em;line-height:.98}
 h1{font-size:clamp(44px,8.2vw,118px)}
 h2{font-size:clamp(34px,5.4vw,72px)}
 .wrap{max-width:1320px;margin:0 auto;padding:0 clamp(20px,4vw,64px)}
-section{position:relative}
+section{position:relative;z-index:1}
+.hero{position:relative;z-index:1}
+
+/* ---------- 3D axonometric tower (WebGL layer) ---------- */
+#axgl{position:fixed;inset:0;width:100%;height:100%;z-index:0;pointer-events:none;opacity:0}
+.xpl{display:none}
+html.glon .xpl{display:block}
+.xpl-pin{height:250vh;position:relative}
+.xpl-sticky{position:sticky;top:0;height:100svh;display:flex;align-items:flex-end}
+.xpl-copy{padding-bottom:8vh;width:100%}
+.xpl-read{display:flex;gap:30px;flex-wrap:wrap;font-family:var(--mono);font-size:12px;letter-spacing:.1em;color:#5a5d66;margin-top:16px}
+.xpl-read b{color:var(--coral);font-weight:500}
+.glslot{display:none}
+@media (min-width:961px){
+  html.glon .proj-list,html.glon .proj-head{max-width:620px}
+  html.glon .proj{grid-template-columns:84px minmax(0,1fr) 138px;grid-template-rows:auto auto;row-gap:10px;padding:46px 8px}
+  html.glon .proj .pmeta{grid-column:2/3;grid-row:2}
+  html.glon .proj .ptag{grid-column:3;grid-row:2;align-self:end}
+  html.glon .projects{padding-bottom:26vh}
+  html.glon .contact-grid{grid-template-columns:minmax(0,1.15fr) minmax(0,1fr) minmax(0,.68fr)}
+  html.glon .glslot{display:block}
+}
+@media (max-width:960px){
+  html.glon .projects{padding-bottom:64vh}
+}
 
 /* scroll reveal */
 .rv{opacity:0;transform:translateY(26px);transition:opacity .7s ease,transform .9s var(--easeout)}
@@ -136,7 +161,7 @@ section{position:relative}
 .city.on .dim text{opacity:1}
 
 /* ---------- approach ---------- */
-.approach{padding:clamp(90px,14vh,180px) 0}
+.approach{padding-top:clamp(90px,14vh,180px);padding-bottom:clamp(90px,14vh,180px)}
 .approach-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:1px;background:var(--line);border:1px solid var(--line);margin-top:56px}
 .ap{background:var(--paper);padding:34px 28px 44px;position:relative;transition:background .35s ease}
 .ap:hover{background:var(--paper-hi)}
@@ -147,7 +172,7 @@ section{position:relative}
 .ap:hover::after{border-color:var(--coral);transform:rotate(135deg)}
 
 /* ---------- projects index ---------- */
-.projects{padding:clamp(70px,10vh,140px) 0 clamp(90px,14vh,170px)}
+.projects{padding-top:clamp(70px,10vh,140px);padding-bottom:clamp(90px,14vh,170px)}
 .proj-head{display:flex;justify-content:space-between;align-items:end;gap:24px;flex-wrap:wrap}
 .proj-list{margin-top:48px;border-top:1px solid var(--line)}
 .proj{
@@ -197,7 +222,7 @@ section{position:relative}
 .msvg .base{stroke:#4a5262;stroke-dasharray:5 5;fill:none}
 
 /* ---------- contact ---------- */
-.contact{padding:clamp(100px,16vh,200px) 0 60px}
+.contact{padding-top:clamp(100px,16vh,200px);padding-bottom:60px}
 .contact-grid{display:grid;grid-template-columns:minmax(0,1.4fr) minmax(0,1fr);gap:48px;align-items:start;margin-top:52px}
 .bigmail{
   display:inline-block;font-weight:800;letter-spacing:-.03em;
@@ -241,6 +266,9 @@ footer{border-top:1px solid var(--line);padding:26px 0 34px;margin-top:70px}
 
 /* ---------- reduced motion ---------- */
 @media (prefers-reduced-motion:reduce){
+  .xpl-pin{height:auto}
+  .xpl-sticky{position:relative;height:100svh}
+  #axgl.rmstatic{position:absolute;z-index:0}
   .rv{opacity:1;transform:none;transition:none}
   .city .bldg{opacity:1;transform:none;transition:none}
   .city .gline{opacity:1;transition:none}
@@ -255,6 +283,8 @@ footer{border-top:1px solid var(--line);padding:26px 0 34px;margin-top:70px}
 </style>
 </head>
 <body>
+
+<canvas id="axgl" aria-hidden="true"></canvas>
 
 <a class="back25" href="/">←&nbsp;25</a>
 <div class="wordmark" aria-hidden="true">AXONO<i></i></div>
@@ -402,6 +432,22 @@ footer{border-top:1px solid var(--line);padding:26px 0 34px;margin-top:70px}
   </div>
 </section>
 
+<!-- ============ EXPLODED AXONOMETRIC (WebGL only) ============ -->
+<section class="xpl" id="assembly" aria-label="Exploded axonometric drawing of the AXONO tower — the storeys separate vertically, then reassemble">
+  <div class="xpl-pin" id="xplpin">
+    <div class="xpl-sticky">
+      <div class="xpl-copy wrap">
+        <p class="eyebrow">Exploded axonometric</p>
+        <div class="xpl-read">
+          <span>SHEET <b>A-21</b></span>
+          <span>SEPARATION <b id="sepread">+0.0 m</b></span>
+          <span>STATE <b id="xplphase">VOLUME</b></span>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
 <!-- ============ CONTACT ============ -->
 <section class="contact wrap" id="contact" aria-labelledby="ch2">
   <p class="eyebrow rv">Commission</p>
@@ -432,6 +478,7 @@ footer{border-top:1px solid var(--line);padding:26px 0 34px;margin-top:70px}
         WTO / SIMAP LISTED
       </div>
     </div>
+    <div class="glslot" aria-hidden="true"></div>
   </div>
   <footer>
     <div class="wrap foot" style="padding:0">
@@ -690,6 +737,334 @@ else{
   setMorph(0);
   onScroll();
 }
+})();
+</script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/0.147.0/three.min.js"></script>
+<script>
+(function(){
+"use strict";
+/* ============================================================
+   5 · THE TOWER — scroll-assembled WebGL axonometric building
+   ============================================================ */
+if(!window.THREE) return;                       /* CDN missing → flat design stands */
+var canvas=document.getElementById('axgl');
+var renderer;
+try{
+  renderer=new THREE.WebGLRenderer({canvas:canvas,antialias:true,alpha:true,powerPreference:'high-performance'});
+}catch(err){return;}                            /* no WebGL → flat design stands */
+document.documentElement.classList.add('glon');
+
+var RM=window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+var MOB=window.innerWidth<=768;
+renderer.setPixelRatio(Math.min(window.devicePixelRatio||1,2));
+
+var scene=new THREE.Scene();
+var cam=new THREE.OrthographicCamera(-1,1,1,-1,-600,1200);
+var AZ=Math.PI/4, EL=Math.PI/6, DIST=320;       /* classic 30°/45° axonometric */
+var TY=23;
+cam.position.set(DIST*Math.cos(EL)*Math.sin(AZ),TY+DIST*Math.sin(EL),DIST*Math.cos(EL)*Math.cos(AZ));
+cam.lookAt(0,TY,0);
+
+/* ---- flat face materials per storey band (paper / face-l / face-r + blue edges) ---- */
+function band(top,f,r,e,htop,hf,hr,he){
+  var b={
+    top:new THREE.MeshBasicMaterial({color:top}),
+    f:new THREE.MeshBasicMaterial({color:f}),
+    r:new THREE.MeshBasicMaterial({color:r}),
+    e:new THREE.LineBasicMaterial({color:e}),
+    b0:new THREE.Color(top),b1:new THREE.Color(f),b2:new THREE.Color(r),b3:new THREE.Color(e),
+    h0:new THREE.Color(htop),h1:new THREE.Color(hf),h2:new THREE.Color(hr),h3:new THREE.Color(he),
+    hl:0,tgt:0
+  };
+  /* BoxGeometry face order: +x −x +y −y +z −z ; camera sees +x (darker) and +z (lighter) */
+  b.arr=[b.r,b.r,b.top,b.top,b.f,b.f];
+  return b;
+}
+var HT='#FFE9E6',HF='#FFD9D4',HR='#F5B7AF',HE='#FF6A5C';
+var BANDS=[
+  band('#FDFDFB','#E9ECF3','#D6DDEB','#2E5EAA',HT,HF,HR,HE),  /* 0 podium  → project 003 */
+  band('#FDFDFB','#E9ECF3','#D6DDEB','#2E5EAA',HT,HF,HR,HE),  /* 1 mid     → project 002 */
+  band('#FDFDFB','#E9ECF3','#D6DDEB','#2E5EAA',HT,HF,HR,HE)   /* 2 upper   → project 001 */
+];
+var CORE=band('#FFD9D4','#FFB4AB','#F58B80','#D14638',HT,HF,HR,'#D14638');
+
+var BOX=new THREE.BoxGeometry(1,1,1);
+var EDGE=new THREE.EdgesGeometry(BOX);
+
+/* ---- massing parameters ---- */
+var TL=MOB?8:12;                                /* tower levels */
+var PH=4.4, TH=3.3;                             /* storey heights */
+var NL=2+TL+1;                                  /* podium ×2 + tower + roof */
+var GAP=2.7;                                    /* exploded separation per storey */
+var PW=22,PD=15, TWX=-3.2,TWZ=-1.2, TW=13,TD=10.5;
+var TOTH=2*PH+TL*TH+2.8;
+
+var root=new THREE.Group(); scene.add(root);
+var LV=[],LVY=[],EL_=[];                        /* level groups / base y / animated elements */
+
+function lvGroup(y){var g=new THREE.Group();g.position.y=y;root.add(g);LV.push(g);LVY.push(y);return g;}
+function mesh(bd,w,h,d,x,y,z,parent){
+  var m=new THREE.Mesh(BOX,bd.arr);
+  m.scale.set(w,h,d);m.position.set(x,y+h/2,z);
+  m.add(new THREE.LineSegments(EDGE,bd.e));
+  (parent||root).add(m);return m;
+}
+function slide(m,win,fx,fy,fz){EL_.push({m:m,k:0,w:win,bx:m.position.x,by:m.position.y,bz:m.position.z,fx:fx,fy:fy,fz:fz});}
+function rise(m,win){EL_.push({m:m,k:1,w:win,h:m.scale.y,bot:m.position.y-m.scale.y/2});}
+function snap(m,win,fx,fz){EL_.push({m:m,k:2,w:win,bx:m.position.x,bz:m.position.z,sx:m.scale.x,sy:m.scale.y,sz:m.scale.z,fx:fx,fz:fz});}
+
+/* ---- ground: site grid + plinth ---- */
+var gpos=[],GEXT=27,GN=9;
+for(var gi=0;gi<=GN;gi++){
+  var gv=-GEXT+gi*(2*GEXT/GN);
+  gpos.push(gv,0,-GEXT, gv,0,GEXT, -GEXT,0,gv, GEXT,0,gv);
+}
+var ggeo=new THREE.BufferGeometry();
+ggeo.setAttribute('position',new THREE.Float32BufferAttribute(gpos,3));
+var gmat=new THREE.LineBasicMaterial({color:0x2E5EAA,transparent:true,opacity:0});
+root.add(new THREE.LineSegments(ggeo,gmat));
+var plinth=mesh(BANDS[0],PW+6,0.5,PD+5,0,-0.5,0,root);
+slide(plinth,[0.02,0.08],0,-4,0);
+
+/* ---- assembly windows: bottom-up, overlapping ---- */
+function win(i,a,b){
+  var dur=0.16,s0=0.05,s1=0.97;
+  var s=s0+i*((s1-dur-s0)/(NL-1));
+  return [s+a*dur,s+b*dur];
+}
+
+/* ---- podium: 2 levels — band 0 ---- */
+for(var i=0;i<2;i++){
+  var g=lvGroup(i*PH),bd=BANDS[0],dir=i%2?1:-1;
+  var sl=mesh(bd,PW+1.4,0.55,PD+1.2,0,PH-0.55,0,g);
+  slide(sl,win(i,0,0.55),dir*30,7,-dir*10);
+  var cx=[-8.2,-4.1,0,4.1,8.2];
+  for(var c=0;c<(MOB?3:5);c++){
+    var col=mesh(bd,0.6,PH-0.55,0.6,cx[MOB?c+1:c],0,PD/2-0.9,g);
+    rise(col,win(i,0.28,0.72));
+  }
+  var cz=[-5,-1.7,1.7,5];
+  for(var c2=0;c2<(MOB?2:4);c2++){
+    var col2=mesh(bd,0.6,PH-0.55,0.6,PW/2-0.9,0,cz[MOB?c2+1:c2],g);
+    rise(col2,win(i,0.34,0.78));
+  }
+}
+/* stair volume — grounded datum, rises with the podium */
+var stair=mesh(BANDS[0],3.4,2*PH+1.6,6,-PW/2-1.8,0,2.2,LV[0]);
+rise(stair,[0.06,0.3]);
+
+/* ---- tower: TL levels — bands 1 & 2 ---- */
+for(var t=0;t<TL;t++){
+  var y=2*PH+t*TH,g2=lvGroup(y),bd2=BANDS[t<TL/2?1:2],dir2=t%2?-1:1;
+  var sl2=mesh(bd2,TW+1,0.45,TD+1,TWX,TH-0.45,TWZ,g2);
+  slide(sl2,win(2+t,0,0.5),dir2*26,6,dir2*9);
+  var txs=MOB?[-4.2,0,4.2]:[-5.1,-1.7,1.7,5.1];
+  for(var c3=0;c3<txs.length;c3++){
+    var col3=mesh(bd2,0.55,TH-0.45,0.55,TWX+txs[c3],0,TWZ+TD/2-0.75,g2);
+    rise(col3,win(2+t,0.24,0.62));
+  }
+  var tzs=MOB?[-2.6,2.6]:[-3.4,0,3.4];
+  for(var c4=0;c4<tzs.length;c4++){
+    var col4=mesh(bd2,0.55,TH-0.45,0.55,TWX+TW/2-0.75,0,TWZ+tzs[c4],g2);
+    rise(col4,win(2+t,0.3,0.68));
+  }
+  /* facade panels snap onto the two visible faces, checkerboard by level */
+  var pn=MOB?2:3,pw2=(TW-1.6)/3;
+  for(var p2=0;p2<pn;p2++){
+    if((p2+t)%2===0)continue;
+    var px=TWX-TW/2+1.3+pw2/2+p2*(pw2+0.4);
+    var pan=mesh(bd2,pw2,TH-0.9,0.24,px,0.18,TWZ+TD/2+0.14,g2);
+    snap(pan,win(2+t,0.5,1),0,7);
+  }
+  var qn=MOB?1:2,qd=(TD-1.4)/2;
+  for(var q2=0;q2<qn;q2++){
+    if((q2+t)%2===1)continue;
+    var qz=TWZ-TD/2+1.1+qd/2+q2*(qd+0.5);
+    var pan2=mesh(bd2,0.24,TH-0.9,qd,TWX+TW/2+0.14,0.18,qz,g2);
+    snap(pan2,win(2+t,0.55,1),7,0);
+  }
+}
+
+/* ---- roof level: slab + pavilion + parapets — band 2 ---- */
+var ry=2*PH+TL*TH,rg=lvGroup(ry),rb=BANDS[2];
+var rsl=mesh(rb,TW+1.6,0.4,TD+1.6,TWX,0,TWZ,rg);
+slide(rsl,win(NL-1,0,0.5),-24,8,10);
+var pav=mesh(rb,6,2.6,4.8,TWX-2.2,0.4,TWZ+1.4,rg);
+snap(pav,win(NL-1,0.4,0.85),0,0);
+var pp1=mesh(rb,TW+1.6,1.05,0.28,TWX,0.4,TWZ+TD/2+0.66,rg);
+snap(pp1,win(NL-1,0.55,1),0,5);
+var pp2=mesh(rb,0.28,1.05,TD+1.6,TWX+TW/2+0.66,0.4,TWZ,rg);
+snap(pp2,win(NL-1,0.6,1),5,0);
+
+/* ---- coral service core: the grounded spine, pokes above the roof ---- */
+var coreH=TOTH+0.6;
+var core=mesh(CORE,4.6,coreH,4.6,TWX+3.1,0,TWZ-2.6,root);
+rise(core,[0.04,0.92]);
+/* dashed datum axis, revealed while exploded */
+var axmat=new THREE.LineDashedMaterial({color:0xFF6A5C,dashSize:1.6,gapSize:1.3,transparent:true,opacity:0});
+var axgeo=new THREE.BufferGeometry().setFromPoints([new THREE.Vector3(TWX+3.1,0,TWZ-2.6),new THREE.Vector3(TWX+3.1,TOTH+NL*GAP+6,TWZ-2.6)]);
+var axis=new THREE.Line(axgeo,axmat);axis.computeLineDistances();root.add(axis);
+
+/* ---- scrub state ---- */
+function cl(v){return Math.min(1,Math.max(0,v));}
+function sm(t){t=cl(t);return t*t*(3-2*t);}
+function mix(a,b,t){return a+(b-a)*t;}
+
+function setAssembly(A){
+  gmat.opacity=0.32*cl(A*7);
+  for(var i=0;i<EL_.length;i++){
+    var e=EL_[i],t=sm((A-e.w[0])/(e.w[1]-e.w[0]));
+    if(t<=0){e.m.visible=false;continue;}
+    e.m.visible=true;
+    if(e.k===0){e.m.position.set(e.bx+e.fx*(1-t),e.by+e.fy*(1-t),e.bz+e.fz*(1-t));}
+    else if(e.k===1){var h=e.h*Math.max(t,0.001);e.m.scale.y=h;e.m.position.y=e.bot+h/2;}
+    else{var s=0.55+0.45*t;e.m.scale.set(e.sx*s,e.sy*s,e.sz*s);e.m.position.x=e.bx+e.fx*(1-t);e.m.position.z=e.bz+e.fz*(1-t);}
+  }
+}
+function bandOf(i){return i<2?0:(i<2+TL/2?1:2);}
+function setLevels(explode){
+  for(var i=0;i<LV.length;i++){
+    LV[i].position.y=LVY[i]+explode*i*GAP+BANDS[bandOf(i)].hl*1.1;
+  }
+  axmat.opacity=0.85*sm(explode*1.6-0.2);
+}
+
+/* ---- project-row hover → storey band highlight ---- */
+var rows=document.querySelectorAll('.proj');
+var rowBand=[2,1,0];                            /* 001 Axis Tower→upper, 002→mid, 003→podium */
+rows.forEach(function(r,ri){
+  if(ri>2)return;
+  r.addEventListener('pointerenter',function(){BANDS[rowBand[ri]].tgt=1;});
+  r.addEventListener('pointerleave',function(){BANDS[rowBand[ri]].tgt=0;});
+  r.addEventListener('focusin',function(){BANDS[rowBand[ri]].tgt=1;});
+  r.addEventListener('focusout',function(){BANDS[rowBand[ri]].tgt=0;});
+});
+function tintBands(){
+  var moved=false;
+  BANDS.forEach(function(b){
+    if(Math.abs(b.tgt-b.hl)<0.004){b.hl=b.tgt;return;}
+    b.hl+=(b.tgt-b.hl)*0.14;moved=true;
+    b.top.color.copy(b.b0).lerp(b.h0,b.hl);
+    b.f.color.copy(b.b1).lerp(b.h1,b.hl);
+    b.r.color.copy(b.b2).lerp(b.h2,b.hl);
+    b.e.color.copy(b.b3).lerp(b.h3,b.hl);
+  });
+  return moved;
+}
+
+/* ---- camera framing: anchor fraction + view size, blended by scroll phase ---- */
+var W=0,H=0;
+function resize(){
+  if(RM){var st=canvas.parentNode;W=st.clientWidth;H=st.clientHeight;}
+  else{W=window.innerWidth;H=window.innerHeight;}
+  MOB=window.innerWidth<=768;
+  renderer.setSize(W,H,false);
+}
+function frame(fx,fy,vs){
+  var asp=W/Math.max(1,H),hh=vs/2,hw=hh*asp;
+  cam.left=-hw;cam.right=hw;cam.top=hh;cam.bottom=-hh;
+  cam.updateProjectionMatrix();
+  cam.setViewOffset(W,H,(0.5-fx)*W,(fy-0.5)*H,W,H);
+}
+
+var secWork=document.getElementById('work'),
+    morphPin=document.getElementById('morphpin'),
+    xplPin=document.getElementById('xplpin'),
+    secContact=document.getElementById('contact'),
+    sepRead=document.getElementById('sepread'),
+    xplPhase=document.getElementById('xplphase');
+
+/* ---- reduced motion: completed building, one static frame in sheet A-21 ---- */
+if(RM){
+  var stage=document.querySelector('.xpl-sticky');
+  stage.style.position='relative';
+  stage.appendChild(canvas);
+  canvas.classList.add('rmstatic');
+  canvas.style.opacity='1';
+  setAssembly(1);setLevels(0);
+  root.rotation.y=0.06;
+  var rmDraw=function(){resize();frame(0.5,0.47,MOB?120:96);renderer.render(scene,cam);};
+  rmDraw();
+  window.addEventListener('resize',rmDraw);
+  return;
+}
+
+/* ---- live loop: scrubbed choreography + inertia + orbit ---- */
+var pRot=0,pTgt=0,orb=0,lastT=0,raf=0,active=false,vis=!document.hidden;
+var lastSep='',lastPh='',lastOp='';
+window.addEventListener('pointermove',function(e){
+  pTgt=(e.clientX/Math.max(1,window.innerWidth)-0.5)*0.3;   /* ≈ ±8.5° */
+},{passive:true});
+
+function tick(now){
+  raf=0;
+  var dt=Math.min(0.05,(now-lastT)/1000||0.016);lastT=now;
+  var vh=window.innerHeight;
+
+  /* assembly: scrubbed across the project index */
+  var wr=secWork.getBoundingClientRect();
+  var A=cl((vh*0.92-wr.top)/(wr.height+vh*0.38));
+  /* morph pin progress (building is covered by the ink sheet: free re-framing) */
+  var mr=morphPin.getBoundingClientRect();
+  var mp=cl(-mr.top/Math.max(1,mr.height-vh));
+  /* exploded sheet */
+  var xr=xplPin.getBoundingClientRect();
+  var xp=cl(-xr.top/Math.max(1,xr.height-vh));
+  var explode=sm(Math.min(1,xp/0.44))*sm(Math.min(1,(1-xp)/0.44));
+  /* contact: settle into the title-block corner + orbit */
+  var cr=secContact.getBoundingClientRect();
+  var cc=sm(cl((vh*0.88-cr.top)/(vh*0.62)));
+
+  setAssembly(A);
+  setLevels(explode);
+  tintBands();
+
+  /* framing keyframes: beside the index → centre sheet → title-block corner */
+  var fx,fy,vs;
+  if(MOB){
+    fx=mix(mix(0.52,0.5,sm(mp)),0.64,cc);
+    fy=mix(mix(0.40,0.47,sm(mp)),0.47,cc);
+    vs=mix(mix(150,168+explode*58,sm(mp)),290,cc);
+  }else{
+    fx=mix(mix(0.71,0.5,sm(mp)),0.80,cc);
+    fy=mix(mix(0.47,0.47,sm(mp)),0.52,cc);
+    vs=mix(mix(100,120+explode*46,sm(mp)),218,cc);
+  }
+  frame(fx,fy,vs);
+
+  /* rotation: pointer inertia + explode drift + closing orbit */
+  pRot+=(pTgt-pRot)*Math.min(1,dt*5);
+  orb+=dt*0.22*cc;
+  root.rotation.y=pRot+explode*0.26+orb;
+
+  /* canvas fade + readouts (mobile: watermark while the rows pass, full once clear) */
+  var opv=cl(A*6)*(MOB?mix(0.5+0.5*sm((A-0.72)/0.28),0.5,cc):1);
+  var op=opv.toFixed(2);
+  if(op!==lastOp){canvas.style.opacity=op;lastOp=op;}
+  var sep='+'+(explode*GAP).toFixed(1)+' m';
+  if(sep!==lastSep){sepRead.textContent=sep;lastSep=sep;}
+  var ph=explode<0.04?'VOLUME':(explode<0.96?(xp<0.5?'SEPARATING':'REASSEMBLY'):'EXPLODED');
+  if(ph!==lastPh){xplPhase.textContent=ph;lastPh=ph;}
+
+  renderer.render(scene,cam);
+  if(active&&vis)raf=requestAnimationFrame(tick);
+}
+function wake(){if(active&&vis&&!raf){lastT=performance.now();raf=requestAnimationFrame(tick);}}
+
+/* pause offscreen / hidden tab */
+var seen=new Set();
+var zio=new IntersectionObserver(function(es){
+  es.forEach(function(e){e.isIntersecting?seen.add(e.target):seen.delete(e.target);});
+  active=seen.size>0;
+  wake();
+},{rootMargin:'12% 0px 12% 0px'});
+[secWork,xplPin,secContact].forEach(function(n){zio.observe(n);});
+document.addEventListener('visibilitychange',function(){vis=!document.hidden;wake();});
+window.addEventListener('resize',function(){resize();wake();},{passive:true});
+
+resize();
+setAssembly(0);
+wake();
 })();
 </script>
 </body>

@@ -26,8 +26,8 @@
   --gutter:clamp(24px,6vw,120px);
 }
 *{margin:0;padding:0;box-sizing:border-box}
-html{scroll-behavior:smooth}
-html,body{background:var(--w);color:var(--k)}
+html{scroll-behavior:smooth;background:var(--w)}
+html,body{color:var(--k)}
 body{
   font-family:var(--sans);
   font-weight:300;
@@ -43,6 +43,20 @@ a,button{
 ::selection{background:var(--k);color:var(--w)}
 a{color:inherit;text-decoration:none}
 a:focus-visible,button:focus-visible{outline:1px solid currentColor;outline-offset:6px}
+
+/* —— raymarched absence: WebGL canvas fixed behind the hero.
+      z-index:-1 keeps it above the root background but below every
+      normal-flow section background, so the manifesto passes over it
+      like a wall sliding across an opening. —— */
+#voidgl{
+  position:fixed;inset:0;z-index:-1;
+  width:100%;height:100%;display:block;
+  pointer-events:none;
+  opacity:0;transition:opacity 1.8s var(--ease);
+}
+#voidgl.on{opacity:1}
+/* sections after the hero carry their own ground so they occlude the canvas */
+.practice,.projects,.contact,footer{background:var(--w)}
 
 /* —— architect's grid overlay (press G) —— */
 .gridlines{
@@ -334,6 +348,7 @@ footer{
 /* ————————————— reduced motion ————————————— */
 @media (prefers-reduced-motion:reduce){
   html{scroll-behavior:auto}
+  #voidgl{transition:none}
   .hero-inner{animation:none}
   .beam{animation:none;transform:rotate(-26deg)}
   .rv,.rv-up,.rv-dn,.rv-in{clip-path:none;transition:none}
@@ -347,6 +362,8 @@ footer{
 <body>
 
 <noscript><style>.rv,.rv-up,.rv-dn,.rv-in{clip-path:none!important}.rule{transform:none!important}</style></noscript>
+
+<canvas id="voidgl" aria-hidden="true"></canvas>
 
 <a class="back" href="/">&larr;&nbsp;25</a>
 
@@ -519,9 +536,234 @@ footer{
 })();
 </script>
 
+<script>
+/* —— raymarched absence ——
+   one matte concrete monolith; three voids subtracted (smooth SDF booleans):
+   a scooped sphere, a corridor cut clean through, a stair notch.
+   the subject is the hole, not the object. raw WebGL, no library. */
+(function(){
+  'use strict';
+  var canvas = document.getElementById('voidgl');
+  if(!canvas || !window.WebGLRenderingContext) return;
+  var gl = null;
+  try{
+    var opts = {antialias:false, alpha:false, depth:false, stencil:false, powerPreference:'low-power'};
+    gl = canvas.getContext('webgl', opts) || canvas.getContext('experimental-webgl', opts);
+  }catch(e){ gl = null; }
+  if(!gl) return;
+
+  var reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  var small  = window.innerWidth <= 768;
+  var STEPS  = small ? 56 : 88;   /* march budget: fewer steps on small screens */
+  var SHADOW = small ? 0 : 1;     /* soft-shadow march only on desktop */
+
+  var VERT = 'attribute vec2 aP;void main(){gl_Position=vec4(aP,0.0,1.0);}';
+  var FRAG = [
+  '#define STEPS ' + STEPS,
+  '#define SHADOW ' + SHADOW,
+  '#ifdef GL_FRAGMENT_PRECISION_HIGH',
+  'precision highp float;',
+  '#else',
+  'precision mediump float;',
+  '#endif',
+  'uniform vec2 uRes;',
+  'uniform float uTime;',
+  'uniform float uMorph;',
+  'uniform vec2 uPtr;',
+  'float sat(float x){return clamp(x,0.0,1.0);}',
+  'float hash(vec2 p){return fract(sin(dot(p,vec2(127.1,311.7)))*43758.5453123);}',
+  'float sdBox(vec3 p,vec3 b){vec3 q=abs(p)-b;return length(max(q,0.0))+min(max(q.x,max(q.y,q.z)),0.0);}',
+  '/* smooth boolean subtraction: carve a out of b, blended over k */',
+  'float ssub(float a,float b,float k){float h=sat(0.5-0.5*(b+a)/k);return mix(b,-a,h)+k*h*(1.0-h);}',
+  'float map(vec3 p){',
+  '  float d=sdBox(p-vec3(0.0,0.05,0.0),vec3(1.05,1.5,0.5));',
+  '  float m=uMorph;',
+  '  /* void i — sphere scooped from the front face (shrinks with scroll) */',
+  '  float r=mix(0.62,0.34,sat(m));',
+  '  vec3 sc=vec3(0.30+0.06*sin(uTime*0.11),0.55+0.04*cos(uTime*0.07),0.55);',
+  '  d=ssub(length(p-sc)-r,d,0.11);',
+  '  /* void ii — doorway rising from the base, cut clean through (grows with scroll) */',
+  '  float cw=mix(0.16,0.32,sat(m));',
+  '  float ch=mix(0.85,1.18,sat(m*0.8));',
+  '  d=ssub(sdBox(p-vec3(-0.46,-1.5,0.0),vec3(cw,ch,2.0)),d,0.07);',
+  '  /* void iii — stair notch descending from the top edge (emerges with scroll) */',
+  '  float sa=sat((m-0.5)*1.2);',
+  '  float ds=1e5;',
+  '  for(int i=0;i<3;i++){',
+  '    float fi=float(i);',
+  '    float cut=sa*(0.32+0.30*fi);',
+  '    ds=min(ds,sdBox(p-vec3(0.20+fi*0.34,2.58-cut,0.0),vec3(0.175,1.0,2.0)));',
+  '  }',
+  '  d=ssub(ds,d,0.05);',
+  '  return min(d,p.y+1.45);',
+  '}',
+  'vec3 calcN(vec3 p){',
+  '  vec2 e=vec2(0.002,-0.002);',
+  '  return normalize(e.xyy*map(p+e.xyy)+e.yyx*map(p+e.yyx)+e.yxy*map(p+e.yxy)+e.xxx*map(p+e.xxx));',
+  '}',
+  'float calcAO(vec3 p,vec3 n){',
+  '  float o=0.0;float s=1.0;',
+  '  for(int i=0;i<5;i++){',
+  '    float h=0.02+0.10*float(i);',
+  '    o+=(h-map(p+n*h))*s;',
+  '    s*=0.72;',
+  '  }',
+  '  return sat(1.0-1.7*o);',
+  '}',
+  '#if SHADOW',
+  'float calcSh(vec3 p,vec3 l){',
+  '  float r=1.0;float t=0.04;',
+  '  for(int i=0;i<26;i++){',
+  '    float h=map(p+l*t);',
+  '    r=min(r,9.0*h/t);',
+  '    t+=clamp(h,0.02,0.30);',
+  '    if(r<0.012||t>8.0)break;',
+  '  }',
+  '  r=sat(r);return r*r*(3.0-2.0*r);',
+  '}',
+  '#endif',
+  'void main(){',
+  '  vec2 suv=(2.0*gl_FragCoord.xy-uRes)/uRes.y;',
+  '  float a=uRes.x/uRes.y;',
+  '  float ls=sat((a-1.0)/0.4);',
+  '  /* landscape: monolith right of the wordmark; portrait: below it */',
+  '  vec2 uv=suv-vec2(mix(0.0,0.52,ls),mix(-0.68,0.03,ls));',
+  '  float dist=mix(7.9,4.5,ls);',
+  '  float ang=1.05+0.16*sin(uTime*0.09)+uPtr.x*0.05;',
+  '  vec3 ta=vec3(0.0,-0.05,0.0);',
+  '  vec3 ro=ta+vec3(dist*sin(ang),1.15+uPtr.y*0.25,dist*cos(ang));',
+  '  vec3 ww=normalize(ta-ro);',
+  '  vec3 uu=normalize(cross(ww,vec3(0.0,1.0,0.0)));',
+  '  vec3 vv=cross(uu,ww);',
+  '  vec3 rd=normalize(uv.x*uu+uv.y*vv+1.55*ww);',
+  '  /* one raking light; the pointer re-aims it so shadows crawl */',
+  '  vec3 ld=normalize(vec3(-0.55+uPtr.x*0.8,0.72+uPtr.y*0.35,0.45));',
+  '  vec3 bg=mix(vec3(0.925),vec3(1.0),sat(0.55+0.45*suv.y));',
+  '  float t=0.0;float d=1.0;vec3 pos=ro;',
+  '  for(int i=0;i<STEPS;i++){',
+  '    pos=ro+rd*t;',
+  '    d=map(pos);',
+  '    if(abs(d)<0.0012*t+0.0006||t>22.0)break;',
+  '    t+=d*0.9;',
+  '  }',
+  '  vec3 col=bg;',
+  '  if(abs(d)<0.02&&t<22.0){',
+  '    vec3 n=calcN(pos);',
+  '    float occ=calcAO(pos,n);',
+  '    float dif=sat(dot(n,ld));',
+  '#if SHADOW',
+  '    float sh=calcSh(pos+n*0.012,ld);',
+  '#else',
+  '    float sh=0.35+0.65*occ;',
+  '#endif',
+  '    float sky=0.5+0.5*n.y;',
+  '    float bnc=sat(dot(n,normalize(vec3(0.6,0.25,-0.4))))*0.12;',
+  '    float lin=0.32*sky*occ+0.74*dif*sh+bnc*occ;',
+  '    col=vec3(0.90)*lin;',
+  '    col=col*0.88+0.085;      /* matte: lift blacks to charcoal */',
+  '    col=mix(col,bg,1.0-exp(-0.004*t*t));  /* barely-there fog */',
+  '  }',
+  '  col+=(hash(gl_FragCoord.xy+vec2(fract(uTime*0.7)*61.0,0.0))-0.5)*0.028;  /* grain */',
+  '  gl_FragColor=vec4(col,1.0);',
+  '}'
+  ].join('\n');
+
+  function mk(type, src){
+    var s = gl.createShader(type);
+    gl.shaderSource(s, src); gl.compileShader(s);
+    return gl.getShaderParameter(s, gl.COMPILE_STATUS) ? s : null;
+  }
+  var vs = mk(gl.VERTEX_SHADER, VERT), fs = mk(gl.FRAGMENT_SHADER, FRAG);
+  if(!vs || !fs) return;
+  var pr = gl.createProgram();
+  gl.attachShader(pr, vs); gl.attachShader(pr, fs); gl.linkProgram(pr);
+  if(!gl.getProgramParameter(pr, gl.LINK_STATUS)) return;
+  gl.useProgram(pr);
+  var buf = gl.createBuffer();
+  gl.bindBuffer(gl.ARRAY_BUFFER, buf);
+  gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([-1,-1, 3,-1, -1,3]), gl.STATIC_DRAW);
+  var loc = gl.getAttribLocation(pr, 'aP');
+  gl.enableVertexAttribArray(loc);
+  gl.vertexAttribPointer(loc, 2, gl.FLOAT, false, 0, 0);
+  var uRes   = gl.getUniformLocation(pr, 'uRes'),
+      uTime  = gl.getUniformLocation(pr, 'uTime'),
+      uMorph = gl.getUniformLocation(pr, 'uMorph'),
+      uPtr   = gl.getUniformLocation(pr, 'uPtr');
+
+  /* reduced internal resolution, upscaled by CSS (softens nicely); DPR cap 2 */
+  var W = 0, H = 0;
+  function resize(){
+    var dpr = Math.min(window.devicePixelRatio || 1, 2);
+    var sc  = small ? 0.55 : 0.66;
+    W = Math.max(2, Math.round(window.innerWidth  * dpr * sc));
+    H = Math.max(2, Math.round(window.innerHeight * dpr * sc));
+    if(W > 1600){ H = Math.round(H * 1600 / W); W = 1600; }
+    canvas.width = W; canvas.height = H;
+    gl.viewport(0, 0, W, H);
+  }
+
+  var px = 0, py = 0, tx = 0, ty = 0, morph = 0, morphT = 0, lastT = 0;
+  function draw(tSec){
+    lastT = tSec;
+    gl.uniform2f(uRes, W, H);
+    gl.uniform1f(uTime, tSec);
+    gl.uniform1f(uMorph, morph);
+    gl.uniform2f(uPtr, px, py);
+    gl.drawArrays(gl.TRIANGLES, 0, 3);
+  }
+
+  var running = false, raf = 0, heroOn = true, lost = false;
+  function frame(now){
+    raf = 0;
+    px += (tx - px) * 0.05; py += (ty - py) * 0.05;
+    morph += (morphT - morph) * 0.07;
+    draw(now * 0.001);
+    if(running) raf = requestAnimationFrame(frame);
+  }
+  function start(){ if(reduce || lost || running) return; running = true; if(!raf) raf = requestAnimationFrame(frame); }
+  function stop(){ running = false; if(raf){ cancelAnimationFrame(raf); raf = 0; } }
+
+  canvas.addEventListener('webglcontextlost', function(e){
+    e.preventDefault(); lost = true; stop(); canvas.classList.remove('on');
+  }, false);
+
+  /* first frame synchronously, so the page never flashes empty */
+  resize();
+  if(reduce){ morph = 0.5; draw(11.0); }
+  else { draw(0.0); }
+  canvas.classList.add('on');
+
+  window.addEventListener('resize', function(){ resize(); if(!running) draw(lastT); }, {passive:true});
+
+  if(!reduce){
+    window.addEventListener('pointermove', function(e){
+      tx = (e.clientX / window.innerWidth) * 2 - 1;
+      ty = 1 - (e.clientY / window.innerHeight) * 2;
+    }, {passive:true});
+    var onScroll = function(){
+      morphT = Math.min(window.scrollY / Math.max(window.innerHeight, 1), 1) * 1.7;
+    };
+    window.addEventListener('scroll', onScroll, {passive:true});
+    onScroll();
+    document.addEventListener('visibilitychange', function(){
+      if(document.hidden) stop(); else if(heroOn) start();
+    });
+    var hero = document.querySelector('.hero');
+    if(hero && 'IntersectionObserver' in window){
+      new IntersectionObserver(function(es){
+        heroOn = es[0].isIntersecting;
+        if(heroOn && !document.hidden) start(); else if(!heroOn) stop();
+      }, {threshold:0}).observe(hero);
+    }
+    start();
+  }
+})();
+</script>
+
 <!-- PASS 1: display:block on .rule spans (footer + project hairlines were invisible inline elements); back-link multiply->difference blend so it survives the black light-study section; ghost numerals #F4F4F4->#EAEAEA (readable ghosting on white); hero reveals no longer hardcoded "on" (they never animated); statement spans made block lines, max-width 20->24ch; noscript fallback so content is never trapped clipped.
      PASS 2: --ease .77,0,.18,1 -> architectural cubic-bezier(.16,1,.3,1); hero load stagger driven by double-rAF JS; IO threshold .15 + rootMargin -12% for deeper, calmer triggers; reduced-motion beam frozen at -26deg and clock synced to 15:00 (was 12deg vs 15:07 contradiction); hover transforms + link transitions neutralized under reduced motion.
-     PASS 3: architect's grid overlay (press G, difference-blend, gutter-aligned 6-col) + footer hint; hairline :focus-visible outlines; text-wrap:balance on statement and light-study h2; footer completed with 01-04 section nav. -->
+     PASS 3: architect's grid overlay (press G, difference-blend, gutter-aligned 6-col) + footer hint; hairline :focus-visible outlines; text-wrap:balance on statement and light-study h2; footer completed with 01-04 section nav.
+     PASS 4: raymarched absence — raw-WebGL fragment shader fixed behind the hero (z-index:-1; sections given solid grounds so they scroll over it): one concrete monolith with three smooth-SDF-subtracted voids (scooped sphere, through-corridor, stair notch), single raking light re-aimed by the pointer, scroll morphs the carved composition, 5-tap AO + 26-step soft shadow + faint fog + grain; DPR cap 2 at 0.5-0.6 internal scale (max 1600px), 56 march steps + no shadow march <=768px, rAF paused when hero offscreen or tab hidden, first frame drawn synchronously; prefers-reduced-motion = one static frame; no WebGL / shader failure = canvas stays opacity:0 and the prior all-CSS page stands. -->
 
 </body>
 </html>
