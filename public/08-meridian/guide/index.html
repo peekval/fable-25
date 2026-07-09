@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>How The Meridian was built — guide &amp; prompt</title>
+<meta name="description" content="The techniques behind The Meridian art-deco hotel showcase, plus the reproduction prompt (teaser).">
+<meta name="theme-color" content="#0B3D2E">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Poiret+One&family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;1,400;1,500&display=swap" rel="stylesheet">
+<style>
+:root{--emerald:#0B3D2E;--emerald-deep:#072A20;--emerald-ink:#051F17;--gold:#D4AF6A;--gold-pale:#F2DFAE;--gold-dim:rgba(212,175,106,.34);--gold-hair:rgba(212,175,106,.22);--cream:#F4EDDF;--cream-dim:rgba(244,237,223,.72);--display:'Poiret One',cursive;--body:'Cormorant Garamond',serif}
+*,*::before,*::after{margin:0;padding:0;box-sizing:border-box}
+body{background:linear-gradient(180deg,var(--emerald-ink),var(--emerald) 40%,var(--emerald-deep));min-height:100vh;color:var(--cream);font-family:var(--body);font-size:1.15rem;line-height:1.7;-webkit-font-smoothing:antialiased}
+::selection{background:var(--gold);color:var(--emerald-ink)}
+a{color:var(--gold);text-decoration:none}
+:focus-visible{outline:1px solid var(--gold);outline-offset:3px}
+.gold-txt{background:linear-gradient(100deg,#8a6b35 0%,var(--gold) 28%,var(--gold-pale) 50%,var(--gold) 72%,#8a6b35 100%);-webkit-background-clip:text;background-clip:text;color:transparent;-webkit-text-fill-color:transparent}
+.back{position:fixed;top:18px;left:20px;z-index:9;font-family:var(--display);font-size:.9rem;letter-spacing:.14em;color:var(--cream-dim);padding:.4em .8em;border:1px solid transparent;transition:color .3s,border-color .3s}
+.back:hover{color:var(--gold);border-color:var(--gold-hair)}
+main{max-width:780px;margin:0 auto;padding:110px 24px 90px}
+.kicker{font-family:var(--display);font-size:.72rem;letter-spacing:.45em;text-indent:.45em;color:var(--gold-dim);text-transform:uppercase;text-align:center;margin-bottom:1.2em}
+h1{font-family:var(--display);font-weight:400;font-size:clamp(2rem,6.5vw,3.4rem);letter-spacing:.18em;text-indent:.18em;text-transform:uppercase;text-align:center;line-height:1.2}
+.plaque{position:relative;border:1px solid var(--gold-hair);padding:clamp(22px,3.5vw,38px) clamp(18px,4vw,44px);margin-bottom:20px}
+.plaque::before,.plaque::after,.plaque .tick-a,.plaque .tick-b{content:"";position:absolute;width:26px;height:26px;pointer-events:none}
+.plaque::before{top:-1px;left:-1px;border-top:2px solid var(--gold);border-left:2px solid var(--gold)}
+.plaque::after{bottom:-1px;right:-1px;border-bottom:2px solid var(--gold);border-right:2px solid var(--gold)}
+.plaque .tick-a{top:-1px;right:-1px;border-top:2px solid var(--gold);border-right:2px solid var(--gold)}
+.plaque .tick-b{bottom:-1px;left:-1px;border-bottom:2px solid var(--gold);border-left:2px solid var(--gold)}
+h2{font-family:var(--display);font-weight:400;font-size:1.25rem;letter-spacing:.24em;text-indent:.24em;text-transform:uppercase;margin:56px 0 18px;text-align:center}
+p{color:var(--cream-dim);max-width:66ch;margin:0 auto 14px}
+.lockbox{position:relative;margin-top:22px;background:linear-gradient(165deg,rgba(244,237,223,.05),rgba(5,31,23,.5)),var(--emerald-deep);border:1px solid var(--gold-hair);border-radius:3px;box-shadow:0 20px 50px rgba(0,0,0,.35);overflow:hidden}
+.lb-head{display:flex;justify-content:space-between;padding:.85em 1.3em;border-bottom:1px dotted rgba(212,175,106,.3);font-family:var(--display);font-size:.62rem;letter-spacing:.32em;color:var(--gold-dim);text-transform:uppercase}
+.lb-head span:last-child{color:var(--gold)}
+.teaser{position:relative;padding:1.3em 1.4em 0;max-height:160px;overflow:hidden}
+.teaser p{font-style:italic;font-size:1.05rem;line-height:1.8;color:var(--cream-dim);max-width:none;margin:0}
+.fade{position:absolute;left:0;right:0;bottom:0;height:100px;background:linear-gradient(rgba(7,42,32,0),#08281E 85%);pointer-events:none}
+.lockline{display:flex;align-items:center;justify-content:center;gap:.7em;padding:1em 1.4em 1.2em;font-family:var(--display);font-size:.68rem;letter-spacing:.24em;color:var(--gold);text-transform:uppercase;text-align:center}
+.cta-row{display:flex;flex-wrap:wrap;align-items:center;justify-content:center;gap:20px;margin-top:34px}
+.cta{display:inline-block;font-family:var(--display);font-size:.85rem;letter-spacing:.3em;text-indent:.3em;text-transform:uppercase;color:var(--emerald-ink);background:linear-gradient(100deg,var(--gold),var(--gold-pale),var(--gold));padding:1.05em 1.8em .95em;border:1px solid var(--gold);transition:filter .3s}
+.cta:hover{filter:brightness(1.08)}
+.alt{font-style:italic;font-size:1.02rem;color:var(--cream-dim);border-bottom:1px dotted var(--gold-dim);transition:color .3s}
+.alt:hover{color:var(--gold-pale)}
+.baseline{margin-top:70px;border-top:1px solid var(--gold-hair);padding-top:1.2em;display:flex;justify-content:space-between;flex-wrap:wrap;gap:.8em;font-family:var(--display);font-size:.6rem;letter-spacing:.28em;color:rgba(212,175,106,.5);text-transform:uppercase}
+.baseline a{color:rgba(212,175,106,.6)}
+.baseline a:hover{color:var(--gold-pale)}
+@media (max-width:640px){h1{letter-spacing:.12em;text-indent:.12em}h2{letter-spacing:.15em;text-indent:.15em}}
+</style>
+</head>
+<body>
+<a class="back" href="/08-meridian/">←&nbsp;THE&nbsp;MERIDIAN</a>
+<main>
+  <p class="kicker">Guide · Site 08 · Est. MCMXXVIII</p>
+  <div class="plaque"><i class="tick-a"></i><i class="tick-b"></i>
+    <h1 class="gold-txt">How It Was Built</h1>
+  </div>
+
+  <h2 class="gold-txt">The Craft</h2>
+  <p>Every golden headline in The Meridian is a background-clipped linear gradient — bronze into gold into pale gold and back — that slowly sheens across the type, so the lettering catches light like leaf under a chandelier. The art-deco emblems are inline SVGs that draw themselves: each ray, arc and keystone diamond carries pathLength=1 with a stroke-dashoffset transition and its own CSS-variable delay, so the sunburst assembles stroke by stroke as it scrolls into view, fills fading in last. Navigation is a fixed brass elevator panel whose round floor buttons glow gold when lit, driven by a scroll-spy IntersectionObserver tuned with a −42%/−52% rootMargin band so the correct floor is always illuminated. A faint feTurbulence film grain flickers over everything while conic-gradient ray patterns parallax behind the hero and bar at rAF-gated compositor speed. The wide-tracked Poiret One headings stay optically centered through matching text-indent compensation, and prefers-reduced-motion freezes the grain, pre-draws every ornament and drops the parallax entirely.</p>
+
+  <h2 class="gold-txt">Reproduction Prompt</h2>
+  <div class="lockbox">
+    <div class="lb-head"><span>House Prompt</span><span>Sealed</span></div>
+    <div class="teaser">
+      <p>Build a single-file HTML site for The Meridian, a fictional art-deco grand hotel established 1928, restored 2024. Palette: deep emeralds #0B3D2E / #072A20 / #051F17, gold #D4AF6A with pale highlight #F2DFAE, cream #F4EDDF, and a burgundy bar section #6E1E2B. Fonts: Poiret One for all display type — wide letter-spacing with…</p>
+      <div class="fade" aria-hidden="true"></div>
+    </div>
+    <div class="lockline">◆ Full prompt (≈250 words) included with purchase.</div>
+  </div>
+
+  <div class="cta-row">
+    <a class="cta" href="https://laserfabio.gumroad.com/l/fable-08">Get this prompt — CHF 9</a>
+    <a class="alt" href="/shop/">or get all 40 →</a>
+  </div>
+
+  <div class="baseline">
+    <a href="/08-meridian/">← Back to The Meridian</a>
+    <a href="/">Index of all sites</a>
+  </div>
+</main>
+<!-- PASS: teaser stops mid-sentence at ~47 words under the fade; no hidden full-prompt text in this file; corner-bracket plaque, gold gradient text and Poiret tracking match the parent site; links /08-meridian/, /shop/, / and Gumroad fable-08 verified; tracking reduced under 640px so headings never overflow. -->
+</body>
+</html>

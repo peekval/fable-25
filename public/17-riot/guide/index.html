@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>How RIOT PAPER was built — guide &amp; prompt</title>
+<meta name="description" content="The all-CSS collage techniques behind the RIOT PAPER zine, plus the reproduction prompt (included with purchase).">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Anton&family=Permanent+Marker&family=Courier+Prime:wght@400;700&display=swap" rel="stylesheet">
+<!-- PASS: teaser cut mid-sentence at ~45 words, fade overlay uses card white so the tear stays readable; no full prompt anywhere in this file; links /17-riot/ + / verified; lock-box pattern matches guides 16-20; card polygon has shallow rag so text never hits the tear at 390px. -->
+<style>
+:root{--paper:#F1EFE9;--ink:#101010;--red:#E8281E;--yellow:#F5E642;--tape:rgba(228,220,180,.55)}
+*{margin:0;padding:0;box-sizing:border-box}
+body{background:var(--paper);color:var(--ink);font-family:'Courier Prime',monospace;line-height:1.55;overflow-x:hidden;position:relative}
+body::before{
+  content:"";position:fixed;inset:0;pointer-events:none;z-index:60;opacity:.16;mix-blend-mode:multiply;
+  background:
+    radial-gradient(circle at 25% 15%, rgba(16,16,16,.35) 0 1px, transparent 1.5px),
+    radial-gradient(circle at 75% 65%, rgba(16,16,16,.28) 0 1px, transparent 1.5px);
+  background-size:7px 7px, 11px 11px;
+}
+::selection{background:var(--yellow);color:var(--ink)}
+a{color:inherit}
+:focus-visible{outline:3px solid var(--red);outline-offset:3px}
+h1,h2{font-family:'Anton',sans-serif;text-transform:uppercase;font-weight:400;letter-spacing:.01em}
+.scrawl{font-family:'Permanent Marker',cursive}
+.back{
+  position:fixed;top:14px;left:14px;z-index:100;font-family:'Permanent Marker',cursive;
+  font-size:1.05rem;color:var(--ink);text-decoration:none;transform:rotate(-4deg);padding:.2em .5em;
+  background:linear-gradient(104deg, transparent 3%, rgba(245,230,66,.9) 8%, rgba(245,230,66,.75) 90%, transparent 96%);
+}
+.back:hover{color:var(--red)}
+main{max-width:780px;margin:0 auto;padding:110px 20px 90px}
+.tag{font-family:'Permanent Marker',cursive;color:var(--red);transform:rotate(-2deg);display:inline-block;margin-bottom:.6em}
+h1{
+  font-size:clamp(2.4rem,8vw,4.6rem);line-height:.95;margin-bottom:1rem;
+  transform:rotate(-1.4deg);display:inline-block;background:var(--ink);color:var(--paper);
+  padding:.1em .25em .06em;box-shadow:6px 6px 0 var(--red);
+}
+h2{font-size:clamp(1.4rem,4vw,2.2rem);margin:3.2rem 0 .9rem;transform:rotate(-.8deg)}
+h2 .hl{background:linear-gradient(97deg,transparent 2%,rgba(245,230,66,.9) 8%,rgba(245,230,66,.8) 90%,transparent 98%);padding:.04em .12em}
+p{font-size:.95rem;margin-bottom:1em;max-width:64ch}
+p strong{font-weight:700}
+.card{
+  position:relative;margin-top:1.6rem;padding:2rem 1.6rem 1.6rem;
+  transform:rotate(-1.2deg);
+  filter:drop-shadow(4px 6px 0 rgba(16,16,16,.28));
+}
+.card::before{
+  content:"";position:absolute;inset:0;z-index:-1;background:#fff;
+  clip-path:polygon(1.5% 0,25% 1.2%,52% 0,78% 1.4%,100% .4%,99.2% 30%,100% 55%,98.8% 80%,99.6% 100%,70% 98.8%,45% 100%,18% 98.6%,0 99.4%,1% 70%,0 42%,1.2% 18%);
+}
+.tape{
+  position:absolute;width:110px;height:30px;background:var(--tape);
+  box-shadow:0 1px 2px rgba(16,16,16,.12);z-index:3;pointer-events:none;
+  clip-path:polygon(0 22%,4% 0,96% 4%,100% 18%,98% 82%,100% 96%,5% 100%,0 78%,2% 50%);
+  background-image:repeating-linear-gradient(90deg, rgba(255,255,255,.18) 0 3px, transparent 3px 7px);
+}
+.tape.tc{top:-16px;left:50%;transform:translateX(-50%) rotate(-4deg)}
+.kicker{font-size:.72rem;letter-spacing:.18em;text-transform:uppercase;color:var(--red);font-weight:700;margin-bottom:.8em}
+.teaser{position:relative;max-height:150px;overflow:hidden}
+.teaser p{margin:0;font-size:.92rem}
+.teaser::after{content:"";position:absolute;inset:0;background:linear-gradient(180deg,rgba(255,255,255,0) 0%,rgba(255,255,255,0) 35%,#fff 96%)}
+.lockline{
+  margin-top:12px;padding-top:12px;border-top:2px dashed rgba(16,16,16,.25);
+  font-family:'Permanent Marker',cursive;font-size:.95rem;color:var(--red);transform:rotate(-.6deg);
+}
+.cta-row{display:flex;gap:20px;align-items:center;margin-top:2.4rem;flex-wrap:wrap}
+.btn{
+  display:inline-block;font-family:'Anton',sans-serif;text-transform:uppercase;font-size:1.05rem;
+  letter-spacing:.04em;text-decoration:none;background:var(--red);color:var(--paper);
+  padding:.8em 1.4em .7em;transform:rotate(-1.5deg);box-shadow:4px 4px 0 var(--ink);
+  transition:transform .15s,box-shadow .15s;
+}
+.btn:hover{transform:rotate(-1.5deg) translate(-2px,-2px);box-shadow:6px 6px 0 var(--ink)}
+.alt{font-family:'Permanent Marker',cursive;font-size:.95rem;color:var(--ink);text-decoration:underline wavy var(--red) 2px}
+.alt:hover{color:var(--red)}
+.foot{
+  margin-top:4.5rem;border-top:4px solid var(--ink);padding-top:1.2rem;
+  display:flex;justify-content:space-between;gap:14px;flex-wrap:wrap;
+  font-size:.72rem;letter-spacing:.12em;text-transform:uppercase;
+}
+.foot a{text-decoration:none}
+.foot a:hover{color:var(--red)}
+@media (max-width:520px){h1{box-shadow:4px 4px 0 var(--red)}}
+</style>
+</head>
+<body>
+<a class="back" href="/17-riot/">←&nbsp;RIOT PAPER</a>
+<main>
+  <span class="tag">guide — site 17 of 40, photocopied honestly</span><br>
+  <h1>How this mess was made</h1>
+
+  <h2>The <span class="hl">techniques</span></h2>
+  <p>Every texture on RIOT PAPER is CSS &mdash; there is not a single image. The torn-paper cards are many-point <strong>polygon clip-paths on a ::before layer</strong>, never on the card itself, while filter:drop-shadow sits on the parent: that ordering trick makes the shadow follow the ragged edge and lets tape strips and staples overhang the tear instead of being clipped. The masking tape is a translucent clipped strip with faint repeating stripes, the staples are tiny inline SVGs, and the "APPROVED BY NO ONE" rubber stamps get their uneven ink from a radial mask-image, slamming in once at 3x scale when they scroll into view. A fixed pseudo-layer of two offset dot grids with mix-blend-mode:multiply reads as photocopy toner over the whole page, with a toner smear down the right edge. Cards tilt a couple of degrees each way and jitter on hover with a steps(2) animation, so they skip like a dying Xerox.</p>
+
+  <h2>Reproduction <span class="hl">prompt</span></h2>
+  <div class="card">
+    <span class="tape tc" aria-hidden="true"></span>
+    <p class="kicker">Prompt preview · pg. 1 of 1</p>
+    <div class="teaser">
+      <p>Build a single-file HTML site for RIOT PAPER, a DIY punk zine collective presenting Issue #13: NOISE. Use zero images &mdash; every texture must be CSS. Palette: aged paper #F1EFE9, ink #101010, safety-pin red #E8281E, highlighter yellow #F5E642, translucent masking tape&hellip;</p>
+    </div>
+    <p class="lockline">🔒 full prompt (≈250 words) included with purchase. no, you can't photocopy this bit.</p>
+  </div>
+
+  <div class="cta-row">
+    <a class="btn" href="https://laserfabio.gumroad.com/l/fable-17">Get this prompt — CHF 9</a>
+    <a class="alt" href="/shop/">or get all 40 →</a>
+  </div>
+
+  <div class="foot">
+    <a href="/17-riot/">← back to Riot Paper</a>
+    <a href="/">all 40 sites</a>
+  </div>
+</main>
+</body>
+</html>

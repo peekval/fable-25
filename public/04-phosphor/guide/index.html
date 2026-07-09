@@ -1,0 +1,184 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>PHOSPHOR — Guide &amp; Reproduction Prompt</title>
+<meta name="description" content="How the PHOSPHOR CRT poetry zine was built, plus the AI reproduction prompt.">
+<meta name="theme-color" content="#000000">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=VT323&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --p:#33FF66;
+    --p-dim:#1A8C3C;
+    --p-faint:#0E4A20;
+    --amber:#FFB000;
+    --bg:#000000;
+    --glow:0 0 1px rgba(51,255,102,.9), 0 0 6px rgba(51,255,102,.45), 0 0 18px rgba(51,255,102,.14);
+    --glow-amber:0 0 1px rgba(255,176,0,.9), 0 0 7px rgba(255,176,0,.4);
+    --mono:"IBM Plex Mono","Courier New",monospace;
+    --disp:"VT323","IBM Plex Mono",monospace;
+  }
+  *{margin:0;padding:0;box-sizing:border-box}
+  body{
+    background:var(--bg);color:var(--p);
+    font-family:var(--mono);font-size:15px;line-height:1.7;
+    text-shadow:var(--glow);min-height:100vh;overflow-x:hidden;
+  }
+  ::selection{background:var(--p);color:#000;text-shadow:none}
+  .crt-scan{
+    position:fixed;inset:0;z-index:90;pointer-events:none;
+    background:repeating-linear-gradient(to bottom,
+      rgba(0,0,0,0) 0px, rgba(0,0,0,0) 2px, rgba(0,0,0,.28) 3px, rgba(0,0,0,0) 4px);
+    mix-blend-mode:multiply;
+  }
+  .crt-vig{
+    position:fixed;inset:0;z-index:91;pointer-events:none;
+    background:radial-gradient(ellipse 130% 120% at 50% 45%, rgba(0,0,0,0) 55%, rgba(0,0,0,.42) 88%, rgba(0,0,0,.78) 100%);
+  }
+  .top{position:fixed;top:14px;left:16px;z-index:100;display:flex;gap:8px}
+  .top a{
+    font-family:var(--disp);font-size:18px;color:var(--p-dim);text-decoration:none;
+    letter-spacing:1px;padding:2px 6px;border:1px solid var(--p-faint);
+    background:rgba(0,0,0,.75);text-shadow:none;
+    transition:color .18s,border-color .18s,text-shadow .18s;
+  }
+  .top a:hover,.top a:focus-visible{color:var(--p);border-color:var(--p-dim);text-shadow:var(--glow);outline:none}
+  .frame{max-width:760px;margin:0 auto;padding:90px clamp(16px,4vw,40px) 60px}
+  h1{
+    font-family:var(--disp);font-weight:400;
+    font-size:clamp(38px,7vw,58px);letter-spacing:3px;line-height:1.1;
+  }
+  h1::before{content:"> ";color:var(--p-dim)}
+  .issue{font-size:12px;letter-spacing:3px;color:var(--p-dim);text-transform:uppercase;text-shadow:none;margin-top:10px}
+  .issue .amber{color:var(--amber);text-shadow:var(--glow-amber)}
+  .divider{
+    font-family:var(--mono);text-align:center;color:var(--p-faint);
+    font-size:12px;margin:52px auto;white-space:pre;overflow:hidden;text-shadow:none;user-select:none;
+  }
+  .divider b{color:var(--p-dim);font-weight:400}
+  h2{
+    font-family:var(--disp);font-weight:400;font-size:clamp(26px,4.5vw,36px);
+    letter-spacing:2px;margin-bottom:14px;
+  }
+  h2::before{content:"> ";color:var(--p-dim)}
+  .filehead{
+    display:flex;flex-wrap:wrap;gap:4px 18px;
+    font-size:12px;letter-spacing:1px;color:var(--p-dim);text-shadow:none;
+    border:1px solid var(--p-faint);border-left:3px solid var(--p-dim);
+    padding:6px 12px;margin-bottom:20px;
+  }
+  .filehead .fname{color:var(--p);text-shadow:var(--glow)}
+  .how p{color:var(--p);max-width:64ch}
+  .how p+p{margin-top:14px}
+  .how .dim{color:var(--p-dim);text-shadow:none}
+
+  .termbox{
+    border:1px solid var(--p-faint);
+    background:rgba(10,30,15,.25);
+    margin-top:22px;
+  }
+  .termtitle{
+    font-size:11px;letter-spacing:2px;color:var(--p-dim);text-shadow:none;
+    border-bottom:1px solid var(--p-faint);
+    padding:9px 14px;display:flex;justify-content:space-between;gap:10px;
+  }
+  .teaser{position:relative;padding:16px 14px 0;overflow:hidden}
+  .teaser p{
+    font-size:14px;line-height:1.85;color:var(--p);
+    max-height:12em;overflow:hidden;
+  }
+  .teaser::after{
+    content:"";position:absolute;left:0;right:0;bottom:0;height:7.5em;
+    background:linear-gradient(rgba(0,0,0,0), #030B05 85%);
+    pointer-events:none;
+  }
+  .lockline{
+    padding:12px 14px 16px;font-size:12px;letter-spacing:2px;
+    color:var(--amber);text-shadow:var(--glow-amber);text-transform:uppercase;
+  }
+  .lockline::before{content:"[LOCKED] "}
+  .buy{margin-top:30px;display:flex;align-items:center;gap:24px;flex-wrap:wrap}
+  .cta{
+    display:inline-block;font-family:var(--disp);font-size:22px;letter-spacing:2px;
+    color:var(--bg);background:var(--p);text-decoration:none;text-shadow:none;
+    padding:10px 26px;border:1px solid var(--p);
+    box-shadow:0 0 14px rgba(51,255,102,.45);
+    transition:background .18s,color .18s,text-shadow .18s;
+  }
+  .cta:hover{background:var(--bg);color:var(--p);text-shadow:var(--glow)}
+  .all{font-size:13px;letter-spacing:1px;color:var(--p-dim);text-shadow:none;text-decoration:none;transition:color .18s,text-shadow .18s}
+  .all:hover{color:var(--p);text-shadow:var(--glow)}
+  footer{
+    margin-top:64px;border-top:1px solid var(--p-faint);padding-top:20px;
+    display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap;
+    font-family:var(--disp);font-size:17px;letter-spacing:2px;color:var(--p-dim);text-shadow:none;
+  }
+  footer a{color:var(--p-dim);text-decoration:none;transition:color .18s,text-shadow .18s}
+  footer a:hover{color:var(--p);text-shadow:var(--glow)}
+  @media (max-width:480px){
+    .frame{padding-top:76px}
+    .filehead{font-size:10.5px}
+  }
+  @media (prefers-reduced-motion: reduce){
+    *{transition-duration:.01ms!important}
+  }
+</style>
+</head>
+<body>
+
+<div class="crt-scan" aria-hidden="true"></div>
+<div class="crt-vig" aria-hidden="true"></div>
+
+<nav class="top">
+  <a href="/04-phosphor/">[ESC] PHOSPHOR</a>
+  <a href="/">[/] 25</a>
+</nav>
+
+<main class="frame">
+  <header>
+    <h1>GUIDE.TXT</h1>
+    <p class="issue">fable 25 · guide no. 04 · <span class="amber">how phosphor was built</span></p>
+  </header>
+
+  <div class="divider" aria-hidden="true">.::[ <b>SECTION 01 — HOW IT WAS BUILT</b> ]::.
+──────────────────────────────────────────</div>
+
+  <section class="how">
+    <div class="filehead" aria-hidden="true"><span class="fname">MAKING-OF.TXT</span><span>1 OF 1</span><span>NO CODE INSIDE</span></div>
+    <p>The tube is a stack of fixed overlay layers: scanlines from a repeating gradient multiplied over the page, a heavy vignette, a flicker sheet whose opacity jumps in steps, and a slow phosphor breathing glow — while every bright character carries a layered green text-shadow so the type itself seems to emit light.</p>
+    <p>On arrival a boot sequence types itself out, complete with a counting 64K memory test and an unstable dream module, skippable with any key. Each poem keeps an invisible ghost copy for layout while a live copy types over it on scroll, cursor blinking, pausing longer at punctuation. At the bottom waits a real reader console with commands, arrow-key history and amber error messages.</p>
+    <p class="dim">// reduced-motion and no-JS readers skip the boot and get the poems fully printed.</p>
+  </section>
+
+  <div class="divider" aria-hidden="true">.::[ <b>SECTION 02 — REPRODUCTION PROMPT</b> ]::.
+──────────────────────────────────────────</div>
+
+  <section>
+    <div class="termbox">
+      <div class="termtitle"><span>PROMPT.TXT — FOR ANY AI WEB BUILDER</span><span>PREVIEW</span></div>
+      <div class="teaser">
+        <p>Build a one-page poetry zine that lives inside a 1982 green-phosphor CRT terminal. Palette: pure black #000000; phosphor green #33FF66 with dimmer tiers #1A8C3C and #0E4A20; warning amber #FFB000. Fonts: IBM Plex Mono for prose, VT323 for display and terminal headings. Signature technique — build the CRT entirely from fixed, pointer-transparent overlay layers…</p>
+      </div>
+      <p class="lockline">Full prompt (≈250 words) included with purchase.</p>
+    </div>
+    <div class="buy">
+      <a class="cta" href="https://laserfabio.gumroad.com/l/fable-04">GET THIS PROMPT — CHF 9</a>
+      <a class="all" href="/shop/">or get all 40 →</a>
+    </div>
+  </section>
+
+  <footer>
+    <span>printed in light · MMXXVI</span>
+    <span><a href="/04-phosphor/">view the zine</a> · <a href="/">fable 25 hub</a></span>
+  </footer>
+</main>
+
+<!-- PASS: review 01-05 — lock-box pattern consistent (head / ~45-word teaser / fade / lock line / CHF 9 CTA / all-40 link);
+     lock line rendered as [LOCKED] in amber to stay in-terminal instead of the emoji used on the other guides — same
+     position and copy; teaser fade #030B05 matches termbox-over-black; links /04-phosphor/, /shop/, / verified;
+     scanline/vignette overlays are pointer-transparent so all links stay clickable. Full prompt not present in this file. -->
+</body>
+</html>

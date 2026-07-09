@@ -1,0 +1,181 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>LUMEN — Guide &amp; Reproduction Prompt</title>
+<meta name="description" content="How the LUMEN maison de parfum site was built, plus the AI reproduction prompt.">
+<meta name="theme-color" content="#0D0B14">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;1,300;1,400&family=Inter:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --ink:#0D0B14;
+    --ink-2:#131020;
+    --violet:#8B7BD8;
+    --teal:#4ECDC4;
+    --pearl:#EDEAF4;
+    --text:rgba(237,234,244,.72);
+    --text-dim:rgba(237,234,244,.56);
+    --hair:rgba(237,234,244,.12);
+    --ease:cubic-bezier(0.16,1,0.3,1);
+    --serif:'Cormorant Garamond',Georgia,serif;
+    --sans:'Inter',system-ui,sans-serif;
+  }
+  *,*::before,*::after{margin:0;padding:0;box-sizing:border-box}
+  body{
+    background:
+      radial-gradient(60% 80% at 15% 20%, rgba(139,123,216,.22), transparent 60%),
+      radial-gradient(50% 70% at 85% 70%, rgba(78,205,196,.16), transparent 60%),
+      var(--ink);
+    color:var(--text);font-family:var(--sans);font-weight:300;
+    font-size:16px;line-height:1.7;letter-spacing:.01em;
+    -webkit-font-smoothing:antialiased;min-height:100vh;
+  }
+  body::after{ /* grain */
+    content:"";position:fixed;inset:0;pointer-events:none;opacity:.5;
+    background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix type='matrix' values='0 0 0 0 1 0 0 0 0 1 0 0 0 0 1 0 0 0 0.04 0'/%3E%3C/filter%3E%3Crect width='160' height='160' filter='url(%23n)'/%3E%3C/svg%3E");
+  }
+  ::selection{background:var(--violet);color:var(--ink)}
+  a:focus-visible{outline:1px solid var(--teal);outline-offset:4px;border-radius:4px}
+  .top{position:fixed;top:22px;left:24px;z-index:10;display:flex;gap:8px}
+  .top a{
+    font-size:12px;letter-spacing:.14em;color:var(--text-dim);text-decoration:none;
+    padding:8px 12px;border-radius:99px;border:1px solid transparent;
+    transition:color .6s var(--ease),border-color .6s var(--ease),background .6s var(--ease);
+  }
+  .top a:hover{color:var(--pearl);border-color:var(--hair);background:rgba(237,234,244,.04)}
+  .wrap{max-width:760px;margin:0 auto;padding:130px 28px 70px;position:relative;z-index:1}
+  .eyebrow{font-size:11px;letter-spacing:.42em;text-transform:uppercase;color:var(--teal);font-weight:400}
+  h1{
+    font-family:var(--serif);font-weight:300;color:var(--pearl);
+    font-size:clamp(42px,7.5vw,72px);line-height:1.08;letter-spacing:.02em;
+    margin:20px 0 14px;
+  }
+  h1 em{font-style:italic;color:var(--violet)}
+  .lede{font-family:var(--serif);font-style:italic;font-weight:300;font-size:clamp(19px,2.4vw,24px);color:rgba(237,234,244,.8)}
+  h2{
+    font-family:var(--serif);font-weight:300;color:var(--pearl);
+    font-size:clamp(26px,3.6vw,36px);letter-spacing:.02em;margin:80px 0 8px;
+  }
+  h2 em{font-style:italic;color:var(--violet)}
+  .sec-eyebrow{font-size:11px;letter-spacing:.42em;text-transform:uppercase;color:var(--violet);font-weight:400;margin-top:76px}
+  .sec-eyebrow+h2{margin-top:14px}
+  .how p{margin-top:18px;max-width:58ch}
+  .glass{
+    background:
+      linear-gradient(rgba(237,234,244,.09), rgba(237,234,244,0) 42%),
+      rgba(237,234,244,.045);
+    -webkit-backdrop-filter:blur(18px) saturate(150%);
+    backdrop-filter:blur(18px) saturate(150%);
+    border:1px solid var(--hair);
+    border-top-color:rgba(237,234,244,.2);
+    border-radius:20px;
+  }
+  @supports not ((backdrop-filter:blur(1px)) or (-webkit-backdrop-filter:blur(1px))){
+    .glass{background:rgba(19,16,32,.82)}
+  }
+  .lockbox{margin-top:28px;overflow:hidden;background:#14111F}
+  .lockbox .head{
+    display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap;
+    padding:16px 26px;border-bottom:1px solid var(--hair);
+    font-size:10px;letter-spacing:.3em;text-transform:uppercase;color:var(--text-dim);
+  }
+  .lockbox .head b{color:var(--teal);font-weight:400}
+  .teaser{position:relative;padding:24px 26px 0}
+  .teaser p{
+    font-family:var(--serif);font-size:18px;line-height:1.8;color:rgba(237,234,244,.85);
+    max-height:10.5em;overflow:hidden;
+  }
+  .teaser::after{
+    content:"";position:absolute;left:0;right:0;bottom:0;height:7em;
+    background:linear-gradient(rgba(19,16,32,0), #14111F 88%);
+    pointer-events:none;
+  }
+  .lockline{
+    padding:16px 26px 22px;
+    font-size:11px;letter-spacing:.26em;text-transform:uppercase;color:var(--violet);
+  }
+  .lockline::before{content:"🔒 "}
+  .buy{margin-top:36px;display:flex;align-items:center;gap:26px;flex-wrap:wrap}
+  .cta{
+    display:inline-block;font-size:12px;letter-spacing:.3em;text-transform:uppercase;
+    color:var(--pearl);text-decoration:none;
+    padding:16px 34px;border-radius:99px;
+    border:1px solid rgba(237,234,244,.25);
+    position:relative;overflow:hidden;
+    transition:border-color .8s var(--ease);
+  }
+  .cta::before{
+    content:"";position:absolute;inset:0;border-radius:inherit;
+    background:linear-gradient(100deg,rgba(139,123,216,.35),rgba(78,205,196,.3));
+    opacity:0;transition:opacity .8s var(--ease);
+  }
+  .cta:hover{border-color:rgba(237,234,244,.5)}
+  .cta:hover::before{opacity:1}
+  .cta span{position:relative}
+  .all{font-size:12px;letter-spacing:.2em;text-transform:uppercase;color:var(--text-dim);text-decoration:none;transition:color .6s var(--ease)}
+  .all:hover{color:var(--teal)}
+  footer{
+    margin-top:90px;border-top:1px solid var(--hair);padding-top:30px;
+    display:flex;justify-content:space-between;gap:16px;flex-wrap:wrap;
+    font-size:11px;letter-spacing:.26em;text-transform:uppercase;color:rgba(237,234,244,.4);
+  }
+  footer a{color:var(--text-dim);text-decoration:none;transition:color .6s var(--ease)}
+  footer a:hover{color:var(--teal)}
+  @media (max-width:480px){
+    .wrap{padding-top:110px}
+    .teaser p{font-size:16.5px}
+  }
+  @media (prefers-reduced-motion:reduce){
+    *,*::before,*::after{transition-duration:.01ms!important}
+  }
+</style>
+</head>
+<body>
+
+<nav class="top">
+  <a href="/02-lumen/">← LUMEN</a>
+  <a href="/">all 25</a>
+</nav>
+
+<main class="wrap">
+  <p class="eyebrow">Fable 25 — Guide No. 02</p>
+  <h1>How LUMEN<br><em>was built</em></h1>
+  <p class="lede">Iridescent silk, poured from a fragment shader — one file, no images.</p>
+
+  <section class="how">
+    <p class="sec-eyebrow">01 — The Making</p>
+    <h2>Light, <em>engineered</em></h2>
+    <p>Everything luminous on LUMEN comes from a single fullscreen WebGL fragment shader fixed behind the page: domain-warped fractal noise folds like silk in slow motion, and a cosine palette tints the highlights from violet to teal so the background behaves like thin-film iridescence rather than a gradient. A faint animated dither keeps the dark falloff free of banding, and the whole field drifts gently toward the pointer.</p>
+    <p>Above it sit a darkening veil and an SVG-noise grain so the serif type always reads. The stat and note cards are true glassmorphism — translucent pearl, heavy backdrop blur, a brighter top border where light catches the edge — with a solid fallback for browsers without backdrop-filter. The perfume orbs are pure CSS radial-gradient spheres with glow halos and scroll parallax, the flacon is hand-drawn inline SVG, and the hero wordmark condenses from wide blurred letter-spacing into place before a gradient sheen loops across it. Reduced-motion visitors get one still shader frame and all content immediately.</p>
+  </section>
+
+  <section>
+    <p class="sec-eyebrow" style="color:var(--teal)">02 — The Formula</p>
+    <h2>Reproduction <em>prompt</em></h2>
+    <div class="lockbox glass">
+      <div class="head"><span><b>Éclat N°02</b> — for any AI web builder</span><span>Preview</span></div>
+      <div class="teaser">
+        <p>Build a one-page site for "LUMEN", a fictional haute maison de parfum. Palette: deep ink-violet #0D0B14 (secondary #131020), violet #8B7BD8, teal #4ECDC4, pearl #EDEAF4, hairlines at 12%-alpha pearl. Fonts: Cormorant Garamond (weight 300, true italics) for display, Inter 300/400 for UI. Signature technique — a fixed fullscreen WebGL fragment shader behind all content: domain-warped fractal Brownian motion…</p>
+      </div>
+      <p class="lockline">Full prompt (≈250 words) included with purchase.</p>
+    </div>
+    <div class="buy">
+      <a class="cta" href="https://laserfabio.gumroad.com/l/fable-02"><span>Get this prompt — CHF 9</span></a>
+      <a class="all" href="/shop/">or get all 40 →</a>
+    </div>
+  </section>
+
+  <footer>
+    <span>LUMEN · Crafted in light</span>
+    <span><a href="/02-lumen/">view the site</a> &nbsp;·&nbsp; <a href="/">fable 25 hub</a></span>
+  </footer>
+</main>
+
+<!-- PASS: review 01-05 — lock-box pattern consistent (head / ~45-word teaser / fade / lock line / CHF 9 CTA / all-40 link);
+     fixed glass lock-box vs solid fade seam by giving .lockbox a solid #14111F base so the teaser fade matches;
+     links /02-lumen/, /shop/, / verified; buy row wraps and teaser clamps on 360px. Full prompt not present in this file. -->
+</body>
+</html>

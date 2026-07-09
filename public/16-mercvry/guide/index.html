@@ -1,0 +1,113 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>How MERCVRY was built — guide &amp; prompt</title>
+<meta name="description" content="The techniques behind the MERCVRY liquid-metal showcase, plus the reproduction prompt (included with purchase).">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@700;800&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+<!-- PASS: teaser cut mid-sentence at ~45 words, fade overlay uses site ink #101114, no full prompt anywhere in this file; links /16-mercvry/ + / verified; lock-box pattern matches guides 17-20; single column layout is mobile-safe at 390px. -->
+<style>
+:root{
+  --ink:#101114; --ink2:#16181d; --steel-hi:#DDE3EA; --steel:#9AA2AE;
+  --steel-lo:#6E7683; --volt:#4D5BFF; --line:rgba(221,227,234,.09);
+}
+*{margin:0;padding:0;box-sizing:border-box}
+body{background:var(--ink);color:var(--steel);font-family:"Space Mono",monospace;font-size:15px;line-height:1.65;-webkit-font-smoothing:antialiased}
+::selection{background:var(--volt);color:#fff}
+a{color:inherit}
+:focus-visible{outline:2px solid var(--volt);outline-offset:3px}
+.back{
+  position:fixed;top:18px;left:18px;z-index:50;font-size:12px;letter-spacing:.12em;
+  text-decoration:none;color:var(--steel-lo);padding:8px 12px;border:1px solid var(--line);
+  border-radius:2px;background:rgba(16,17,20,.6);backdrop-filter:blur(8px);
+  transition:color .25s,border-color .25s;
+}
+.back:hover{color:var(--steel-hi);border-color:rgba(221,227,234,.3)}
+main{max-width:820px;margin:0 auto;padding:120px 22px 80px}
+.kicker{font-size:11px;letter-spacing:.34em;text-transform:uppercase;color:var(--steel-lo);margin-bottom:20px}
+.kicker b{color:var(--volt);font-weight:400}
+h1{
+  font-family:"Syne",sans-serif;font-weight:800;letter-spacing:-.02em;line-height:1;
+  font-size:clamp(40px,8vw,84px);color:var(--steel-hi);
+  background-image:linear-gradient(104deg,#565d68 0%,#cfd6df 14%,#f6f8fb 24%,#848c99 38%,#e6ebf2 55%,#8f97a4 68%,#f2f5f9 82%,#5c636e 100%);
+  -webkit-background-clip:text;background-clip:text;color:transparent;
+}
+h2{font-family:"Syne",sans-serif;font-weight:800;color:var(--steel-hi);font-size:clamp(20px,3vw,28px);margin:64px 0 18px;letter-spacing:-.01em}
+h2 .no{color:var(--volt);font-family:"Space Mono",monospace;font-weight:400;font-size:11px;letter-spacing:.3em;display:block;margin-bottom:10px}
+p{margin-bottom:16px;max-width:66ch}
+p strong{color:var(--steel-hi);font-weight:700}
+.panel{
+  position:relative;border:1px solid var(--line);border-radius:3px;
+  background:
+    repeating-linear-gradient(90deg,rgba(255,255,255,.03) 0 1px,rgba(255,255,255,0) 1px 3px),
+    linear-gradient(180deg,#191b20 0%,#121317 60%,#15171c 100%);
+  padding:30px 26px;margin-top:24px;
+}
+.panel .ph{font-size:10px;letter-spacing:.28em;color:var(--volt);text-transform:uppercase;margin-bottom:16px}
+.teaser{position:relative;max-height:150px;overflow:hidden}
+.teaser p{color:var(--steel);font-size:14px;margin:0}
+.teaser::after{
+  content:"";position:absolute;inset:0;
+  background:linear-gradient(180deg,rgba(18,19,23,0) 0%,rgba(18,19,23,0) 35%,#121317 96%);
+}
+.lockline{
+  margin-top:14px;padding-top:16px;border-top:1px solid var(--line);
+  font-size:11px;letter-spacing:.18em;text-transform:uppercase;color:var(--steel-lo);
+  display:flex;align-items:center;gap:10px;
+}
+.lockline svg{flex:0 0 auto}
+.cta-row{display:flex;gap:16px;align-items:center;margin-top:36px;flex-wrap:wrap}
+.btn-volt{
+  display:inline-block;font-size:12px;letter-spacing:.18em;text-transform:uppercase;
+  text-decoration:none;padding:16px 28px;border-radius:2px;background:var(--volt);color:#fff;
+  transition:transform .25s,box-shadow .25s;
+}
+.btn-volt:hover{transform:translateY(-2px);box-shadow:0 8px 30px rgba(77,91,255,.35)}
+.alt{font-size:12px;letter-spacing:.1em;color:var(--steel-lo);text-decoration:underline}
+.alt:hover{color:var(--steel-hi)}
+.foot{
+  margin-top:80px;padding-top:26px;border-top:1px solid var(--line);
+  display:flex;justify-content:space-between;gap:14px;flex-wrap:wrap;
+  font-size:10.5px;letter-spacing:.18em;text-transform:uppercase;color:var(--steel-lo);
+}
+.foot a{text-decoration:none}
+.foot a:hover{color:var(--steel-hi)}
+</style>
+</head>
+<body>
+<a class="back" href="/16-mercvry/" aria-label="Back to MERCVRY">&larr;&nbsp;MERCVRY</a>
+<main>
+  <p class="kicker">Guide <b>&mdash;</b> Site 16 / 40</p>
+  <h1>HOW MERCVRY WAS BUILT</h1>
+
+  <h2><span class="no">01 / THE READ</span>How it was built</h2>
+  <p>The liquid-metal hero is a <strong>2D metaball field</strong>: six blobs whose r&sup2;/d&sup2; influence is summed per pixel at quarter resolution into an offscreen buffer, then upscaled &mdash; pixels above the threshold get a vertical chrome palette, a blue-white rim just above the isoline, darkened cores, and an electric #4D5BFF halo on the anti-aliased skirt. One blob chases the cursor; on touch it drifts autonomously.</p>
+  <p>The headlines are <strong>chrome text</strong>: a ten-stop silver gradient clipped into the glyphs with background-clip:text, its background-position eased toward the cursor's X so the "environment" slides across the metal &mdash; wrapped in an @supports guard so unsupported browsers fall back to solid silver. Magnetic buttons follow the pointer and release with a springy overshoot, the marquee blurs proportionally to scroll velocity, and the specimen drawings animate their gradients with SMIL &mdash; which the script strips under reduced motion, since CSS media queries can't stop SMIL. The whole simulation pauses via IntersectionObserver whenever the hero leaves the viewport.</p>
+
+  <h2><span class="no">02 / THE PRODUCT</span>Reproduction prompt</h2>
+  <div class="panel">
+    <div class="ph">PROMPT.TXT &mdash; PREVIEW</div>
+    <div class="teaser">
+      <p>Build a single-file HTML showcase site for MERCVRY, a Z&uuml;rich atelier that 3D-prints jewelry and sculpture in sterling silver, titanium and steel. Palette: near-black ink #101114 and #16181d panels, steel greys #DDE3EA / #9AA2AE / #6E7683, one electric accent "volt" #4D5BFF. Fonts: Syne&hellip;</p>
+    </div>
+    <div class="lockline">
+      <svg width="12" height="14" viewBox="0 0 12 14" fill="none" aria-hidden="true"><rect x="1" y="6" width="10" height="7" rx="1" stroke="#6E7683"/><path d="M3.5 6V4.5a2.5 2.5 0 0 1 5 0V6" stroke="#6E7683"/></svg>
+      Full prompt (&approx;250 words) included with purchase.
+    </div>
+  </div>
+
+  <div class="cta-row">
+    <a class="btn-volt" href="https://laserfabio.gumroad.com/l/fable-16">Get this prompt &mdash; CHF 9</a>
+    <a class="alt" href="/shop/">or get all 40 &rarr;</a>
+  </div>
+
+  <div class="foot">
+    <a href="/16-mercvry/">&larr; Back to MERCVRY</a>
+    <a href="/">All 40 sites</a>
+  </div>
+</main>
+</body>
+</html>

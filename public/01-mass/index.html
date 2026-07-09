@@ -174,7 +174,7 @@
     font-weight:700;letter-spacing:-.01em;
   }
   .manifesto-big em{font-style:normal;color:var(--acid)}
-  .manifesto-cols{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:2rem;max-width:900px}
+  .manifesto-cols{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:2rem;max-width:900px;min-width:0}
   .manifesto-cols .reveal:nth-child(2){--d:.12s}
   .manifesto-cols .reveal:nth-child(3){--d:.24s}
   .manifesto-cols h3{font-size:.75rem;letter-spacing:.25em;text-transform:uppercase;color:var(--acid);margin-bottom:.75rem}
@@ -268,7 +268,7 @@
     display:flex;justify-content:space-between;align-items:flex-end;gap:2rem;
     padding:3rem var(--gutter) 0;flex-wrap:wrap;
   }
-  .foot-links{display:flex;gap:1.75rem;font-size:.8rem;letter-spacing:.12em;text-transform:uppercase}
+  .foot-links{display:flex;flex-wrap:wrap;gap:1.75rem;font-size:.8rem;letter-spacing:.12em;text-transform:uppercase}
   .foot-links a{border-bottom:2px solid transparent;transition:border-color .3s}
   .foot-links a:hover{border-color:var(--ink)}
   .foot-fine{font-size:.7rem;letter-spacing:.1em;color:rgba(10,10,10,.6)}
@@ -427,6 +427,7 @@
       <a href="#">hello@mass.foundry</a>
       <a href="#">Instagram</a>
       <a href="#">Are.na</a>
+      <a href="/01-mass/guide/">guide &amp; prompt →</a>
     </div>
     <div class="foot-fine">© 2026 MASS TYPE FOUNDRY — ZÜRICH. SET IT BIG OR DON'T SET IT.</div>
   </div>

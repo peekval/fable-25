@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>MONSOON — guide &amp; reproduction prompt</title>
+<meta name="description" content="How the MONSOON atmospheric journal was built, plus the full AI reproduction prompt.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&family=Newsreader:ital,opsz,wght@0,6..72,300;0,6..72,400;0,6..72,500;1,6..72,300;1,6..72,400;1,6..72,500&display=swap" rel="stylesheet">
+<style>
+  *{margin:0;padding:0;box-sizing:border-box}
+  body{
+    font-family:Inter,system-ui,sans-serif;
+    background:#2B3440;
+    color:#D8DEE6;
+    -webkit-font-smoothing:antialiased;
+    line-height:1.7;
+  }
+  ::selection{background:#E8C97D;color:#2B3440}
+  main{max-width:640px;margin:0 auto;padding:72px 24px 80px}
+  .kicker{
+    font:600 11px/1 Inter,sans-serif;letter-spacing:.34em;text-transform:uppercase;
+    color:#8FA6BC;margin-bottom:18px;
+  }
+  h1{
+    font:300 clamp(34px,7vw,54px)/1.1 Newsreader,serif;
+    letter-spacing:.12em;color:#ECF1F7;margin-bottom:10px;
+  }
+  .tag{
+    font:italic 400 17px/1.5 Newsreader,serif;
+    color:rgba(216,222,230,.72);margin-bottom:46px;
+  }
+  h2{
+    font:italic 400 clamp(24px,4vw,30px)/1.2 Newsreader,serif;
+    color:#ECF1F7;margin:42px 0 16px;
+  }
+  p{font:300 15px/1.85 Inter,sans-serif;color:#C6CED8;margin-bottom:14px}
+  .rule{width:52px;height:1px;background:rgba(255,255,255,.22);margin:40px 0}
+  .prompt-teaser{
+    position:relative;overflow:hidden;
+    background:rgba(14,19,26,.35);
+    border:1px solid rgba(255,255,255,.14);
+    border-radius:8px;
+    padding:26px 26px 60px;
+    margin-top:22px;
+  }
+  .prompt-teaser p{
+    font:400 16px/1.85 Newsreader,serif;color:#D8DEE6;margin:0;
+  }
+  .fade{
+    position:absolute;left:0;right:0;bottom:0;height:90px;
+    background:linear-gradient(to bottom, transparent, #2B3440);
+    pointer-events:none;
+  }
+  .lock-line{
+    font:italic 400 14px/1.6 Newsreader,serif;
+    color:#8FA6BC;margin:12px 0 34px;
+  }
+  .cta{
+    display:inline-block;
+    background:#E8C97D;color:#2B3440;
+    font:600 13px/1 Inter,sans-serif;letter-spacing:.14em;text-transform:uppercase;
+    text-decoration:none;
+    padding:17px 30px;border-radius:6px;
+    transition:opacity .25s;
+  }
+  .cta:hover{opacity:.85}
+  .cta:focus-visible{outline:2px solid #ECF1F7;outline-offset:3px}
+  .alt{
+    display:inline-block;margin-left:18px;
+    font:400 13px/1 Inter,sans-serif;letter-spacing:.06em;
+    color:#8FA6BC;text-decoration:none;
+    border-bottom:1px solid rgba(143,166,188,.35);padding-bottom:4px;
+    transition:color .3s,border-color .3s;
+  }
+  .alt:hover{color:#C9CFD4;border-color:#C9CFD4}
+  @media (max-width:480px){.alt{margin:16px 0 0;display:block;width:max-content}}
+  footer{
+    margin-top:64px;padding-top:26px;
+    border-top:1px solid rgba(255,255,255,.14);
+    display:flex;gap:26px;flex-wrap:wrap;
+  }
+  footer a{
+    font:500 11px/1 Inter,sans-serif;letter-spacing:.24em;text-transform:uppercase;
+    color:#8FA6BC;text-decoration:none;transition:color .3s;
+  }
+  footer a:hover{color:#C9CFD4}
+</style>
+</head>
+<body>
+<main>
+  <p class="kicker">Site 13 · Guide</p>
+  <h1>MONSOON</h1>
+  <p class="tag">an atmospheric journal — three weathers, recorded in ink &amp; water</p>
+
+  <h2>How it was built</h2>
+  <p>MONSOON is a single HTML file that paints its entire visual world at runtime — no photographs, no video, no image assets of any kind. A fixed background layer sits behind the page and continuously blends its color between per-section sky stops, keyed to the scroll position of the viewport's center with smoothstep easing, so the journal drifts from storm slate through rain blue, fog grey and golden clearing to near-black nightfall.</p>
+  <p>A small frosted SVG barometer floats in the corner the whole way down; its gold needle eases between angles assigned to each section and its readout word flips from STORM to FAIR as you pass each weather. Each full-height chapter owns its own canvas simulation, started and stopped by an IntersectionObserver: rain drawn as three depth planes each batched into a single stroked path, with wind shear, splashes and double-pulse lightning; fog as pre-rendered radial-gradient sprites drifting on sine paths behind halo-protected serif text; the clearing as twinkling dust motes under blurred, screen-blended god-rays. Under prefers-reduced-motion every simulation renders one composed still frame instead of animating, and the pixel ratio is capped to keep fill cost bounded on high-density screens.</p>
+
+  <div class="rule"></div>
+
+  <h2>Reproduction Prompt</h2>
+  <div class="prompt-teaser">
+    <p>Build a single-page "atmospheric journal" called MONSOON: a scroll story through three weathers, drawn live on canvas with no images. Base sky #2B3440 with ink #D8DEE6 and hero white #ECF1F7; section skies crossfade to rain-blue #5C7A99, fog-grey #C9CFD4, golden #E8C97D, then near-black&hellip;</p>
+    <div class="fade"></div>
+  </div>
+  <p class="lock-line">Full prompt (≈250 words) included with purchase.</p>
+
+  <a class="cta" href="https://laserfabio.gumroad.com/l/fable-13">Get this prompt — CHF 9</a>
+  <a class="alt" href="/shop/">or get all 40 →</a>
+
+  <footer>
+    <a href="/13-monsoon/">← back to the site</a>
+    <a href="/">all 40 sites</a>
+  </footer>
+</main>
+<!-- PASS: lock-box pattern (prompt-teaser/fade→#2B3440/lock-line) consistent; ~43-word teaser only, no full prompt in HTML; links /13-monsoon/, /, /shop/, gumroad fable-13 OK; viewport + clamp() type + 480px media query mobile-safe; opacity/color hover transitions only, no keyframe motion. -->
+</body>
+</html>

@@ -1,0 +1,164 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SUMI 墨 — Guide &amp; Reproduction Prompt</title>
+<meta name="description" content="How the SUMI ink painting studio site was built, plus the AI reproduction prompt.">
+<meta name="theme-color" content="#F5F0E6">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Shippori+Mincho:wght@400;500;700&family=Zen+Kaku+Gothic+New:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --washi:#F5F0E6;
+    --washi-deep:#EDE6D6;
+    --ink:#1A1815;
+    --ink-60:rgba(26,24,21,.6);
+    --ink-40:rgba(26,24,21,.4);
+    --ink-15:rgba(26,24,21,.15);
+    --seal:#C73E2E;
+    --disp:'Shippori Mincho',serif;
+    --body:'Zen Kaku Gothic New',sans-serif;
+  }
+  *{margin:0;padding:0;box-sizing:border-box}
+  body{
+    background:var(--washi);color:var(--ink);
+    font-family:var(--body);font-weight:400;line-height:1.9;
+    -webkit-font-smoothing:antialiased;min-height:100vh;overflow-x:hidden;
+  }
+  body::before{
+    content:"";position:fixed;inset:0;z-index:0;pointer-events:none;
+    opacity:.5;mix-blend-mode:multiply;
+    background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='240' height='240'%3E%3Cfilter id='p'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' seed='7'/%3E%3CfeColorMatrix values='0 0 0 0 0.55 0 0 0 0 0.53 0 0 0 0 0.48 0 0 0 0.05 0'/%3E%3C/filter%3E%3Crect width='240' height='240' filter='url(%23p)'/%3E%3C/svg%3E");
+  }
+  ::selection{background:var(--seal);color:var(--washi)}
+  a:focus-visible{outline:2px solid var(--seal);outline-offset:3px}
+  .top{position:fixed;top:1.4rem;left:1.4rem;z-index:10;display:flex;gap:.5rem}
+  .top a{
+    font-size:.8rem;letter-spacing:.18em;color:var(--ink-60);text-decoration:none;
+    padding:.45rem .8rem;border:1px solid var(--ink-15);
+    background:rgba(245,240,230,.82);backdrop-filter:blur(4px);
+    transition:color .3s,border-color .3s;
+  }
+  .top a:hover{color:var(--seal);border-color:var(--seal)}
+  .wrap{max-width:720px;margin:0 auto;padding:8rem clamp(1.25rem,5vw,3rem) 4.5rem;position:relative;z-index:1}
+  .kicker{font-size:.7rem;letter-spacing:.5em;text-transform:uppercase;color:var(--seal);font-weight:500;margin-bottom:1.2rem}
+  h1{
+    font-family:var(--disp);font-weight:700;
+    font-size:clamp(2rem,6vw,3.2rem);line-height:1.35;letter-spacing:.06em;
+  }
+  .sub{color:var(--ink-60);font-size:.95rem;max-width:36em;margin-top:1rem}
+  h2{
+    font-family:var(--disp);font-weight:600;
+    font-size:clamp(1.3rem,3.2vw,1.8rem);letter-spacing:.08em;
+    margin:4.5rem 0 1.4rem;
+  }
+  h2 span{font-family:var(--body);font-weight:400;font-size:.68rem;letter-spacing:.4em;text-transform:uppercase;color:var(--ink-40);margin-left:1em}
+  .how p{color:var(--ink-60);font-size:.93rem;max-width:38em}
+  .how p+p{margin-top:1rem}
+  .how strong{color:var(--ink);font-weight:500}
+
+  .lockbox{border:1px solid var(--ink-15);background:var(--washi);margin-top:1.6rem}
+  .lockbox .head{
+    display:flex;justify-content:space-between;gap:.8rem;flex-wrap:wrap;
+    padding:.75rem 1.3rem;border-bottom:1px solid var(--ink-15);
+    font-size:.65rem;letter-spacing:.35em;text-transform:uppercase;color:var(--ink-40);
+  }
+  .lockbox .head b{color:var(--seal);font-weight:500}
+  .teaser{position:relative;padding:1.4rem 1.3rem 0;overflow:hidden}
+  .teaser p{
+    font-family:var(--disp);font-size:1rem;line-height:2.1;color:var(--ink);
+    max-height:12.5em;overflow:hidden;
+  }
+  .teaser::after{
+    content:"";position:absolute;left:0;right:0;bottom:0;height:8em;
+    background:linear-gradient(rgba(245,240,230,0), var(--washi) 85%);
+    pointer-events:none;
+  }
+  .lockline{
+    padding:.9rem 1.3rem 1.2rem;
+    font-size:.7rem;letter-spacing:.3em;text-transform:uppercase;color:var(--seal);font-weight:500;
+  }
+  .lockline::before{content:"🔒 "}
+  .buy{margin-top:2.4rem;display:flex;align-items:center;gap:1.8rem;flex-wrap:wrap}
+  .cta{
+    display:inline-block;text-decoration:none;
+    font-family:var(--body);font-weight:500;font-size:.8rem;
+    letter-spacing:.35em;text-transform:uppercase;
+    color:var(--washi);background:var(--ink);
+    padding:1.15rem 2.4rem 1.1rem;
+    position:relative;overflow:hidden;transition:color .35s;
+  }
+  .cta::before{
+    content:"";position:absolute;inset:0;background:var(--seal);
+    transform:translateX(-101%);transition:transform .45s cubic-bezier(.22,1,.36,1);
+  }
+  .cta:hover::before{transform:none}
+  .cta span{position:relative;z-index:1}
+  .all{font-size:.8rem;letter-spacing:.18em;color:var(--ink-60);text-decoration:none;border-bottom:1px solid var(--ink-15);transition:color .3s,border-color .3s}
+  .all:hover{color:var(--seal);border-color:var(--seal)}
+  footer{
+    margin-top:5.5rem;border-top:1px solid var(--ink-15);padding-top:1.8rem;
+    display:flex;justify-content:space-between;gap:1rem;flex-wrap:wrap;
+    font-size:.72rem;letter-spacing:.12em;color:var(--ink-40);
+  }
+  footer a{color:var(--ink-60);text-decoration:none;transition:color .3s}
+  footer a:hover{color:var(--seal)}
+  .hanko-mini{
+    display:inline-block;background:var(--seal);color:var(--washi);
+    font-family:var(--disp);font-weight:700;font-size:.85rem;
+    padding:.15em .3em;transform:rotate(-3deg);margin-left:.5em;
+  }
+  @media (max-width:480px){
+    .wrap{padding-top:6.5rem}
+  }
+  @media (prefers-reduced-motion: reduce){
+    *,*::before{transition-duration:.01ms!important}
+  }
+</style>
+</head>
+<body>
+
+<nav class="top">
+  <a href="/05-sumi/">← SUMI 墨</a>
+  <a href="/">all 25</a>
+</nav>
+
+<main class="wrap">
+  <p class="kicker">Fable 25 — Guide No. 05</p>
+  <h1>How SUMI was painted<span class="hanko-mini" aria-hidden="true">墨</span></h1>
+  <p class="sub">Every mark on the SUMI page — the ensō, the sweeping strokes, three complete landscapes — is drawn live in the browser. No photographs, no scans, only code and patience.</p>
+
+  <section class="how">
+    <h2>The brush<span>How it was built</span></h2>
+    <p>At the heart of the page is a procedural brush: smooth curves are sampled into hundreds of tiny stations, and each station receives a cluster of translucent dabs — a core blob, a few dry-hair streaks pushed sideways off the path, and the occasional faint bleed halo. Because the dabs overlap at low opacity, the accumulated ink darkens naturally, exactly like a loaded brush on thirsty washi.</p>
+    <p>Every stroke tapers dry at its end, the way a brush lifts off paper, and each one is seeded with its own random number stream so a window resize redraws <strong>the identical stroke</strong>. The ensō circle paints itself in one two-second breath on load; the wide strokes paint themselves as you scroll and never retreat. The three gallery landscapes — ridges, mist, pine, river boat, red seals — are composed entirely from layered gradients and that same brush, then revealed like fog lifting. Paper grain comes from SVG turbulence, and reduced-motion visitors see everything painted instantly.</p>
+  </section>
+
+  <section>
+    <h2>Reproduction prompt<span>複製の言葉</span></h2>
+    <div class="lockbox">
+      <div class="head"><span><b>Prompt No. 05</b> — for any AI web builder</span><span>Preview</span></div>
+      <div class="teaser">
+        <p>Build a one-page site for "SUMI 墨", a fictional sumi-e studio in Kyoto, where every mark is drawn in the browser — no image files. Palette: warm washi paper #F5F0E6 (deeper #EDE6D6), near-black ink #1A1815 applied at graded alphas, vermilion seal red #C73E2E. Fonts: Shippori Mincho for display and kanji, Zen Kaku Gothic New for body. Signature technique — a procedural canvas brush…</p>
+      </div>
+      <p class="lockline">Full prompt (≈250 words) included with purchase.</p>
+    </div>
+    <div class="buy">
+      <a class="cta" href="https://laserfabio.gumroad.com/l/fable-05"><span>Get this prompt — CHF 9</span></a>
+      <a class="all" href="/shop/">or get all 40 →</a>
+    </div>
+  </section>
+
+  <footer>
+    <span>墨 SUMI · one breath, one stroke</span>
+    <span><a href="/05-sumi/">view the site</a> &nbsp;·&nbsp; <a href="/">fable 25 hub</a></span>
+  </footer>
+</main>
+
+<!-- PASS: review 01-05 — lock-box pattern consistent (head / ~45-word teaser / fade / lock line / CHF 9 CTA / all-40 link);
+     teaser fade endpoint matches washi box background; grain layer is pointer-events:none and content sits at z-index 1;
+     links /05-sumi/, /shop/, / verified; CTA + secondary link wrap at 360px. Full prompt not present in this file. -->
+</body>
+</html>

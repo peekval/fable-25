@@ -186,6 +186,7 @@ td{padding:7px 8px;border-bottom:1px solid rgba(42,52,66,.45);color:var(--ink)}
 td.st{white-space:nowrap}
 .on{color:var(--green)}.off{color:var(--dim)}.wr{color:var(--amber)}
 .rosterduo{display:grid;grid-template-columns:1fr;gap:18px}
+.rosterduo>div{min-width:0;overflow-x:auto}
 .rsub{font-size:11px;letter-spacing:.2em;color:var(--dim);text-transform:uppercase;margin:14px 0 4px}
 /* ---------- footer ---------- */
 footer.panel{grid-column:span 12;font-size:12px;color:var(--dim);display:flex;flex-wrap:wrap;gap:12px;justify-content:space-between}
@@ -396,6 +397,7 @@ footer.panel{animation-delay:2.85s}
   <footer class="panel" aria-label="Footer">
     <span>DEEP RELAY · DSEP-1 · a fictional deep-space mission — design study, no real telemetry</span>
     <span>GROUND SEGMENT v4.2.1 · <span class="sig">SIGNAL IS EVERYTHING</span></span>
+    <span><a href="/21-relay/guide/" style="color:var(--dim);text-decoration:none">guide &amp; prompt →</a></span>
     <span id="f-utc">—</span>
   </footer>
 </main>

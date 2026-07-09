@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>FORM FOLGT — Guide &amp; Reproduction Prompt</title>
+<meta name="description" content="How the FORM FOLGT Bauhaus centenary site was built, plus the full AI reproduction prompt.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wght@500;700;900&family=Work+Sans:ital,wght@0,400;0,500;0,600;1,400&display=swap" rel="stylesheet">
+<style>
+:root{
+  --paper:#F4F1EA;
+  --ink:#141414;
+  --red:#D02E26;
+  --blue:#1F4CA0;
+  --yellow:#F2B705;
+  --rule:4px;
+}
+*{margin:0;padding:0;box-sizing:border-box}
+body{
+  background:var(--paper);
+  color:var(--ink);
+  font-family:"Work Sans",sans-serif;
+  font-size:1.0625rem;
+  line-height:1.6;
+  -webkit-font-smoothing:antialiased;
+  padding:clamp(2.5rem,7vh,5rem) clamp(1.25rem,5vw,3rem) 3rem;
+}
+::selection{background:var(--yellow);color:var(--ink)}
+main{max-width:42rem;margin:0 auto}
+.kicker{
+  font-family:"Archivo",sans-serif;font-weight:700;font-size:.72rem;
+  letter-spacing:.22em;text-transform:uppercase;
+  display:inline-flex;align-items:center;gap:.8rem;margin-bottom:1.2rem;
+}
+.kicker::before{content:"";width:2.2rem;height:var(--rule);background:var(--red)}
+h1{
+  font-family:"Archivo",sans-serif;font-weight:900;text-transform:uppercase;
+  font-size:clamp(2.4rem,8vw,4.2rem);line-height:.9;letter-spacing:-.04em;
+  margin-bottom:1.8rem;
+}
+h1 .dot{color:var(--red)}
+h2{
+  font-family:"Archivo",sans-serif;font-weight:900;text-transform:uppercase;
+  font-size:clamp(1.25rem,3vw,1.7rem);letter-spacing:-.02em;
+  margin:2.6rem 0 1rem;
+  display:flex;align-items:center;gap:.8rem;
+}
+h2 .num{
+  font-size:.85rem;width:2.1rem;height:2.1rem;flex:none;
+  display:grid;place-items:center;color:var(--paper);
+}
+h2 .n1{background:var(--blue)}
+h2 .n2{background:var(--red)}
+p{margin-bottom:1.1rem}
+.shapes{display:inline-flex;gap:.55rem;align-items:center;margin-left:.6rem;vertical-align:middle}
+.shapes b{display:inline-block}
+.shapes b:nth-child(1){width:.7rem;height:.7rem;border-radius:50%;background:var(--red)}
+.shapes b:nth-child(2){width:.7rem;height:.7rem;background:var(--blue)}
+.shapes b:nth-child(3){width:0;height:0;border-left:.45rem solid transparent;border-right:.45rem solid transparent;border-bottom:.75rem solid var(--yellow)}
+
+/* ---------- prompt teaser lock-box ---------- */
+.prompt-teaser{
+  position:relative;overflow:hidden;
+  border:var(--rule) solid var(--ink);
+  background:var(--paper);
+  box-shadow:8px 8px 0 var(--ink);
+  padding:1.5rem 1.5rem 2.6rem;
+  font-size:1rem;
+}
+.prompt-teaser p{margin:0}
+.prompt-teaser .fade{
+  position:absolute;left:0;right:0;bottom:0;height:90px;
+  background:linear-gradient(to bottom, transparent, #F4F1EA);
+  pointer-events:none;
+}
+.lock-line{
+  font-family:"Archivo",sans-serif;font-weight:700;font-size:.78rem;
+  letter-spacing:.16em;text-transform:uppercase;
+  margin:1.3rem 0 2rem;color:var(--red);
+}
+
+/* ---------- CTA ---------- */
+.cta{
+  display:inline-block;
+  font-family:"Archivo",sans-serif;font-weight:900;font-size:1rem;
+  letter-spacing:.08em;text-transform:uppercase;
+  background:var(--ink);color:var(--paper);text-decoration:none;
+  padding:1.05rem 1.8rem;border:3px solid var(--ink);
+  box-shadow:6px 6px 0 var(--yellow);
+  transition:transform .25s cubic-bezier(.76,0,.2,1),box-shadow .25s cubic-bezier(.76,0,.2,1);
+}
+.cta:hover{transform:translate(-3px,-3px);box-shadow:10px 10px 0 var(--yellow)}
+.cta:focus-visible{outline:3px solid var(--blue);outline-offset:3px}
+.alt-link{
+  display:inline-block;margin-left:1.2rem;
+  font-weight:600;color:var(--blue);text-decoration:none;
+  box-shadow:inset 0 -2px 0 var(--blue);
+}
+.alt-link:hover{color:var(--red);box-shadow:inset 0 -2px 0 var(--red)}
+@media(max-width:520px){.alt-link{display:block;margin:1rem 0 0}}
+
+/* ---------- footer ---------- */
+footer{
+  margin-top:3.2rem;padding-top:1.2rem;
+  border-top:var(--rule) solid var(--ink);
+  display:flex;justify-content:space-between;gap:1rem;flex-wrap:wrap;
+  font-size:.85rem;text-transform:lowercase;
+}
+footer a{color:inherit;text-decoration:none;box-shadow:inset 0 -2px 0 #c9c3b4;transition:box-shadow .2s}
+footer a:hover{box-shadow:inset 0 -2px 0 var(--yellow)}
+</style>
+</head>
+<body>
+<main>
+  <p class="kicker">Guide &middot; Showcase 15 of 25</p>
+  <h1>Form Folgt<span class="dot">.</span> <span class="shapes" aria-hidden="true"><b></b><b></b><b></b></span></h1>
+
+  <h2><span class="num n1" aria-hidden="true">01</span>How it was built</h2>
+  <p>FORM FOLGT is a fictional centenary exhibition site for the Bauhaus building in Dessau, set entirely in Archivo and Work Sans on warm paper with the classic red, blue and yellow primaries. The hero is a choreographed SVG composition: two black rules draw themselves in, a red circle glides in from far off-canvas, a blue square rotates home with a springy overshoot, and a yellow triangle drops last — and the whole sequence replays every time you scroll back to the top. Further down, a kinetic "stage" section pays homage to Oskar Schlemmer: four shapes fall under real requestAnimationFrame gravity, bounce with restitution, then snap their rotation onto a 90-degree grid before the loop shuts itself off. Dark sections are cut with diagonal clip-path edges, and the workshop list uses full-width rows that flood with a primary color and slide sideways on hover. Everything degrades gracefully: without JavaScript or with reduced motion, the physics stage becomes a pre-composed still life and all reveals are simply visible.</p>
+
+  <h2><span class="num n2" aria-hidden="true">02</span>Reproduction Prompt</h2>
+  <div class="prompt-teaser">
+    <p>Build a one-page German-language exhibition site for "FORM FOLGT", the centenary of the Bauhaus Dessau building (1926–2026). Palette: paper #F4F1EA background, ink #141414, red #D02E26, blue #1F4CA0, yellow #F2B705. Typography: Archivo (900/700/500) for all uppercase headlines with tight negative letter-spacing; Work Sans for body copy. &hellip;</p>
+    <div class="fade" aria-hidden="true"></div>
+  </div>
+  <p class="lock-line">Full prompt (≈250 words) included with purchase.</p>
+
+  <p>
+    <a class="cta" href="https://laserfabio.gumroad.com/l/fable-15">Get this prompt — CHF 9</a>
+    <a class="alt-link" href="/shop/">or get all 40 &rarr;</a>
+  </p>
+
+  <footer>
+    <a href="/15-bauhaus/">&larr; back to the site</a>
+    <a href="/">all 40 sites</a>
+  </footer>
+</main>
+<!-- PASS: lock-box pattern (prompt-teaser/fade→#F4F1EA/lock-line) consistent; 45-word teaser only, no full prompt in HTML; links /15-bauhaus/, /, /shop/, gumroad fable-15 OK; viewport + clamp() type + 520px media query mobile-safe; hover-only transitions, no keyframe motion. -->
+</body>
+</html>

@@ -1,0 +1,156 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ネオン市場 — NEON MARKET · Guide &amp; Prompt</title>
+<meta name="description" content="How the Neon Market cyberpunk night-market site was built, plus the full AI reproduction prompt.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@300;400;500;600;700&family=Noto+Sans+JP:wght@300;400;500;700;900&display=swap" rel="stylesheet">
+<style>
+:root{
+  --void:#07070C;
+  --void-2:#0C0C14;
+  --void-3:#12121D;
+  --magenta:#FF2E88;
+  --cyan:#00F0FF;
+  --amber:#FFB020;
+  --ink:#E8E6F0;
+  --ink-dim:#8A87A0;
+  --ink-faint:#4A4860;
+  --mono:'SFMono-Regular',ui-monospace,'Cascadia Mono',Consolas,Menlo,monospace;
+  --display:'Chakra Petch',sans-serif;
+  --jp:'Noto Sans JP',sans-serif;
+}
+*{margin:0;padding:0;box-sizing:border-box}
+::selection{background:var(--magenta);color:var(--void)}
+body{
+  background:
+    radial-gradient(ellipse 70% 40% at 20% 0%,rgba(255,46,136,.08),transparent 60%),
+    radial-gradient(ellipse 55% 35% at 85% 100%,rgba(0,240,255,.06),transparent 60%),
+    var(--void);
+  color:var(--ink);
+  font-family:var(--display);
+  line-height:1.65;
+  min-height:100vh;
+}
+.page{max-width:720px;margin:0 auto;padding:56px 20px 72px}
+.kicker{
+  font-family:var(--mono);font-size:11px;letter-spacing:.32em;text-transform:uppercase;
+  color:var(--amber);display:flex;align-items:center;gap:12px;
+}
+.kicker::before{content:"";width:34px;height:1px;background:var(--amber);box-shadow:0 0 8px var(--amber)}
+h1{
+  font-family:var(--jp);font-weight:900;
+  font-size:clamp(1.9rem,6vw,3rem);line-height:1.1;margin-top:16px;
+  text-shadow:0 0 22px rgba(255,46,136,.3);
+}
+h1 .en{
+  display:block;font-family:var(--display);font-weight:700;text-transform:uppercase;
+  letter-spacing:.05em;color:transparent;-webkit-text-stroke:1.2px var(--cyan);
+  text-shadow:0 0 24px rgba(0,240,255,.22);
+}
+h2{
+  font-family:var(--display);font-weight:700;text-transform:uppercase;letter-spacing:.06em;
+  font-size:1.15rem;margin:44px 0 14px;color:var(--ink);
+}
+h2::before{content:"// ";color:var(--magenta)}
+p{color:var(--ink-dim);font-weight:300;font-size:.98rem}
+.built p+p{margin-top:12px}
+.built em{font-style:normal;color:var(--cyan)}
+.built b{font-weight:500;color:var(--ink)}
+
+/* ---- prompt lock-box ---- */
+.prompt-teaser{
+  position:relative;overflow:hidden;
+  border:1px solid rgba(0,240,255,.25);
+  background:linear-gradient(165deg,var(--void-3),var(--void-2) 60%);
+  box-shadow:0 0 34px rgba(0,240,255,.07),inset 0 0 50px rgba(0,240,255,.04);
+  padding:24px 24px 40px;margin-top:8px;
+}
+.prompt-teaser .tag{
+  font-family:var(--mono);font-size:10px;letter-spacing:.24em;text-transform:uppercase;
+  color:var(--ink-faint);margin-bottom:14px;
+}
+.prompt-teaser .tag i{font-style:normal;color:var(--magenta)}
+.prompt-teaser p{
+  font-family:var(--mono);font-size:.88rem;line-height:1.8;color:var(--ink-dim);
+}
+.prompt-teaser .fade{
+  position:absolute;left:0;right:0;bottom:0;height:90px;pointer-events:none;
+  background:linear-gradient(to bottom,transparent,#07070C);
+}
+.lock-line{
+  font-family:var(--mono);font-size:11.5px;letter-spacing:.1em;color:var(--amber);
+  margin-top:12px;
+}
+
+/* ---- CTA ---- */
+.cta-row{margin-top:32px;display:flex;flex-wrap:wrap;align-items:center;gap:18px}
+a.cta{
+  display:inline-block;
+  font-family:var(--display);font-weight:600;font-size:13px;letter-spacing:.2em;text-transform:uppercase;
+  color:var(--void);background:var(--magenta);text-decoration:none;
+  padding:15px 28px;
+  clip-path:polygon(0 0,calc(100% - 13px) 0,100% 13px,100% 100%,13px 100%,0 calc(100% - 13px));
+  box-shadow:0 0 24px rgba(255,46,136,.45);
+}
+@media (prefers-reduced-motion: no-preference){
+  a.cta{transition:box-shadow .25s,transform .25s}
+  a.cta:hover{box-shadow:0 0 44px rgba(255,46,136,.75);transform:translateY(-2px)}
+}
+a.cta:focus-visible{outline:2px solid var(--cyan);outline-offset:3px}
+.alt-link{
+  font-family:var(--mono);font-size:12px;letter-spacing:.08em;
+  color:var(--cyan);text-decoration:none;border-bottom:1px dashed rgba(0,240,255,.4);
+}
+.alt-link:hover{border-bottom-style:solid}
+
+/* ---- footer ---- */
+.foot{
+  margin-top:64px;padding-top:22px;border-top:1px solid rgba(255,46,136,.22);
+  display:flex;flex-wrap:wrap;gap:12px 28px;
+  font-family:var(--mono);font-size:11.5px;letter-spacing:.08em;
+}
+.foot a{color:var(--ink-dim);text-decoration:none}
+.foot a:hover{color:var(--cyan)}
+</style>
+</head>
+<body>
+<div class="page">
+
+  <p class="kicker">Fable 25 · Site 11 · Guide</p>
+  <h1>ネオン市場 <span class="en">Neon Market</span></h1>
+
+  <section class="built">
+    <h2>How it was built</h2>
+    <p>Neon Market is a single self-contained HTML file — no frameworks, no images. The entire cyberpunk alley is drawn with CSS: a perspective-tilted cyan grid becomes the street floor, an SVG-turbulence data URI supplies film grain, and a repeating one-pixel gradient lays CRT scanlines over the whole page.</p>
+    <p>The signature move is the <em>katakana rain rail</em>: a fixed canvas strip on the right edge where columns of random katakana glyphs fall in magenta, cyan and amber. Each frame paints a translucent void-colored rectangle instead of clearing, which is what produces the fading trails; the loop is delta-time stepped so it runs at identical speed on 60Hz and 144Hz screens, and it pauses when the tab is hidden.</p>
+    <p>Headings glitch with an <b>RGB-split</b> effect — magenta and cyan copies of the text sit behind the original and flash through jittering horizontal slivers, fired by a random timer on one heading at a time so the page never strobes. Stall cards get rotating conic-gradient "holographic" borders via a registered custom property, and a bottom status ticker loops seamlessly by duplicating its feed and translating exactly half its width. Everything animates transform-only, and a hardened reduced-motion path swaps every effect for a static equivalent.</p>
+  </section>
+
+  <section>
+    <h2>Reproduction Prompt</h2>
+    <div class="prompt-teaser">
+      <p class="tag">PROMPT//FEED — <i>preview only</i></p>
+      <p>Build a one-page cyberpunk night-market site for "ネオン市場 / NEON MARKET," a fictional four-stall street-food collective in a 2080s undercity alley. Palette: near-black voids #07070C, #0C0C14, #12121D; neon magenta #FF2E88, cyan #00F0FF, amber #FFB020; text inks #E8E6F0, #8A87A0, #4A4860. Fonts: Chakra Petch for&hellip;</p>
+      <div class="fade"></div>
+    </div>
+    <p class="lock-line">Full prompt (≈250 words) included with purchase.</p>
+
+    <div class="cta-row">
+      <a class="cta" href="https://laserfabio.gumroad.com/l/fable-11">Get this prompt — CHF 9</a>
+      <a class="alt-link" href="/shop/">or get all 40 →</a>
+    </div>
+  </section>
+
+  <footer class="foot">
+    <a href="/11-neon/">← back to the site</a>
+    <a href="/">all 40 sites</a>
+  </footer>
+
+</div>
+<!-- PASS: lock-box pattern (prompt-teaser/fade→#07070C/lock-line) consistent; ~43-word teaser only, no full prompt in HTML; links /11-neon/, /, /shop/, gumroad fable-11 OK; viewport + clamp() type + flex-wrap CTA row mobile-safe; hover motion gated behind prefers-reduced-motion. -->
+</body>
+</html>

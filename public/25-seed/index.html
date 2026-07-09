@@ -103,6 +103,7 @@
   /* ---------- gallery ---------- */
   .gallery{
     max-width:1180px;margin:0 auto;padding:8vh 32px 4vh;
+    overflow-x:clip; /* the 150%-wide spotlight ::before must not widen the scrollable area */
     transition:opacity .6s ease, transform .6s ease;
   }
   .gallery.is-fading{opacity:0;transform:translateY(12px)}
@@ -351,6 +352,7 @@
   <span>Seed <b id="seedFoot">—</b> &middot; mulberry32</span>
   <span>Nothing here existed a moment ago</span>
   <a href="#about">About the machine</a>
+  <a href="/25-seed/guide/">guide &amp; prompt &rarr;</a>
   <a href="/">&larr; Back to 25</a>
 </footer>
 

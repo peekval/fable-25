@@ -1,2 +1,7 @@
 # Local Netlify folder
 .netlify
+
+# audit tooling artifacts
+tools/node_modules/
+tools/debs/
+tools/libs/

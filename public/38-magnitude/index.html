@@ -635,9 +635,9 @@ function drawCell(ctx,w,h){
     ctx.strokeStyle = "rgba(240,150,175,.7)"; ctx.lineWidth = 1.6;
     ctx.beginPath(); ctx.ellipse(0,0,26*s2,11*s2,0,0,6.2832); ctx.fill(); ctx.stroke();
     ctx.beginPath();
-    for(i=-2;i<=2;i++){
-      ctx.moveTo(i*9*s2, -8*s2);
-      ctx.quadraticCurveTo((i*9+4)*s2, 0, i*9*s2, 8*s2);
+    for(var k=-2;k<=2;k++){
+      ctx.moveTo(k*9*s2, -8*s2);
+      ctx.quadraticCurveTo((k*9+4)*s2, 0, k*9*s2, 8*s2);
     }
     ctx.globalAlpha = .6; ctx.stroke(); ctx.globalAlpha = 1;
     ctx.restore();

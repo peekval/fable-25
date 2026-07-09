@@ -1,0 +1,109 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>How SEED was built — guide &amp; prompt</title>
+<meta name="description" content="How the SEED generative gallery mints a unique exhibition per visit, plus the reproduction prompt to rebuild it with any AI web builder.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Libre+Caslon+Text:ital,wght@0,400;0,700;1,400&family=Space+Grotesk:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+:root{
+  --wall:#F5F5F2; --ink:#1C1C1C;
+  --ink-soft:rgba(28,28,28,.62); --ink-faint:rgba(28,28,28,.34);
+  --hair:rgba(28,28,28,.14);
+  --serif:'Libre Caslon Text',Georgia,serif;
+  --grot:'Space Grotesk','Helvetica Neue',sans-serif;
+}
+*{margin:0;padding:0;box-sizing:border-box}
+body{background:var(--wall);color:var(--ink);font-family:var(--serif);
+  line-height:1.65;-webkit-font-smoothing:antialiased;overflow-x:hidden}
+::selection{background:var(--ink);color:var(--wall)}
+a{color:var(--ink-soft);text-decoration:none}
+a:hover{color:var(--ink)}
+main{max-width:680px;margin:0 auto;padding:100px 26px 60px}
+.eyebrow{font-family:var(--grot);font-size:11px;letter-spacing:.34em;
+  text-transform:uppercase;color:var(--ink-soft);margin-bottom:28px}
+h1{font-weight:400;letter-spacing:.05em;font-size:clamp(34px,6.5vw,58px);line-height:1.12}
+h1 em{font-style:italic}
+.lead{margin-top:22px;font-style:italic;color:var(--ink-soft);font-size:17px;max-width:54ch}
+h2{font-weight:400;font-size:clamp(22px,3.4vw,30px);letter-spacing:.02em;margin:64px 0 20px}
+h2 em{font-style:italic}
+.built p{margin-bottom:20px;color:rgba(28,28,28,.82);font-size:16px}
+.built b{font-weight:700}
+/* ---- lock box: a framed work, partly veiled ---- */
+.prompt-frame{position:relative;background:#FDFDFB;
+  padding:clamp(16px,3vw,26px);border:1px solid rgba(28,28,28,.85);
+  box-shadow:0 1px 0 rgba(28,28,28,.9),0 22px 44px -18px rgba(28,28,28,.28),
+    0 60px 90px -50px rgba(28,28,28,.22);margin-top:26px}
+.prompt-frame .mat{background:#EFEDE6;padding:22px 22px 0;position:relative}
+.prompt-frame .tz{position:relative;max-height:126px;overflow:hidden;
+  font-size:14.5px;line-height:1.95;color:rgba(28,28,28,.8)}
+.prompt-frame .fade{position:absolute;left:0;right:0;bottom:0;height:92px;
+  background:linear-gradient(180deg,rgba(239,237,230,0),#EFEDE6 90%);pointer-events:none}
+.plaque{margin:0 -22px;padding:14px 22px 16px;border-top:1px solid var(--hair);
+  font-family:var(--grot);font-size:10.5px;letter-spacing:.22em;
+  text-transform:uppercase;color:var(--ink-soft);display:flex;align-items:center;gap:9px}
+.plaque .dot{display:inline-block;width:7px;height:7px;border-radius:50%;background:#B33A2B}
+.caption{margin-top:14px;max-width:340px;padding-top:12px;border-top:1px solid var(--hair)}
+.caption .num{font-family:var(--grot);font-size:10px;letter-spacing:.3em;
+  color:var(--ink-faint);text-transform:uppercase;display:block;margin-bottom:6px}
+.caption .title{font-style:italic;font-size:16px}
+.cta-row{display:flex;gap:26px;align-items:center;flex-wrap:wrap;margin-top:40px}
+.buy{display:inline-block;font-family:var(--grot);font-size:13px;font-weight:500;
+  letter-spacing:.24em;text-transform:uppercase;
+  color:var(--wall);background:var(--ink);border:1px solid var(--ink);
+  padding:18px 38px;transition:background .3s,color .3s,letter-spacing .3s}
+.buy:hover{background:transparent;color:var(--ink);letter-spacing:.3em}
+.all40{font-family:var(--grot);font-size:11px;letter-spacing:.2em;text-transform:uppercase;
+  border-bottom:1px solid var(--hair);padding-bottom:3px}
+.all40:hover{border-color:var(--ink)}
+footer{border-top:1px solid var(--hair);margin-top:80px;padding:36px 26px 48px;
+  display:flex;justify-content:space-between;gap:18px;flex-wrap:wrap;
+  font-family:var(--grot);font-size:11px;letter-spacing:.14em;
+  text-transform:uppercase;color:var(--ink-faint);max-width:680px;margin-left:auto;margin-right:auto}
+@media (max-width:520px){main{padding:80px 20px 40px}}
+@media (prefers-reduced-motion:reduce){*{transition:none!important}}
+</style>
+</head>
+<body>
+<main>
+  <p class="eyebrow">Guide &middot; 25 of 25 &middot; wall text</p>
+  <h1>How the <em>machine</em> was built</h1>
+  <p class="lead">Four algorithms, one thirty-two-bit number, and no images anywhere in the building. This page explains the arithmetic; the prompt below re-commissions it.</p>
+
+  <h2>How it was <em>built</em></h2>
+  <div class="built">
+    <p>Everything on SEED flows from a single seeded random generator — <b>mulberry32</b>, a few multiplications on thirty-two bits of state — seeded from your arrival time, so every visit mints a different exhibition and the same seed would repaint it stroke for stroke. Four canvas algorithms spend that number: a flow field of two thousand particles tracing low-alpha strokes along sine-cosine vector angles, a recursive rectangle subdivision filled as soft-edged colour fields with fourteen jittered passes, concentric rings wobbled by three random sine harmonics, and three hundred bodies coiling around hidden gravity attractors.</p>
+    <p>One of five curated palettes is drawn per visit, titles are shuffled from adjective and noun lists, and each work paints itself over roughly seventy animation frames only when scrolled into view. The gallery furniture — white frames, spotlight glows, museum labels, the red sold-dot that springs in when you "acquire" a piece — is plain CSS, and a Regenerate button retires the seed forever. Reduced-motion visitors get every work rendered instantly, already dry.</p>
+  </div>
+
+  <h2>Reproduction <em>prompt</em></h2>
+  <div class="prompt-frame">
+    <div class="mat">
+      <div class="tz">Build a single-file HTML generative-art gallery called "SEED — an exhibition, edition of one". Gallery aesthetic: warm wall #F5F5F2, ink #1C1C1C with softer alpha tints for secondary text, hairline rules everywhere. Fonts: Libre Caslon Text (serif body, italic artwork titles) with Space Grotesk for small tracked-out uppercase labels. Signature technique: a seeded PRNG (mulberry32, seeded from arrival time) drives every decision…
+        <div class="fade" aria-hidden="true"></div>
+      </div>
+      <p class="plaque"><span class="dot" aria-hidden="true"></span> Full prompt (&asymp;250 words) included with purchase.</p>
+    </div>
+  </div>
+  <div class="caption">
+    <span class="num">V / V &middot; edition of many</span>
+    <div class="title">&ldquo;The Recipe, Partially Veiled&rdquo; &mdash; 2026</div>
+  </div>
+
+  <div class="cta-row">
+    <a class="buy" href="https://laserfabio.gumroad.com/l/fable-25">Get this prompt — CHF 9</a>
+    <a class="all40" href="/shop/">or get all 40 &rarr;</a>
+  </div>
+</main>
+
+<footer>
+  <a href="/25-seed/">&larr; Back to SEED</a>
+  <a href="/">All 25 sites</a>
+  <span>Guide &middot; MMXXVI</span>
+</footer>
+<!-- PASS: lock-box verified (44-word teaser framed on the mat #EFEDE6 with matching fade, no full prompt in DOM); gumroad fable-25 + /shop/ + back links OK; single-column layout is inherently mobile-safe; hover/transition suppressed under reduced motion. -->
+</body>
+</html>

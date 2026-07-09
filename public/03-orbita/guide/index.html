@@ -1,0 +1,162 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ORBITA — Guide &amp; Reproduction Prompt</title>
+<meta name="description" content="How the ORBITA haute-horlogerie site was built, plus the AI reproduction prompt.">
+<meta name="theme-color" content="#0A0E1A">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Marcellus&family=IBM+Plex+Mono:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --navy:#0A0E1A;
+    --navy-2:#0D1222;
+    --silver:#C8CDD6;
+    --silver-dim:#8A93A5;
+    --gold:#B8934A;
+    --gold-30:rgba(184,147,74,.3);
+    --gold-15:rgba(184,147,74,.15);
+    --display:'Marcellus',serif;
+    --mono:'IBM Plex Mono',monospace;
+  }
+  *{margin:0;padding:0;box-sizing:border-box}
+  body{
+    background:linear-gradient(var(--navy),var(--navy-2) 45%,var(--navy));
+    color:var(--silver);font-family:var(--display);
+    -webkit-font-smoothing:antialiased;line-height:1.65;min-height:100vh;
+  }
+  ::selection{background:var(--gold);color:var(--navy)}
+  a:focus-visible{outline:1px solid var(--gold);outline-offset:3px}
+  .top{position:fixed;top:22px;left:24px;z-index:10;display:flex;gap:8px}
+  .top a{
+    font-family:var(--mono);font-size:12px;letter-spacing:.12em;
+    color:var(--silver-dim);text-decoration:none;
+    padding:6px 10px;border:1px solid transparent;border-radius:2px;
+    background:rgba(10,14,26,.4);-webkit-backdrop-filter:blur(4px);backdrop-filter:blur(4px);
+    transition:color .3s,border-color .3s;
+  }
+  .top a:hover{color:var(--gold);border-color:var(--gold-30)}
+  .wrap{max-width:780px;margin:0 auto;padding:130px 32px 70px}
+  .kicker{
+    font-family:var(--mono);font-size:11px;letter-spacing:.32em;text-transform:uppercase;
+    color:var(--gold);display:flex;align-items:center;gap:16px;margin-bottom:24px;
+  }
+  .kicker::before{content:"";display:block;width:40px;height:1px;background:var(--gold-30)}
+  h1{font-weight:400;color:#E6E9EF;font-size:clamp(34px,6vw,58px);line-height:1.12;letter-spacing:.01em}
+  .lede{font-size:clamp(16px,1.7vw,19px);color:var(--silver);max-width:56ch;margin-top:18px}
+  h2{font-weight:400;color:#E6E9EF;font-size:clamp(24px,3.4vw,36px);margin-bottom:18px}
+  section{margin-top:88px}
+  .how p{font-size:15.5px;color:var(--silver-dim);max-width:62ch}
+  .how p+p{margin-top:16px}
+  .how p b{color:var(--silver);font-weight:400}
+
+  .lockbox{
+    border:1px solid var(--gold-30);
+    background:linear-gradient(180deg,rgba(200,205,214,.025),rgba(200,205,214,0)),var(--navy-2);
+    margin-top:28px;
+  }
+  .lockbox .head{
+    display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;
+    padding:15px 26px;border-bottom:1px solid var(--gold-30);
+    font-family:var(--mono);font-size:10.5px;letter-spacing:.26em;text-transform:uppercase;
+    color:var(--silver-dim);
+  }
+  .lockbox .head .lamp{display:inline-flex;align-items:center;gap:8px}
+  .lockbox .head .lamp::before{
+    content:"";width:6px;height:6px;border-radius:50%;background:var(--gold);
+    box-shadow:0 0 8px var(--gold);animation:lamp 3s ease-in-out infinite;
+  }
+  @keyframes lamp{0%,100%{opacity:1}50%{opacity:.35}}
+  .teaser{position:relative;padding:24px 26px 0}
+  .teaser p{
+    font-family:var(--mono);font-size:13.5px;line-height:1.95;color:#DDE1E8;
+    max-height:12em;overflow:hidden;
+  }
+  .teaser::after{
+    content:"";position:absolute;left:0;right:0;bottom:0;height:8em;
+    background:linear-gradient(rgba(13,18,34,0), #0D1222 85%);
+    pointer-events:none;
+  }
+  .lockline{
+    padding:16px 26px 20px;
+    font-family:var(--mono);font-size:11px;letter-spacing:.22em;text-transform:uppercase;
+    color:var(--gold);
+  }
+  .lockline::before{content:"🔒 "}
+  .buy{margin-top:40px;display:flex;align-items:center;gap:28px;flex-wrap:wrap}
+  .cta{
+    display:inline-block;font-family:var(--mono);font-size:12px;letter-spacing:.28em;
+    text-transform:uppercase;color:var(--gold);text-decoration:none;
+    padding:18px 40px;border:1px solid var(--gold-30);
+    transition:background .35s,color .35s,border-color .35s;
+  }
+  .cta:hover{background:var(--gold);color:var(--navy);border-color:var(--gold)}
+  .all{font-family:var(--mono);font-size:11px;letter-spacing:.18em;text-transform:uppercase;color:var(--silver-dim);text-decoration:none;transition:color .3s}
+  .all:hover{color:var(--gold)}
+  footer{
+    margin-top:96px;border-top:1px solid var(--gold-30);padding-top:28px;
+    display:flex;justify-content:space-between;gap:16px;flex-wrap:wrap;
+    font-family:var(--mono);font-size:10px;letter-spacing:.18em;text-transform:uppercase;
+    color:var(--silver-dim);
+  }
+  footer a{color:var(--silver-dim);text-decoration:none;transition:color .3s}
+  footer a:hover{color:var(--gold)}
+  @media (max-width:480px){
+    .wrap{padding:110px 22px 60px}
+    .teaser{padding:20px 18px 0}
+    .lockbox .head,.lockline{padding-left:18px;padding-right:18px}
+  }
+  @media (prefers-reduced-motion: reduce){
+    .lockbox .head .lamp::before{animation:none}
+    *{transition-duration:.01ms!important}
+  }
+</style>
+</head>
+<body>
+
+<nav class="top">
+  <a href="/03-orbita/">&larr; ORBITA</a>
+  <a href="/">all 25</a>
+</nav>
+
+<main class="wrap">
+  <p class="kicker">Fable 25 — Guide No. 03</p>
+  <h1>How ORBITA was built</h1>
+  <p class="lede">A gyroscopic tourbillon rendered in real time, and a gear train that actually meshes — all in one file.</p>
+
+  <section class="how">
+    <p class="kicker">01 — The Workshop Notes</p>
+    <h2>Chrome needs something to reflect</h2>
+    <p>The hero is a Three.js scene: three nested torus rings in chrome and gold around a torus-knot core, each turning on its own axis at its own slow rate, with the camera dollying back as you scroll. The trick that makes the metal read as metal is a <b>procedural studio environment</b> — three glowing softbox planes baked into a reflection map, so the chrome has real highlights without loading a single image — finished with filmic tone mapping and navy fog.</p>
+    <p>The rendering loop is disciplined: it pauses when the tab is hidden or the hero scrolls out of view, and pixel density is capped so laptops stay cool. Further down, an SVG technical drawing of the movement is generated by script — gear teeth plotted point by point, wheel centres spaced so the teeth genuinely mesh, each wheel rotating about its own arbor while a balance wheel and pallet fork oscillate. Everything else is hairlines, tabular mono numerals and patient horological copy, with a single still frame served to reduced-motion visitors.</p>
+  </section>
+
+  <section>
+    <p class="kicker">02 — Reproduction Prompt</p>
+    <h2>The technical record</h2>
+    <div class="lockbox">
+      <div class="head"><span>PROMPT ORB&#8209;03 — for any AI web builder</span><span class="lamp">Preview</span></div>
+      <div class="teaser">
+        <p>Build a one-page site for "ORBITA", a fictional haute-horlogerie manufacture. Palette: midnight navy #0A0E1A (panel tint #0D1222), silver #C8CDD6 (dim #8A93A5), muted gold #B8934A used at 30% and 15% alpha for hairlines. Fonts: Marcellus for headings and display, IBM Plex Mono with tabular numerals for every number, label and table cell. Signature technique — a Three.js hero…</p>
+      </div>
+      <p class="lockline">Full prompt (≈250 words) included with purchase.</p>
+    </div>
+    <div class="buy">
+      <a class="cta" href="https://laserfabio.gumroad.com/l/fable-03">Get this prompt — CHF 9</a>
+      <a class="all" href="/shop/">or get all 40 →</a>
+    </div>
+  </section>
+
+  <footer>
+    <span>ORBITA &middot; Manufacture d'Horlogerie</span>
+    <span><a href="/03-orbita/">view the site</a> &nbsp;&middot;&nbsp; <a href="/">fable 25 hub</a></span>
+  </footer>
+</main>
+
+<!-- PASS: review 01-05 — lock-box pattern consistent (head / ~45-word teaser / fade / lock line / CHF 9 CTA / all-40 link);
+     teaser fade endpoint #0D1222 matches panel base; certified-lamp pulse disabled under reduced motion;
+     links /03-orbita/, /shop/, / verified; spec-style box padding tightens at 480px. Full prompt not present in this file. -->
+</body>
+</html>

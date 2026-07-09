@@ -1,0 +1,9 @@
+# FORM FOLGT — Bauhaus Dessau Centenary Exhibition
+
+## Full Reproduction Prompt
+
+Build a one-page German-language exhibition site for "FORM FOLGT", the centenary of the Bauhaus Dessau building (1926–2026). Palette: paper #F4F1EA background, ink #141414, red #D02E26, blue #1F4CA0, yellow #F2B705. Typography: Archivo (900/700/500) for all uppercase headlines with tight negative letter-spacing; Work Sans for body copy. Layout principle: a strict poster grid governed by a constant 4px rule, huge display type, circle/square/triangle as recurring motifs, and dark sections cut by diagonal clip-path edges slanting about 4.5vw.
+
+Signature technique one, the choreographed hero: an SVG composition where two black rules scale-draw in, a red circle glides in from far off-canvas, a blue square slides up while rotating and clicks home on an overshoot spring bezier, and a yellow triangle drops last — every actor starts fully outside the viewBox, delays are staggered, and the whole sequence replays whenever the hero re-enters the viewport. Signature technique two, the kinetic stage: four positioned shapes fall under requestAnimationFrame gravity with restitution bounces and wall collisions, then rotation-snap onto a 90-degree grid; the loop exits once settled, a replay button re-drops them, and no-JS or reduced-motion visitors get a pre-composed still life.
+
+Sections in order: fixed difference-blend nav; hero; marquee ticker; 01 Manifest (dark, clipped, Gropius quote, fact grid); 02 Werkstätten (six rows that flood with color and slide right on hover); 03 Die Bühne (kinetic stage); 04 Eintritt (hard-shadow ticket cards over a rotated yellow slab); lowercase footer honoring Bayer's Universal. Copy tone: confident, historically precise museum German. Gate scroll-reveals behind a .js class; under prefers-reduced-motion disable all animation and show composed states.

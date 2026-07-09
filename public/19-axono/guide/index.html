@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>How AXONO was built — guide &amp; prompt</title>
+<meta name="description" content="The generated-isometric-city and plan-to-volume techniques behind AXONO, plus the reproduction prompt (included with purchase).">
+<meta name="theme-color" content="#F6F5F1">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;700;800&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+<!-- PASS: teaser cut mid-sentence at ~45 words, fade overlay matches ink panel; no full prompt anywhere in this file; links /19-axono/ + / verified; lock-box pattern matches guides 16-20; grid collapses to one column at 390px. -->
+<style>
+:root{
+  --paper:#F6F5F1;--ink:#23252B;--blue:#2E5EAA;--coral:#FF6A5C;--paper-hi:#FDFDFB;
+  --mono:'JetBrains Mono',ui-monospace,monospace;--sans:'Manrope',sans-serif;
+  --line:rgba(46,94,170,.28);
+}
+*{margin:0;padding:0;box-sizing:border-box}
+body{
+  font-family:var(--sans);background-color:var(--paper);color:var(--ink);
+  -webkit-font-smoothing:antialiased;line-height:1.65;
+  background-image:
+    linear-gradient(rgba(46,94,170,.045) 1px,transparent 1px),
+    linear-gradient(90deg,rgba(46,94,170,.045) 1px,transparent 1px);
+  background-size:112px 112px;
+}
+::selection{background:var(--blue);color:var(--paper)}
+a{color:inherit;text-decoration:none}
+a:focus-visible{outline:2px solid var(--coral);outline-offset:3px}
+.back25{
+  position:fixed;top:18px;left:18px;z-index:60;font-family:var(--mono);font-size:12px;
+  letter-spacing:.08em;color:var(--blue);padding:7px 12px;border:1px solid var(--line);
+  background:rgba(246,245,241,.82);backdrop-filter:blur(6px);transition:color .25s,border-color .25s;
+}
+.back25:hover{color:var(--coral);border-color:var(--coral)}
+main{max-width:840px;margin:0 auto;padding:110px 24px 90px}
+.eyebrow{
+  font-family:var(--mono);font-size:11px;letter-spacing:.22em;text-transform:uppercase;
+  color:var(--blue);display:flex;align-items:center;gap:12px;margin-bottom:18px;
+}
+.eyebrow::before{content:"";width:34px;height:1px;background:var(--blue);flex:none}
+h1{font-weight:800;letter-spacing:-.035em;line-height:.98;font-size:clamp(38px,7.5vw,84px)}
+h1 em{font-style:normal;color:var(--blue)}
+h2{font-weight:800;letter-spacing:-.02em;font-size:clamp(24px,3.6vw,36px);margin:64px 0 16px}
+h2 em{font-style:normal;color:var(--coral)}
+p{font-size:15.5px;color:#41434b;margin-bottom:14px;max-width:68ch}
+p strong{color:var(--ink);font-weight:700}
+.sheet{
+  border:1px solid var(--line);background:var(--ink);color:var(--paper);
+  padding:32px 28px;margin-top:24px;position:relative;
+}
+.sheet .ph{font-family:var(--mono);font-size:10.5px;letter-spacing:.24em;text-transform:uppercase;color:#8FA9D6;margin-bottom:16px}
+.teaser{position:relative;max-height:150px;overflow:hidden}
+.teaser p{margin:0;font-size:15px;color:#B9BDC7;max-width:none}
+.teaser::after{
+  content:"";position:absolute;inset:0;
+  background:linear-gradient(180deg,rgba(35,37,43,0) 0%,rgba(35,37,43,0) 35%,#23252B 96%);
+}
+.lockline{
+  margin-top:14px;padding-top:16px;border-top:1px dashed #4a5262;
+  font-family:var(--mono);font-size:11px;letter-spacing:.16em;text-transform:uppercase;
+  color:#8FA9D6;display:flex;align-items:center;gap:10px;
+}
+.cta-row{display:flex;gap:18px;align-items:center;margin-top:36px;flex-wrap:wrap}
+.cta{
+  display:inline-block;font-weight:800;font-size:14px;letter-spacing:.02em;
+  background:var(--blue);color:var(--paper);padding:16px 28px;
+  border:1px solid var(--blue);transition:background .25s,border-color .25s,transform .25s;
+}
+.cta:hover{background:var(--coral);border-color:var(--coral);transform:translateY(-2px)}
+.alt{font-family:var(--mono);font-size:12px;letter-spacing:.08em;color:var(--blue);border-bottom:1px solid var(--line);padding-bottom:2px}
+.alt:hover{color:var(--coral);border-color:var(--coral)}
+.foot{
+  margin-top:84px;border-top:1px solid var(--line);padding-top:24px;
+  display:flex;justify-content:space-between;gap:16px;flex-wrap:wrap;
+  font-family:var(--mono);font-size:11px;letter-spacing:.08em;color:#6a6d76;
+}
+.foot a:hover{color:var(--blue);text-decoration:underline}
+</style>
+</head>
+<body>
+<a class="back25" href="/19-axono/">←&nbsp;AXONO</a>
+<main>
+  <p class="eyebrow">Guide — Site 19 / 40</p>
+  <h1>How AXONO<br>was <em>drawn.</em></h1>
+
+  <h2>How it was built</h2>
+  <p>The hero city does not exist in any file: fourteen buildings are defined purely as <strong>data</strong> &mdash; grid position, footprint, height, name, programme &mdash; and projected at runtime with true 30&deg; axonometric math into SVG polygons: a top face and two side faces per volume, plus faint facade floor lines, painter-sorted by depth so nearer blocks always overlap correctly. On first view each building drops in from above with a springy overshoot ease and an 80ms stagger; hovering or focusing one draws a leader line out to a mono spec label, and dimension lines with proper arrowheads sketch themselves around the block. Further down, a 280vh pinned section performs the studio's thesis: a 1:100 floor plan is interpolated via a lerped matrix() from flat identity to the isometric frame, then <strong>extruded</strong> &mdash; side walls hang from the transformed outline while a live mono readout reports elevation and phase (PLAN &rarr; AXONOMETRY &rarr; EXTRUSION &rarr; VOLUME). Project stats roll in on digit-column counters, and reduced motion unpins everything and shows final states.</p>
+
+  <h2>Reproduction <em>prompt</em></h2>
+  <div class="sheet">
+    <div class="ph">SHEET A-01 · PROMPT — PREVIEW</div>
+    <div class="teaser">
+      <p>Build a single-file HTML site for AXONO, a Zürich studio for architecture and urban design. Palette: warm paper #F6F5F1, ink #23252B, drafting blue #2E5EAA, coral accent #FF6A5C, building faces #E9ECF3 / #D6DDEB. Fonts: Manrope (800 for tight headlines) plus JetBrains Mono&hellip;</p>
+    </div>
+    <div class="lockline">
+      <svg width="12" height="14" viewBox="0 0 12 14" fill="none" aria-hidden="true"><rect x="1" y="6" width="10" height="7" rx="1" stroke="#8FA9D6"/><path d="M3.5 6V4.5a2.5 2.5 0 0 1 5 0V6" stroke="#8FA9D6"/></svg>
+      Full prompt (≈260 words) included with purchase.
+    </div>
+  </div>
+
+  <div class="cta-row">
+    <a class="cta" href="https://laserfabio.gumroad.com/l/fable-19">Get this prompt — CHF 9</a>
+    <a class="alt" href="/shop/">or get all 40 →</a>
+  </div>
+
+  <div class="foot">
+    <a href="/19-axono/">← BACK TO AXONO</a>
+    <a href="/">ALL 40 SITES</a>
+  </div>
+</main>
+</body>
+</html>

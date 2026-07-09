@@ -192,7 +192,7 @@
   @media (prefers-reduced-motion: reduce){ .scroll-hint::after{animation:none} }
 
   /* ---------- philosophy ---------- */
-  .philosophy{padding:clamp(7rem,15vh,12rem) 0 clamp(5rem,10vh,8rem)}
+  .philosophy{padding:clamp(7rem,15vh,12rem) 0 clamp(5rem,10vh,8rem); overflow-x:clip}
   .philosophy .grid{
     display:grid; grid-template-columns:auto 1fr; gap:clamp(2.5rem,7vw,7rem);
     align-items:start;
@@ -306,7 +306,7 @@
   .g-cap .n{font-family:var(--disp); color:var(--seal); font-size:1.05rem}
 
   /* ---------- workshop ---------- */
-  .workshop{padding:clamp(6rem,13vh,10rem) 0 clamp(5rem,10vh,8rem)}
+  .workshop{padding:clamp(6rem,13vh,10rem) 0 clamp(5rem,10vh,8rem); overflow-x:clip}
   .workshop .grid{display:grid; grid-template-columns:auto 1fr auto; gap:clamp(2.5rem,6vw,6rem); align-items:start}
   .workshop .body{max-width:40rem}
   .workshop .lede{margin-bottom:2.2rem}
@@ -375,7 +375,7 @@
     .t-card{border-right:none; border-bottom:1px solid var(--ink-15); padding:2.2rem .2rem}
     .inkwash .quote{height:min(62vh,420px); font-size:1.15rem}
     .w-list li{grid-template-columns:1fr; gap:.2rem}
-    .w-seal{justify-self:start}
+    .w-seal{grid-column:auto; justify-self:start}
     footer .jp-addr{display:none}
   }
 </style>
@@ -552,7 +552,7 @@
         <p>Higashiyama, Kyoto — two lanes east of Kenninji.<br>Visits by appointment · keiko@sumi-studio.jp</p>
       </div>
       <div class="jp-addr" aria-hidden="true">京都・東山 一筆入魂</div>
-      <p>© 2026 SUMI studio.<br>Every mark on this page is drawn in the browser — canvas, SVG and CSS only.</p>
+      <p>© 2026 SUMI studio.<br>Every mark on this page is drawn in the browser — canvas, SVG and CSS only.<br><a href="/05-sumi/guide/" style="color:var(--ink-60);text-decoration:none;border-bottom:1px solid var(--ink-15)">guide &amp; prompt →</a></p>
     </div>
   </div>
 </footer>

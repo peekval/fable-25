@@ -1,0 +1,9 @@
+# MONSOON — An Atmospheric Journal in Three Weathers
+
+## Full Reproduction Prompt
+
+Build a single-page "atmospheric journal" called MONSOON: a scroll story through three weathers, drawn live on canvas with no images. Base sky #2B3440 with ink #D8DEE6 and hero white #ECF1F7; section skies crossfade to rain-blue #5C7A99, fog-grey #C9CFD4, golden #E8C97D, then near-black #1A1F27 at the footer. Gold #E8C97D is the accent. Poem inks: #EAF1F7 on rain (drop cap #C3D8EA), #2B3440 on fog (drop cap #5C7A99), #3E2F12 on the clearing (drop cap #9A6E1B). Typography: Newsreader, an optical-size serif, for the letterspaced hero wordmark, italic section titles, poems and oversized floated drop caps; Inter for uppercase micro-labels, subtitle and footer text.
+
+Signature system: a fixed full-viewport background layer whose color interpolates in RGB between per-section stops keyed to the viewport-center scroll position with smoothstep easing, paired with a fixed circular SVG barometer (bottom-right, frosted glass dial, ticks, STORM/RAIN/FOG/FAIR labels) whose gold needle eases between per-section angles and swaps its word readout mid-transition. Each full-height section owns a canvas sim, started and stopped by IntersectionObserver: rain as three depth planes each batched into one stroked path per frame, with wind shear, ground splashes, double-pulse lightning washes and occasional jagged bolts; fog as pre-rendered radial-gradient sprites drifting sinusoidally behind halo-protected text; the clearing as twinkling rising dust motes under blurred, screen-blended CSS god-rays.
+
+Sections in order: hero (kicker, MONSOON, scroll cue), I·Rain "the downpour", II·Fog "the white hour", III·Clearing "the golden hour", footer colophon. Copy: lyrical weather poetry with timestamped meteorological meta lines. Cap devicePixelRatio at 2, keep particle state on height-only resizes; under prefers-reduced-motion paint single still frames and update dial per scroll event.

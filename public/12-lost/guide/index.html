@@ -1,0 +1,127 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>The Museum of Lost Things — Guide &amp; Prompt</title>
+<meta name="description" content="How The Museum of Lost Things was built, plus the full AI reproduction prompt.">
+<meta name="theme-color" content="#23201B">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,500;0,600;1,400;1,500;1,600&family=EB+Garamond:ital,wght@0,400;0,500;1,400;1,500&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --parchment:#E9E2D0;
+    --parchment-dim:rgba(233,226,208,.62);
+    --parchment-faint:rgba(233,226,208,.34);
+    --oxblood:#5C1F1F;
+    --oxblood-bright:#7A2C2C;
+    --ink:#23201B;
+    --ink-deep:#1B1815;
+    --brass:#9C7C46;
+    --brass-dim:rgba(156,124,70,.5);
+    --serif:"EB Garamond",Georgia,serif;
+    --display:"Playfair Display",Georgia,serif;
+    --mono:"IBM Plex Mono",monospace;
+  }
+  *{margin:0;padding:0;box-sizing:border-box}
+  body{
+    background:var(--ink);
+    color:var(--parchment);
+    font-family:var(--serif);
+    font-size:18px;
+    line-height:1.7;
+    -webkit-font-smoothing:antialiased;
+  }
+  ::selection{background:var(--oxblood);color:var(--parchment)}
+  .wrap{max-width:680px;margin:0 auto;padding:64px 24px 80px}
+  .kicker{
+    font-family:var(--mono);font-size:11px;letter-spacing:.4em;text-transform:uppercase;
+    color:var(--brass);margin-bottom:22px;
+  }
+  h1{
+    font-family:var(--display);font-style:italic;font-weight:500;
+    font-size:clamp(32px,6vw,52px);line-height:1.12;margin-bottom:34px;
+  }
+  h1 em{color:var(--oxblood-bright);font-style:italic}
+  h2{
+    font-family:var(--mono);font-size:12px;letter-spacing:.34em;text-transform:uppercase;
+    font-weight:500;color:var(--brass);margin:52px 0 20px;
+    display:flex;align-items:center;gap:16px;
+  }
+  h2::after{content:"";flex:1;height:1px;background:linear-gradient(90deg,var(--brass-dim),transparent)}
+  p{color:var(--parchment-dim);margin-bottom:16px}
+  p b{color:var(--parchment);font-weight:500}
+  .prompt-teaser{
+    position:relative;overflow:hidden;
+    border:1px solid var(--brass-dim);
+    background:var(--ink-deep);
+    padding:26px 26px 60px;
+    font-family:var(--mono);font-size:14px;line-height:1.8;
+    color:var(--parchment-dim);
+  }
+  .prompt-teaser .fade{
+    position:absolute;left:0;right:0;bottom:0;height:90px;
+    background:linear-gradient(to bottom, transparent, #23201B);
+    pointer-events:none;
+  }
+  .lock-line{
+    font-family:var(--mono);font-size:12px;letter-spacing:.14em;
+    color:var(--brass);margin:14px 0 0;
+  }
+  .cta{
+    display:inline-block;margin-top:34px;
+    background:var(--oxblood);color:var(--parchment);
+    font-family:var(--mono);font-size:14px;letter-spacing:.12em;text-transform:uppercase;
+    text-decoration:none;padding:16px 30px;
+    border:1px solid var(--oxblood-bright);
+    transition:background .3s,border-color .3s;
+  }
+  .cta:hover,.cta:focus-visible{background:var(--oxblood-bright);border-color:var(--brass)}
+  .cta:focus-visible{outline:2px solid var(--brass);outline-offset:3px}
+  .all40{
+    display:inline-block;margin:18px 0 0 4px;
+    font-family:var(--mono);font-size:12px;letter-spacing:.12em;
+    color:var(--brass);text-decoration:none;border-bottom:1px dotted var(--brass-dim);padding-bottom:2px;
+  }
+  .all40:hover,.all40:focus-visible{color:var(--parchment)}
+  footer{
+    margin-top:70px;padding-top:22px;
+    border-top:1px solid rgba(233,226,208,.12);
+    display:flex;flex-wrap:wrap;gap:14px 28px;
+    font-family:var(--mono);font-size:11px;letter-spacing:.18em;text-transform:uppercase;
+  }
+  footer a{color:var(--parchment-faint);text-decoration:none;transition:color .3s}
+  footer a:hover,footer a:focus-visible{color:var(--brass)}
+  @media (max-width:480px){
+    .wrap{padding:48px 18px 60px}
+    body{font-size:16.5px}
+    .prompt-teaser{padding:20px 18px 56px;font-size:13px}
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <p class="kicker">Fable-25 &middot; No. 12 &middot; Guide</p>
+  <h1>The Museum of <em>Lost Things</em></h1>
+
+  <h2>How it was built</h2>
+  <p>The whole site is one hand-written HTML file — no framework, no build step, no image assets. Every "engraving" is an inline SVG drawn stroke by stroke: each path is normalised to a length of one and starts fully dash-offset, then an IntersectionObserver flips a class when the exhibit scrolls into view and the strokes transition to zero offset, so the illustration <b>draws itself line by line</b>, with per-group delay variables staggering cabinet, drawers, and details.</p>
+  <p>The candlelit atmosphere comes from two fixed radial-gradient glow layers running slow, slightly out-of-phase flicker keyframes, plus a fixed vignette and repeating-gradient textures pinned to both page edges. Each exhibit sits on a parchment "museum plate" — layered radial gradients fake brass foxing and oxblood shadow — and hovering a plate lifts it while a hidden acquisition note unfolds through a grid-rows transition. Footnotes use native anchor targets with a highlighted ledger rule, and the reduced-motion path collapses every animation to a settled, static page.</p>
+
+  <h2>Reproduction Prompt</h2>
+  <div class="prompt-teaser">Build a single-page dark-academia digital museum called "The Museum of Lost Things &mdash; Hall of Ephemera," a candlelit catalogue of four obsolete objects: the card catalog, the public telephone box, the compact cassette, and the paper road map. Palette: near-black ink #23201B page background (deeper variant&hellip;<div class="fade"></div></div>
+  <p class="lock-line">Full prompt (≈250 words) included with purchase.</p>
+
+  <a class="cta" href="https://laserfabio.gumroad.com/l/fable-12">Get this prompt — CHF 9</a>
+  <br>
+  <a class="all40" href="/shop/">or get all 40 &rarr;</a>
+
+  <footer>
+    <a href="/12-lost/">&larr; back to the site</a>
+    <a href="/">all 40 sites</a>
+  </footer>
+</div>
+<!-- PASS: lock-box pattern (prompt-teaser/fade→#23201B/lock-line) consistent; lock line normalized to literal ≈; ~46-word teaser only, no full prompt in HTML; links /12-lost/, /, /shop/, gumroad fable-12 OK; viewport + 480px media query mobile-safe; hover-only transitions, no keyframe motion. -->
+</body>
+</html>

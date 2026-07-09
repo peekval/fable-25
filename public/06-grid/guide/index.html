@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>How GRID° was built — guide &amp; prompt</title>
+<meta name="description" content="The techniques behind the GRID° Swiss editorial showcase, plus the reproduction prompt (teaser).">
+<meta name="theme-color" content="#FAFAF8">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter+Tight:wght@500;700;800;900&family=Space+Grotesk:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+:root{--paper:#FAFAF8;--ink:#111111;--red:#E63329;--hair:rgba(17,17,17,.18);--ease:cubic-bezier(.22,1,.36,1)}
+*,*::before,*::after{margin:0;padding:0;box-sizing:border-box}
+body{background:var(--paper);color:var(--ink);font-family:'Space Grotesk',sans-serif;font-size:16px;line-height:1.6;-webkit-font-smoothing:antialiased}
+::selection{background:var(--red);color:var(--paper)}
+a{color:inherit}
+a:focus-visible{outline:2px solid var(--red);outline-offset:3px}
+.back{position:fixed;top:18px;left:18px;z-index:9;font-size:12px;letter-spacing:.08em;text-decoration:none;padding:6px 10px;border:1px solid var(--hair);background:var(--paper);transition:background .2s var(--ease),color .2s var(--ease)}
+.back:hover{background:var(--ink);color:var(--paper)}
+main{max-width:820px;margin:0 auto;padding:100px 24px 80px}
+.no{font-size:12px;letter-spacing:.2em;color:var(--red);text-transform:uppercase;margin-bottom:14px}
+h1{font-family:'Inter Tight',sans-serif;font-weight:900;text-transform:uppercase;letter-spacing:-.035em;line-height:.92;font-size:clamp(40px,8vw,84px);border-bottom:2px solid var(--ink);padding-bottom:22px}
+h1 em{font-style:normal;color:transparent;-webkit-text-stroke:2px var(--ink)}
+h2{font-family:'Inter Tight',sans-serif;font-weight:800;text-transform:uppercase;letter-spacing:-.01em;font-size:22px;margin:56px 0 16px;display:flex;align-items:baseline;gap:12px}
+h2 .sec{font-family:'Space Grotesk',sans-serif;font-weight:400;font-size:11px;letter-spacing:.2em;color:var(--red)}
+p{font-size:15px;line-height:1.7;max-width:64ch;margin-bottom:12px}
+.lockbox{position:relative;border:2px solid var(--ink);margin-top:20px;background:var(--paper)}
+.lockbox .lb-head{display:flex;justify-content:space-between;font-size:10px;letter-spacing:.2em;text-transform:uppercase;padding:10px 16px;border-bottom:1px solid var(--hair)}
+.lockbox .lb-head span:last-child{color:var(--red)}
+.lockbox .teaser{position:relative;padding:22px 20px 0;max-height:150px;overflow:hidden}
+.lockbox .teaser p{font-size:14.5px;line-height:1.75;max-width:none;margin:0}
+.lockbox .fade{position:absolute;left:0;right:0;bottom:0;height:96px;background:linear-gradient(rgba(250,250,248,0),var(--paper) 82%);pointer-events:none}
+.lockline{display:flex;align-items:center;gap:10px;padding:14px 20px 18px;font-size:12px;letter-spacing:.1em;text-transform:uppercase;color:var(--ink)}
+.lockline b{color:var(--red);font-weight:700}
+.cta-row{display:flex;flex-wrap:wrap;align-items:center;gap:18px;margin-top:30px}
+.cta{display:inline-block;font-family:'Inter Tight',sans-serif;font-weight:800;text-transform:uppercase;letter-spacing:.04em;font-size:15px;text-decoration:none;background:var(--red);color:var(--paper);padding:16px 26px;transition:background .2s var(--ease)}
+.cta:hover{background:var(--ink)}
+.alt{font-size:13px;letter-spacing:.06em;text-decoration:none;border-bottom:1px solid var(--hair);padding-bottom:2px;transition:color .2s,border-color .2s}
+.alt:hover{color:var(--red);border-color:var(--red)}
+.baseline{margin-top:70px;border-top:1px solid var(--hair);padding-top:14px;display:flex;justify-content:space-between;flex-wrap:wrap;gap:10px;font-size:10px;letter-spacing:.2em;text-transform:uppercase}
+.baseline a{text-decoration:none}
+.baseline a:hover{color:var(--red)}
+@media (max-width:600px){main{padding-top:84px}}
+</style>
+</head>
+<body>
+<a class="back" href="/06-grid/">←&nbsp;GRID°</a>
+<main>
+  <p class="no">Guide — Site 06 · Swiss Editorial</p>
+  <h1>How this<br><em>was built</em></h1>
+
+  <h2><span class="sec">SEC. A</span>The system</h2>
+  <p>GRID° is one HTML file that practices what it preaches: every element — masthead, offset hero lines, essay index, colophon — is placed on a literal 12-column CSS grid with 24px gutters, and a fixed overlay of twelve translucent red columns can be toggled with a button or the G key to prove it. The hero stacks three uppercase Inter Tight headline lines that each begin on a different grid track, with one word rendered as a transparent stroke outline. The essay rows invert on hover using a ::before ink bar that scales up from zero height and bleeds the full viewport width with a negative-inset trick, flipping the type to paper white. A dark manifesto marquee loops seamlessly because JavaScript clones its slogans with aria-hidden, so screen readers hear each line once. Scroll reveals arrive through a single IntersectionObserver that assigns a 70ms stagger to elements entering in the same batch, and everything collapses to a four-column grid under 900px. The only colors on the page are paper, ink, and one red — applied, as the colophon says, surgically.</p>
+
+  <h2><span class="sec">SEC. B</span>Reproduction prompt</h2>
+  <div class="lockbox">
+    <div class="lb-head"><span>PROMPT — GRID°</span><span>LOCKED</span></div>
+    <div class="teaser">
+      <p>Build a single-file HTML site for GRID°, a fictional quarterly journal of systematic Swiss design, issue №07. Palette: paper #FAFAF8, ink #111111, and one accent red #E63329 applied surgically; hairlines at rgba(17,17,17,.18). Fonts: Inter Tight 500–900 for display, Space Grotesk 400–700 for text and labels. Everything sits on a strict 12-column CSS grid…</p>
+      <div class="fade" aria-hidden="true"></div>
+    </div>
+    <div class="lockline"><b>●</b> Full prompt (≈250 words) included with purchase.</div>
+  </div>
+
+  <div class="cta-row">
+    <a class="cta" href="https://laserfabio.gumroad.com/l/fable-06">Get this prompt — CHF 9</a>
+    <a class="alt" href="/shop/">or get all 40 →</a>
+  </div>
+
+  <div class="baseline">
+    <a href="/06-grid/">← Back to GRID°</a>
+    <a href="/">Index of all sites</a>
+  </div>
+</main>
+<!-- PASS: lock-box teaser ends before word 50, fade gradient covers overflow, no full prompt text anywhere in this file; links /06-grid/, /shop/, / and Gumroad fable-06 verified; single-column layout is mobile-safe at 320px. -->
+</body>
+</html>

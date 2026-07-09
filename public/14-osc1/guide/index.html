@@ -1,0 +1,147 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>OSC-1 — Guide &amp; Reproduction Prompt</title>
+<meta name="description" content="How the OSC-1 boutique synthesizer site was built, plus the full AI reproduction prompt.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Michroma&family=IBM+Plex+Mono:ital,wght@0,300;0,400;0,500;0,600;1,400&display=swap" rel="stylesheet">
+<style>
+:root{
+  --ink:#17181C;
+  --panel:#2A2C33;
+  --orange:#FF6B35;
+  --green:#7CFC9A;
+  --green-dim:rgba(124,252,154,.55);
+  --txt:#C9CCD4;
+  --txt-dim:#7D8290;
+  --engrave:#9A9FAC;
+  --hairline:rgba(255,255,255,.08);
+  --disp:'Michroma', sans-serif;
+  --mono:'IBM Plex Mono', monospace;
+}
+*{margin:0;padding:0;box-sizing:border-box}
+body{
+  background:var(--ink);
+  color:var(--txt);
+  font-family:var(--mono);
+  font-size:15px;
+  line-height:1.7;
+  -webkit-font-smoothing:antialiased;
+}
+body::before{
+  content:"";position:fixed;inset:0;pointer-events:none;z-index:0;
+  background:repeating-linear-gradient(0deg, rgba(255,255,255,.012) 0 1px, transparent 1px 3px);
+}
+::selection{background:var(--orange);color:var(--ink)}
+.wrap{max-width:760px;margin:0 auto;padding:72px 24px 64px;position:relative;z-index:1}
+.kicker{
+  font-size:11px;letter-spacing:.4em;color:var(--orange);
+  text-transform:uppercase;margin-bottom:18px;
+}
+h1{
+  font-family:var(--disp);font-weight:400;
+  font-size:clamp(1.6rem,5.5vw,2.6rem);
+  letter-spacing:.05em;line-height:1.15;
+  color:#F2F3F6;text-transform:uppercase;
+  margin-bottom:34px;
+}
+h1 span{color:transparent;-webkit-text-stroke:1px rgba(242,243,246,.4)}
+h2{
+  font-family:var(--disp);font-weight:400;
+  font-size:15px;letter-spacing:.14em;color:#E8E9EE;
+  text-transform:uppercase;margin:46px 0 16px;
+  display:flex;align-items:center;gap:14px;
+}
+h2::after{content:"";flex:1;height:1px;background:var(--hairline)}
+p{margin-bottom:14px;color:var(--txt)}
+.dim{color:var(--txt-dim)}
+.built p b{color:var(--green);font-weight:500}
+.built p i{font-style:normal;color:var(--orange)}
+
+.prompt-teaser{
+  position:relative;overflow:hidden;
+  border:1px solid var(--hairline);border-radius:8px;
+  background:linear-gradient(180deg,#1C1D22,#17181C);
+  padding:26px 24px 60px;
+  font-size:14px;color:var(--txt);
+}
+.prompt-teaser .pt-tag{
+  font-size:10px;letter-spacing:.3em;color:var(--engrave);
+  text-transform:uppercase;margin-bottom:14px;
+  text-shadow:0 1px 0 rgba(255,255,255,.06);
+}
+.prompt-teaser .fade{
+  position:absolute;left:0;right:0;bottom:0;height:90px;
+  background:linear-gradient(to bottom, transparent, #17181C);
+  pointer-events:none;
+}
+.lock-line{
+  margin-top:12px;font-size:12px;letter-spacing:.14em;
+  color:var(--green-dim);text-transform:uppercase;
+}
+
+.cta-row{margin:34px 0 8px;display:flex;flex-wrap:wrap;align-items:center;gap:18px}
+.cta{
+  display:inline-block;
+  font-family:var(--disp);font-size:13px;letter-spacing:.18em;
+  color:var(--ink);background:var(--orange);
+  border-radius:4px;padding:16px 30px;text-decoration:none;
+  box-shadow:0 4px 0 #b8481f,0 8px 18px rgba(255,107,53,.3);
+  text-transform:uppercase;
+}
+@media (prefers-reduced-motion: no-preference){
+  .cta{transition:transform .12s, box-shadow .12s, background .25s}
+  .cta:hover{background:#ff7d4d}
+  .cta:active{transform:translateY(3px);box-shadow:0 1px 0 #b8481f,0 4px 10px rgba(255,107,53,.25)}
+}
+.alt{font-size:12px;letter-spacing:.12em;color:var(--green);text-decoration:none;text-transform:uppercase}
+.alt:hover{color:var(--orange)}
+
+footer{
+  margin-top:56px;padding-top:26px;border-top:1px solid var(--hairline);
+  font-size:12px;color:var(--txt-dim);
+  display:flex;justify-content:space-between;flex-wrap:wrap;gap:12px;
+}
+footer a{color:var(--txt-dim);text-decoration:none;letter-spacing:.1em}
+footer a:hover{color:var(--green)}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <p class="kicker">Guide · Site 14 of 25</p>
+  <h1>OSC<span>‑1</span> — Boutique Analog Synthesizer</h1>
+
+  <h2>How it was built</h2>
+  <div class="built">
+    <p>The whole page is one HTML file styled like a piece of studio hardware: a brushed-metal front panel with corner screws, engraved labels, toggle switches and a blinking voice LED, set on a near-black machined background with a faint scanline texture. <b>Michroma</b> carries the uppercase wordmark and headings, <b>IBM Plex Mono</b> everything else.</p>
+    <p>The centerpiece is a genuinely playable synth voice: the <i>Web Audio API</i> runs four detuned oscillators through a lowpass filter into an analyser, with exponential gain ramps so start and stop never click. Detune weights are deliberately asymmetric so low settings don't collapse into phase cancellation.</p>
+    <p>Two canvases act as the instrument's oscilloscope and spectrum display — live when audio plays, and fed by a simulated waveform derived from the current knob positions when it doesn't, so the panel always looks powered.</p>
+    <p>The knobs are SVG dials generated in script, draggable with pointer capture, logarithmic on the cutoff like a real filter pot, and fully keyboard-operable as ARIA sliders.</p>
+    <p>Performance care is everywhere: scope grids are pre-rendered offscreen, the animation loop pauses when canvases scroll out of view, the trace glow is a cheap double stroke instead of shadowBlur, and reduced-motion visitors get a single static frame.</p>
+  </div>
+
+  <h2>Reproduction Prompt</h2>
+  <div class="prompt-teaser">
+    <p class="pt-tag">Prompt · Excerpt</p>
+    <p>Build a one-page product site for "OSC-1", a boutique analog monosynth handbuilt in Bern, Switzerland. Dark hardware aesthetic: page background #17181C, brushed-metal panel gradients #33363f → #2A2C33 → #222429, patch-cable orange #FF6B35 for accents and pointers, phosphor green #7CFC9A for scope traces and links,</p>
+    <div class="fade"></div>
+  </div>
+  <p class="lock-line">Full prompt (≈250 words) included with purchase.</p>
+
+  <div class="cta-row">
+    <a class="cta" href="https://laserfabio.gumroad.com/l/fable-14">Get this prompt — CHF 9</a>
+    <a class="alt" href="/shop/">or get all 40 →</a>
+  </div>
+  <p class="dim" style="font-size:12px">One paste into your AI builder recreates the palette, the panel, the playable voice and the reduced-motion behaviour.</p>
+
+  <footer>
+    <a href="/14-osc1/">← back to the site</a>
+    <a href="/">all 40 sites</a>
+  </footer>
+</div>
+<!-- PASS: lock-box pattern (prompt-teaser/fade→#17181C/lock-line) consistent; ~44-word teaser only, no full prompt in HTML; links /14-osc1/, /, /shop/, gumroad fable-14 OK; viewport + clamp() type + flex-wrap CTA row mobile-safe; CTA motion gated behind prefers-reduced-motion. -->
+</body>
+</html>

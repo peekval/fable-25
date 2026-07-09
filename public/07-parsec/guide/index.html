@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>How PARSEC was built — guide &amp; prompt</title>
+<meta name="description" content="The techniques behind the PARSEC observatory showcase, plus the reproduction prompt (teaser).">
+<meta name="theme-color" content="#05070F">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Unbounded:wght@300;500;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+:root{--ink:#05070F;--star:#F2F6FF;--cyan:#6EE7F0;--magenta:#C77DFF;--mute:rgba(242,246,255,.62);--faint:rgba(242,246,255,.45);--line:rgba(110,231,240,.16);--card:rgba(9,13,26,.58);--mono:"SFMono-Regular",ui-monospace,Menlo,Consolas,monospace}
+*,*::before,*::after{margin:0;padding:0;box-sizing:border-box}
+body{background:var(--ink);color:var(--star);font-family:'Inter',sans-serif;font-size:16px;line-height:1.65;-webkit-font-smoothing:antialiased;
+background-image:radial-gradient(1px 1px at 14% 22%,rgba(242,246,255,.8),transparent 60%),radial-gradient(1px 1px at 72% 12%,rgba(242,246,255,.7),transparent 60%),radial-gradient(1.4px 1.4px at 84% 64%,rgba(110,231,240,.7),transparent 60%),radial-gradient(1px 1px at 32% 78%,rgba(199,125,255,.6),transparent 60%),radial-gradient(1px 1px at 56% 44%,rgba(242,246,255,.55),transparent 60%)}
+::selection{background:var(--cyan);color:var(--ink)}
+a:focus-visible{outline:2px solid var(--cyan);outline-offset:3px;border-radius:6px}
+.back{position:fixed;top:20px;left:20px;z-index:9;font-family:var(--mono);font-size:.78rem;letter-spacing:.08em;color:var(--faint);text-decoration:none;padding:.45rem .7rem;border-radius:99px;border:1px solid transparent;transition:color .25s,border-color .25s,background .25s}
+.back:hover{color:var(--cyan);border-color:var(--line);background:rgba(9,13,26,.6)}
+main{max-width:820px;margin:0 auto;padding:110px 24px 90px}
+.kicker{font-family:var(--mono);font-size:.7rem;letter-spacing:.3em;text-transform:uppercase;color:var(--cyan);display:flex;align-items:center;gap:.9rem;margin-bottom:1.3rem}
+.kicker::before{content:"";width:34px;height:1px;background:var(--cyan);opacity:.7}
+h1{font-family:'Unbounded',sans-serif;font-weight:700;line-height:1.05;font-size:clamp(2rem,6.5vw,3.6rem)}
+h1 span{background:linear-gradient(100deg,var(--star) 30%,var(--cyan) 60%,var(--magenta) 90%);-webkit-background-clip:text;background-clip:text;color:transparent}
+h2{font-family:'Unbounded',sans-serif;font-weight:500;font-size:1.25rem;margin:56px 0 16px;color:var(--star)}
+p{font-size:.98rem;color:var(--mute);max-width:66ch;margin-bottom:12px}
+.lockbox{position:relative;margin-top:20px;background:var(--card);border:1px solid var(--line);border-radius:16px;backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);overflow:hidden}
+.lb-head{display:flex;justify-content:space-between;padding:.9rem 1.3rem;border-bottom:1px solid rgba(242,246,255,.08);font-family:var(--mono);font-size:.66rem;letter-spacing:.22em;color:var(--faint)}
+.lb-head span:last-child{color:var(--magenta)}
+.teaser{position:relative;padding:1.3rem 1.3rem 0;max-height:150px;overflow:hidden}
+.teaser p{font-size:.92rem;line-height:1.75;color:rgba(242,246,255,.8);max-width:none;margin:0}
+.fade{position:absolute;left:0;right:0;bottom:0;height:96px;background:linear-gradient(rgba(9,13,26,0),#090D1A 85%);pointer-events:none}
+.lockline{display:flex;align-items:center;gap:.6rem;padding:.9rem 1.3rem 1.1rem;font-family:var(--mono);font-size:.7rem;letter-spacing:.12em;color:var(--cyan)}
+.cta-row{display:flex;flex-wrap:wrap;align-items:center;gap:18px;margin-top:32px}
+.cta{display:inline-block;font-family:'Unbounded',sans-serif;font-weight:500;font-size:.82rem;letter-spacing:.06em;text-decoration:none;padding:.95rem 1.7rem;border-radius:99px;background:var(--cyan);color:var(--ink);box-shadow:0 0 24px rgba(110,231,240,.28);transition:transform .25s,box-shadow .25s}
+.cta:hover{transform:translateY(-2px);box-shadow:0 0 44px rgba(110,231,240,.5)}
+.alt{font-size:.85rem;color:var(--mute);text-decoration:none;border-bottom:1px solid rgba(242,246,255,.25);padding-bottom:2px;transition:color .25s,border-color .25s}
+.alt:hover{color:var(--cyan);border-color:var(--cyan)}
+.baseline{margin-top:70px;border-top:1px solid rgba(242,246,255,.08);padding-top:1.2rem;display:flex;justify-content:space-between;flex-wrap:wrap;gap:.8rem;font-family:var(--mono);font-size:.66rem;letter-spacing:.14em;color:var(--faint)}
+.baseline a{color:var(--faint);text-decoration:none}
+.baseline a:hover{color:var(--cyan)}
+@media (prefers-reduced-motion:reduce){.cta{transition:none}}
+</style>
+</head>
+<body>
+<a class="back" href="/07-parsec/">←&nbsp;PARSEC</a>
+<main>
+  <p class="kicker">Guide — Site 07 · 46°35′N 9°52′E</p>
+  <h1>How <span>PARSEC</span> was built</h1>
+
+  <h2>The instruments</h2>
+  <p>The whole night sky is a single fixed canvas: between 800 and 1,400 stars are seeded into three parallax layers with different drift speeds and sizes, each one twinkling through a sine-modulated alpha, and the cursor acts as a gravity well whose pull strength fades in and out so stars never lurch when the pointer enters or leaves. Performance is the quiet star of the show — stars are sorted by color so the render loop changes fillStyle only three times per frame, pixel ratio is capped at 2, rendering pauses when the tab hides, and the field only re-seeds on a genuine resize so mobile URL-bar collapse never scrambles the sky. The nebula is painted entirely in code, once, at half resolution: additive radial-gradient blobs, bezier filaments, per-pixel grain and a vignette, upscaled into softness. A telescope "focus ring" in the corner doubles as a scroll-progress dial, constellation cards draw their star-lines on hover via stroke-dashoffset, the readout panel counts its numbers up on entry, and a real local-sidereal-time clock ticks in the header of the instrument feed. Reduced-motion visitors get a still, pre-drawn sky.</p>
+
+  <h2>Reproduction prompt</h2>
+  <div class="lockbox">
+    <div class="lb-head"><span>PROMPT — PARSEC/RIDGE</span><span>LOCKED</span></div>
+    <div class="teaser">
+      <p>Build a single-file HTML showcase for PARSEC, a fictional public observatory at 2,742 m on Piz Larun. Palette: near-black ink #05070F, star-white #F2F6FF, cyan #6EE7F0, magenta #C77DFF; translucent glass cards with cyan-tinted borders and backdrop blur. Fonts: Unbounded 300–900 for display, Inter for body, a system mono stack for…</p>
+      <div class="fade" aria-hidden="true"></div>
+    </div>
+    <div class="lockline">✦ Full prompt (≈250 words) included with purchase.</div>
+  </div>
+
+  <div class="cta-row">
+    <a class="cta" href="https://laserfabio.gumroad.com/l/fable-07">Get this prompt — CHF 9</a>
+    <a class="alt" href="/shop/">or get all 40 →</a>
+  </div>
+
+  <div class="baseline">
+    <a href="/07-parsec/">← Back to PARSEC</a>
+    <a href="/">Index of all sites</a>
+  </div>
+</main>
+<!-- PASS: lock-box teaser cut at ~48 words with fade gradient matching card background; full prompt exists only in the paid deliverable, not in this file; links /07-parsec/, /shop/, / and Gumroad fable-07 verified; CSS-only starfield keeps the guide light and mobile-safe. -->
+</body>
+</html>

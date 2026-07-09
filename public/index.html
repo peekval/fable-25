@@ -60,7 +60,7 @@ footer p b{color:var(--ink);font-weight:500}
 <header>
   <div class="kick">A design capability study — 40 sites, zero stock assets</div>
   <h1>One model. <em>Forty</em> design languages.</h1>
-  <p class="sub">Every site below is a complete, living landing page in a fundamentally different visual dialect — <b>and every pixel is generated from code</b>: WebGL shaders, real-time 3D, canvas simulations, generative SVG, kinetic type. No photographs. No stock. Each passed three documented design-review iterations before shipping. Wave II sites each carry their own <b>/guide</b> with a copy-paste reproduction prompt.</p>
+  <p class="sub">Every site below is a complete, living landing page in a fundamentally different visual dialect — <b>and every pixel is generated from code</b>: WebGL shaders, real-time 3D, canvas simulations, generative SVG, kinetic type. No photographs. No stock. Each passed three documented design-review iterations before shipping. Every site carries its own <b>/guide</b> with a copy-paste reproduction prompt.</p>
   <div class="meta-row">
     <span><b>40</b>websites</span>
     <span><b>120</b>iteration passes</span>
@@ -122,7 +122,7 @@ const SITES=[
 const grid=document.getElementById('grid');
 grid.innerHTML=SITES.map(([n,slug,name,tag,tech,cols],i)=>{
   const g=`linear-gradient(125deg, ${cols[0]} 0%, ${cols[1]} 55%, ${cols[2]||cols[0]} 100%)`;
-  const wave = i===0 ? `<div class="wavehead"><span>Wave I</span><em>the twenty-five dialects</em></div>` : (i===25 ? `<div class="wavehead"><span>Wave II</span><em>the escalation — heavier 3D, each with its own /guide + reproduction prompt</em></div>` : ``);
+  const wave = i===0 ? `<div class="wavehead"><span>Wave I</span><em>the twenty-five dialects</em></div>` : (i===25 ? `<div class="wavehead"><span>Wave II</span><em>the escalation — heavier 3D</em></div>` : ``);
   return wave+`<a class="card" href="/${slug}/"><div class="tile"><div class="sw" style="--g:${g}"></div><span class="num">${n} / 40</span></div><div class="body"><div class="name">${name}<span class="arr">→</span></div><div class="tag">${tag}</div><div class="tech">${tech}</div></div></a>`;
 }).join('');
 const io=new IntersectionObserver(es=>es.forEach((e,)=>{if(e.isIntersecting){e.target.classList.add('in');io.unobserve(e.target)}}),{threshold:.08});

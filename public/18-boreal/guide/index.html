@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>How BOREAL was built — guide &amp; prompt</title>
+<meta name="description" content="The generative aurora and scroll techniques behind the BOREAL showcase, plus the reproduction prompt (included with purchase).">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,300;9..144,400;9..144,600&family=Outfit:wght@300;400;500&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<!-- PASS: teaser cut mid-sentence at ~45 words, fade overlay matches panel night tone; no full prompt anywhere in this file; links /18-boreal/ + / verified; lock-box pattern matches guides 16-20; single-column layout mobile-safe at 390px. -->
+<style>
+:root{
+  --night:#0B1026;--aurora-g:#6BFFB0;--aurora-v:#9D7BFF;--snow:#EAF2F6;--ember:#FF9E6B;
+  --ink-dim:rgba(234,242,246,.64);--ink-faint:rgba(234,242,246,.46);--hair:rgba(234,242,246,.14);
+  --disp:"Fraunces",serif;--body:"Outfit",sans-serif;--mono:"IBM Plex Mono",monospace;
+}
+*{margin:0;padding:0;box-sizing:border-box}
+body{
+  font-family:var(--body);font-weight:300;line-height:1.65;color:var(--snow);
+  background:linear-gradient(180deg,#0B1026 0%,#0d1330 46%,#090d20 100%);
+  background-attachment:fixed;-webkit-font-smoothing:antialiased;
+}
+::selection{background:var(--aurora-g);color:var(--night)}
+a{color:inherit}
+a:focus-visible{outline:2px solid var(--aurora-g);outline-offset:3px;border-radius:2px}
+.back{
+  position:fixed;top:20px;left:22px;z-index:60;font-family:var(--mono);font-size:12px;
+  letter-spacing:.12em;color:var(--ink-dim);text-decoration:none;padding:8px 14px;
+  border:1px solid var(--hair);border-radius:99px;background:rgba(11,16,38,.5);
+  backdrop-filter:blur(8px);transition:color .3s,border-color .3s;
+}
+.back:hover{color:var(--aurora-g);border-color:rgba(107,255,176,.4)}
+main{max-width:800px;margin:0 auto;padding:120px 24px 90px}
+.kicker{
+  font-family:var(--mono);font-size:11px;letter-spacing:.36em;text-transform:uppercase;
+  color:var(--aurora-v);margin-bottom:20px;display:flex;align-items:center;gap:14px;
+}
+.kicker::before{content:"";width:34px;height:1px;background:var(--aurora-v);opacity:.6}
+h1{
+  font-family:var(--disp);font-weight:300;font-size:clamp(38px,7vw,70px);
+  line-height:1.05;letter-spacing:.02em;text-shadow:0 0 60px rgba(107,255,176,.25);
+}
+h1 em{font-style:italic;color:var(--aurora-g)}
+h2{font-family:var(--disp);font-weight:400;font-size:clamp(24px,3.4vw,34px);margin:66px 0 18px}
+h2 em{font-style:italic;color:var(--aurora-g)}
+p{color:var(--ink-dim);margin-bottom:16px;max-width:62ch;font-size:16px}
+p strong{color:var(--snow);font-weight:500}
+.panel{
+  border:1px solid var(--hair);border-radius:6px;background:rgba(234,242,246,.03);
+  padding:30px 26px;margin-top:24px;position:relative;overflow:hidden;
+}
+.panel::before{
+  content:"";position:absolute;top:-40px;left:0;right:0;height:80px;pointer-events:none;
+  background:linear-gradient(90deg,rgba(107,255,176,.12),rgba(157,123,255,.12));
+  filter:blur(30px);
+}
+.panel .ph{font-family:var(--mono);font-size:10.5px;letter-spacing:.3em;text-transform:uppercase;color:var(--aurora-g);margin-bottom:16px}
+.teaser{position:relative;max-height:150px;overflow:hidden}
+.teaser p{margin:0;font-size:15px}
+.teaser::after{
+  content:"";position:absolute;inset:0;
+  background:linear-gradient(180deg,rgba(13,18,42,0) 0%,rgba(13,18,42,0) 35%,#0d1330 96%);
+}
+.lockline{
+  margin-top:14px;padding-top:16px;border-top:1px solid var(--hair);
+  font-family:var(--mono);font-size:11px;letter-spacing:.2em;text-transform:uppercase;
+  color:var(--ink-faint);display:flex;align-items:center;gap:10px;
+}
+.cta-row{display:flex;gap:18px;align-items:center;margin-top:36px;flex-wrap:wrap}
+.cta{
+  display:inline-block;font-family:var(--mono);font-size:12px;letter-spacing:.28em;
+  text-transform:uppercase;text-decoration:none;color:var(--night);background:var(--aurora-g);
+  border-radius:99px;padding:17px 34px;font-weight:500;
+  box-shadow:0 0 30px rgba(107,255,176,.25);transition:box-shadow .35s,transform .35s;
+}
+.cta:hover{box-shadow:0 0 50px rgba(107,255,176,.5);transform:translateY(-2px)}
+.alt{font-family:var(--mono);font-size:12px;letter-spacing:.1em;color:var(--ink-dim);text-decoration:underline}
+.alt:hover{color:var(--aurora-g)}
+.foot{
+  margin-top:84px;border-top:1px solid var(--hair);padding-top:26px;
+  display:flex;justify-content:space-between;gap:14px;flex-wrap:wrap;
+  font-family:var(--mono);font-size:11px;letter-spacing:.12em;color:var(--ink-faint);text-transform:uppercase;
+}
+.foot a{text-decoration:none}
+.foot a:hover{color:var(--aurora-g)}
+</style>
+</head>
+<body>
+<a class="back" href="/18-boreal/">←&nbsp;BOREAL</a>
+<main>
+  <p class="kicker">Guide — Site 18 / 40</p>
+  <h1>How BOREAL <em>was built.</em></h1>
+
+  <h2>How it <em>was built</em></h2>
+  <p>The sky is a <strong>generative aurora canvas</strong>: four ribbons, each a closed shape whose top edge sums three sine waves and whose bottom hangs a modulated curtain-length below, filled with vertical hsla gradients that slowly oscillate between green (hue 150) and violet (262) and composited with "lighter" so overlapping curtains genuinely glow. Each ribbon renders twice &mdash; a wide soft pass and a bright pass &mdash; over a twinkling starfield, with the soft pass skipped on phones to halve fill cost. Three SVG mountain silhouettes parallax at different scroll factors, while three fixed full-screen gradient scenes crossfade the whole page from polar night to blue hour to ember as you pass the expeditions and cabin sections. The itinerary rail is a gently wobbling SVG path that draws itself via scroll-scrubbed stroke-dashoffset, igniting a glowing dot per day, and it re-measures after web fonts load so the geometry never drifts. The canvas pauses entirely off-screen; reduced motion paints a single static frame.</p>
+
+  <h2>Reproduction <em>prompt</em></h2>
+  <div class="panel">
+    <div class="ph">Prompt — preview</div>
+    <div class="teaser">
+      <p>Build a single-file HTML site for BOREAL, a slow-travel expedition outfit above the Arctic Circle. Palette: polar night #0B1026, aurora green #6BFFB0, aurora violet #9D7BFF, snow #EAF2F6, ember orange #FF9E6B, hairlines rgba(234,242,246,.14). Fonts: Fraunces (light 300, optical sizing) for serif display&hellip;</p>
+    </div>
+    <div class="lockline">
+      <svg width="12" height="14" viewBox="0 0 12 14" fill="none" aria-hidden="true"><rect x="1" y="6" width="10" height="7" rx="1" stroke="rgba(234,242,246,.46)"/><path d="M3.5 6V4.5a2.5 2.5 0 0 1 5 0V6" stroke="rgba(234,242,246,.46)"/></svg>
+      Full prompt (≈250 words) included with purchase.
+    </div>
+  </div>
+
+  <div class="cta-row">
+    <a class="cta" href="https://laserfabio.gumroad.com/l/fable-18">Get this prompt — CHF 9</a>
+    <a class="alt" href="/shop/">or get all 40 →</a>
+  </div>
+
+  <div class="foot">
+    <a href="/18-boreal/">← Back to BOREAL</a>
+    <a href="/">All 40 sites</a>
+  </div>
+</main>
+</body>
+</html>
