@@ -23,6 +23,7 @@
   - rAF loop ran while canvases were offscreen — IntersectionObserver now pauses drawing per-canvas; loop fully idles when nothing is visible and audio is off.
   - prefers-reduced-motion verified: idle waveform renders exactly one static frame, section reveals and LED blink disabled; live scope still animates only after the user explicitly presses PLAY.
   - AudioContext resume() awaited before scheduling ramps (Safari would otherwise schedule against a suspended clock and pop).
+  PASS 4 (photography): integrated two Nano Banana 2 product shots (hero 3/4 view eager w/ intrinsic 1920x1288, knob macro lazy 1920x1072) as framed figures with scanline+vignette overlay, phosphor-rule Fig. captions in Plex Mono; footer "no images" line corrected; no CLS (width/height set), 390px scrollWidth still 390.
 -->
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -142,6 +143,34 @@ h1 .thin{color:transparent;-webkit-text-stroke:1px rgba(242,243,246,.4)}
 .hero-cta{margin-top:34px;font-size:12px;letter-spacing:.2em;color:var(--txt-dim);text-transform:uppercase}
 .hero-cta a{color:var(--orange)}
 .hero-cta a:hover{color:var(--green)}
+
+/* ---------- photography ---------- */
+.photo-fig{margin:0}
+.hero-photo{margin-top:48px}
+.spec-photo{margin-bottom:56px}
+.photo{
+  position:relative;border:1px solid var(--hairline);border-radius:8px;
+  background:#101116;overflow:hidden;
+}
+.photo img{display:block;width:100%;height:auto}
+/* vignette + faint scanlines so the shot sits in the page's machined surface */
+.photo::after{
+  content:"";position:absolute;inset:0;pointer-events:none;
+  box-shadow:inset 0 0 110px rgba(11,12,16,.55), inset 0 1px 0 rgba(255,255,255,.07), inset 0 -1px 0 rgba(0,0,0,.5);
+  background:repeating-linear-gradient(0deg, rgba(255,255,255,.014) 0 1px, transparent 1px 3px);
+}
+.photo .ph-tag{
+  position:absolute;top:10px;left:14px;font-size:10px;letter-spacing:.28em;
+  color:var(--green-dim);text-transform:uppercase;
+  text-shadow:0 1px 2px rgba(0,0,0,.85);
+}
+.photo-cap{
+  display:flex;align-items:flex-start;gap:14px;margin-top:12px;
+  font-size:10px;letter-spacing:.24em;color:var(--engrave);text-transform:uppercase;
+  text-shadow:0 1px 0 rgba(255,255,255,.06);line-height:1.8;
+}
+.photo-cap::before{content:"";width:26px;height:1px;background:var(--green-dim);flex:none;margin-top:9px}
+.photo-cap b{color:var(--orange);font-weight:500;white-space:nowrap}
 
 /* ---------- the panel ---------- */
 .panel{
@@ -406,6 +435,13 @@ footer .fine{margin-top:16px;font-size:11px;letter-spacing:.04em}
       Zero menus. A monosynth voice you calibrate with a screwdriver
       and play for the next <em>thirty years</em>.
     </p>
+    <figure class="photo-fig hero-photo reveal">
+      <div class="photo">
+        <img src="assets/hero.webp" alt="OSC-1 synthesizer, three-quarter view: dark brushed-metal chassis, rows of machined knobs, orange patch cables and a green trace on the built-in oscilloscope screen" width="1920" height="1288" loading="eager" decoding="async" fetchpriority="high">
+        <span class="ph-tag">Ser. Nº 07-023 · Bench Shot</span>
+      </div>
+      <figcaption class="photo-cap"><b>Fig. 01</b> Batch 07 · 3 mm anodized aluminium, machined caps, patch-cable orange as shipped</figcaption>
+    </figure>
     <div class="hero-scope reveal">
       <canvas id="heroScope" aria-hidden="true"></canvas>
       <span class="scope-tag">CH1 · Main Out</span>
@@ -580,6 +616,14 @@ footer .fine{margin-top:16px;font-size:11px;letter-spacing:.04em}
     <p class="sec-tag"><b>03</b> Specifications — Operator's Manual, p. 12</p>
     <h2 class="reveal">Numbers we will<br>put our name under</h2>
 
+    <figure class="photo-fig spec-photo reveal">
+      <div class="photo">
+        <img src="assets/detail.webp" alt="Extreme macro of the OSC-1's knurled aluminium OSC 1 FREQ and OSC 1 FINE knobs beside a toggle switch, orange patch cables softly out of focus behind" width="1920" height="1072" loading="lazy" decoding="async">
+        <span class="ph-tag">Macro · VCO Section</span>
+      </div>
+      <figcaption class="photo-cap"><b>Fig. 12</b> OSC 1 FREQ / FINE — caps turned from bar stock, knurled and engraved in-house</figcaption>
+    </figure>
+
     <div class="spec-grid">
       <dl class="spec-table reveal">
         <div class="spec-row"><dt>Voice architecture</dt><span class="lead"></span><dd>monophonic · 3 VCO unison</dd></div>
@@ -620,8 +664,8 @@ footer .fine{margin-top:16px;font-size:11px;letter-spacing:.04em}
       <span><a href="#panel">Panel</a> · <a href="#architecture">Architecture</a> · <a href="#spec">Manual</a> · <a href="/14-osc1/guide/">guide &amp; prompt →</a></span>
     </div>
     <p class="fine">The panel above runs on the Web Audio API — three detuned
-    oscillators through a lowpass filter, analysed live. No samples, no
-    images, one file. Design study, 2026.</p>
+    oscillators through a lowpass filter, analysed live. No samples, one
+    file, two studio photographs. Design study, 2026.</p>
   </div>
 </footer>
 

@@ -162,6 +162,19 @@ section{padding:8.5rem 1.5rem}
 .step h3{font-size:.82rem;letter-spacing:.16em;text-transform:uppercase;font-family:'Karla',sans-serif;font-weight:600;color:var(--matcha);margin:.6rem 0 .7rem}
 .step p{font-size:.95rem;color:var(--deep75);max-width:30ch;margin:0 auto}
 
+/* ---------- bowl interlude ---------- */
+.bowl{padding-top:0}
+.bowl-fig{max-width:520px;margin:0 auto;text-align:center}
+.bowl-media{
+  width:100%;height:auto;display:block;border-radius:18px;
+  border:1px solid var(--deep12);background:#EFEADC;
+  box-shadow:0 36px 72px -44px rgba(74,55,40,.45);
+}
+.bowl-cap{margin-top:2.2rem}
+.bowl-rule{width:52px;height:2px;background:var(--celadon);margin:0 auto 1.5rem}
+.bowl-line{font-family:'Cormorant Infant',serif;font-style:italic;font-size:1.5rem;line-height:1.4;color:var(--deep75)}
+.bowl-label{margin-top:.6rem;font-size:.72rem;letter-spacing:.24em;text-transform:uppercase;color:var(--deep55);font-weight:600}
+
 /* ---------- visit ---------- */
 .visit{background:var(--deep);color:var(--cream)}
 .visit .kicker{color:var(--celadon)}
@@ -364,6 +377,23 @@ footer{padding:3.5rem 1.5rem 3rem;background:var(--deep);color:rgba(246,241,231,
       </div>
     </div>
   </div>
+</section>
+
+<!-- ================= BOWL INTERLUDE ================= -->
+<section class="bowl" id="bowl">
+  <figure class="bowl-fig rv">
+    <video class="bowl-media" id="bowlvideo" width="720" height="894"
+           autoplay muted loop playsinline preload="metadata"
+           poster="assets/steam-poster.webp"
+           aria-label="Steam rising slowly from a matcha bowl in celadon glaze, resting on cream linen beside a bamboo whisk">
+      <source src="assets/steam.mp4" type="video/mp4">
+    </video>
+    <figcaption class="bowl-cap">
+      <div class="bowl-rule" aria-hidden="true"></div>
+      <p class="bowl-line">The bowl is patient longer than the water is hot.</p>
+      <p class="bowl-label">Matcha · celadon glaze · seat one</p>
+    </figcaption>
+  </figure>
 </section>
 
 <!-- ================= VISIT / BOOK ================= -->
@@ -665,6 +695,27 @@ footer{padding:3.5rem 1.5rem 3rem;background:var(--deep);color:rgba(246,241,231,
   document.querySelectorAll('.rv').forEach(function(el){io.observe(el);});
 })();
 
+/* ===== bowl video — breathe only when watched ===== */
+(function(){
+  var v=document.getElementById('bowlvideo');
+  if(!v)return;
+  if(window.matchMedia('(prefers-reduced-motion: reduce)').matches){
+    v.removeAttribute('autoplay');
+    v.removeAttribute('loop');
+    v.pause();
+    return; /* the poster holds the moment */
+  }
+  new IntersectionObserver(function(es){
+    var e=es[es.length-1];
+    if(e.isIntersecting){
+      var p=v.play();
+      if(p&&p.catch)p.catch(function(){});
+    }else{
+      v.pause();
+    }
+  },{threshold:0.12}).observe(v);
+})();
+
 /* ===== booking (showcase only) ===== */
 (function(){
   var form=document.getElementById('bookform');
@@ -690,6 +741,7 @@ footer{padding:3.5rem 1.5rem 3rem;background:var(--deep);color:rgba(246,241,231,
      2. Timeline dots pop with a back-easing scale, staggered 0.5s/1.7s/3.0s to land as the gradient fill reaches each node; mobile falls back to a vertical rail.
      3. Steam wisps retimed to 4.4s with 1.4s/2.6s offsets and the middle wisp tinted celadon; cup glaze arc added so porcelain reads as thrown, not clipart.
      4. Booking form given focus-visible rings, labelled fields, and an in-place italic confirmation; footer/back-link hover states unified.
+     PASS 4 (generated asset): matcha-bowl steam loop (Nano Banana 2 still -> Kling 3.0 Turbo i2v, ffmpeg crossfade self-loop, h264 CRF26 + WebP poster) placed as a single quiet 520px figure between ceremony and visit — autoplay muted playsinline preload=metadata, IntersectionObserver pauses it off-screen, prefers-reduced-motion strips autoplay/loop and leaves the matching poster; caption in italic Cormorant over a thin celadon rule.
 -->
 </body>
 </html>

@@ -130,6 +130,12 @@ a.cta:focus-visible{outline:2px solid var(--cyan);outline-offset:3px}
     <p>Headings glitch with an <b>RGB-split</b> effect — magenta and cyan copies of the text sit behind the original and flash through jittering horizontal slivers, fired by a random timer on one heading at a time so the page never strobes. Stall cards get rotating conic-gradient "holographic" borders via a registered custom property, and a bottom status ticker loops seamlessly by duplicating its feed and translating exactly half its width. Everything animates transform-only, and a hardened reduced-motion path swaps every effect for a static equivalent.</p>
   </section>
 
+  <section class="built">
+    <h2>Generated assets</h2>
+    <p>The site's only two non-code assets are the alley itself. The still — Alley No.7 at night, four steaming stalls, magenta/cyan/amber katakana neon on rain-slicked ground — was generated with <b>Nano Banana 2</b> (Higgsfield, text-to-image, 2K), prompted palette-exact to the site's tokens (<em>#FF2E88 / #00F0FF / #FFB020</em> on <em>#07070C</em>). The living version was made with <b>Kling 3.0 Turbo</b> as <em>image-to-video from that same still</em> — steam rising, neon flicker, drifting figures — so the video's first frame and its poster are the same place, and the swap from poster to motion is invisible.</p>
+    <p>Post: ffmpeg encodes the stills to WebP and the loop to h264 at CRF&nbsp;26 (~0.5&nbsp;MB), with the clip's head crossfaded onto its tail so it self-loops seamlessly. In the page, the still sits behind the hero under a dark scrim, and the loop is mounted as a scanlined "CAM 07-B live feed" — muted, looping, paused offscreen via IntersectionObserver, and never autoplayed under <em>prefers-reduced-motion</em> (poster only).</p>
+  </section>
+
   <section>
     <h2>Reproduction Prompt</h2>
     <div class="prompt-teaser">
@@ -137,7 +143,7 @@ a.cta:focus-visible{outline:2px solid var(--cyan);outline-offset:3px}
       <p>Build a one-page cyberpunk night-market site for "ネオン市場 / NEON MARKET," a fictional four-stall street-food collective in a 2080s undercity alley. Palette: near-black voids #07070C, #0C0C14, #12121D; neon magenta #FF2E88, cyan #00F0FF, amber #FFB020; text inks #E8E6F0, #8A87A0, #4A4860. Fonts: Chakra Petch for&hellip;</p>
       <div class="fade"></div>
     </div>
-    <p class="lock-line">Full prompt (≈250 words) included with purchase.</p>
+    <p class="lock-line">Full prompt (≈390 words, incl. asset generation prompts) included with purchase.</p>
 
     <div class="cta-row">
       <a class="cta" href="https://laserfabio.gumroad.com/l/fable-11">Get this prompt — CHF 9</a>

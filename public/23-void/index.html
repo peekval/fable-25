@@ -120,6 +120,7 @@ section{position:relative;padding:0 var(--gutter)}
   min-height:100svh;
   display:flex;flex-direction:column;justify-content:center;
   position:relative;
+  overflow-x:clip; /* breathe scale(1.008) must not widen the scrollable area */
 }
 @keyframes breathe{0%,100%{transform:scale(1)}50%{transform:scale(1.008)}}
 .hero-inner{
@@ -500,6 +501,25 @@ footer{
       });
     },{threshold:.15,rootMargin:'0px 0px -12% 0px'});
     targets.forEach(function(t){ obs.observe(t); });
+    /* scroll fallback: heavy GL frames can starve IO callbacks — reveal anything
+       already well inside the viewport so copy never stays clipped */
+    var pending = Array.prototype.slice.call(targets);
+    var sweep = function(){
+      pending = pending.filter(function(t){
+        if(t.classList.contains('on')) return false;
+        var r = t.getBoundingClientRect();
+        if(r.top < innerHeight * .88 && r.bottom > 0){ t.classList.add('on'); obs.unobserve(t); return false; }
+        return true;
+      });
+      if(!pending.length){ removeEventListener('scroll', onScroll); }
+    };
+    var ticking = false;
+    var onScroll = function(){
+      if(ticking) return; ticking = true;
+      setTimeout(function(){ ticking = false; sweep(); }, 120);
+    };
+    addEventListener('scroll', onScroll, {passive:true});
+    sweep();
   } else {
     targets.forEach(function(t){ t.classList.add('on'); });
   }

@@ -1,0 +1,270 @@
+[
+ {
+  "site": "01-mass",
+  "errors": [],
+  "blanks": [],
+  "overflow": []
+ },
+ {
+  "site": "02-lumen",
+  "errors": [],
+  "blanks": [
+   "[390] step5 6724b -> 02-lumen-390-s5.jpeg"
+  ],
+  "overflow": []
+ },
+ {
+  "site": "03-orbita",
+  "errors": [],
+  "blanks": [],
+  "overflow": []
+ },
+ {
+  "site": "04-phosphor",
+  "errors": [],
+  "blanks": [
+   "[390] step0 5114b -> 04-phosphor-390-s0.jpeg",
+   "[390] step1 4899b -> 04-phosphor-390-s1.jpeg",
+   "[390] step2 5305b -> 04-phosphor-390-s2.jpeg",
+   "[390] step3 6435b -> 04-phosphor-390-s3.jpeg",
+   "[390] step4 6196b -> 04-phosphor-390-s4.jpeg",
+   "[390] step5 6919b -> 04-phosphor-390-s5.jpeg"
+  ],
+  "overflow": []
+ },
+ {
+  "site": "05-sumi",
+  "errors": [],
+  "blanks": [],
+  "overflow": []
+ },
+ {
+  "site": "06-grid",
+  "errors": [],
+  "blanks": [],
+  "overflow": []
+ },
+ {
+  "site": "07-parsec",
+  "errors": [],
+  "blanks": [],
+  "overflow": []
+ },
+ {
+  "site": "08-meridian",
+  "errors": [],
+  "blanks": [],
+  "overflow": []
+ },
+ {
+  "site": "09-veil",
+  "errors": [],
+  "blanks": [],
+  "overflow": []
+ },
+ {
+  "site": "10-flora",
+  "errors": [],
+  "blanks": [],
+  "overflow": []
+ },
+ {
+  "site": "11-neon",
+  "errors": [],
+  "blanks": [],
+  "overflow": []
+ },
+ {
+  "site": "12-lost",
+  "errors": [],
+  "blanks": [],
+  "overflow": []
+ },
+ {
+  "site": "13-monsoon",
+  "errors": [],
+  "blanks": [],
+  "overflow": []
+ },
+ {
+  "site": "14-osc1",
+  "errors": [],
+  "blanks": [],
+  "overflow": []
+ },
+ {
+  "site": "15-bauhaus",
+  "errors": [],
+  "blanks": [],
+  "overflow": []
+ },
+ {
+  "site": "16-mercvry",
+  "errors": [],
+  "blanks": [],
+  "overflow": []
+ },
+ {
+  "site": "17-riot",
+  "errors": [],
+  "blanks": [],
+  "overflow": []
+ },
+ {
+  "site": "18-boreal",
+  "errors": [],
+  "blanks": [],
+  "overflow": []
+ },
+ {
+  "site": "19-axono",
+  "errors": [],
+  "blanks": [],
+  "overflow": []
+ },
+ {
+  "site": "20-silhouette",
+  "errors": [],
+  "blanks": [],
+  "overflow": []
+ },
+ {
+  "site": "21-relay",
+  "errors": [],
+  "blanks": [],
+  "overflow": []
+ },
+ {
+  "site": "22-fieldnotes",
+  "errors": [],
+  "blanks": [],
+  "overflow": []
+ },
+ {
+  "site": "23-void",
+  "errors": [],
+  "blanks": [
+   "[390] step1 5204b -> 23-void-390-s1.jpeg",
+   "[390] step2 3297b -> 23-void-390-s2.jpeg",
+   "[390] step3 3851b -> 23-void-390-s3.jpeg",
+   "[390] step4 3568b -> 23-void-390-s4.jpeg",
+   "[390] step5 4233b -> 23-void-390-s5.jpeg",
+   "[390] step6 4024b -> 23-void-390-s6.jpeg",
+   "[390] step7 3499b -> 23-void-390-s7.jpeg",
+   "[390] step8 6379b -> 23-void-390-s8.jpeg"
+  ],
+  "overflow": [
+   "[1280] step1 +5px",
+   "[1280] step2 +3px"
+  ]
+ },
+ {
+  "site": "24-wobble",
+  "errors": [],
+  "blanks": [],
+  "overflow": []
+ },
+ {
+  "site": "25-seed",
+  "errors": [],
+  "blanks": [],
+  "overflow": []
+ },
+ {
+  "site": "26-voxelwerk",
+  "errors": [],
+  "blanks": [],
+  "overflow": []
+ },
+ {
+  "site": "27-abyssal",
+  "errors": [],
+  "blanks": [
+   "[390] step6 6230b -> 27-abyssal-390-s6.jpeg"
+  ],
+  "overflow": []
+ },
+ {
+  "site": "28-pliage",
+  "errors": [],
+  "blanks": [
+   "[390] step2 5802b -> 28-pliage-390-s2.jpeg"
+  ],
+  "overflow": []
+ },
+ {
+  "site": "29-framerate",
+  "errors": [],
+  "blanks": [
+   "[390] step1 6365b -> 29-framerate-390-s1.jpeg",
+   "[390] step5 6681b -> 29-framerate-390-s5.jpeg"
+  ],
+  "overflow": []
+ },
+ {
+  "site": "30-terranova",
+  "errors": [],
+  "blanks": [],
+  "overflow": []
+ },
+ {
+  "site": "31-velum",
+  "errors": [],
+  "blanks": [],
+  "overflow": []
+ },
+ {
+  "site": "32-noneuclid",
+  "errors": [],
+  "blanks": [],
+  "overflow": []
+ },
+ {
+  "site": "33-steep",
+  "errors": [],
+  "blanks": [],
+  "overflow": []
+ },
+ {
+  "site": "34-prisma",
+  "errors": [],
+  "blanks": [],
+  "overflow": []
+ },
+ {
+  "site": "35-thermik",
+  "errors": [],
+  "blanks": [],
+  "overflow": []
+ },
+ {
+  "site": "36-glyphwerk",
+  "errors": [],
+  "blanks": [],
+  "overflow": []
+ },
+ {
+  "site": "37-arcanum",
+  "errors": [],
+  "blanks": [],
+  "overflow": []
+ },
+ {
+  "site": "38-magnitude",
+  "errors": [],
+  "blanks": [],
+  "overflow": []
+ },
+ {
+  "site": "39-caldera",
+  "errors": [],
+  "blanks": [],
+  "overflow": []
+ },
+ {
+  "site": "40-somnium",
+  "errors": [],
+  "blanks": [],
+  "overflow": []
+ }
+]

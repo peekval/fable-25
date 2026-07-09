@@ -9,6 +9,7 @@
 PASS 1: (a) aligned itinerary timeline dots to the SVG rail centerline (desktop left:-42.5px → center 32.5px vs rail x=32; mobile -38.5px vs rail x=12); (b) restored a visible dropdown indicator on the expedition <select> lost to appearance:none, via .field.sel::after chevron; (c) re-measure section offsets + rebuild rail path after document.fonts.ready, since Fraunces/Outfit loading changes layout heights and left stale scroll thresholds; (d) canvas given role="img" + descriptive aria-label.
 PASS 2: (a) skipped the wide soft-glow ribbon pass on viewports <640px, halving per-frame fill cost on phones; (b) debounced the canvas resize rebuild (150ms) so drag-resizing no longer re-allocates the backing store per event; (c) wrapped .exp hover effects in @media(hover:hover) to kill sticky-hover states on touch; (d) 390px polish: tighter section padding, capped chip row width, reduced wordmark glow, smaller departure rows, left-aligned footer meta.
 PASS 3: (a) added :focus-visible outlines (aurora green, 3px offset) for keyboard navigation on links/inputs/buttons; (b) raised --ink-faint .38→.46 and --ink-dim .62→.64 for mono-label contrast on the night background; (c) added .hero::after bottom fade so aurora/starfield don't cut hard against the philosophy section; (d) reduced-motion timeline dots now fill solid (border + background) instead of outline-only; (e) booking submit button disables itself after confirmation to prevent re-fire.
+PASS 4: integrated three generated expedition photographs (Nano Banana 2 via Higgsfield MCP, palette-locked, WebP): ship + camp as staggered "field record" figures after the expedition rows, ice macro as a tall side figure above the cabin quote; all lazy-loaded with intrinsic width/height (no layout shift, rail measurement unaffected), mono FLD— captions, night-tone vignette frames, wired into the existing .rv reveal system; 390px scrollWidth and console clean re-verified.
 -->
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -176,6 +177,26 @@ h2 em{font-style:italic;color:var(--aurora-g)}
 .exp-meta .row .v.g{color:var(--aurora-g)}
 .exp-meta .row .v.vv{color:var(--aurora-v)}
 
+/* ---------- field records (expedition photography) ---------- */
+.figset{display:grid;grid-template-columns:repeat(12,1fr);gap:64px 24px;margin-top:92px}
+.fig{margin:0}
+.fig-frame{position:relative;overflow:hidden;border-radius:4px;border:1px solid var(--hair);background:#0d1330}
+.fig-frame::after{
+  content:"";position:absolute;inset:0;pointer-events:none;
+  background:linear-gradient(180deg,rgba(11,16,38,.16) 0%,rgba(11,16,38,0) 28%,rgba(11,16,38,0) 70%,rgba(11,16,38,.34) 100%);
+}
+.fig img{display:block;width:100%;height:auto;filter:saturate(.94) contrast(1.03)}
+.fig figcaption{
+  margin-top:14px;font-family:var(--mono);font-size:11px;letter-spacing:.14em;text-transform:uppercase;
+  color:var(--ink-faint);display:flex;justify-content:space-between;gap:10px 20px;flex-wrap:wrap;
+}
+.fig figcaption b{color:var(--aurora-g);font-weight:500;letter-spacing:.18em}
+.fig figcaption .c2{color:var(--ink-dim)}
+.fig-ship{grid-column:1/-1}
+.fig-camp{grid-column:4/-1}
+.cabin-side{display:flex;flex-direction:column;gap:44px}
+.fig-ice{max-width:400px}
+
 /* ---------- itinerary timeline ---------- */
 .itin{margin-top:76px;position:relative;padding-left:70px}
 .itin-svg{position:absolute;left:0;top:0;height:100%;width:64px;overflow:visible}
@@ -282,6 +303,10 @@ footer.site{
   .day::before{left:-38.5px}
   .itin-svg{width:40px}
   .frost{width:110px;height:110px}
+  .figset{margin-top:64px;gap:46px 0}
+  .fig-camp{grid-column:1/-1}
+  .fig-ice{max-width:none}
+  .cabin-side{gap:36px}
 }
 @media(max-width:480px){
   section{padding:76px 20px}
@@ -435,6 +460,29 @@ footer.site{
         </div>
       </article>
     </div>
+
+    <div class="figset">
+      <figure class="fig fig-ship rv">
+        <div class="fig-frame">
+          <img src="assets/ship.webp" width="1920" height="1072" loading="lazy" decoding="async"
+               alt="Icebreaker locked into vast pack ice under an indigo polar night, a faint green aurora overhead and a single warm cabin light showing">
+        </div>
+        <figcaption>
+          <span><b>FLD&mdash;01</b>&nbsp; VARANGER APPROACH &middot; 70.4&deg;N</span>
+          <span class="c2">PACK ICE &middot; ONE LIGHT LEFT ON</span>
+        </figcaption>
+      </figure>
+      <figure class="fig fig-camp rv d1">
+        <div class="fig-frame">
+          <img src="assets/camp.webp" width="1920" height="1072" loading="lazy" decoding="async"
+               alt="Two expedition tents glowing ember-orange on open snow beneath a starry sky and a green aurora ribbon, skis and a sled parked beside them">
+        </div>
+        <figcaption>
+          <span><b>FLD&mdash;02</b>&nbsp; SAREK BIVOUAC &middot; 67.3&deg;N</span>
+          <span class="c2">KP 5 &middot; TENTS AT &minus;26&deg;C</span>
+        </figcaption>
+      </figure>
+    </div>
   </div>
 </section>
 
@@ -509,10 +557,22 @@ footer.site{
           <span class="chip">SAUNA <b class="warm">+85&deg;C</b></span>
         </div>
       </div>
-      <blockquote class="rv d3">
-        &ldquo;I came for the aurora. I still think about the fire.&rdquo;
-        <footer>&mdash; Guest, Kilpisjärvi Stillness, January 2026</footer>
-      </blockquote>
+      <div class="cabin-side rv d3">
+        <figure class="fig fig-ice">
+          <div class="fig-frame">
+            <img src="assets/ice.webp" width="1280" height="1588" loading="lazy" decoding="async"
+                 alt="Close view of glacial blue lake ice with trapped air bubbles and pale fracture veins running through it">
+          </div>
+          <figcaption>
+            <span><b>FLD&mdash;03</b>&nbsp; KILPISJÄRVI LAKE ICE</span>
+            <span class="c2">60 CM &middot; OLD AIR</span>
+          </figcaption>
+        </figure>
+        <blockquote>
+          &ldquo;I came for the aurora. I still think about the fire.&rdquo;
+          <footer>&mdash; Guest, Kilpisjärvi Stillness, January 2026</footer>
+        </blockquote>
+      </div>
     </div>
   </div>
 </section>

@@ -95,6 +95,9 @@ p strong{color:var(--snow);font-weight:500}
   <h2>How it <em>was built</em></h2>
   <p>The sky is a <strong>generative aurora canvas</strong>: four ribbons, each a closed shape whose top edge sums three sine waves and whose bottom hangs a modulated curtain-length below, filled with vertical hsla gradients that slowly oscillate between green (hue 150) and violet (262) and composited with "lighter" so overlapping curtains genuinely glow. Each ribbon renders twice &mdash; a wide soft pass and a bright pass &mdash; over a twinkling starfield, with the soft pass skipped on phones to halve fill cost. Three SVG mountain silhouettes parallax at different scroll factors, while three fixed full-screen gradient scenes crossfade the whole page from polar night to blue hour to ember as you pass the expeditions and cabin sections. The itinerary rail is a gently wobbling SVG path that draws itself via scroll-scrubbed stroke-dashoffset, igniting a glowing dot per day, and it re-measures after web fonts load so the geometry never drifts. The canvas pauses entirely off-screen; reduced motion paints a single static frame.</p>
 
+  <h2>Generated <em>assets</em></h2>
+  <p>Three expedition photographs were generated with <strong>Nano Banana 2 (Higgsfield MCP, text-to-image, 2K)</strong> and dropped in as "field records": an icebreaker in pack ice, an ember-lit bivouac under the aurora, and a macro of lake ice. Every prompt carried the site's exact hex palette (#0B1026 night, #6BFFB0 / #9D7BFF aurora, #EAF2F6 snow, #FF9E6B ember) so the photography reads as the same night the canvas is painting. Outputs were optimized to WebP via ffmpeg and placed with intrinsic dimensions and lazy loading &mdash; the generative aurora stays the signature; the photos only ground it.</p>
+
   <h2>Reproduction <em>prompt</em></h2>
   <div class="panel">
     <div class="ph">Prompt — preview</div>
@@ -103,7 +106,7 @@ p strong{color:var(--snow);font-weight:500}
     </div>
     <div class="lockline">
       <svg width="12" height="14" viewBox="0 0 12 14" fill="none" aria-hidden="true"><rect x="1" y="6" width="10" height="7" rx="1" stroke="rgba(234,242,246,.46)"/><path d="M3.5 6V4.5a2.5 2.5 0 0 1 5 0V6" stroke="rgba(234,242,246,.46)"/></svg>
-      Full prompt (≈250 words) included with purchase.
+      Full prompt (≈290 words, incl. the three Nano Banana 2 asset prompts) included with purchase.
     </div>
   </div>
 

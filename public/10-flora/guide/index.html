@@ -57,11 +57,14 @@ p{color:var(--moss-soft);font-size:.98rem;max-width:66ch;margin-bottom:12px}
   <h2>The making of it</h2>
   <p>The three product bottles are pure inline SVG with living liquid: two horizontally repeating sine-wave paths are clipped inside each bottle silhouette and translated in opposite directions on infinite loops, so the contents slosh gently while tiny bubbles rise on staggered delays — and on hover the whole vial tips a few degrees from a transform-origin set at its base, like glass nudged on a shelf. The soft organic shapes behind every section are single divs whose border-radius morphs through keyframes as they slowly rotate and scale. The hero's botanical sprigs are hand-drawn SVG paths that sketch themselves in via stroke-dasharray with per-path delays, and every hover lift on cards and buttons runs through one springy cubic-bezier so the page bounces rather than glides. Fraunces does the rest: its SOFT, WONK and optical-size variable axes are tuned per element, which is why the type feels hand-set instead of geometric. All motion is CSS-only, so a single prefers-reduced-motion block freezes the entire garden to its final state.</p>
 
+  <h2>Generated assets</h2>
+  <p>One photographic moment interrupts the vector garden: the "Gathered" flat-lay between the shelf and the ingredient index. Everything else on the page is drawn — the bottles, the sprigs, the blobs — so the apothecary needed a single beat of tactile realism, proof that the plants exist before the SVG does. It was made with Nano Banana 2 (Higgsfield MCP, text-to-image, 2K) from a palette-locked prompt — sage leaves, chamomile, calendula petals and rosemary on #F7F3EC cream linen with one #C4704F terracotta dish of pale-green balm, so the photograph sits inside the site's exact colour system — then converted to WebP via ffmpeg and framed in the same 36px-radius hairline card language as everything hand-drawn around it.</p>
+
   <h2>Reproduction prompt</h2>
   <div class="lockbox">
     <div class="lb-head"><span>The Recipe</span><em>batch no. 10</em></div>
     <div class="teaser">
-      <p>Build a single-file HTML site for FLORA/FAUNA, a fictional small-batch botanical skincare apothecary. Palette: sage #A8B5A0, warm cream #F7F3EC, terracotta #C4704F, deep moss #3E4A3D, with pale supports #D8DFD2 and #EFE8DC. Fonts: Fraunces variable — exploit the SOFT, WONK and optical-size axes so display type feels hand-set and…</p>
+      <p>Build a single-file HTML site for FLORA/FAUNA, a fictional small-batch botanical skincare apothecary. Palette: sage #A8B5A0, warm cream #F7F3EC, terracotta #C4704F, deep moss #3E4A3D, with pale supports #D8DFD2 and #EFE8DC. Fonts: Fraunces variable — exploit the SOFT, WONK and optical-size axes so display type feels hand-set. Generate one palette-locked botanical flat-lay photograph (Nano Banana 2 via Higgsfield MCP, text-to-image, 2K, WebP'd with ffmpeg) as an editorial interstitial and…</p>
       <div class="fade" aria-hidden="true"></div>
     </div>
     <div class="lockline">

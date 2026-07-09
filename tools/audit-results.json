@@ -3,7 +3,7 @@
   "site": "01-mass",
   "errors": [],
   "consoleErr": [],
-  "load": 110,
+  "load": 118,
   "fps": 61,
   "overflowX": false
  },
@@ -11,31 +11,31 @@
   "site": "02-lumen",
   "errors": [],
   "consoleErr": [],
-  "load": 149,
-  "fps": 7,
+  "load": 140,
+  "fps": 5,
   "overflowX": false
  },
  {
   "site": "03-orbita",
   "errors": [],
   "consoleErr": [],
-  "load": 285,
-  "fps": 6,
+  "load": 283,
+  "fps": 5,
   "overflowX": false
  },
  {
   "site": "04-phosphor",
   "errors": [],
   "consoleErr": [],
-  "load": 184,
-  "fps": 10,
+  "load": 173,
+  "fps": 9,
   "overflowX": false
  },
  {
   "site": "05-sumi",
   "errors": [],
   "consoleErr": [],
-  "load": 365,
+  "load": 564,
   "fps": 61,
   "overflowX": false
  },
@@ -43,7 +43,7 @@
   "site": "06-grid",
   "errors": [],
   "consoleErr": [],
-  "load": 154,
+  "load": 105,
   "fps": 61,
   "overflowX": false
  },
@@ -51,7 +51,7 @@
   "site": "07-parsec",
   "errors": [],
   "consoleErr": [],
-  "load": 287,
+  "load": 264,
   "fps": 61,
   "overflowX": false
  },
@@ -59,15 +59,15 @@
   "site": "08-meridian",
   "errors": [],
   "consoleErr": [],
-  "load": 199,
-  "fps": 3,
+  "load": 190,
+  "fps": 4,
   "overflowX": false
  },
  {
   "site": "09-veil",
   "errors": [],
   "consoleErr": [],
-  "load": 135,
+  "load": 130,
   "fps": 6,
   "overflowX": false
  },
@@ -75,7 +75,7 @@
   "site": "10-flora",
   "errors": [],
   "consoleErr": [],
-  "load": 134,
+  "load": 144,
   "fps": 61,
   "overflowX": false
  },
@@ -83,7 +83,7 @@
   "site": "11-neon",
   "errors": [],
   "consoleErr": [],
-  "load": 483,
+  "load": 348,
   "fps": 61,
   "overflowX": false
  },
@@ -91,15 +91,15 @@
   "site": "12-lost",
   "errors": [],
   "consoleErr": [],
-  "load": 374,
-  "fps": 7,
+  "load": 357,
+  "fps": 5,
   "overflowX": false
  },
  {
   "site": "13-monsoon",
   "errors": [],
   "consoleErr": [],
-  "load": 125,
+  "load": 235,
   "fps": 61,
   "overflowX": false
  },
@@ -107,15 +107,15 @@
   "site": "14-osc1",
   "errors": [],
   "consoleErr": [],
-  "load": 121,
-  "fps": 47,
+  "load": 290,
+  "fps": 61,
   "overflowX": false
  },
  {
   "site": "15-bauhaus",
   "errors": [],
   "consoleErr": [],
-  "load": 127,
+  "load": 106,
   "fps": 61,
   "overflowX": false
  },
@@ -123,7 +123,7 @@
   "site": "16-mercvry",
   "errors": [],
   "consoleErr": [],
-  "load": 115,
+  "load": 150,
   "fps": 61,
   "overflowX": false
  },
@@ -131,7 +131,7 @@
   "site": "17-riot",
   "errors": [],
   "consoleErr": [],
-  "load": 129,
+  "load": 108,
   "fps": 61,
   "overflowX": false
  },
@@ -139,7 +139,7 @@
   "site": "18-boreal",
   "errors": [],
   "consoleErr": [],
-  "load": 153,
+  "load": 123,
   "fps": 61,
   "overflowX": false
  },
@@ -147,140 +147,28 @@
   "site": "19-axono",
   "errors": [],
   "consoleErr": [],
-  "load": 165,
-  "fps": 61,
+  "load": 170,
+  "fps": 59,
   "overflowX": false
  },
  {
   "site": "20-silhouette",
   "errors": [],
   "consoleErr": [],
-  "load": 703,
-  "fps": 4,
+  "load": 603,
+  "fps": 3,
   "overflowX": false
  },
  {
   "site": "21-relay",
   "errors": [],
   "consoleErr": [],
-  "load": 102,
-  "fps": 42,
+  "load": 98,
+  "fps": 41,
   "overflowX": false
  },
  {
   "site": "22-fieldnotes",
-  "errors": [],
-  "consoleErr": [],
-  "load": 124,
-  "fps": 61,
-  "overflowX": false
- },
- {
-  "site": "23-void",
-  "errors": [],
-  "consoleErr": [],
-  "load": 111,
-  "fps": 5,
-  "overflowX": false
- },
- {
-  "site": "24-wobble",
-  "errors": [],
-  "consoleErr": [],
-  "load": 347,
-  "fps": 22,
-  "overflowX": false
- },
- {
-  "site": "25-seed",
-  "errors": [],
-  "consoleErr": [],
-  "load": 130,
-  "fps": 61,
-  "overflowX": false
- },
- {
-  "site": "26-voxelwerk",
-  "errors": [],
-  "consoleErr": [],
-  "load": 250,
-  "fps": 15,
-  "overflowX": false
- },
- {
-  "site": "27-abyssal",
-  "errors": [],
-  "consoleErr": [],
-  "load": 118,
-  "fps": 61,
-  "overflowX": false
- },
- {
-  "site": "28-pliage",
-  "errors": [],
-  "consoleErr": [],
-  "load": 364,
-  "fps": 7,
-  "overflowX": false
- },
- {
-  "site": "29-framerate",
-  "errors": [],
-  "consoleErr": [],
-  "load": 255,
-  "fps": 15,
-  "overflowX": false
- },
- {
-  "site": "30-terranova",
-  "errors": [],
-  "consoleErr": [],
-  "load": 286,
-  "fps": 6,
-  "overflowX": false
- },
- {
-  "site": "31-velum",
-  "errors": [],
-  "consoleErr": [],
-  "load": 116,
-  "fps": 61,
-  "overflowX": false
- },
- {
-  "site": "32-noneuclid",
-  "errors": [],
-  "consoleErr": [],
-  "load": 118,
-  "fps": 3,
-  "overflowX": false
- },
- {
-  "site": "33-steep",
-  "errors": [],
-  "consoleErr": [],
-  "load": 128,
-  "fps": 11,
-  "overflowX": false
- },
- {
-  "site": "34-prisma",
-  "errors": [],
-  "consoleErr": [],
-  "load": 162,
-  "fps": 9,
-  "overflowX": false
- },
- {
-  "site": "35-thermik",
-  "errors": [],
-  "consoleErr": [],
-  "load": 285,
-  "fps": 5,
-  "overflowX": false
- },
- {
-  "site": "36-glyphwerk",
   "errors": [],
   "consoleErr": [],
   "load": 136,
@@ -288,18 +176,130 @@
   "overflowX": false
  },
  {
+  "site": "23-void",
+  "errors": [],
+  "consoleErr": [],
+  "load": 108,
+  "fps": 6,
+  "overflowX": false
+ },
+ {
+  "site": "24-wobble",
+  "errors": [],
+  "consoleErr": [],
+  "load": 234,
+  "fps": 21,
+  "overflowX": false
+ },
+ {
+  "site": "25-seed",
+  "errors": [],
+  "consoleErr": [],
+  "load": 328,
+  "fps": 61,
+  "overflowX": false
+ },
+ {
+  "site": "26-voxelwerk",
+  "errors": [],
+  "consoleErr": [],
+  "load": 236,
+  "fps": 15,
+  "overflowX": false
+ },
+ {
+  "site": "27-abyssal",
+  "errors": [],
+  "consoleErr": [],
+  "load": 325,
+  "fps": 61,
+  "overflowX": false
+ },
+ {
+  "site": "28-pliage",
+  "errors": [],
+  "consoleErr": [],
+  "load": 362,
+  "fps": 8,
+  "overflowX": false
+ },
+ {
+  "site": "29-framerate",
+  "errors": [],
+  "consoleErr": [],
+  "load": 264,
+  "fps": 16,
+  "overflowX": false
+ },
+ {
+  "site": "30-terranova",
+  "errors": [],
+  "consoleErr": [],
+  "load": 317,
+  "fps": 6,
+  "overflowX": false
+ },
+ {
+  "site": "31-velum",
+  "errors": [],
+  "consoleErr": [],
+  "load": 197,
+  "fps": 61,
+  "overflowX": false
+ },
+ {
+  "site": "32-noneuclid",
+  "errors": [],
+  "consoleErr": [],
+  "load": 135,
+  "fps": 3,
+  "overflowX": false
+ },
+ {
+  "site": "33-steep",
+  "errors": [],
+  "consoleErr": [],
+  "load": 130,
+  "fps": 11,
+  "overflowX": false
+ },
+ {
+  "site": "34-prisma",
+  "errors": [],
+  "consoleErr": [],
+  "load": 153,
+  "fps": 10,
+  "overflowX": false
+ },
+ {
+  "site": "35-thermik",
+  "errors": [],
+  "consoleErr": [],
+  "load": 333,
+  "fps": 5,
+  "overflowX": false
+ },
+ {
+  "site": "36-glyphwerk",
+  "errors": [],
+  "consoleErr": [],
+  "load": 124,
+  "fps": 61,
+  "overflowX": false
+ },
+ {
   "site": "37-arcanum",
   "errors": [],
   "consoleErr": [],
-  "load": 173,
-  "fps": 13,
+  "load": 228,
+  "fps": 14,
   "overflowX": false
  },
  {
   "site": "38-magnitude",
   "errors": [],
   "consoleErr": [],
-  "load": 131,
+  "load": 137,
   "fps": 61,
   "overflowX": false
  },
@@ -307,7 +307,7 @@
   "site": "39-caldera",
   "errors": [],
   "consoleErr": [],
-  "load": 151,
+  "load": 174,
   "fps": 10,
   "overflowX": false
  },
@@ -315,7 +315,7 @@
   "site": "40-somnium",
   "errors": [],
   "consoleErr": [],
-  "load": 126,
+  "load": 120,
   "fps": 61,
   "overflowX": false
  }

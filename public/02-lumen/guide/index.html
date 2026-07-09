@@ -143,24 +143,31 @@
 <main class="wrap">
   <p class="eyebrow">Fable 25 — Guide No. 02</p>
   <h1>How LUMEN<br><em>was built</em></h1>
-  <p class="lede">Iridescent silk, poured from a fragment shader — one file, no images.</p>
+  <p class="lede">Iridescent silk, poured from a fragment shader — one file, three generated assets.</p>
 
   <section class="how">
     <p class="sec-eyebrow">01 — The Making</p>
     <h2>Light, <em>engineered</em></h2>
     <p>Everything luminous on LUMEN comes from a single fullscreen WebGL fragment shader fixed behind the page: domain-warped fractal noise folds like silk in slow motion, and a cosine palette tints the highlights from violet to teal so the background behaves like thin-film iridescence rather than a gradient. A faint animated dither keeps the dark falloff free of banding, and the whole field drifts gently toward the pointer.</p>
-    <p>Above it sit a darkening veil and an SVG-noise grain so the serif type always reads. The stat and note cards are true glassmorphism — translucent pearl, heavy backdrop blur, a brighter top border where light catches the edge — with a solid fallback for browsers without backdrop-filter. The perfume orbs are pure CSS radial-gradient spheres with glow halos and scroll parallax, the flacon is hand-drawn inline SVG, and the hero wordmark condenses from wide blurred letter-spacing into place before a gradient sheen loops across it. Reduced-motion visitors get one still shader frame and all content immediately.</p>
+    <p>Above it sit a darkening veil and an SVG-noise grain so the serif type always reads. The stat and note cards are true glassmorphism — translucent pearl, heavy backdrop blur, a brighter top border where light catches the edge — with a solid fallback for browsers without backdrop-filter. The perfume orbs are pure CSS radial-gradient spheres with glow halos and scroll parallax, and the hero wordmark condenses from wide blurred letter-spacing into place before a gradient sheen loops across it. Reduced-motion visitors get one still shader frame and all content immediately.</p>
+  </section>
+
+  <section class="how">
+    <p class="sec-eyebrow">02 — The Imagery</p>
+    <h2>Generated <em>assets</em></h2>
+    <p>The maison's three photographic pieces are AI-generated to the site's own palette. The Éclat N°1 flacon still — the L'Objet centerpiece — and the iris-and-vetiver ingredient still that closes the composition section were made with <b>Nano Banana 2</b> (Higgsfield, text-to-image, 2K), art-directed onto the same ink-violet ground the shader pours. The mist film in the Sillage section is <b>Kling 3.0 Turbo</b> run image-to-video <em>from the flacon still itself</em>, so the poster frame and the motion share one bottle.</p>
+    <p>Everything was then optimized with ffmpeg — stills to WebP, the film to h264 at CRF 26 with a crossfade self-loop so the ~4.5-second clip cycles seamlessly at 180 KB. On the page, each asset sits in a hairline pearl frame with a soft violet glow so it floats on the silk, captioned in Cormorant italic; images lazy-load with real dimensions, the video pauses whenever it scrolls offscreen, and under prefers-reduced-motion it never autoplays — only the poster shows.</p>
   </section>
 
   <section>
-    <p class="sec-eyebrow" style="color:var(--teal)">02 — The Formula</p>
+    <p class="sec-eyebrow" style="color:var(--teal)">03 — The Formula</p>
     <h2>Reproduction <em>prompt</em></h2>
     <div class="lockbox glass">
       <div class="head"><span><b>Éclat N°02</b> — for any AI web builder</span><span>Preview</span></div>
       <div class="teaser">
         <p>Build a one-page site for "LUMEN", a fictional haute maison de parfum. Palette: deep ink-violet #0D0B14 (secondary #131020), violet #8B7BD8, teal #4ECDC4, pearl #EDEAF4, hairlines at 12%-alpha pearl. Fonts: Cormorant Garamond (weight 300, true italics) for display, Inter 300/400 for UI. Signature technique — a fixed fullscreen WebGL fragment shader behind all content: domain-warped fractal Brownian motion…</p>
       </div>
-      <p class="lockline">Full prompt (≈250 words) included with purchase.</p>
+      <p class="lockline">Full prompt (≈330 words, incl. asset generation) included with purchase.</p>
     </div>
     <div class="buy">
       <a class="cta" href="https://laserfabio.gumroad.com/l/fable-02"><span>Get this prompt — CHF 9</span></a>

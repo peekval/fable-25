@@ -291,6 +291,30 @@
   }
   .p-add:hover{gap:.75rem;color:var(--moss)}
 
+  /* ---------- gathered / flat-lay ---------- */
+  .gathered{background:var(--cream)}
+  .gathered .wrap{padding-block:clamp(3.5rem,7vw,6.5rem)}
+  .gathered figure{margin:0}
+  .gathered img{
+    display:block;width:100%;height:auto;
+    border-radius:36px;border:1px solid rgba(62,74,61,.16);
+    box-shadow:0 34px 60px -30px rgba(62,74,61,.35);
+  }
+  .gathered figcaption{
+    display:flex;justify-content:space-between;align-items:baseline;gap:.5rem 2rem;flex-wrap:wrap;
+    border-top:1px dashed rgba(62,74,61,.25);
+    margin-top:1.5rem;padding-top:1.1rem;
+  }
+  .gathered .g-no{
+    font-size:.72rem;letter-spacing:.3em;text-transform:uppercase;
+    color:var(--terra);font-weight:700;
+  }
+  .gathered figcaption em{
+    font-family:'Fraunces',serif;font-style:italic;
+    font-variation-settings:'SOFT' 100,'WONK' 1,'opsz' 40;
+    font-size:1.08rem;color:var(--moss-soft);
+  }
+
   /* ---------- ingredient index ---------- */
   .index{background:var(--moss);color:var(--cream)}
   .index .sec-head h2,.index h3{color:var(--cream)}
@@ -386,6 +410,8 @@
     .hero h1{font-size:clamp(2.6rem,13vw,3.4rem)}
     .marquee-seq span{font-size:.92rem;padding:0 1.1rem}
     .cta-row .btn{width:100%;text-align:center}
+    .gathered .g-no{font-size:.68rem;letter-spacing:.22em}
+    .gathered img{border-radius:24px}
     .ing{grid-template-columns:auto 1fr}
     .ing .use{grid-column:2;text-align:left;margin-top:-.4rem}
   }
@@ -625,6 +651,20 @@
   </div>
 </section>
 
+<!-- ============ GATHERED / FLAT-LAY ============ -->
+<section class="gathered" id="gathered" aria-label="What goes in the bottle">
+  <div class="wrap">
+    <figure class="reveal">
+      <img src="assets/flatlay.webp" width="1600" height="1074" loading="lazy" decoding="async"
+           alt="Top-down flat-lay on warm cream linen: sage leaves, chamomile blossoms, calendula petals and rosemary sprigs arranged around a small terracotta dish of pale-green balm">
+      <figcaption>
+        <span class="g-no">What goes in the bottle · Batch no. 41</span>
+        <em>Sage, chamomile, calendula, rosemary — picked at six, on the pressing table by noon.</em>
+      </figcaption>
+    </figure>
+  </div>
+</section>
+
 <!-- ============ INGREDIENT INDEX ============ -->
 <section class="index" id="index">
   <div class="wrap">
@@ -773,5 +813,6 @@
 <!-- PASS 1: (1) fixed marquee seam — markup held only ONE sequence while the track animated translateX(-50%), which showed a hard gap each loop; sequence is now cloned 3x via JS so the -50% translate lands on an identical copy; (2) hero h1 overflowed at 390px with the fluid clamp — added a tighter 13vw clamp + hero padding-inline for small screens; (3) marquee ingredient type was too large/tracked-out on phones, cropping "Marshmallow Root" — reduced size and padding under 480px. -->
 <!-- PASS 2: (1) .shelf blob (right:-16%) escaped its section and painted over the ingredient index during scroll — section now clips with overflow:hidden like .notes; (2) no visible keyboard focus anywhere — added :focus-visible outline (terracotta, 3px offset) for all links and buttons; (3) centered wordmark collided with the fixed back-link and shelf pill at 390px — shrunk size and letter-spacing under 480px. -->
 <!-- PASS 3: (1) vial slosh-on-hover rotated around the SVG center so bottles appeared to levitate — transform-origin moved to 50% 92% so they tip from the base like real glass; (2) ingredient index rows felt static next to the animated sections — leaf icons now spring-scale and tilt on row hover; (3) product titles gained a terracotta color + letter-spacing flourish on card hover to tie the spring-lift together; verified all motion (waves, bubbles, blobs, draws, marquee) is CSS-only so the single prefers-reduced-motion block plus the JS early-exit freezes everything to final state. -->
+<!-- PASS 4: integrated one generated photographic moment — a palette-locked botanical flat-lay (assets/flatlay.webp, 1600x1074, Nano Banana 2 via Higgsfield MCP, WebP'd with ffmpeg) as a "Gathered" interstitial between the shelf and the ingredient index; framed in the site's 36px-radius/1px-hairline card language with a dashed-rule caption (uppercase terracotta label + Fraunces italic line); img is lazy/async with real width/height so no CLS; verified scrollWidth 390 = 390 and zero console/page errors at 1280 & 390. -->
 </body>
 </html>

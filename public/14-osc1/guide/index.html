@@ -121,12 +121,13 @@ footer a:hover{color:var(--green)}
     <p>Two canvases act as the instrument's oscilloscope and spectrum display — live when audio plays, and fed by a simulated waveform derived from the current knob positions when it doesn't, so the panel always looks powered.</p>
     <p>The knobs are SVG dials generated in script, draggable with pointer capture, logarithmic on the cutoff like a real filter pot, and fully keyboard-operable as ARIA sliders.</p>
     <p>Performance care is everywhere: scope grids are pre-rendered offscreen, the animation loop pauses when canvases scroll out of view, the trace glow is a cheap double stroke instead of shadowBlur, and reduced-motion visitors get a single static frame.</p>
+    <p>Generated assets: the two photographs — the three-quarter hero product shot and the FREQ/FINE knob macro — were made with <b>Nano Banana 2</b> (Higgsfield MCP, text-to-image, 2K), chosen for how precisely it holds studio-hardware materials and lighting. Both prompts were palette-locked by naming the site's hex codes (<i>#17181C</i> body, <i>#FF6B35</i> cables, <i>#7CFC9A</i> scope glow) so the shots land in-gamut, then optimized to WebP with ffmpeg and framed with a CSS scanline-and-vignette overlay to match the panel chrome.</p>
   </div>
 
   <h2>Reproduction Prompt</h2>
   <div class="prompt-teaser">
     <p class="pt-tag">Prompt · Excerpt</p>
-    <p>Build a one-page product site for "OSC-1", a boutique analog monosynth handbuilt in Bern, Switzerland. Dark hardware aesthetic: page background #17181C, brushed-metal panel gradients #33363f → #2A2C33 → #222429, patch-cable orange #FF6B35 for accents and pointers, phosphor green #7CFC9A for scope traces and links,</p>
+    <p>Build a one-page product site for "OSC-1", a boutique analog monosynth handbuilt in Bern, Switzerland. Dark hardware aesthetic: page background #17181C, brushed-metal panel gradients #33363f → #2A2C33 → #222429, patch-cable orange #FF6B35 for accents and pointers, phosphor green #7CFC9A for scope traces and links. Generate two product photographs with Nano Banana 2 at 2K — a three-quarter hero of the unit and a macro of the knurled FREQ/FINE knobs — palette-locked to those hex codes,</p>
     <div class="fade"></div>
   </div>
   <p class="lock-line">Full prompt (≈250 words) included with purchase.</p>
@@ -142,6 +143,6 @@ footer a:hover{color:var(--green)}
     <a href="/">all 40 sites</a>
   </footer>
 </div>
-<!-- PASS: lock-box pattern (prompt-teaser/fade→#17181C/lock-line) consistent; ~44-word teaser only, no full prompt in HTML; links /14-osc1/, /, /shop/, gumroad fable-14 OK; viewport + clamp() type + flex-wrap CTA row mobile-safe; CTA motion gated behind prefers-reduced-motion. -->
+<!-- PASS: lock-box pattern (prompt-teaser/fade→#17181C/lock-line) consistent; short teaser only (extended to mention the two Nano Banana 2 assets), no full prompt in HTML; links /14-osc1/, /, /shop/, gumroad fable-14 OK; viewport + clamp() type + flex-wrap CTA row mobile-safe; CTA motion gated behind prefers-reduced-motion. -->
 </body>
 </html>
