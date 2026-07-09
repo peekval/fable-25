@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>NON-EUCLID — How It Was Built</title>
+<meta name="description" content="How the NON-EUCLID raymarching showcase was built, plus a reproduction prompt.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Major+Mono+Display&family=Karla:ital,wght@0,300;0,400;0,500;0,700;1,400&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bone:#E8E4DA; --ultra:#2B3A9E; --ink:#14141A; --signal:#FF5C1F;
+    --mono:'Major Mono Display',monospace; --body:'Karla',sans-serif;
+  }
+  *{margin:0;padding:0;box-sizing:border-box}
+  body{
+    background:var(--bone); color:var(--ink);
+    font-family:var(--body); font-size:17px; line-height:1.65;
+    -webkit-font-smoothing:antialiased;
+    padding:clamp(20px,4vw,48px);
+  }
+  ::selection{background:var(--ultra);color:var(--bone)}
+  .back25{
+    position:fixed;top:18px;left:20px;z-index:60;
+    font-family:var(--mono);font-size:13px;text-decoration:none;
+    color:var(--ink);background:var(--bone);
+    border:1px solid var(--ink);padding:7px 13px;
+    transition:background .2s,color .2s;
+  }
+  .back25:hover{background:var(--ink);color:var(--bone)}
+  .wrap{max-width:860px;margin:0 auto;padding-top:70px}
+  .kicker{font-family:var(--mono);font-size:12px;color:var(--ultra);letter-spacing:.08em;margin-bottom:16px}
+  h1{
+    font-family:var(--mono);font-weight:400;
+    font-size:clamp(1.8rem,5.5vw,3.4rem);line-height:1.05;margin-bottom:8px;
+  }
+  h1 .hy{color:var(--signal)}
+  .sub{font-family:var(--mono);font-size:12px;opacity:.7;margin-bottom:56px}
+  h2{
+    font-family:var(--mono);font-weight:400;font-size:clamp(1.1rem,2.4vw,1.5rem);
+    margin:64px 0 20px;padding-top:28px;border-top:1px solid rgba(20,20,26,.25);
+  }
+  h2 .n{color:var(--signal);font-size:.75em;margin-right:10px}
+  p+p{margin-top:1.1em}
+  em{font-style:normal;color:var(--ultra)}
+  .promptbox{
+    position:relative;border:1px solid var(--ink);background:#efece4;
+    padding:clamp(20px,3vw,34px);margin-top:26px;
+  }
+  .promptbox::before{
+    content:'REPRODUCtION PROMPt';
+    position:absolute;top:-9px;left:16px;background:var(--bone);
+    font-family:var(--mono);font-size:10px;color:var(--ultra);
+    padding:0 8px;letter-spacing:.14em;
+  }
+  .promptbox pre{
+    white-space:pre-wrap;font-family:var(--body);font-size:15.5px;line-height:1.7;
+  }
+  .copybtn{
+    margin-top:22px;
+    font-family:var(--mono);font-size:12px;letter-spacing:.05em;
+    background:var(--ink);color:var(--bone);border:1px solid var(--ink);
+    padding:12px 22px;cursor:pointer;
+    transition:background .2s,color .2s;
+  }
+  .copybtn:hover{background:var(--signal);border-color:var(--signal);color:var(--ink)}
+  .copybtn:focus-visible{outline:2px solid var(--signal);outline-offset:3px}
+  .links{
+    margin-top:70px;padding-top:26px;border-top:1px solid var(--ink);
+    display:flex;gap:26px;flex-wrap:wrap;
+    font-family:var(--mono);font-size:12px;
+  }
+  .links a{color:var(--ink);text-decoration:none;border-bottom:1px solid rgba(20,20,26,.4);padding-bottom:3px;transition:color .2s,border-color .2s}
+  .links a:hover{color:var(--signal);border-color:var(--signal)}
+  footer{margin-top:56px;font-family:var(--mono);font-size:10.5px;opacity:.6}
+</style>
+</head>
+<body>
+<a class="back25" href="/">←&nbsp;25</a>
+
+<div class="wrap">
+  <p class="kicker">tECHNICAL GUIDE</p>
+  <h1>NON<span class="hy">-</span>EUCLID</h1>
+  <p class="sub">HOW tHE IMPOSSIBLE BUILDINGS WERE RENDERED</p>
+
+  <h2><span class="n">01</span> how it was built</h2>
+  <p>The hero is a single fragment shader doing <em>real-time raymarching</em>: for every pixel, a ray is stepped through a signed distance field (SDF) that reports how far the nearest surface is, and the ray safely jumps by that amount until it lands. The "buildings" are kaleidoscopic folded-space fractals — the field is mirrored, sorted, twisted and rescaled six times, so one cheap equation blooms into corridors, vaults and balconies with detail at every zoom level. There is no geometry, no mesh, no texture, and no image anywhere on the page.</p>
+  <p>Performance comes from honesty about what the eye can see: the canvas renders at roughly <em>0.65× internal resolution</em> (0.5× on mobile) with device pixel ratio pinned to 1, then CSS upscales it — invisible under the heavy bone-white fog that also makes the fractal read as architecture rather than demoscene. Marching is capped at 64 steps (48 mobile) with a distance-scaled epsilon for free level-of-detail, and the loop fully stops when the tab is hidden or the hero scrolls away. The three structures are just three sets of four uniforms — scale, fold offset, twist, cap — and switching between them eases the numbers over 1.1 seconds, so one building visibly melts into the next.</p>
+
+  <h2><span class="n">02</span> reproduction prompt</h2>
+  <div class="promptbox">
+    <pre id="prompt">Build a one-page showcase site called "NON-EUCLID — II. Biennale of Impossible Architecture". Palette: bone #E8E4DA background, ultramarine #2B3A9E, ink #14141A, thin signal-orange #FF5C1F accents. Google Fonts: Major Mono Display for the wordmark, nav and labels; Karla for body copy. No images anywhere.
+
+The hero is a full-viewport raw-WebGL raymarching canvas: a slowly evolving kaleidoscopic folded-space fractal (Menger/mandelbox family, six fold iterations) rendered as an impossible building — ambient occlusion from marching effort and an orbit trap, heavy quadratic fog fading into the bone page background so it reads architectural and calm, a faint orange fresnel rim. Camera orbits slowly with a gentle sinusoidal dolly; the mouse subtly steers the look-at. Overlay a huge mono "NON-EUCLID" wordmark and a three-button STRUCTURE selector (Recursion Hall, Folded Pavilion, Inverted Basilica) that smoothly morphs the SDF parameters between three distinct parameter sets.
+
+Performance contract: render at 0.65x internal resolution CSS-upscaled (0.5x mobile), DPR forced to 1, max 64 steps (48 mobile), pause when hidden or offscreen, static single-frame rendering under prefers-reduced-motion.
+
+Below the hero: precise, intellectual editorial sections in a swiss-adjacent layout — about the biennale, three structure descriptions with fictional architects, a curator essay excerpt on a dark ink panel, and visiting information. Mood: rigorous, dry-witted, museum-grade.</pre>
+    <button class="copybtn" id="copy" type="button">COPy PROMPt</button>
+  </div>
+
+  <div class="links">
+    <a href="/32-noneuclid/">← VIEW tHE SItE</a>
+    <a href="/">← ALL 25</a>
+  </div>
+
+  <footer>NON-EUCLID — ONE FRAGMENt SHADER, ZERO IMAGES.</footer>
+</div>
+
+<script>
+  document.getElementById('copy').addEventListener('click', function(){
+    const btn = this;
+    navigator.clipboard.writeText(document.getElementById('prompt').textContent).then(() => {
+      btn.textContent = 'COPIED ✓';
+      setTimeout(() => btn.textContent = 'COPy PROMPt', 1800);
+    }).catch(() => {
+      const r = document.createRange();
+      r.selectNodeContents(document.getElementById('prompt'));
+      const s = getSelection(); s.removeAllRanges(); s.addRange(r);
+      btn.textContent = 'SELECtED — PRESS CtRL+C';
+    });
+  });
+</script>
+</body>
+</html>

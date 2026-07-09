@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ARCANUM — How It Was Built</title>
+<meta name="description" content="The build notes behind ARCANUM's holographic foil cards — tilt math, layered foil, and the pack tear — plus a reproduction prompt.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cinzel+Decorative:wght@700;900&family=Sora:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+:root{
+  --midnight:#0E0B18;
+  --gold:#C9A227;
+  --gold-soft:#e5c95e;
+  --mist:#B9B4CC;
+  --ink:#efeaf7;
+  --foil:linear-gradient(115deg,#ff4d9e 0%,#ffb347 18%,#f7f75a 34%,#4dffa6 50%,#4dc3ff 66%,#a64dff 82%,#ff4d9e 100%);
+}
+*{margin:0;padding:0;box-sizing:border-box}
+body{
+  background:var(--midnight);color:var(--mist);
+  font-family:'Sora',sans-serif;font-weight:300;line-height:1.7;
+  min-height:100vh;
+  background-image:
+    radial-gradient(50rem 32rem at 80% -8%,rgba(90,60,160,.18),transparent 60%),
+    radial-gradient(44rem 30rem at 6% 108%,rgba(201,162,39,.08),transparent 60%);
+}
+::selection{background:var(--gold);color:var(--midnight)}
+a{color:var(--gold-soft)}
+.back{
+  position:fixed;top:1rem;left:1rem;z-index:9;
+  font-size:.85rem;font-weight:500;letter-spacing:.06em;text-decoration:none;
+  color:var(--mist);background:rgba(14,11,24,.72);border:1px solid rgba(201,162,39,.35);
+  padding:.45rem .9rem;border-radius:999px;transition:color .25s,border-color .25s;
+}
+.back:hover{color:var(--gold-soft);border-color:var(--gold)}
+:focus-visible{outline:2px solid var(--gold);outline-offset:3px;border-radius:4px}
+main{max-width:46rem;margin:0 auto;padding:7rem 1.4rem 5rem}
+.kicker{font-size:.7rem;font-weight:600;letter-spacing:.45em;text-transform:uppercase;color:var(--gold);margin-bottom:1rem}
+h1{
+  font-family:'Cinzel Decorative',serif;font-weight:900;font-size:clamp(2rem,6vw,3.2rem);line-height:1.1;
+  background:var(--foil);background-size:220% 220%;background-position:28% 45%;
+  -webkit-background-clip:text;background-clip:text;color:transparent;
+  margin-bottom:2rem;
+}
+h2{font-family:'Cinzel Decorative',serif;font-weight:700;font-size:1.25rem;color:var(--ink);margin:3rem 0 1rem}
+p{margin-bottom:1rem;font-size:.95rem}
+p b{color:var(--ink);font-weight:500}
+.prompt-box{
+  position:relative;margin-top:1.4rem;
+  border:1px solid rgba(201,162,39,.45);border-radius:.9rem;
+  background:linear-gradient(165deg,rgba(38,28,70,.45),rgba(14,11,24,.7));
+  padding:1.8rem 1.6rem 1.6rem;
+}
+.prompt-box::before{
+  content:"REPRODUCTION PROMPT";
+  position:absolute;top:-.62rem;left:1.2rem;
+  font-size:.62rem;font-weight:600;letter-spacing:.32em;color:var(--gold);
+  background:var(--midnight);padding:0 .6rem;
+}
+.prompt-box p{font-size:.88rem;color:var(--ink);margin:0}
+.copy{
+  margin-top:1.3rem;font:inherit;font-size:.75rem;font-weight:600;letter-spacing:.22em;text-transform:uppercase;
+  color:var(--midnight);background:linear-gradient(160deg,var(--gold-soft),var(--gold));
+  border:none;border-radius:999px;padding:.7rem 1.6rem;cursor:pointer;
+  transition:transform .25s cubic-bezier(.22,1,.36,1),box-shadow .25s;
+}
+.copy:hover{transform:translateY(-2px);box-shadow:0 8px 22px -8px rgba(201,162,39,.7)}
+.links{margin-top:3.5rem;display:flex;gap:1.8rem;flex-wrap:wrap}
+.links a{font-size:.82rem;letter-spacing:.14em;text-transform:uppercase;font-weight:500;text-decoration:none}
+.links a:hover{color:var(--ink)}
+footer{margin-top:4rem;padding-top:1.6rem;border-top:1px solid rgba(201,162,39,.22);font-size:.72rem;color:rgba(185,180,204,.6)}
+</style>
+</head>
+<body>
+<a class="back" href="/37-arcanum/">←&nbsp;Arcanum</a>
+<main>
+  <p class="kicker">Build notes · No. 37</p>
+  <h1>How the Foil Was Forged</h1>
+
+  <h2>How it was built</h2>
+  <p>Each card is a single element tilted in 3D: the pointer's position inside the card is normalized to 0–1,
+  then mapped to <b>rotateX/rotateY under perspective</b> so the card leans toward your cursor like real cardstock,
+  with writes coalesced through requestAnimationFrame for a steady 60fps.</p>
+  <p>The holo shimmer is <b>three stacked light layers</b> driven by that same pointer value: a rainbow gradient whose
+  background position pans with the tilt, a field of tiny sparkle dots in color-dodge blend that only ignites inside
+  a radial mask following your fingertip, and a soft glare streak sweeping the diagonal.</p>
+  <p>A faint counter-panned copy of the rainbow keeps the hue drift visible over the midnight frame, and a masked
+  falloff concentrates the energy in the art window so the rules text stays legible.
+  On release, a spring-eased settle returns the card to its idle bob.</p>
+  <p>The booster pack tears along a <b>jagged clip-path seam</b>: the lid flies off rotated, a burst ring and foil
+  sparks scatter on transform/opacity only, and the three cards deal into a fan with overshoot easing before
+  flipping from their guilloché backs. Reduced-motion visitors get the cards pinned at a flattering angle and
+  a quiet cross-fade instead of the tear.</p>
+
+  <h2>Steal this spell</h2>
+  <div class="prompt-box">
+    <p id="prompt">Build a single-page showcase for ARCANUM, a fictional trading card game with tangible holographic foil cards. Palette: midnight #0E0B18 background, card-frame gold #C9A227, mist lavender #B9B4CC body text, near-white #EFEAF7 headings, and a vivid iridescent rainbow gradient (pink, amber, yellow, mint, cyan, violet) reserved for foil. Fonts: Cinzel Decorative for the logotype and card titles, Sora for UI and body. Hero: the ARCANUM wordmark filled with the rainbow gradient above three collectible cards — a golden-green ouroboros serpent sigil, a moonlit indigo tower, and a flame-winged phoenix, each drawn as elegant inline vector art. Cards tilt in 3D toward the pointer with perspective and bob gently when idle. Foil recipe: a panning rainbow gradient layer tracking the tilt, a sparkle dot-grid layer in color-dodge blend revealed only through a radial mask that follows the cursor, and a soft moving glare streak — together producing a believable Pokémon-style holo shimmer. Second act: a sealed iridescent booster pack that tears open on click along a jagged seam, releasing a golden burst and dealing the three cards into a fan with springy overshoot, guilloché-rosette card backs flipping face-up in sequence. Add a mythic-but-witty lore section, four expansion sets, rarity tiers (Ash, Ember, Gilded, Arcanum) with gem badges, and a footer. Animate only transform and opacity; honor prefers-reduced-motion with static flattering angles.</p>
+  </div>
+  <button class="copy" id="copyBtn">Copy prompt</button>
+
+  <div class="links">
+    <a href="/37-arcanum/">View the site →</a>
+    <a href="/">←&nbsp;All 25</a>
+  </div>
+
+  <footer>ARCANUM build notes. The foil is layers; the covetousness is yours.</footer>
+</main>
+<script>
+const btn = document.getElementById('copyBtn');
+btn.addEventListener('click', () => {
+  navigator.clipboard.writeText(document.getElementById('prompt').textContent.trim()).then(() => {
+    const t = btn.textContent;
+    btn.textContent = 'Copied ✦';
+    setTimeout(() => { btn.textContent = t; }, 1600);
+  });
+});
+</script>
+</body>
+</html>

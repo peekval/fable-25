@@ -1,0 +1,152 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>PRISMA — How It Was Built</title>
+<meta name="description" content="Behind the living kaleidoscope: how the PRISMA showcase was built, plus a reproduction prompt.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Monoton&family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --velvet:#0A090D;
+    --amethyst:#9B4DCA;
+    --emerald:#1FA97A;
+    --citrine:#F5C542;
+    --sapphire:#2E6BD6;
+    --ink:#EDEAF2;
+    --ink-dim:#9B93A8;
+    --hairline:rgba(155,77,202,.22);
+  }
+  *{margin:0;padding:0;box-sizing:border-box}
+  body{
+    background:var(--velvet);color:var(--ink);
+    font-family:'Outfit',sans-serif;font-weight:300;
+    min-height:100vh;-webkit-font-smoothing:antialiased;
+    background-image:
+      radial-gradient(ellipse 60% 40% at 15% 0%, rgba(155,77,202,.14), transparent 60%),
+      radial-gradient(ellipse 50% 35% at 90% 15%, rgba(46,107,214,.12), transparent 60%),
+      radial-gradient(ellipse 45% 30% at 70% 100%, rgba(31,169,122,.10), transparent 60%);
+    background-attachment:fixed;
+  }
+  ::selection{background:var(--amethyst);color:#fff}
+  .back{
+    position:fixed;top:1.1rem;left:1.2rem;z-index:60;
+    font-size:.85rem;font-weight:500;letter-spacing:.08em;
+    text-decoration:none;color:var(--ink-dim);
+    padding:.45rem .85rem;border:1px solid var(--hairline);border-radius:999px;
+    background:rgba(10,9,13,.55);backdrop-filter:blur(8px);
+    transition:color .25s,border-color .25s;
+  }
+  .back:hover{color:var(--citrine);border-color:var(--citrine)}
+  main{max-width:760px;margin:0 auto;padding:7.5rem 1.5rem 4rem}
+  .mark{
+    font-family:'Monoton',cursive;font-size:clamp(2.2rem,7vw,3.4rem);
+    background:linear-gradient(115deg,var(--amethyst),var(--sapphire) 35%,var(--emerald) 65%,var(--citrine));
+    -webkit-background-clip:text;background-clip:text;color:transparent;
+    filter:drop-shadow(0 0 22px rgba(155,77,202,.45));
+    letter-spacing:.06em;
+  }
+  .sub{margin-top:.7rem;font-size:.8rem;letter-spacing:.35em;text-transform:uppercase;color:var(--ink-dim)}
+  h2{
+    margin:3.4rem 0 1.1rem;font-size:1.35rem;font-weight:700;letter-spacing:.02em;
+    display:flex;align-items:center;gap:.8rem;
+  }
+  h2::before{content:"";width:2rem;height:1px;background:var(--citrine);opacity:.7}
+  p{line-height:1.8;color:var(--ink-dim);font-size:1.02rem}
+  p strong{color:var(--ink);font-weight:500}
+  .promptbox{
+    position:relative;margin-top:1.4rem;
+    border:1px solid rgba(245,197,66,.35);border-radius:16px;
+    background:rgba(255,255,255,.02);
+    padding:1.8rem 1.8rem 1.6rem;
+    box-shadow:0 30px 80px -50px rgba(155,77,202,.6), inset 0 0 40px rgba(10,9,13,.5);
+  }
+  .promptbox::before{
+    content:"Reproduction Prompt";
+    position:absolute;top:-.7rem;left:1.2rem;
+    font-size:.65rem;font-weight:700;letter-spacing:.3em;text-transform:uppercase;
+    color:var(--citrine);background:var(--velvet);padding:0 .7rem;
+  }
+  .promptbox p{font-size:.94rem;line-height:1.75;color:var(--ink)}
+  .copy{
+    margin-top:1.4rem;font-family:'Outfit',sans-serif;cursor:pointer;
+    font-size:.8rem;font-weight:700;letter-spacing:.2em;text-transform:uppercase;
+    color:var(--velvet);background:var(--citrine);
+    border:1px solid var(--citrine);border-radius:10px;padding:.85rem 1.6rem;
+    transition:background .25s,border-color .25s,box-shadow .25s;
+  }
+  .copy:hover{background:#ffd968;border-color:#ffd968;box-shadow:0 0 22px rgba(245,197,66,.4)}
+  .copy:focus-visible,a:focus-visible{outline:2px solid var(--citrine);outline-offset:3px}
+  .links{margin-top:3.6rem;display:flex;gap:1rem;flex-wrap:wrap}
+  .links a{
+    text-decoration:none;font-size:.85rem;font-weight:600;letter-spacing:.16em;text-transform:uppercase;
+    padding:.9rem 1.5rem;border-radius:10px;border:1px solid var(--hairline);color:var(--ink);
+    transition:border-color .25s,color .25s,background .25s;
+  }
+  .links a:hover{border-color:var(--citrine);color:var(--citrine);background:rgba(245,197,66,.05)}
+  footer{margin-top:4rem;padding-top:1.6rem;border-top:1px solid var(--hairline);font-size:.75rem;color:var(--ink-dim);opacity:.7;letter-spacing:.05em}
+  @media (prefers-reduced-motion: reduce){*{transition-duration:.01ms !important}}
+</style>
+</head>
+<body>
+
+<a class="back" href="/">←&nbsp;25</a>
+
+<main>
+  <h1 class="mark">PRISMA</h1>
+  <p class="sub">How the living kaleidoscope was built</p>
+
+  <h2>The technique</h2>
+  <p>
+    The hero is a single raw WebGL fragment shader — no libraries. It performs a <strong>polar
+    fold</strong>: every pixel's angle around the centre is wrapped into one wedge and mirrored, so
+    whatever pattern lives in that wedge is repeated N times around the ring, and N itself is a
+    smooth float that morphs between 6, 8 and 12. The source pattern inside the wedge is a stack of
+    drifting <strong>sin bands and fractal-brownian-motion noise fields</strong>, colour-graded into
+    the four jewel tones over a near-black velvet floor, with citrine deliberately rationed so it
+    reads as gold veins rather than a wash. The mouse is wired straight into the fold: cursor angle
+    rotates the mirror axis, cursor distance from centre drives the zoom, so the audience literally
+    plays the mandala. The three installation thumbnails are <strong>the same compiled shader</strong>
+    on tiny 120-pixel canvases, all fed by one shared requestAnimationFrame loop that gates every
+    canvas by viewport visibility and pauses entirely on hidden tabs. Under reduced-motion the shader
+    renders one curated still frame and the symmetry buttons step instantly instead of morphing.
+  </p>
+
+  <h2>Reproduce it</h2>
+  <div class="promptbox">
+    <p id="prompt">Build a one-page festival site called PRISMA — a light-art and projection festival — as a single self-contained HTML file with a raw WebGL GLSL kaleidoscope hero, no libraries and no images. Palette: black velvet #0A090D background with jewel accents amethyst #9B4DCA, emerald #1FA97A, citrine #F5C542, sapphire #2E6BD6. Google Fonts: Monoton solely for the neon-deco hero word "PRISMA" (gradient-filled text with a slow animated hue-rotate), Outfit for everything else. Hero: full-viewport fragment shader that polar-folds the plane into N mirrored wedges (atan/mod/abs), where N is a float smoothly morphing between 6, 8 and 12 via pill buttons and a slow auto cycle; the wedge is filled with layered moving sine bands and fbm noise fields graded into the jewel palette over deep velvet shadows, citrine kept sparse as golden veins. Interaction: mouse angle rotates the fold axis, mouse distance from centre controls zoom, eased with frame-rate-independent smoothing and shortest-path angle interpolation. Sections: about with stat grid, three installation cards each showing a live 120px mini kaleidoscope (same shader, DPR 1, shared rAF loop, IntersectionObserver visibility gating, max three concurrent), an artists lineup grid, three ticket-night cards, footer. Cap hero DPR at 1.25 for 60fps. Honour prefers-reduced-motion with a frozen still frame and instant control steps. Copy should be electric but curated — a nocturnal turbine hall in Zürich, no lorem ipsum.</p>
+  </div>
+  <button class="copy" id="copyBtn" type="button">Copy prompt</button>
+
+  <div class="links">
+    <a href="/34-prisma/">← Back to the site</a>
+    <a href="/">All 25 showcases</a>
+  </div>
+
+  <footer>PRISMA — a fictional festival built as a WebGL showcase. One shader, five canvases, one loop.</footer>
+</main>
+
+<script>
+(function(){
+  var btn = document.getElementById("copyBtn");
+  var txt = document.getElementById("prompt").textContent.replace(/\s+/g, " ").trim();
+  btn.addEventListener("click", function(){
+    function done(ok){
+      btn.textContent = ok ? "Copied ✓" : "Select & copy manually";
+      setTimeout(function(){ btn.textContent = "Copy prompt"; }, 2200);
+    }
+    if(navigator.clipboard && navigator.clipboard.writeText){
+      navigator.clipboard.writeText(txt).then(function(){ done(true); }, function(){ done(false); });
+    } else {
+      var ta = document.createElement("textarea");
+      ta.value = txt; document.body.appendChild(ta); ta.select();
+      try { done(document.execCommand("copy")); } catch(e){ done(false); }
+      document.body.removeChild(ta);
+    }
+  });
+})();
+</script>
+</body>
+</html>

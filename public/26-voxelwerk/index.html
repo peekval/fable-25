@@ -1,0 +1,826 @@
+<!DOCTYPE html>
+<html lang="en">
+<!--
+  VOXELWERK — indie game studio showcase
+  PASS 1 (3D correctness & perf): per-cube color jitter applied ONCE via setColorAt (was tempted into per-frame color writes — removed); instanceMatrix flagged DynamicDrawUsage as an upload hint for the assembly window, and stepAssembly early-returns after completion so zero matrix writes happen at rest; voxel counts verified in node — hero desktop 2007, hero mobile 790, diorama 2 1042; light rig retuned for sRGBEncoding output (hemi 1.0->0.8, dir 0.85->0.65, ambient 0.12->0.06) because top faces were clipping to white; fake-shadow plane got depthWrite:false + renderOrder -1 to kill sorting artifacts against the transparent canvas.
+  PASS 2 (mobile & lifecycle): DPR clamped to 2 AND to 1.75 on <768px for fill-rate; both render loops fully stop via IntersectionObserver + visibilitychange (rAF cancelled, not just skipped); resize debounced and re-projects without reallocating geometry; hero copy gets pointer-events:none so the canvas never blocks text selection... inverted: copy selectable, canvas behind; touch devices skip mousemove tilt entirely; sticky hero shortened on small screens (280vh -> 170vh) so mobile users aren't trapped in the orbit; portrait framing fixed after device-viewport screenshots — narrow aspect crushes horizontal FOV, so mobile gets fov 44 + camera pulled to dist 40/elev 17 instead of the desktop 36/36/14.
+  PASS 3 (easing & polish): assembly re-tuned — bottom-up wave (y-delay 85ms/layer) + radial ripple + jitter, easeOutBack softened (c1 0.9) so cubes settle without rubbery bounce; per-cube tumble decays with (1-t)^2 for a cleaner "click" landing; scroll orbit lerp factor set to 0.065 with slow 0.05 rad/s auto-drift so the island never feels parked; HUD cube counter throttled to every 4th frame; reduced-motion path verified: pre-assembled, no orbit scrubbing, 0.03 rad/s idle spin only. Headless-browser screenshot review added two more: hero tree canopies blended into the mint terrain (leaf palette darkened to 0x2F8F74–0x4FB596 for silhouette contrast) and the dusk diorama cropped its treetops (camera pulled back 28->31, elev 11->12).
+-->
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>VOXELWERK — small worlds, big hearts</title>
+<meta name="description" content="VOXELWERK is an independent game studio building handcrafted voxel worlds. Cozy is a genre. Cube by cube.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Chivo:ital,wght@0,300;0,400;0,700;0,900;1,400&family=Rubik+Mono+One&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/0.147.0/three.min.js"></script>
+<style>
+:root{
+  --clay:#E07856; --clay-deep:#C05A3C; --clay-dark:#9C4530;
+  --sand:#F2E3CE; --sand-dim:#E4CFAF;
+  --mint:#7FD8BE; --mint-deep:#3FA98A;
+  --umber:#2A1E17; --umber-2:#3D2C20; --umber-3:#1D1410;
+  --u:12px;
+}
+*{margin:0;padding:0;box-sizing:border-box}
+html{scroll-behavior:smooth}
+@media (prefers-reduced-motion:reduce){html{scroll-behavior:auto}}
+body{
+  font-family:'Chivo',sans-serif;
+  background:var(--sand);
+  color:var(--umber);
+  overflow-x:hidden;
+  -webkit-font-smoothing:antialiased;
+}
+::selection{background:var(--clay);color:var(--sand)}
+.mono{font-family:'Rubik Mono One',monospace}
+
+/* ---------- fixed chrome ---------- */
+.back{
+  position:fixed;top:20px;left:20px;z-index:90;
+  font-weight:900;font-size:14px;letter-spacing:.06em;
+  color:var(--umber);text-decoration:none;
+  background:var(--sand);border:3px solid var(--umber);
+  padding:8px 14px;box-shadow:4px 4px 0 var(--umber);
+  transition:transform .15s,box-shadow .15s;
+}
+.back:hover{transform:translate(-2px,-2px);box-shadow:6px 6px 0 var(--umber)}
+.wordmark{
+  position:fixed;top:20px;right:20px;z-index:90;
+  font-weight:900;font-size:13px;letter-spacing:.28em;
+  color:var(--umber);
+  background:var(--sand);border:3px solid var(--umber);
+  padding:9px 14px 8px 18px;box-shadow:4px 4px 0 var(--umber);
+  user-select:none;
+}
+.wordmark b{color:var(--clay)}
+
+/* ---------- hero ---------- */
+.hero{height:280vh;position:relative}
+@media (max-width:767px){.hero{height:170vh}}
+.hero-stage{
+  position:sticky;top:0;height:100vh;overflow:hidden;
+  background:
+    radial-gradient(120% 90% at 50% 110%, rgba(224,120,86,.32), transparent 60%),
+    radial-gradient(90% 70% at 70% -10%, rgba(127,216,190,.28), transparent 55%),
+    linear-gradient(180deg,#F6EAD8 0%,var(--sand) 55%,#EDD9BC 100%);
+}
+.hero-stage::after{ /* faint voxel grid atmosphere */
+  content:"";position:absolute;inset:0;pointer-events:none;
+  background:
+    linear-gradient(rgba(42,30,23,.045) 1px,transparent 1px),
+    linear-gradient(90deg,rgba(42,30,23,.045) 1px,transparent 1px);
+  background-size:56px 56px;
+  mask-image:radial-gradient(80% 80% at 50% 45%,transparent 30%,#000 100%);
+  -webkit-mask-image:radial-gradient(80% 80% at 50% 45%,transparent 30%,#000 100%);
+}
+canvas.diorama{position:absolute;inset:0;width:100%;height:100%;display:block}
+.no3d canvas.diorama{display:none}
+.hero-copy{
+  position:absolute;inset:0;z-index:2;pointer-events:none;
+  display:flex;flex-direction:column;justify-content:flex-end;
+  padding:0 5vw 9vh;
+}
+.hero-copy .eyebrow{
+  font-family:'Rubik Mono One',monospace;font-size:clamp(10px,1.1vw,13px);
+  letter-spacing:.22em;color:var(--clay-deep);margin-bottom:18px;
+}
+.hero-copy h1{
+  font-weight:900;font-size:clamp(58px,12.5vw,190px);
+  line-height:.85;letter-spacing:-.03em;text-transform:uppercase;
+  color:var(--umber);
+}
+.hero-copy h1 .mint{color:transparent;-webkit-text-stroke:3px var(--mint-deep)}
+.hero-copy p{
+  max-width:44ch;margin-top:26px;font-size:clamp(15px,1.5vw,19px);
+  line-height:1.55;font-weight:400;color:#4A3628;pointer-events:auto;
+}
+.hud{
+  position:absolute;top:88px;left:5vw;z-index:2;
+  font-family:'Rubik Mono One',monospace;font-size:11px;letter-spacing:.14em;
+  color:var(--clay-deep);border-left:3px solid var(--clay);padding-left:12px;
+  transition:opacity .8s;
+}
+.hud.done{opacity:0}
+.scroll-cue{
+  position:absolute;bottom:26px;right:5vw;z-index:2;
+  font-family:'Rubik Mono One',monospace;font-size:10px;letter-spacing:.2em;
+  color:var(--umber);display:flex;align-items:center;gap:12px;
+}
+.scroll-cue .cube{
+  width:12px;height:12px;background:var(--clay);
+  animation:cubedrop 1.6s cubic-bezier(.5,-.4,.4,1.4) infinite;
+}
+@keyframes cubedrop{0%{transform:translateY(-14px) rotate(45deg);opacity:0}45%{transform:translateY(0) rotate(0);opacity:1}80%{transform:translateY(0);opacity:1}100%{transform:translateY(0);opacity:0}}
+@media (prefers-reduced-motion:reduce){.scroll-cue .cube{animation:none}}
+
+/* ---------- marquee ---------- */
+.marquee{
+  background:var(--umber);color:var(--sand);
+  overflow:hidden;white-space:nowrap;border-top:4px solid var(--umber);
+  padding:16px 0;position:relative;z-index:3;
+}
+.marquee .track{display:inline-block;animation:slide 26s linear infinite;will-change:transform}
+@media (prefers-reduced-motion:reduce){.marquee .track{animation:none}}
+.marquee span{
+  font-weight:900;text-transform:uppercase;font-size:clamp(16px,2.2vw,26px);
+  letter-spacing:.06em;margin-right:3.2rem;
+}
+.marquee span:nth-child(even){color:transparent;-webkit-text-stroke:1.5px var(--mint)}
+@keyframes slide{to{transform:translateX(-50%)}}
+
+/* ---------- sections ---------- */
+section.block{position:relative;padding:clamp(80px,12vh,150px) 5vw}
+.label{
+  font-family:'Rubik Mono One',monospace;font-size:clamp(11px,1vw,13px);
+  letter-spacing:.2em;display:flex;align-items:center;gap:14px;margin-bottom:34px;
+}
+.label::after{content:"";height:3px;flex:0 0 64px;background:currentColor;opacity:.5}
+h2{
+  font-weight:900;text-transform:uppercase;letter-spacing:-.02em;
+  font-size:clamp(38px,6.5vw,96px);line-height:.92;
+}
+.manifesto h2 em{font-style:normal;color:var(--clay)}
+.manifesto p.lede{
+  max-width:58ch;margin-top:34px;font-size:clamp(16px,1.6vw,21px);line-height:1.6;color:#4A3628;
+}
+.stats{
+  display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));
+  gap:3px;margin-top:64px;background:var(--umber);
+  border:3px solid var(--umber);box-shadow:8px 8px 0 rgba(42,30,23,.18);
+}
+.stat{background:var(--sand);padding:28px 24px}
+.stat .n{font-family:'Rubik Mono One',monospace;font-size:clamp(26px,3.4vw,44px);color:var(--clay-deep)}
+.stat .d{margin-top:10px;font-size:13px;font-weight:700;text-transform:uppercase;letter-spacing:.12em}
+.stat:nth-child(2) .n{color:var(--mint-deep)}
+
+/* ---------- games ---------- */
+.games{background:var(--umber);color:var(--sand)}
+.games .label{color:var(--mint)}
+.games h2 .stroke{color:transparent;-webkit-text-stroke:2.5px var(--clay)}
+.game-grid{display:grid;grid-template-columns:1fr 1fr;gap:32px;margin-top:60px}
+@media (max-width:900px){.game-grid{grid-template-columns:1fr}}
+.game{
+  background:var(--umber-2);border:3px solid rgba(242,227,206,.16);
+  padding:40px 36px 36px;position:relative;overflow:hidden;
+  transition:transform .25s cubic-bezier(.2,.9,.3,1.2),border-color .25s;
+}
+.game:hover{transform:translateY(-6px);border-color:var(--clay)}
+.game.g2:hover{border-color:var(--mint)}
+.game .tag{
+  position:absolute;top:0;right:0;font-family:'Rubik Mono One',monospace;
+  font-size:10px;letter-spacing:.16em;padding:9px 14px;
+  background:var(--clay);color:var(--umber-3);
+}
+.game.g2 .tag{background:var(--mint)}
+.game h3{font-weight:900;font-size:clamp(30px,3.6vw,48px);text-transform:uppercase;letter-spacing:-.01em}
+.game .genre{font-family:'Rubik Mono One',monospace;font-size:10px;letter-spacing:.2em;color:var(--clay);margin-top:8px}
+.game.g2 .genre{color:var(--mint)}
+.game p{margin-top:18px;line-height:1.6;font-size:15px;color:#D8C3A8;max-width:46ch}
+.art-stage{
+  height:220px;margin-top:30px;display:flex;align-items:center;justify-content:center;
+  background:var(--umber-3);border:3px solid rgba(242,227,206,.08);position:relative;
+}
+.art-stage::after{
+  content:"";position:absolute;inset:0;
+  background:
+    linear-gradient(rgba(242,227,206,.04) 1px,transparent 1px),
+    linear-gradient(90deg,rgba(242,227,206,.04) 1px,transparent 1px);
+  background-size:var(--u) var(--u);
+}
+.px{width:var(--u);height:var(--u);position:relative;z-index:1}
+@media (max-width:520px){:root{--u:9px}.art-stage{height:170px}}
+/* forge flame + anvil, drawn in box-shadow voxels */
+.px.flame{
+  animation:flick 1.1s steps(2) infinite;
+  box-shadow:
+    calc(5*var(--u)) 0 var(--clay-deep),
+    calc(4*var(--u)) var(--u) var(--clay-deep), calc(5*var(--u)) var(--u) var(--clay-deep),
+    calc(3*var(--u)) calc(2*var(--u)) var(--clay-deep), calc(4*var(--u)) calc(2*var(--u)) var(--clay-deep), calc(5*var(--u)) calc(2*var(--u)) var(--clay), calc(6*var(--u)) calc(2*var(--u)) var(--clay-deep), calc(9*var(--u)) calc(2*var(--u)) var(--mint),
+    calc(3*var(--u)) calc(3*var(--u)) var(--clay-deep), calc(4*var(--u)) calc(3*var(--u)) var(--clay), calc(5*var(--u)) calc(3*var(--u)) var(--clay), calc(6*var(--u)) calc(3*var(--u)) var(--clay-deep), calc(7*var(--u)) calc(3*var(--u)) var(--clay-deep), calc(1*var(--u)) calc(3*var(--u)) var(--mint),
+    calc(2*var(--u)) calc(4*var(--u)) var(--clay-deep), calc(3*var(--u)) calc(4*var(--u)) var(--clay), calc(4*var(--u)) calc(4*var(--u)) var(--clay), calc(5*var(--u)) calc(4*var(--u)) var(--sand), calc(6*var(--u)) calc(4*var(--u)) var(--clay), calc(7*var(--u)) calc(4*var(--u)) var(--clay-deep),
+    calc(2*var(--u)) calc(5*var(--u)) var(--clay-deep), calc(3*var(--u)) calc(5*var(--u)) var(--clay), calc(4*var(--u)) calc(5*var(--u)) var(--sand), calc(5*var(--u)) calc(5*var(--u)) var(--sand), calc(6*var(--u)) calc(5*var(--u)) var(--clay), calc(7*var(--u)) calc(5*var(--u)) var(--clay-deep),
+    calc(3*var(--u)) calc(6*var(--u)) var(--clay-deep), calc(4*var(--u)) calc(6*var(--u)) var(--clay), calc(5*var(--u)) calc(6*var(--u)) var(--sand), calc(6*var(--u)) calc(6*var(--u)) var(--clay), calc(7*var(--u)) calc(6*var(--u)) var(--clay-deep),
+    calc(4*var(--u)) calc(7*var(--u)) var(--clay-deep), calc(5*var(--u)) calc(7*var(--u)) var(--clay), calc(6*var(--u)) calc(7*var(--u)) var(--clay-deep),
+    calc(1*var(--u)) calc(9*var(--u)) #16100C, calc(2*var(--u)) calc(9*var(--u)) #16100C, calc(3*var(--u)) calc(9*var(--u)) #16100C, calc(4*var(--u)) calc(9*var(--u)) #16100C, calc(5*var(--u)) calc(9*var(--u)) #16100C, calc(6*var(--u)) calc(9*var(--u)) #16100C, calc(7*var(--u)) calc(9*var(--u)) #16100C, calc(8*var(--u)) calc(9*var(--u)) #16100C, calc(9*var(--u)) calc(9*var(--u)) #16100C,
+    calc(3*var(--u)) calc(10*var(--u)) #16100C, calc(4*var(--u)) calc(10*var(--u)) #16100C, calc(5*var(--u)) calc(10*var(--u)) #16100C, calc(6*var(--u)) calc(10*var(--u)) #16100C,
+    calc(4*var(--u)) calc(11*var(--u)) #16100C, calc(5*var(--u)) calc(11*var(--u)) #16100C,
+    calc(3*var(--u)) calc(12*var(--u)) #16100C, calc(4*var(--u)) calc(12*var(--u)) #16100C, calc(5*var(--u)) calc(12*var(--u)) #16100C, calc(6*var(--u)) calc(12*var(--u)) #16100C,
+    calc(2*var(--u)) calc(13*var(--u)) #16100C, calc(3*var(--u)) calc(13*var(--u)) #16100C, calc(4*var(--u)) calc(13*var(--u)) #16100C, calc(5*var(--u)) calc(13*var(--u)) #16100C, calc(6*var(--u)) calc(13*var(--u)) #16100C, calc(7*var(--u)) calc(13*var(--u)) #16100C;
+  margin:calc(-7*var(--u)) calc(5*var(--u)) 0 0;
+}
+@keyframes flick{50%{transform:translateY(calc(-1*var(--u))) scaleX(-1) translateX(calc(-10*var(--u)))}}
+@media (prefers-reduced-motion:reduce){.px.flame{animation:none}}
+/* mossdeep fish */
+.px.fish{
+  animation:swim 4s ease-in-out infinite;
+  box-shadow:
+    calc(4*var(--u)) var(--u) var(--mint-deep), calc(5*var(--u)) var(--u) var(--mint-deep), calc(6*var(--u)) var(--u) var(--mint-deep), calc(7*var(--u)) var(--u) var(--mint-deep), calc(5*var(--u)) 0 var(--mint-deep), calc(13*var(--u)) 0 var(--sand),
+    calc(2*var(--u)) calc(2*var(--u)) var(--mint-deep), calc(3*var(--u)) calc(2*var(--u)) var(--mint-deep), calc(4*var(--u)) calc(2*var(--u)) var(--mint), calc(5*var(--u)) calc(2*var(--u)) var(--mint), calc(6*var(--u)) calc(2*var(--u)) var(--mint), calc(7*var(--u)) calc(2*var(--u)) var(--mint), calc(8*var(--u)) calc(2*var(--u)) var(--mint-deep), calc(12*var(--u)) calc(2*var(--u)) var(--sand),
+    0 calc(3*var(--u)) var(--mint-deep), calc(2*var(--u)) calc(3*var(--u)) var(--mint-deep), calc(3*var(--u)) calc(3*var(--u)) var(--mint), calc(4*var(--u)) calc(3*var(--u)) var(--mint), calc(5*var(--u)) calc(3*var(--u)) var(--mint), calc(6*var(--u)) calc(3*var(--u)) var(--mint), calc(7*var(--u)) calc(3*var(--u)) var(--umber-3), calc(8*var(--u)) calc(3*var(--u)) var(--mint), calc(9*var(--u)) calc(3*var(--u)) var(--mint-deep),
+    0 calc(4*var(--u)) var(--mint-deep), var(--u) calc(4*var(--u)) var(--mint-deep), calc(2*var(--u)) calc(4*var(--u)) var(--mint-deep), calc(3*var(--u)) calc(4*var(--u)) var(--mint), calc(4*var(--u)) calc(4*var(--u)) var(--mint), calc(5*var(--u)) calc(4*var(--u)) var(--mint), calc(6*var(--u)) calc(4*var(--u)) var(--mint), calc(7*var(--u)) calc(4*var(--u)) var(--mint), calc(8*var(--u)) calc(4*var(--u)) var(--mint), calc(9*var(--u)) calc(4*var(--u)) var(--mint-deep), calc(11*var(--u)) calc(4*var(--u)) var(--sand),
+    0 calc(5*var(--u)) var(--mint-deep), calc(2*var(--u)) calc(5*var(--u)) var(--mint-deep), calc(3*var(--u)) calc(5*var(--u)) var(--mint), calc(4*var(--u)) calc(5*var(--u)) var(--mint), calc(5*var(--u)) calc(5*var(--u)) var(--mint), calc(6*var(--u)) calc(5*var(--u)) var(--mint), calc(7*var(--u)) calc(5*var(--u)) var(--mint), calc(8*var(--u)) calc(5*var(--u)) var(--mint-deep),
+    calc(3*var(--u)) calc(6*var(--u)) var(--mint-deep), calc(4*var(--u)) calc(6*var(--u)) var(--mint-deep), calc(5*var(--u)) calc(6*var(--u)) var(--mint-deep), calc(6*var(--u)) calc(6*var(--u)) var(--mint-deep), calc(5*var(--u)) calc(7*var(--u)) var(--mint-deep);
+  margin:calc(-3*var(--u)) calc(6*var(--u)) 0 0;
+}
+@keyframes swim{0%,100%{transform:translate(0,0)}50%{transform:translate(calc(2*var(--u)),calc(-1*var(--u)))}}
+@media (prefers-reduced-motion:reduce){.px.fish{animation:none}}
+
+/* ---------- werkshop (diorama 2) ---------- */
+.werkshop{background:var(--umber-3);color:var(--sand);padding:0}
+.werk-grid{display:grid;grid-template-columns:1fr 1.15fr;min-height:92vh}
+@media (max-width:900px){.werk-grid{grid-template-columns:1fr;min-height:0}}
+.werk-copy{padding:clamp(80px,12vh,140px) 5vw;display:flex;flex-direction:column;justify-content:center}
+.werk-copy .label{color:var(--clay)}
+.werk-copy h2 .stroke{color:transparent;-webkit-text-stroke:2.5px var(--mint)}
+.steps{margin-top:44px;display:flex;flex-direction:column;gap:0;border-top:2px solid rgba(242,227,206,.14)}
+.step{display:grid;grid-template-columns:64px 1fr;gap:20px;padding:22px 0;border-bottom:2px solid rgba(242,227,206,.14)}
+.step .no{font-family:'Rubik Mono One',monospace;color:var(--clay);font-size:15px}
+.step h4{font-weight:900;text-transform:uppercase;letter-spacing:.04em;font-size:17px}
+.step p{margin-top:6px;font-size:14px;line-height:1.55;color:#C9B392}
+.werk-canvas-wrap{position:relative;min-height:60vh;
+  background:
+    radial-gradient(100% 80% at 50% 100%, rgba(127,216,190,.14), transparent 60%),
+    radial-gradient(80% 60% at 80% 0%, rgba(224,120,86,.12), transparent 55%);
+}
+
+/* ---------- join ---------- */
+.join{background:var(--clay);color:var(--umber-3)}
+.join .label{color:var(--umber-3)}
+.join h2 span{color:var(--sand)}
+.join .lede{max-width:52ch;margin-top:30px;font-size:clamp(15px,1.5vw,19px);line-height:1.6;color:#4A2418}
+.roles{margin-top:56px;border-top:3px solid var(--umber-3)}
+.role{
+  display:grid;grid-template-columns:1fr auto;align-items:center;gap:18px;
+  padding:26px 10px;border-bottom:3px solid var(--umber-3);
+  text-decoration:none;color:inherit;transition:background .2s,padding-left .2s;
+}
+.role:hover{background:rgba(242,227,206,.28);padding-left:22px}
+.role h4{font-weight:900;text-transform:uppercase;font-size:clamp(19px,2.6vw,30px);letter-spacing:-.01em}
+.role .meta{font-family:'Rubik Mono One',monospace;font-size:10px;letter-spacing:.18em;margin-top:6px;color:#5A2C1C}
+.role .arrow{font-weight:900;font-size:26px}
+.cta{
+  display:inline-block;margin-top:52px;
+  font-weight:900;text-transform:uppercase;letter-spacing:.06em;font-size:16px;
+  color:var(--sand);background:var(--umber-3);text-decoration:none;
+  padding:20px 34px;box-shadow:6px 6px 0 rgba(29,20,16,.35);
+  transition:transform .15s,box-shadow .15s;
+}
+.cta:hover{transform:translate(-2px,-2px);box-shadow:9px 9px 0 rgba(29,20,16,.35)}
+
+/* ---------- footer ---------- */
+footer{background:var(--umber-3);color:var(--sand);padding:60px 5vw 40px}
+.foot-grid{display:flex;flex-wrap:wrap;gap:28px;justify-content:space-between;align-items:flex-end}
+footer .fm{font-weight:900;font-size:clamp(24px,3.4vw,40px);text-transform:uppercase;letter-spacing:-.01em}
+footer .fm b{color:var(--clay)}
+footer nav{display:flex;gap:26px;flex-wrap:wrap}
+footer a{color:var(--sand);text-decoration:none;font-size:13px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;border-bottom:2px solid transparent;transition:border-color .2s,color .2s}
+footer a:hover{border-color:var(--mint);color:var(--mint)}
+footer .fine{margin-top:34px;font-family:'Rubik Mono One',monospace;font-size:9px;letter-spacing:.18em;color:#7A6650;display:flex;gap:20px;flex-wrap:wrap}
+</style>
+</head>
+<body>
+
+<a class="back" href="/">←&nbsp;25</a>
+<div class="wordmark">VOXEL<b>WERK</b></div>
+
+<!-- ============ HERO ============ -->
+<section class="hero" id="top">
+  <div class="hero-stage">
+    <canvas class="diorama" id="hero-canvas" aria-label="Floating voxel island assembling from flying cubes"></canvas>
+    <div class="hud mono" id="hud">BOOTING WORLD…</div>
+    <div class="hero-copy" id="hero-copy">
+      <div class="eyebrow">INDEPENDENT GAME STUDIO — HAMBURG / REMOTE</div>
+      <h1>VOXEL<br><span class="mint">WERK</span></h1>
+      <p>We build small worlds with big hearts. Five people, one island of desks, and a stubborn belief that cozy is a genre — not a compromise. Scroll to walk around the island.</p>
+    </div>
+    <div class="scroll-cue"><span class="cube"></span> SCROLL TO ORBIT</div>
+  </div>
+</section>
+
+<!-- ============ MARQUEE ============ -->
+<div class="marquee" aria-hidden="true">
+  <div class="track">
+    <span>Cube by cube</span><span>Cozy is a genre</span><span>Handmade worlds</span><span>No crunch, ever</span><span>Cube by cube</span><span>Cozy is a genre</span><span>Handmade worlds</span><span>No crunch, ever</span>
+  </div>
+</div>
+
+<!-- ============ 01 MANIFESTO ============ -->
+<section class="block manifesto" id="studio">
+  <div class="label mono">01 — THE STUDIO</div>
+  <h2>Every world starts<br>as <em>one cube.</em></h2>
+  <p class="lede">VOXELWERK was founded in a Hamburg attic by two level designers who kept prototyping "one last cozy idea" after work. We ship games the way we build dioramas: block out the feeling first, then place every cube on purpose. Small scope, deep polish, zero filler quests.</p>
+  <div class="stats">
+    <div class="stat"><div class="n">02</div><div class="d">Games shipped</div></div>
+    <div class="stat"><div class="n">1.4M</div><div class="d">Islands planted by players</div></div>
+    <div class="stat"><div class="n">05</div><div class="d">Humans, one studio dog</div></div>
+    <div class="stat"><div class="n">00</div><div class="d">Crunch hours logged</div></div>
+  </div>
+</section>
+
+<!-- ============ 02 GAMES ============ -->
+<section class="block games" id="games">
+  <div class="label mono">02 — THE GAMES</div>
+  <h2>Two worlds live.<br><span class="stroke">A third is loading.</span></h2>
+  <div class="game-grid">
+    <article class="game g1">
+      <div class="tag mono">OUT NOW</div>
+      <h3>Emberwick</h3>
+      <div class="genre mono">COZY FORGE-KEEPING · PC / SWITCH</div>
+      <p>You inherit the last warm forge in a town that forgot how to make things. Reignite it, one commission at a time — hammer voxel blades for nervous knights, kettles for grandmothers, and courage for yourself. 94% positive, and the anvil sound is famous now.</p>
+      <div class="art-stage"><div class="px flame" role="img" aria-label="Pixel-art forge flame over an anvil"></div></div>
+    </article>
+    <article class="game g2">
+      <div class="tag mono">2027 — WISHLIST</div>
+      <h3>Mossdeep</h3>
+      <div class="genre mono">UNDERWATER PILGRIMAGE · PC</div>
+      <p>A slow dive through a drowned valley where every ruin was somebody's home. Guide a lantern-fish through kelp cathedrals, restore the reef cube by cube, and learn why the water rose. No fail state. No timer. Just depth.</p>
+      <div class="art-stage"><div class="px fish" role="img" aria-label="Pixel-art lantern fish with bubbles"></div></div>
+    </article>
+  </div>
+</section>
+
+<!-- ============ 03 WERKSHOP / DIORAMA 2 ============ -->
+<section class="werkshop" id="werkshop">
+  <div class="werk-grid">
+    <div class="werk-copy">
+      <div class="label mono">03 — THE WERKSHOP</div>
+      <h2>How a world<br><span class="stroke">gets werked.</span></h2>
+      <div class="steps">
+        <div class="step"><div class="no">S1</div><div><h4>Blockout the feeling</h4><p>Grey cubes, no art. If the island isn't charming as raw geometry, no texture will save it.</p></div></div>
+        <div class="step"><div class="no">S2</div><div><h4>Swap the palette</h4><p>Same island, new mood. The dusk build you see here is Emberwick's terrain wearing Mossdeep's colors.</p></div></div>
+        <div class="step"><div class="no">S3</div><div><h4>Play it for a week</h4><p>Every cube earns its place or gets deleted. Our repo history is mostly removals.</p></div></div>
+      </div>
+    </div>
+    <div class="werk-canvas-wrap">
+      <canvas class="diorama" id="werk-canvas" aria-label="Palette-swapped dusk version of the voxel island"></canvas>
+    </div>
+  </div>
+</section>
+
+<!-- ============ 04 JOIN ============ -->
+<section class="block join" id="join">
+  <div class="label mono">04 — JOIN THE WERK</div>
+  <h2>Bring us<br><span>your cubes.</span></h2>
+  <p class="lede">We hire slowly and keep people forever. Four-day weeks, shipped-game bonuses, and a rule that nobody touches the build after 18:00. If you make small things with unreasonable care, we should talk.</p>
+  <div class="roles">
+    <a class="role" href="mailto:hello@voxelwerk.studio?subject=Gameplay%20Programmer"><div><h4>Gameplay Programmer</h4><div class="meta mono">FULL-TIME · HAMBURG OR REMOTE (CET±2)</div></div><div class="arrow">→</div></a>
+    <a class="role" href="mailto:hello@voxelwerk.studio?subject=Voxel%20Artist"><div><h4>Voxel Artist</h4><div class="meta mono">FULL-TIME · PORTFOLIO OVER CV</div></div><div class="arrow">→</div></a>
+    <a class="role" href="mailto:hello@voxelwerk.studio?subject=Community"><div><h4>Community Alchemist</h4><div class="meta mono">PART-TIME · TERMINALLY ONLINE PREFERRED</div></div><div class="arrow">→</div></a>
+  </div>
+  <a class="cta" href="mailto:hello@voxelwerk.studio">hello@voxelwerk.studio →</a>
+</section>
+
+<!-- ============ FOOTER ============ -->
+<footer>
+  <div class="foot-grid">
+    <div class="fm">VOXEL<b>WERK</b><br>EST. 2019</div>
+    <nav>
+      <a href="#studio">Studio</a>
+      <a href="#games">Games</a>
+      <a href="#join">Careers</a>
+      <a href="/26-voxelwerk/guide/">how this was built →</a>
+    </nav>
+  </div>
+  <div class="fine mono"><span>© 2026 VOXELWERK GMBH</span><span>HAMBURG, DE</span><span>RENDERED CUBE BY CUBE — NO IMAGES WERE USED ON THIS PAGE</span></div>
+</footer>
+
+<script>
+(function(){
+'use strict';
+if(!window.THREE){ document.documentElement.classList.add('no3d'); return; }
+
+var REDUCED = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+var MOBILE  = window.innerWidth < 768;
+var TOUCH   = window.matchMedia('(pointer: coarse)').matches;
+var DPR     = Math.min(window.devicePixelRatio || 1, MOBILE ? 1.75 : 2);
+
+/* ---------- palettes ---------- */
+function C(h){ return new THREE.Color(h); }
+var DAY = {
+  grass:[C(0x7FD8BE), C(0x8FE2C9), C(0x6CC9AE)], grassAlt:C(0xF2E3CE),
+  soil:C(0xC05A3C), rock:[C(0x3D2C20), C(0x4A3628), C(0x2A1E17)],
+  trunk:C(0x5A3A24), leaf:[C(0x2F8F74), C(0x3FA98A), C(0x4FB596)],
+  wall:C(0xF2E3CE), roof:C(0xE07856), roofAlt:C(0xC05A3C),
+  door:C(0x2A1E17), win:C(0x7FD8BE), chim:C(0xE4CFAF), shrub:C(0x3FA98A), stone:C(0x8A745C)
+};
+var DUSK = {
+  grass:[C(0xF2E3CE), C(0xE4CFAF), C(0xD8BC94)], grassAlt:C(0xE07856),
+  soil:C(0x9C4530), rock:[C(0x2A1E17), C(0x201711), C(0x3D2C20)],
+  trunk:C(0x3D2C20), leaf:[C(0xE07856), C(0xC05A3C), C(0xEE8E6E)],
+  wall:C(0x4A3628), roof:C(0x7FD8BE), roofAlt:C(0x3FA98A),
+  door:C(0xF2E3CE), win:C(0xE07856), chim:C(0x2A1E17), shrub:C(0xC05A3C), stone:C(0x5A4a38)
+};
+
+/* ---------- deterministic rng ---------- */
+function rng(seed){
+  var s = seed % 2147483647; if(s <= 0) s += 2147483646;
+  return function(){ s = s * 16807 % 2147483647; return (s - 1) / 2147483646; };
+}
+
+/* ---------- voxel generation ---------- */
+function genIsland(cfg){
+  var v = [], rnd = rng(cfg.seed), p = cfg.p, R = cfg.radius;
+  function put(x,y,z,c){ v.push({x:x,y:y,z:z,c:c}); }
+  var tops = {}; // columns that have grass, for prop placement
+  for(var x=-R; x<=R; x++){
+    for(var z=-R; z<=R; z++){
+      var d = Math.sqrt(x*x+z*z)/R;
+      var edge = d + (rnd()-0.5)*0.14;
+      if(edge > 1) continue;
+      var depth = Math.max(1, Math.round(Math.pow(1-edge,0.9)*cfg.depth + rnd()*1.6));
+      for(var y=0; y>-depth; y--){
+        var c;
+        if(y===0)      c = rnd()<0.08 ? p.grassAlt : p.grass[(rnd()*p.grass.length)|0];
+        else if(y>=-1) c = p.soil;
+        else           c = p.rock[(rnd()*p.rock.length)|0];
+        put(x,y,z,c);
+      }
+      tops[x+','+z] = true;
+    }
+  }
+  function tree(x0,z0,h){
+    for(var y=1;y<=h;y++) put(x0,y,z0,p.trunk);
+    for(var dx=-2;dx<=2;dx++)for(var dz=-2;dz<=2;dz++)for(var dy=-1;dy<=2;dy++){
+      if(dx*dx+dz*dz+dy*dy*1.6 <= 5.3 && rnd()>0.08)
+        put(x0+dx,h+dy,z0+dz,p.leaf[(rnd()*p.leaf.length)|0]);
+    }
+  }
+  function house(x0,z0){
+    var x,z,y;
+    for(y=1;y<=3;y++)for(x=x0;x<=x0+3;x++)for(z=z0;z<=z0+2;z++){
+      if(x!==x0 && x!==x0+3 && z!==z0 && z!==z0+2) continue;   // hollow
+      var c = p.wall;
+      if(z===z0 && x===x0+1 && y<=2) c = p.door;               // front door
+      else if(z===z0 && x===x0+3 && y===2) c = p.win;          // front window
+      else if(x===x0 && z===z0+1 && y===2) c = p.win;          // side window
+      put(x,y,z,c);
+    }
+    for(x=x0-1;x<=x0+4;x++)for(z=z0-1;z<=z0+3;z++) put(x,4,z, ((x+z)%2===0)?p.roof:p.roofAlt);
+    for(x=x0;x<=x0+3;x++)for(z=z0;z<=z0+2;z++)     put(x,5,z, ((x+z)%2===0)?p.roof:p.roofAlt);
+    put(x0+1,6,z0+1,p.roof); put(x0+2,6,z0+1,p.roofAlt);
+    put(x0+3,6,z0+2,p.chim); put(x0+3,7,z0+2,p.chim);
+  }
+  if(cfg.house) house(cfg.house[0], cfg.house[1]);
+  if(cfg.trees) cfg.trees.forEach(function(t){ tree(t[0],t[1],t[2]); });
+  // shrubs + stones on free grass
+  var props = cfg.props || 0;
+  var guard = 0;
+  while(props > 0 && guard++ < 400){
+    var px = Math.round((rnd()*2-1)*(R-2)), pz = Math.round((rnd()*2-1)*(R-2));
+    if(!tops[px+','+pz]) continue;
+    put(px,1,pz, rnd()<0.5 ? p.shrub : p.stone);
+    props--;
+  }
+  // floating satellite rocks under the island
+  for(var k=0;k<3;k++){
+    var bx = Math.round(Math.cos(k*2.2)*R*0.75), bz = Math.round(Math.sin(k*2.2)*R*0.75);
+    var by = -cfg.depth - 2 - k*2;
+    for(var m=0;m<3+((rnd()*3)|0);m++)
+      put(bx+((rnd()*3)|0)-1, by+((rnd()*2)|0), bz+((rnd()*3)|0)-1, p.rock[(rnd()*p.rock.length)|0]);
+  }
+  return v;
+}
+
+/* ---------- fake soft shadow ---------- */
+function shadowTexture(){
+  var c = document.createElement('canvas'); c.width = c.height = 128;
+  var g = c.getContext('2d');
+  var gr = g.createRadialGradient(64,64,6,64,64,64);
+  gr.addColorStop(0,'rgba(29,20,16,0.40)');
+  gr.addColorStop(0.55,'rgba(29,20,16,0.18)');
+  gr.addColorStop(1,'rgba(29,20,16,0)');
+  g.fillStyle = gr; g.fillRect(0,0,128,128);
+  var t = new THREE.CanvasTexture(c);
+  return t;
+}
+
+/* ---------- easing ---------- */
+function easeOutCubic(t){ return 1 - Math.pow(1-t,3); }
+function easeOutBack(t){ var c1 = 0.9, c3 = c1 + 1; return 1 + c3*Math.pow(t-1,3) + c1*Math.pow(t-1,2); }
+
+/* ---------- diorama ---------- */
+function Diorama(canvas, cfg){
+  this.canvas = canvas;
+  this.cfg = cfg;
+  this.active = false;
+  this.raf = 0;
+  this.assembling = !REDUCED;
+  this.assembleT0 = -1;           // set when assembly actually starts
+  this.doneCount = 0;
+  this.elevCur = cfg.elev;
+  this.angle = cfg.angle0; this.targetAngle = cfg.angle0;
+  this.tiltX = 0; this.tiltZ = 0; this.tTiltX = 0; this.tTiltZ = 0;
+  this.frame = 0;
+
+  var renderer = new THREE.WebGLRenderer({ canvas: canvas, antialias: true, alpha: true, powerPreference: 'high-performance' });
+  renderer.setPixelRatio(DPR);
+  renderer.outputEncoding = THREE.sRGBEncoding;
+  this.renderer = renderer;
+
+  var scene = new THREE.Scene();
+  this.scene = scene;
+  var camera = new THREE.PerspectiveCamera(cfg.fov || 36, 1, 0.1, 300);
+  this.camera = camera;
+
+  var hemi = new THREE.HemisphereLight(cfg.skyLight, cfg.groundLight, 0.8);
+  scene.add(hemi);
+  var dir = new THREE.DirectionalLight(cfg.sunLight, 0.65);
+  dir.position.set(10, 18, 8);
+  scene.add(dir);
+  scene.add(new THREE.AmbientLight(0xffffff, 0.06));
+
+  var group = new THREE.Group();
+  scene.add(group);
+  this.group = group;
+
+  // ---- voxels ----
+  var vox = genIsland(cfg.gen);
+  var n = vox.length;
+  this.n = n;
+  var geo = new THREE.BoxGeometry(0.96, 0.96, 0.96);
+  var mat = new THREE.MeshLambertMaterial({ color: 0xffffff });
+  var mesh = new THREE.InstancedMesh(geo, mat, n);
+  mesh.instanceMatrix.setUsage(THREE.DynamicDrawUsage);
+  group.add(mesh);
+  this.mesh = mesh;
+
+  var rnd = rng(cfg.gen.seed * 7 + 13);
+  var tmpC = new THREE.Color();
+  var i;
+  for(i=0;i<n;i++){
+    tmpC.copy(vox[i].c);
+    var j = 0.93 + rnd()*0.12;                 // per-cube tonal jitter, applied once
+    tmpC.r = Math.min(1, tmpC.r*j); tmpC.g = Math.min(1, tmpC.g*j); tmpC.b = Math.min(1, tmpC.b*j);
+    mesh.setColorAt(i, tmpC);
+  }
+  mesh.instanceColor.needsUpdate = true;
+
+  // ---- assembly data (flat typed arrays) ----
+  var T = new Float32Array(n*3), S = new Float32Array(n*3);
+  var DELAY = new Float32Array(n), DUR = new Float32Array(n), SPIN = new Float32Array(n*3);
+  var minY = 0;
+  for(i=0;i<n;i++) if(vox[i].y < minY) minY = vox[i].y;
+  var maxDelay = 0;
+  for(i=0;i<n;i++){
+    var vx = vox[i];
+    T[i*3]=vx.x; T[i*3+1]=vx.y; T[i*3+2]=vx.z;
+    var dirL = Math.sqrt(vx.x*vx.x + (vx.y+6)*(vx.y+6) + vx.z*vx.z) || 1;
+    var push = cfg.gen.radius*2.4 + rnd()*cfg.gen.radius*2.2;
+    S[i*3]   = vx.x/dirL*push + (rnd()-0.5)*10;
+    S[i*3+1] = (vx.y+6)/dirL*push + 6 + rnd()*8;
+    S[i*3+2] = vx.z/dirL*push + (rnd()-0.5)*10;
+    DELAY[i] = (vx.y - minY)*85 + Math.sqrt(vx.x*vx.x+vx.z*vx.z)*16 + rnd()*260;
+    DUR[i]   = 900 + rnd()*450;
+    SPIN[i*3]=(rnd()-0.5)*5; SPIN[i*3+1]=(rnd()-0.5)*5; SPIN[i*3+2]=(rnd()-0.5)*5;
+    if(DELAY[i] > maxDelay) maxDelay = DELAY[i];
+  }
+  this.T=T; this.S=S; this.DELAY=DELAY; this.DUR=DUR; this.SPIN=SPIN;
+
+  var dummy = new THREE.Object3D();
+  this.dummy = dummy;
+
+  if(REDUCED){
+    this.setFinal();
+  } else {
+    for(i=0;i<n;i++){
+      dummy.position.set(S[i*3],S[i*3+1],S[i*3+2]);
+      dummy.rotation.set(SPIN[i*3],SPIN[i*3+1],SPIN[i*3+2]);
+      dummy.scale.setScalar(0.001);
+      dummy.updateMatrix();
+      mesh.setMatrixAt(i, dummy.matrix);
+    }
+    mesh.instanceMatrix.needsUpdate = true;
+  }
+
+  // ---- fake shadow ----
+  var shGeo = new THREE.PlaneGeometry(cfg.gen.radius*2.7, cfg.gen.radius*2.7);
+  var shMat = new THREE.MeshBasicMaterial({ map: shadowTexture(), transparent: true, depthWrite: false });
+  var shadow = new THREE.Mesh(shGeo, shMat);
+  shadow.rotation.x = -Math.PI/2;
+  shadow.position.y = -cfg.gen.depth - 7;
+  shadow.renderOrder = -1;
+  scene.add(shadow);
+  this.shadow = shadow;
+  this.shadowMat = shMat;
+  if(!REDUCED) shMat.opacity = 0;
+
+  this.resize();
+}
+
+Diorama.prototype.setFinal = function(){
+  var mesh = this.mesh, dummy = this.dummy, T = this.T, n = this.n;
+  for(var i=0;i<n;i++){
+    dummy.position.set(T[i*3],T[i*3+1],T[i*3+2]);
+    dummy.rotation.set(0,0,0); dummy.scale.setScalar(1);
+    dummy.updateMatrix();
+    mesh.setMatrixAt(i, dummy.matrix);
+  }
+  mesh.instanceMatrix.needsUpdate = true;
+  this.assembling = false;
+  this.doneCount = this.n;
+  if(this.shadowMat) this.shadowMat.opacity = 1;
+  if(this.cfg.onProgress) this.cfg.onProgress(this.n, this.n, true);
+};
+
+Diorama.prototype.beginAssembly = function(now){
+  if(this.assembleT0 < 0) this.assembleT0 = now + (this.cfg.assembleDelay || 0);
+};
+
+Diorama.prototype.stepAssembly = function(now){
+  if(!this.assembling) return;
+  if(this.assembleT0 < 0 || now < this.assembleT0) return;
+  var t = now - this.assembleT0;
+  var mesh=this.mesh, dummy=this.dummy, T=this.T, S=this.S, DELAY=this.DELAY, DUR=this.DUR, SPIN=this.SPIN;
+  var n=this.n, done=0;
+  for(var i=0;i<n;i++){
+    var e = (t - DELAY[i]) / DUR[i];
+    if(e <= 0){ continue; }
+    if(e >= 1){
+      dummy.position.set(T[i*3],T[i*3+1],T[i*3+2]);
+      dummy.rotation.set(0,0,0); dummy.scale.setScalar(1);
+      done++;
+    } else {
+      var p = easeOutBack(e), q = easeOutCubic(e), r = (1-e)*(1-e);
+      dummy.position.set(
+        S[i*3]   + (T[i*3]  -S[i*3]  )*p,
+        S[i*3+1] + (T[i*3+1]-S[i*3+1])*p,
+        S[i*3+2] + (T[i*3+2]-S[i*3+2])*p
+      );
+      dummy.rotation.set(SPIN[i*3]*r, SPIN[i*3+1]*r, SPIN[i*3+2]*r);
+      dummy.scale.setScalar(0.25 + 0.75*q);
+    }
+    dummy.updateMatrix();
+    mesh.setMatrixAt(i, dummy.matrix);
+  }
+  mesh.instanceMatrix.needsUpdate = true;
+  this.doneCount = done;
+  this.shadowMat.opacity = Math.min(1, done/n*1.4);
+  if(this.cfg.onProgress && (this.frame & 3) === 0) this.cfg.onProgress(done, n, false);
+  if(done >= n){
+    this.assembling = false;
+    if(this.cfg.onProgress) this.cfg.onProgress(n, n, true);
+  }
+};
+
+Diorama.prototype.resize = function(){
+  var w = this.canvas.clientWidth || 1, h = this.canvas.clientHeight || 1;
+  this.renderer.setSize(w, h, false);
+  this.camera.aspect = w/h;
+  this.camera.updateProjectionMatrix();
+};
+
+Diorama.prototype.update = function(now, dt){
+  var cfg = this.cfg;
+  this.frame++;
+  this.beginAssembly(now);
+  this.stepAssembly(now);
+
+  // group motion: cheap transforms only
+  if(REDUCED){
+    this.group.rotation.y += 0.03 * dt;
+  } else {
+    this.angle += (this.targetAngle - this.angle) * 0.065;
+    this.angle += cfg.drift * dt;
+    this.targetAngle += cfg.drift * dt;
+    this.tiltX += (this.tTiltX - this.tiltX) * 0.06;
+    this.tiltZ += (this.tTiltZ - this.tiltZ) * 0.06;
+    this.group.rotation.x = this.tiltX;
+    this.group.rotation.z = this.tiltZ;
+    this.group.position.y = Math.sin(now*0.0006) * 0.35;
+    this.shadow.scale.setScalar(1 - Math.sin(now*0.0006)*0.03);
+  }
+  var a = REDUCED ? cfg.angle0 : this.angle;
+  this.elevCur += (cfg.elev - this.elevCur) * 0.08;   // camera height eases, never snaps
+  var d = cfg.dist, elev = this.elevCur;
+  this.camera.position.set(Math.sin(a)*d, elev, Math.cos(a)*d);
+  this.camera.lookAt(0, cfg.lookY, 0);
+  this.renderer.render(this.scene, this.camera);
+};
+
+Diorama.prototype.start = function(){
+  if(this.active) return;
+  this.active = true;
+  var self = this, last = performance.now();
+  function loop(now){
+    if(!self.active) return;
+    self.raf = requestAnimationFrame(loop);
+    var dt = Math.min(0.05, (now - last)/1000); last = now;
+    self.update(now, dt);
+  }
+  this.raf = requestAnimationFrame(loop);
+};
+Diorama.prototype.stop = function(){
+  this.active = false;
+  cancelAnimationFrame(this.raf);
+};
+
+/* ---------- build the two dioramas ---------- */
+var hud = document.getElementById('hud');
+var heroCanvas = document.getElementById('hero-canvas');
+var werkCanvas = document.getElementById('werk-canvas');
+var heroCopy = document.getElementById('hero-copy');
+var heroSection = document.querySelector('.hero');
+
+var hero = new Diorama(heroCanvas, {
+  gen: {
+    seed: 20260618,
+    radius: MOBILE ? 8 : 12,
+    depth:  MOBILE ? 6 : 8.5,
+    p: DAY,
+    house: MOBILE ? [1,0] : [2,1],
+    trees: MOBILE ? [[-4,-2,4],[3,-4,3]] : [[-6,-3,4],[5,-6,3],[-3,6,3]],
+    props: MOBILE ? 8 : 14
+  },
+  angle0: 0.6, dist: MOBILE ? 40 : 36, elev: MOBILE ? 17 : 14, lookY: -2.5,
+  fov: MOBILE ? 44 : 36, drift: 0.05, assembleDelay: 350,
+  skyLight: 0xFFF4E2, groundLight: 0xB06A4C, sunLight: 0xFFE9CC,
+  onProgress: function(done, total, finished){
+    if(finished){ hud.textContent = total + ' CUBES · 1 INSTANCEDMESH · 1 DRAW CALL'; hud.classList.add('done'); }
+    else hud.textContent = 'ASSEMBLING ' + done + ' / ' + total + ' CUBES';
+  }
+});
+
+var werk = new Diorama(werkCanvas, {
+  gen: {
+    seed: 777123,
+    radius: MOBILE ? 7 : 9,
+    depth:  MOBILE ? 5 : 7,
+    p: DUSK,
+    house: [0,0],
+    trees: [[-4,-3,3],[4,3,3]],
+    props: 8
+  },
+  angle0: 2.4, dist: MOBILE ? 28 : 31, elev: 12, lookY: -2,
+  fov: MOBILE ? 42 : 36, drift: 0.12, assembleDelay: 150,
+  skyLight: 0x9FD8C8, groundLight: 0x5A3020, sunLight: 0xFFC9A0
+});
+werk.assembleT0 = -2;              // don't start until scrolled into view
+werk.beginAssembly = function(now){ if(this.assembleT0 === -1) this.assembleT0 = now + 150; };
+
+/* ---------- scroll orbit (hero) ---------- */
+var scrollTick = false;
+function onScroll(){
+  if(scrollTick) return;
+  scrollTick = true;
+  requestAnimationFrame(function(){
+    scrollTick = false;
+    var range = heroSection.offsetHeight - window.innerHeight;
+    var p = range > 0 ? Math.min(1, Math.max(0, window.scrollY / range)) : 0;
+    hero.targetAngle = 0.6 + p * Math.PI * 1.6;
+    hero.cfg.elev = (MOBILE ? 17 : 14) - p * 5;
+    if(!REDUCED){
+      var op = Math.max(0, 1 - p*2.4);
+      heroCopy.style.opacity = op;
+      heroCopy.style.transform = 'translateY(' + (-p*90) + 'px)';
+      heroCopy.style.visibility = op <= 0 ? 'hidden' : 'visible';
+    }
+  });
+}
+window.addEventListener('scroll', onScroll, { passive: true });
+
+/* ---------- cursor tilt (hero, pointer devices only) ---------- */
+if(!TOUCH && !REDUCED){
+  window.addEventListener('mousemove', function(e){
+    var mx = e.clientX / window.innerWidth * 2 - 1;
+    var my = e.clientY / window.innerHeight * 2 - 1;
+    hero.tTiltX = my * 0.055;
+    hero.tTiltZ = -mx * 0.055;
+  }, { passive: true });
+}
+
+/* ---------- lifecycle: offscreen + hidden tab ---------- */
+var vis = { hero: false, werk: false };
+function sync(){
+  var hidden = document.hidden;
+  (vis.hero && !hidden) ? hero.start() : hero.stop();
+  (vis.werk && !hidden) ? werk.start() : werk.stop();
+}
+var io = new IntersectionObserver(function(entries){
+  entries.forEach(function(en){
+    if(en.target === heroCanvas) vis.hero = en.isIntersecting;
+    if(en.target === werkCanvas){
+      vis.werk = en.isIntersecting;
+      if(en.isIntersecting && werk.assembleT0 === -2) werk.assembleT0 = -1; // arm assembly on first sight
+    }
+  });
+  sync();
+}, { threshold: 0.02 });
+io.observe(heroCanvas);
+io.observe(werkCanvas);
+document.addEventListener('visibilitychange', sync);
+
+/* ---------- resize (debounced, no reallocation) ---------- */
+var rz;
+window.addEventListener('resize', function(){
+  clearTimeout(rz);
+  rz = setTimeout(function(){ hero.resize(); werk.resize(); onScroll(); }, 150);
+});
+
+onScroll();
+sync();
+})();
+</script>
+</body>
+</html>

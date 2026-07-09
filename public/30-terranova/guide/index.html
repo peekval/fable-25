@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>TERRA NOVA — How It Was Built</title>
+<meta name="description" content="Build notes and reproduction prompt for the TERRA NOVA procedural planet showcase.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Krona+One&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+:root{
+  --void:#05060B; --rust:#B0552F; --green:#4CAF6E; --cyan:#7FD4E8; --bone:#EDEBE4;
+  --bone-dim:rgba(237,235,228,.6); --bone-faint:rgba(237,235,228,.3);
+  --line:rgba(237,235,228,.14); --panel:rgba(10,12,20,.7);
+}
+*{margin:0;padding:0;box-sizing:border-box}
+body{
+  background:var(--void);color:var(--bone);
+  font-family:'Inter',sans-serif;line-height:1.7;font-size:16px;
+  min-height:100vh;overflow-x:hidden;-webkit-font-smoothing:antialiased;
+  background-image:
+    radial-gradient(1px 1px at 12% 22%, rgba(237,235,228,.5) 50%, transparent 50%),
+    radial-gradient(1px 1px at 78% 12%, rgba(237,235,228,.4) 50%, transparent 50%),
+    radial-gradient(1.5px 1.5px at 62% 68%, rgba(127,212,232,.45) 50%, transparent 50%),
+    radial-gradient(1px 1px at 32% 84%, rgba(237,235,228,.35) 50%, transparent 50%),
+    radial-gradient(1px 1px at 90% 55%, rgba(237,235,228,.4) 50%, transparent 50%),
+    radial-gradient(1.5px 1.5px at 45% 40%, rgba(237,235,228,.3) 50%, transparent 50%),
+    radial-gradient(ellipse 90% 60% at 50% 115%, rgba(76,175,110,.10), transparent 60%),
+    radial-gradient(ellipse 80% 50% at 50% -20%, rgba(176,85,47,.12), transparent 60%);
+}
+::selection{background:var(--rust);color:var(--bone)}
+.back{
+  position:fixed;top:20px;left:22px;z-index:10;
+  font-family:'Krona One',sans-serif;font-size:.72rem;letter-spacing:.08em;
+  color:var(--bone);text-decoration:none;border:1px solid var(--line);
+  padding:10px 16px;border-radius:2px;background:var(--panel);
+  transition:border-color .25s,color .25s;
+}
+.back:hover{border-color:var(--cyan);color:var(--cyan)}
+main{max-width:820px;margin:0 auto;padding:140px 24px 100px}
+.kicker{font-size:.66rem;font-weight:600;letter-spacing:.4em;text-transform:uppercase;color:var(--cyan);margin-bottom:16px}
+h1{font-family:'Krona One',sans-serif;font-weight:400;font-size:clamp(1.6rem,5vw,2.8rem);letter-spacing:.05em;line-height:1.15;margin-bottom:12px}
+h1 span{color:transparent;-webkit-text-stroke:1px var(--bone)}
+.sub{color:var(--bone-dim);margin-bottom:56px;font-size:.95rem}
+h2{font-family:'Krona One',sans-serif;font-weight:400;font-size:.95rem;letter-spacing:.14em;margin:52px 0 18px;display:flex;align-items:center;gap:14px}
+h2::before{content:"";width:26px;height:1px;background:var(--rust)}
+p{color:var(--bone-dim);margin-bottom:16px}
+p strong{color:var(--bone);font-weight:600}
+.promptbox{
+  border:1px solid var(--line);border-radius:4px;background:var(--panel);
+  padding:28px 26px 24px;position:relative;margin-top:8px;
+}
+.promptbox .tag{
+  position:absolute;top:-10px;left:20px;background:var(--void);
+  font-size:.6rem;font-weight:600;letter-spacing:.28em;text-transform:uppercase;
+  color:var(--green);padding:0 10px;
+}
+.promptbox p{color:var(--bone);font-size:.92rem;line-height:1.75;margin:0;white-space:pre-line}
+.copyrow{display:flex;align-items:center;gap:14px;margin-top:20px}
+button.copy{
+  font-family:'Krona One',sans-serif;font-size:.7rem;letter-spacing:.14em;cursor:pointer;
+  color:var(--void);background:var(--cyan);border:none;border-radius:3px;
+  padding:13px 22px;transition:background .25s,transform .15s;
+}
+button.copy:hover{background:var(--green)}
+button.copy:active{transform:translateY(1px)}
+#copyMsg{font-size:.78rem;color:var(--green);letter-spacing:.06em}
+.links{display:flex;gap:14px;flex-wrap:wrap;margin-top:64px}
+.links a{
+  font-family:'Krona One',sans-serif;font-size:.72rem;letter-spacing:.1em;
+  color:var(--bone);text-decoration:none;border:1px solid var(--line);border-radius:3px;
+  padding:14px 22px;transition:border-color .25s,color .25s;
+}
+.links a:hover{border-color:var(--green);color:var(--green)}
+footer{max-width:820px;margin:0 auto;padding:0 24px 60px;color:var(--bone-faint);font-size:.72rem;letter-spacing:.06em}
+</style>
+</head>
+<body>
+<a class="back" href="/">←&nbsp;25</a>
+<main>
+  <p class="kicker">Build Notes · Site 30</p>
+  <h1>TERRA <span>NOVA</span> — how it was built</h1>
+  <p class="sub">One icosphere, two shells, and a slider that plays four hundred years in four seconds.</p>
+
+  <h2>THE TECHNIQUE</h2>
+  <p>The planet is a single icosphere whose surface is displaced in the <strong>vertex shader</strong> by
+  multi-octave simplex noise — continents, ridgelines and detail are all math, no textures, no images.
+  A custom fragment shader colors each point by elevation, and per-vertex finite differences on the same
+  noise field give the terrain real lighting. The entire terraforming morph is driven by a handful of
+  <strong>shader uniforms</strong>: as the TERRAFORM value rises, a sea-level threshold climbs and flattens
+  the lowlands into specular ocean, land ramps lerp from rust to green, and a second shell fades in animated
+  noise as cloud cover. A slightly larger back-side sphere runs an additive <strong>fresnel shader</strong>
+  for the atmosphere rim glow, widening and shifting from dust-haze to cyan as the air thickens. Because
+  nothing is ever rebuilt — no geometry, no materials — the whole transformation costs the same as drawing
+  the planet once, and the slider, the scroll position and every data readout stay locked to a single damped
+  value.</p>
+
+  <h2>REPRODUCTION PROMPT</h2>
+  <div class="promptbox">
+    <span class="tag">Prompt</span>
+    <p id="prompt">Build a single-page dark sci-fi showcase called TERRA NOVA, a hopeful exoplanet terraforming program. Palette: void #05060B background, barren rust #B0552F, terraformed green #4CAF6E, atmosphere cyan #7FD4E8, bone #EDEBE4 text. Fonts: Krona One for display headings, Inter for UI and body. The persistent hero is a full-viewport three.js procedural planet: an icosphere displaced in the vertex shader by multi-octave simplex noise, colored in the fragment shader by elevation, with finite-difference normals for lighting. Wrap it in a slightly larger back-side sphere running an additive fresnel shader for atmosphere rim glow, plus a cloud shell whose alpha comes from animated noise. The showstopper: a TERRAFORM slider synced to scroll progress that morphs the planet purely through shader uniforms — land colors lerp rust to green, a rising sea level flattens low terrain into flat specular ocean, cloud cover thickens, and the rim glow widens and shifts from dust-haze to cyan. Data readouts (atmosphere pressure, oxygen, ocean coverage, temperature) count up in sync with the morph. Static point starfield behind. Sections: mission statement, four-phase timeline with live progress bars, biosphere telemetry grid, join-the-program application, footer. Mood: mission-control minimalism, visionary but grounded, generous letterspacing, thin hairline borders. Keep 60fps: no geometry rebuilds, device pixel ratio capped at 2, lower sphere detail on mobile, pause when hidden, and honor prefers-reduced-motion with a static planet at 50% terraform and instant slider steps.</p>
+    <div class="copyrow">
+      <button class="copy" id="copyBtn" type="button">COPY PROMPT</button>
+      <span id="copyMsg" role="status"></span>
+    </div>
+  </div>
+
+  <div class="links">
+    <a href="/30-terranova/">← Visit TERRA NOVA</a>
+    <a href="/">All 25 sites</a>
+  </div>
+</main>
+<footer>TERRA NOVA is a speculative design concept. No planets were harmed — or, yet, improved.</footer>
+<script>
+(function(){
+  var btn = document.getElementById('copyBtn');
+  var msg = document.getElementById('copyMsg');
+  var txt = document.getElementById('prompt').textContent.trim();
+  btn.addEventListener('click', function(){
+    function ok(){ msg.textContent = 'Copied — transmission secured.'; setTimeout(function(){ msg.textContent=''; }, 2600); }
+    function fail(){ msg.textContent = 'Copy failed — select the text manually.'; }
+    if(navigator.clipboard && navigator.clipboard.writeText){
+      navigator.clipboard.writeText(txt).then(ok, function(){ legacy(); });
+    } else { legacy(); }
+    function legacy(){
+      var ta = document.createElement('textarea');
+      ta.value = txt; ta.style.position = 'fixed'; ta.style.opacity = '0';
+      document.body.appendChild(ta); ta.select();
+      try{ document.execCommand('copy'); ok(); }catch(e){ fail(); }
+      document.body.removeChild(ta);
+    }
+  });
+})();
+</script>
+</body>
+</html>

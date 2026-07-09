@@ -1,0 +1,695 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>STEEP — A Tea House for Slow Hours</title>
+<meta name="description" content="STEEP is a modern tea house and ceremony studio. Six seats, three teas, one unhurried hour.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Infant:ital,wght@0,400;0,500;0,600;1,400&family=Karla:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+:root{
+  --celadon:#B7C9B1;
+  --cream:#F6F1E7;
+  --deep:#4A3728;
+  --matcha:#7A9B5E;
+  --deep12:rgba(74,55,40,.12);
+  --deep55:rgba(74,55,40,.55);
+  --deep75:rgba(74,55,40,.78);
+}
+*{margin:0;padding:0;box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{
+  background:var(--cream);
+  color:var(--deep);
+  font-family:'Karla',sans-serif;
+  font-weight:400;
+  font-size:17px;
+  line-height:1.7;
+  -webkit-font-smoothing:antialiased;
+}
+::selection{background:var(--celadon);color:var(--deep)}
+h1,h2,h3,.serif{font-family:'Cormorant Infant',serif;font-weight:500}
+a{color:inherit}
+
+/* ---------- back link ---------- */
+.back{
+  position:fixed;top:1.1rem;left:1.2rem;z-index:60;
+  text-decoration:none;font-size:.85rem;letter-spacing:.12em;
+  color:var(--deep75);padding:.45rem .85rem;border-radius:99px;
+  background:rgba(246,241,231,.7);backdrop-filter:blur(6px);
+  border:1px solid var(--deep12);transition:background .3s,color .3s;
+}
+.back:hover{background:var(--deep);color:var(--cream)}
+
+/* ---------- hero ---------- */
+.hero{
+  position:relative;height:100vh;height:100svh;min-height:560px;
+  overflow:hidden;background:var(--cream);
+}
+#fluid{position:absolute;inset:0;width:100%;height:100%;display:block}
+.hero-inner{
+  position:absolute;inset:0;pointer-events:none;
+  display:flex;flex-direction:column;align-items:center;justify-content:flex-end;
+  padding-bottom:11vh;text-align:center;
+}
+.hero-sub{
+  font-size:.95rem;letter-spacing:.42em;text-transform:uppercase;
+  color:var(--deep55);text-indent:.42em;
+  animation:heroIn 1.6s .5s cubic-bezier(.22,.61,.36,1) both;
+}
+.hero-note{
+  margin-top:1rem;font-family:'Cormorant Infant',serif;font-style:italic;
+  font-size:1.25rem;color:var(--deep75);
+  animation:heroIn 1.6s .8s cubic-bezier(.22,.61,.36,1) both;
+}
+.scroll-cue{
+  position:absolute;bottom:2rem;left:50%;transform:translateX(-50%);
+  width:1px;height:44px;background:linear-gradient(var(--deep55),transparent);
+  animation:cue 2.6s ease-in-out infinite;
+}
+@keyframes heroIn{from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:none}}
+@keyframes cue{0%,100%{transform:translateX(-50%) scaleY(1);opacity:.7}50%{transform:translateX(-50%) scaleY(.55);opacity:.25}}
+
+/* ---------- sections ---------- */
+section{padding:8.5rem 1.5rem}
+.wrap{max-width:1060px;margin:0 auto}
+.kicker{
+  font-size:.78rem;letter-spacing:.36em;text-transform:uppercase;
+  color:var(--matcha);margin-bottom:1.2rem;font-weight:600;
+}
+.h2{font-size:clamp(2.1rem,4.6vw,3.4rem);line-height:1.12;letter-spacing:.01em}
+
+/* reveal */
+.rv{opacity:0;transform:translateY(26px);transition:opacity 1s cubic-bezier(.22,.61,.36,1),transform 1s cubic-bezier(.22,.61,.36,1)}
+.rv.in{opacity:1;transform:none}
+.rv2{transition-delay:.15s}.rv3{transition-delay:.3s}
+
+/* ---------- philosophy ---------- */
+.philo{background:var(--cream)}
+.philo .wrap{display:grid;grid-template-columns:1.15fr .85fr;gap:4.5rem;align-items:start}
+.philo blockquote{
+  font-family:'Cormorant Infant',serif;font-style:italic;
+  font-size:clamp(1.7rem,3.4vw,2.6rem);line-height:1.3;color:var(--deep);
+}
+.philo blockquote span{color:var(--matcha)}
+.philo p{margin-top:1.4rem;color:var(--deep75);max-width:44ch}
+.philo .rule{width:52px;height:2px;background:var(--celadon);margin:2rem 0 0}
+
+/* ---------- teas ---------- */
+.teas{background:linear-gradient(var(--cream),#EFEADC 30%,#EFEADC 70%,var(--cream))}
+.teas-head{text-align:center;max-width:560px;margin:0 auto 4.5rem}
+.tea-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:2rem}
+.tea-card{
+  background:rgba(255,253,248,.72);border:1px solid var(--deep12);
+  border-radius:18px;padding:2.6rem 2rem 2.2rem;text-align:center;
+  transition:transform .5s cubic-bezier(.22,.61,.36,1),box-shadow .5s;
+}
+.tea-card:hover{transform:translateY(-6px);box-shadow:0 24px 48px -28px rgba(74,55,40,.35)}
+.cup{width:132px;height:auto;margin:0 auto 1.4rem;display:block;overflow:visible}
+.cup .body{fill:#FBF8F1;stroke:rgba(74,55,40,.28);stroke-width:1.5}
+.cup .saucer{fill:#F1EBDD;stroke:rgba(74,55,40,.2);stroke-width:1.2}
+.cup .rim{fill:none;stroke:rgba(74,55,40,.32);stroke-width:1.5}
+.cup .foot{fill:#F1EBDD;stroke:rgba(74,55,40,.2);stroke-width:1.2}
+.cup .glaze{fill:none;stroke:var(--celadon);stroke-width:2;opacity:.75}
+.cup .steam path{
+  fill:none;stroke:var(--deep55);stroke-width:1.8;stroke-linecap:round;
+  opacity:0;animation:wisp 4.4s ease-in-out infinite;
+}
+.cup .steam path:nth-child(2){animation-delay:1.4s;stroke:var(--celadon)}
+.cup .steam path:nth-child(3){animation-delay:2.6s}
+@keyframes wisp{
+  0%{opacity:0;transform:translateY(6px)}
+  30%{opacity:.6}
+  70%{opacity:.28}
+  100%{opacity:0;transform:translateY(-10px)}
+}
+.tea-card h3{font-size:1.75rem;margin-bottom:.2rem}
+.tea-notes{font-family:'Cormorant Infant',serif;font-style:italic;font-size:1.1rem;color:var(--deep55);margin-bottom:1rem}
+.tea-meta{
+  display:inline-flex;gap:1.1rem;font-size:.78rem;letter-spacing:.14em;
+  text-transform:uppercase;color:var(--matcha);font-weight:600;
+  border-top:1px solid var(--deep12);padding-top:1rem;
+}
+
+/* ---------- ceremony timeline ---------- */
+.ceremony .wrap{max-width:960px}
+.ceremony-head{max-width:520px;margin-bottom:5rem}
+.timeline{position:relative}
+.track{
+  position:absolute;top:9px;left:4%;right:4%;height:2px;
+  background:var(--deep12);border-radius:2px;overflow:hidden;
+}
+.track .fill{
+  width:0;height:100%;background:linear-gradient(90deg,var(--celadon),var(--matcha),var(--deep));
+  transition:width 3.4s cubic-bezier(.3,.6,.3,1);
+}
+.timeline.in .track .fill{width:100%}
+.steps{display:grid;grid-template-columns:repeat(3,1fr);gap:2rem}
+.step{position:relative;padding-top:2.6rem;text-align:center}
+.step::before{
+  content:"";position:absolute;top:2px;left:50%;transform:translateX(-50%) scale(.6);
+  width:16px;height:16px;border-radius:50%;
+  background:var(--cream);border:2px solid var(--deep12);
+  transition:background .6s,border-color .6s,transform .6s cubic-bezier(.34,1.56,.64,1);
+}
+.timeline.in .step:nth-child(1)::before{transition-delay:.5s}
+.timeline.in .step:nth-child(2)::before{transition-delay:1.7s}
+.timeline.in .step:nth-child(3)::before{transition-delay:3s}
+.timeline.in .step::before{background:var(--matcha);border-color:var(--matcha);transform:translateX(-50%) scale(1)}
+.step .time{font-family:'Cormorant Infant',serif;font-size:2.6rem;line-height:1;color:var(--deep)}
+.step h3{font-size:.82rem;letter-spacing:.16em;text-transform:uppercase;font-family:'Karla',sans-serif;font-weight:600;color:var(--matcha);margin:.6rem 0 .7rem}
+.step p{font-size:.95rem;color:var(--deep75);max-width:30ch;margin:0 auto}
+
+/* ---------- visit ---------- */
+.visit{background:var(--deep);color:var(--cream)}
+.visit .kicker{color:var(--celadon)}
+.visit .wrap{display:grid;grid-template-columns:1fr 1fr;gap:4.5rem;align-items:start}
+.visit .h2{color:var(--cream)}
+.visit-info p{color:rgba(246,241,231,.75)}
+.visit-details{margin-top:2.2rem;display:grid;gap:1.1rem;font-size:.95rem}
+.visit-details div{border-left:2px solid var(--matcha);padding-left:1rem}
+.visit-details b{display:block;font-weight:600;letter-spacing:.12em;text-transform:uppercase;font-size:.72rem;color:var(--celadon);margin-bottom:.15rem}
+form{display:grid;gap:1.1rem}
+.field{display:grid;gap:.35rem}
+.field label{font-size:.72rem;letter-spacing:.16em;text-transform:uppercase;color:var(--celadon);font-weight:600}
+.field input,.field select{
+  background:rgba(246,241,231,.06);border:1px solid rgba(246,241,231,.25);
+  border-radius:8px;padding:.75rem .9rem;color:var(--cream);
+  font-family:'Karla',sans-serif;font-size:.95rem;transition:border-color .3s;
+}
+.field input:focus,.field select:focus{outline:none;border-color:var(--celadon)}
+.field select option{color:var(--deep)}
+.row2{display:grid;grid-template-columns:1fr 1fr;gap:1.1rem}
+button.submit{
+  margin-top:.4rem;background:var(--celadon);color:var(--deep);border:none;
+  font-family:'Karla',sans-serif;font-weight:600;letter-spacing:.14em;text-transform:uppercase;
+  font-size:.8rem;padding:1rem 1.4rem;border-radius:99px;cursor:pointer;
+  transition:background .3s,transform .3s;
+}
+button.submit:hover{background:var(--matcha);color:var(--cream);transform:translateY(-2px)}
+button.submit:focus-visible{outline:2px solid var(--cream);outline-offset:3px}
+.form-thanks{
+  display:none;font-family:'Cormorant Infant',serif;font-style:italic;
+  font-size:1.5rem;color:var(--celadon);padding:2rem 0;
+}
+.booked .form-thanks{display:block}
+.booked form{display:none}
+
+/* ---------- footer ---------- */
+footer{padding:3.5rem 1.5rem 3rem;background:var(--deep);color:rgba(246,241,231,.6);border-top:1px solid rgba(246,241,231,.12)}
+.foot{max-width:1060px;margin:0 auto;display:flex;justify-content:space-between;align-items:baseline;gap:2rem;flex-wrap:wrap;font-size:.85rem}
+.foot .mark{font-family:'Cormorant Infant',serif;font-size:1.5rem;letter-spacing:.3em;color:var(--cream)}
+.foot nav{display:flex;gap:1.6rem}
+.foot a{text-decoration:none;transition:color .3s}
+.foot a:hover{color:var(--celadon)}
+
+/* ---------- responsive ---------- */
+@media (max-width:880px){
+  section{padding:6rem 1.4rem}
+  .philo .wrap,.visit .wrap{grid-template-columns:1fr;gap:3rem}
+  .tea-grid{grid-template-columns:1fr;max-width:420px;margin:0 auto}
+  .track{display:none}
+  .steps{grid-template-columns:1fr;gap:2.4rem;position:relative;padding-left:2rem}
+  .steps::before{content:"";position:absolute;left:7px;top:8px;bottom:8px;width:2px;background:var(--deep12)}
+  .step{text-align:left;padding-top:0;padding-left:1.4rem}
+  .step::before{left:-2rem;top:14px;transform:scale(.6)}
+  .timeline.in .step::before{transform:scale(1)}
+  .step p{margin:0}
+  .row2{grid-template-columns:1fr}
+}
+@media (prefers-reduced-motion:reduce){
+  html{scroll-behavior:auto}
+  .rv{opacity:1;transform:none;transition:none}
+  .cup .steam path{animation:none;opacity:.4}
+  .hero-sub,.hero-note{animation:none}
+  .scroll-cue{animation:none}
+  .track .fill{transition:none;width:100%}
+  .timeline .step::before{transition:none;background:var(--matcha);border-color:var(--matcha);transform:translateX(-50%) scale(1)}
+}
+</style>
+</head>
+<body>
+
+<a class="back" href="/">←&nbsp;25</a>
+
+<!-- ================= HERO — interactive tea diffusion ================= -->
+<header class="hero" id="hero">
+  <canvas id="fluid" aria-hidden="true"></canvas>
+  <h1 class="sr-only" style="position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0)">STEEP — a tea house for slow hours</h1>
+  <div class="hero-inner">
+    <p class="hero-sub">A tea house for slow hours</p>
+    <p class="hero-note">Move your hand through the water — watch the leaf give itself away.</p>
+  </div>
+  <div class="scroll-cue" aria-hidden="true"></div>
+</header>
+
+<!-- ================= PHILOSOPHY ================= -->
+<section class="philo" id="philosophy">
+  <div class="wrap">
+    <div class="rv">
+      <p class="kicker">Philosophy</p>
+      <blockquote>Tea is not brewed.<br>It is <span>listened to.</span></blockquote>
+      <div class="rule"></div>
+    </div>
+    <div class="rv rv2">
+      <p>Watch what happens when leaf meets water: nothing is forced. Colour finds its own way outward — a slow, certain unfurling that cannot be hurried and should not be. We built STEEP around that single observation.</p>
+      <p>Our studio holds six seats and one table of Swiss oak. There is no menu board, no queue, no music louder than the kettle. You sit, the water is brought to temperature, and for one hour the only task is to pay attention.</p>
+      <p>Every tea we pour is bought directly from four farms we visit each spring. Every cup is thrown by hand in a workshop two streets away. Everything else, we left out.</p>
+    </div>
+  </div>
+</section>
+
+<!-- ================= THREE TEAS ================= -->
+<section class="teas" id="teas">
+  <div class="wrap">
+    <div class="teas-head rv">
+      <p class="kicker">The pour</p>
+      <h2 class="h2">Three teas, chosen slowly</h2>
+      <p style="margin-top:1.2rem;color:var(--deep75)">The list changes with the harvest, never with the season's fashion. Right now, we are pouring these.</p>
+    </div>
+    <div class="tea-grid">
+
+      <article class="tea-card rv" style="--tea:#8FAE6B">
+        <svg class="cup" viewBox="0 0 120 130" aria-hidden="true">
+          <g class="steam">
+            <path d="M52 46 C48 38 56 34 52 26 C49 20 55 16 53 10"/>
+            <path d="M63 44 C59 36 67 32 63 24 C60 18 66 14 64 8"/>
+            <path d="M73 47 C70 41 76 37 73 30"/>
+          </g>
+          <ellipse class="saucer" cx="60" cy="114" rx="35" ry="7"/>
+          <path class="foot" d="M52 102 L50 109 L70 109 L68 102 Z"/>
+          <path class="body" d="M32 62 C32 88 44 103 60 103 C76 103 88 88 88 62 Z"/>
+          <path class="glaze" d="M36 78 C42 92 50 99 60 99"/>
+          <ellipse cx="60" cy="62" rx="24" ry="5.4" fill="var(--tea)"/>
+          <ellipse class="rim" cx="60" cy="62" rx="28" ry="6.6"/>
+        </svg>
+        <h3>First Flush Sencha</h3>
+        <p class="tea-notes">cut grass · snow-melt · early morning</p>
+        <p style="font-size:.95rem;color:var(--deep75)">Picked in the first week of April in Uji, steamed the same afternoon. Bright and vegetal, almost cold in the mouth even when hot.</p>
+        <div class="tea-meta"><span>70°C</span><span>1:00</span><span>3 infusions</span></div>
+      </article>
+
+      <article class="tea-card rv rv2" style="--tea:#D9B25F">
+        <svg class="cup" viewBox="0 0 120 130" aria-hidden="true">
+          <g class="steam">
+            <path d="M52 46 C48 38 56 34 52 26 C49 20 55 16 53 10"/>
+            <path d="M63 44 C59 36 67 32 63 24 C60 18 66 14 64 8"/>
+            <path d="M73 47 C70 41 76 37 73 30"/>
+          </g>
+          <ellipse class="saucer" cx="60" cy="114" rx="35" ry="7"/>
+          <path class="foot" d="M52 102 L50 109 L70 109 L68 102 Z"/>
+          <path class="body" d="M32 62 C32 88 44 103 60 103 C76 103 88 88 88 62 Z"/>
+          <path class="glaze" d="M36 78 C42 92 50 99 60 99"/>
+          <ellipse cx="60" cy="62" rx="24" ry="5.4" fill="var(--tea)"/>
+          <ellipse class="rim" cx="60" cy="62" rx="28" ry="6.6"/>
+        </svg>
+        <h3>Aged White Peony</h3>
+        <p class="tea-notes">dry hay · apricot · quiet honey</p>
+        <p style="font-size:.95rem;color:var(--deep75)">Bai Mu Dan pressed in 2019 and left alone since. Age has softened it into something round and patient — a tea that rewards the second hour.</p>
+        <div class="tea-meta"><span>85°C</span><span>2:00</span><span>5 infusions</span></div>
+      </article>
+
+      <article class="tea-card rv rv3" style="--tea:#8A5E36">
+        <svg class="cup" viewBox="0 0 120 130" aria-hidden="true">
+          <g class="steam">
+            <path d="M52 46 C48 38 56 34 52 26 C49 20 55 16 53 10"/>
+            <path d="M63 44 C59 36 67 32 63 24 C60 18 66 14 64 8"/>
+            <path d="M73 47 C70 41 76 37 73 30"/>
+          </g>
+          <ellipse class="saucer" cx="60" cy="114" rx="35" ry="7"/>
+          <path class="foot" d="M52 102 L50 109 L70 109 L68 102 Z"/>
+          <path class="body" d="M32 62 C32 88 44 103 60 103 C76 103 88 88 88 62 Z"/>
+          <path class="glaze" d="M36 78 C42 92 50 99 60 99"/>
+          <ellipse cx="60" cy="62" rx="24" ry="5.4" fill="var(--tea)"/>
+          <ellipse class="rim" cx="60" cy="62" rx="28" ry="6.6"/>
+        </svg>
+        <h3>Roasted Hōjicha</h3>
+        <p class="tea-notes">embers · cocoa husk · warm wood</p>
+        <p style="font-size:.95rem;color:var(--deep75)">Bancha stems roasted over charcoal until the green turns to amber smoke. Low in caffeine, deep in comfort — the tea we pour last, as the light goes.</p>
+        <div class="tea-meta"><span>90°C</span><span>0:30</span><span>4 infusions</span></div>
+      </article>
+
+    </div>
+  </div>
+</section>
+
+<!-- ================= CEREMONY TIMELINE ================= -->
+<section class="ceremony" id="ceremony">
+  <div class="wrap">
+    <div class="ceremony-head rv">
+      <p class="kicker">The ceremony</p>
+      <h2 class="h2">One leaf, three minutes, undivided</h2>
+      <p style="margin-top:1.2rem;color:var(--deep75)">Each seating follows the same quiet arc. The times below are not rules — they are the moments we have learned to wait for.</p>
+    </div>
+    <div class="timeline rv" id="timeline">
+      <div class="track"><div class="fill"></div></div>
+      <div class="steps">
+        <div class="step">
+          <p class="time">0:30</p>
+          <h3>The awakening</h3>
+          <p>The first water is poured off almost at once. It is not drunk — it only wakes the leaf, which begins to unfurl and remember its shape.</p>
+        </div>
+        <div class="step">
+          <p class="time">1:00</p>
+          <h3>The first pour</h3>
+          <p>Colour begins its slow descent through the glass. This cup is the brightest the leaf will ever be — we drink it without speaking.</p>
+        </div>
+        <div class="step">
+          <p class="time">2:00</p>
+          <h3>Full expression</h3>
+          <p>The leaf has given everything it held. What remains in the cup is structure, weight, and the long finish that follows you into the street.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ================= VISIT / BOOK ================= -->
+<section class="visit" id="visit">
+  <div class="wrap">
+    <div class="visit-info rv">
+      <p class="kicker">Visit</p>
+      <h2 class="h2">Six seats.<br>One unhurried hour.</h2>
+      <p style="margin-top:1.4rem">We seat twice each afternoon and once in the evening. Ceremonies last around seventy minutes and are held in near-silence — you are welcome exactly as you are.</p>
+      <div class="visit-details">
+        <div><b>Where</b>Kalkbreitestrasse 4, 8003 Zürich</div>
+        <div><b>When</b>Thursday – Sunday · 14:00, 16:30, 19:00</div>
+        <div><b>Seat</b>CHF 48 per person, all infusions included</div>
+        <div><b>Write</b>hello@steep.house</div>
+      </div>
+    </div>
+    <div class="rv rv2" id="bookbox">
+      <form id="bookform" novalidate>
+        <div class="field">
+          <label for="f-name">Name</label>
+          <input id="f-name" type="text" name="name" autocomplete="name" required>
+        </div>
+        <div class="field">
+          <label for="f-mail">Email</label>
+          <input id="f-mail" type="email" name="email" autocomplete="email" required>
+        </div>
+        <div class="row2">
+          <div class="field">
+            <label for="f-date">Preferred day</label>
+            <input id="f-date" type="date" name="date">
+          </div>
+          <div class="field">
+            <label for="f-guests">Seats</label>
+            <select id="f-guests" name="guests">
+              <option>1</option><option selected>2</option><option>3</option><option>4</option>
+            </select>
+          </div>
+        </div>
+        <button class="submit" type="submit">Request a seat</button>
+      </form>
+      <p class="form-thanks">Thank you. The kettle is already warming — we will write back within a day.</p>
+    </div>
+  </div>
+</section>
+
+<footer>
+  <div class="foot">
+    <span class="mark">STEEP</span>
+    <nav>
+      <a href="/">← all 25</a>
+      <a href="/33-steep/guide/">how this was built</a>
+      <a href="#hero">back to the water</a>
+    </nav>
+    <span>Zürich · pouring since 2026</span>
+  </div>
+</footer>
+
+<script>
+/* =========================================================
+   STEEP — interactive tea diffusion hero
+   Curl-noise advected particles on a non-clearing canvas.
+   Pointer pours dye; idle drips keep it alive; the title
+   glyphs repel dye via a destination-out mask each frame.
+   ========================================================= */
+(function(){
+  'use strict';
+  var hero=document.getElementById('hero');
+  var canvas=document.getElementById('fluid');
+  var ctx=canvas.getContext('2d',{alpha:false});
+  var reduced=window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  var coarse=window.matchMedia('(pointer: coarse)').matches||innerWidth<720;
+
+  var W=0,H=0,dpr=1;
+  var mask=document.createElement('canvas');
+  var mctx=mask.getContext('2d');
+  var titleFS=0,titleX=0,titleY=0;
+  var CREAM='#F6F1E7';
+
+  /* ---- particle pool (typed arrays) ---- */
+  var N=coarse?1400:3000;
+  var X=new Float32Array(N),Y=new Float32Array(N);
+  var VX=new Float32Array(N),VY=new Float32Array(N);
+  var AGE=new Float32Array(N),LIFE=new Float32Array(N);
+  var SZ=new Float32Array(N),CI=new Uint8Array(N);
+  var cursor=0;
+  for(var i=0;i<N;i++){AGE[i]=1;LIFE[i]=0;}
+
+  /* tea palette: deep tea, mid amber, light amber, matcha hint */
+  var COLS=['74,55,40','107,74,47','143,98,55','122,155,94'];
+  /* pre-baked alpha strings: COLSTR[c][a20] */
+  var COLSTR=COLS.map(function(c){
+    var arr=[];for(var a=0;a<21;a++)arr.push('rgba('+c+','+(a/20*0.42).toFixed(3)+')');
+    return arr;
+  });
+  function pickCol(){var r=Math.random();return r<0.42?0:r<0.72?1:r<0.93?2:3;}
+
+  /* ---- curl-noise velocity field (divergence-free) ----
+     psi = sin(a)cos(b) + 0.55 sin(c)cos(d);  v = (dPsi/dy, -dPsi/dx)
+     computed once per particle into fOut to halve the trig cost. */
+  var t=0;
+  var SPEED=30;
+  var fOut={x:0,y:0};
+  function field(u,v){
+    var a=1.6*u+0.38*t, b=1.4*v-0.29*t;
+    var c=3.1*u-0.21*t+1.7, d=2.6*v+0.33*t;
+    var sa=Math.sin(a),ca=Math.cos(a),sb=Math.sin(b),cb=Math.cos(b);
+    var sc=Math.sin(c),cc=Math.cos(c),sd=Math.sin(d),cd=Math.cos(d);
+    fOut.x=SPEED*(-1.4*sa*sb-1.43*sc*sd);      /* dPsi/dv  (0.55*2.6=1.43) */
+    fOut.y=-SPEED*(1.6*ca*cb+1.705*cc*cd);     /* -dPsi/du (0.55*3.1=1.705) */
+  }
+  var K=0.0034; /* world -> noise scale */
+
+  /* ---- emission ---- */
+  function emit(x,y,vx0,vy0,n,spread){
+    for(var k=0;k<n;k++){
+      var i=cursor;cursor=(cursor+1)%N;
+      var ang=Math.random()*6.2832, r=Math.random()*spread;
+      X[i]=x+Math.cos(ang)*r; Y[i]=y+Math.sin(ang)*r;
+      VX[i]=vx0+(Math.random()-0.5)*22;
+      VY[i]=vy0+(Math.random()-0.5)*22;
+      AGE[i]=0; LIFE[i]=2.6+Math.random()*4.6;
+      SZ[i]=0.7+Math.random()*1.9; CI[i]=pickCol();
+    }
+  }
+
+  /* ---- pointer ---- */
+  var ptr={x:0,y:0,lx:0,ly:0,has:false,last:-1e9};
+  function ptrPos(e){
+    var r=canvas.getBoundingClientRect();
+    ptr.x=e.clientX-r.left; ptr.y=e.clientY-r.top;
+  }
+  hero.addEventListener('pointermove',function(e){
+    if(!ptr.has){ptrPos(e);ptr.lx=ptr.x;ptr.ly=ptr.y;ptr.has=true;}
+    ptrPos(e); ptr.last=performance.now();
+  },{passive:true});
+  hero.addEventListener('pointerdown',function(e){
+    ptrPos(e); ptr.last=performance.now();
+    emit(ptr.x,ptr.y,0,26,coarse?70:120,20); /* pressed bloom */
+  },{passive:true});
+  hero.addEventListener('pointerleave',function(){ptr.has=false;});
+
+  /* ---- idle drips ---- */
+  var dripPts=[[0.62,0.24],[0.34,0.3],[0.5,0.2]];
+  var dripI=0,nextDrip=600;
+  function maybeDrip(now){
+    if(now-ptr.last<2400) {nextDrip=now+1600;return;}
+    if(now<nextDrip)return;
+    nextDrip=now+2400+Math.random()*1800;
+    var p=dripPts[dripI++%dripPts.length];
+    var x=p[0]*W+(Math.random()-0.5)*40, y=p[1]*H+(Math.random()-0.5)*20;
+    emit(x,y,0,36,coarse?44:66,7);      /* the drop */
+    emit(x,y,0,10,coarse?14:22,34);     /* soft halo */
+  }
+
+  /* ---- title mask ---- */
+  function titleFont(){return '600 '+titleFS+'px "Cormorant Infant", serif';}
+  function buildMask(){
+    titleFS=Math.round(Math.min(W*0.19,H*0.34));
+    titleX=W/2; titleY=H*0.42;
+    mask.width=W*dpr; mask.height=H*dpr;
+    mctx.setTransform(dpr,0,0,dpr,0,0);
+    mctx.clearRect(0,0,W,H);
+    mctx.font=titleFont();
+    if('letterSpacing' in mctx){mctx.letterSpacing=Math.round(titleFS*0.1)+'px';titleX+=titleFS*0.05;}
+    mctx.textAlign='center'; mctx.textBaseline='middle';
+    mctx.fillStyle='#fff';
+    mctx.shadowColor='#fff'; mctx.shadowBlur=titleFS*0.09;
+    mctx.fillText('STEEP',titleX,titleY);
+    mctx.fillText('STEEP',titleX,titleY); /* twice = denser core */
+  }
+  function drawTitle(){
+    ctx.font=titleFont();
+    if('letterSpacing' in ctx)ctx.letterSpacing=Math.round(titleFS*0.1)+'px';
+    ctx.textAlign='center'; ctx.textBaseline='middle';
+    ctx.fillStyle='rgba(74,55,40,0.92)';
+    ctx.fillText('STEEP',titleX,titleY);
+    if('letterSpacing' in ctx)ctx.letterSpacing='0px';
+  }
+
+  /* ---- static composition for reduced motion ---- */
+  function paintStatic(){
+    ctx.fillStyle=CREAM; ctx.fillRect(0,0,W,H);
+    var cx=W*0.6,cy=H*0.34;
+    for(var arm=0;arm<3;arm++){
+      var a0=arm*2.1+0.6;
+      for(var s=0;s<70;s++){
+        var f=s/70;
+        var ang=a0+f*4.2, rad=18+f*Math.min(W,H)*0.34;
+        var bx=cx+Math.cos(ang)*rad*(1+0.12*Math.sin(s*1.7));
+        var by=cy+Math.sin(ang)*rad*0.72+f*H*0.18;
+        var br=6+f*30, ci=pickCol();
+        var g=ctx.createRadialGradient(bx,by,0,bx,by,br);
+        g.addColorStop(0,'rgba('+COLS[ci]+','+(0.13*(1-f*0.6)).toFixed(3)+')');
+        g.addColorStop(1,'rgba('+COLS[ci]+',0)');
+        ctx.fillStyle=g;
+        ctx.beginPath();ctx.arc(bx,by,br,0,6.2832);ctx.fill();
+      }
+    }
+    /* the erased glyph area shows the cream "water" beneath the bloom */
+    ctx.globalCompositeOperation='destination-out';
+    ctx.globalAlpha=0.9; ctx.drawImage(mask,0,0,W,H);
+    ctx.globalCompositeOperation='source-over'; ctx.globalAlpha=1;
+    drawTitle();
+  }
+
+  /* ---- resize ---- */
+  function resize(){
+    dpr=Math.min(window.devicePixelRatio||1,2);
+    W=hero.clientWidth; H=hero.clientHeight;
+    canvas.width=W*dpr; canvas.height=H*dpr;
+    ctx.setTransform(dpr,0,0,dpr,0,0);
+    buildMask();
+    ctx.fillStyle=CREAM; ctx.fillRect(0,0,W,H);
+    if(reduced)paintStatic(); else drawTitle();
+  }
+  resize();
+  addEventListener('resize',function(){clearTimeout(resize._t);resize._t=setTimeout(resize,150);});
+  if(document.fonts&&document.fonts.ready)document.fonts.ready.then(resize);
+
+  if(reduced)return; /* static image only — no animation */
+
+  /* ---- main loop (single rAF) ---- */
+  var raf=0,lastT=0,running=false,visible=true,inView=true;
+  function setRun(v){
+    v=v&&visible&&inView;
+    if(v&&!running){running=true;lastT=0;raf=requestAnimationFrame(frame);}
+    if(!v&&running){running=false;cancelAnimationFrame(raf);raf=0;}
+  }
+  document.addEventListener('visibilitychange',function(){visible=!document.hidden;setRun(true);});
+  new IntersectionObserver(function(en){inView=en[en.length-1].isIntersecting;setRun(true);},{threshold:0.02}).observe(hero);
+
+  function frame(now){
+    if(!running)return;
+    raf=requestAnimationFrame(frame);
+    if(!lastT){lastT=now;return;}
+    var dt=Math.min(0.05,(now-lastT)/1000); lastT=now; t+=dt;
+
+    /* trail fade — the non-clearing trick */
+    ctx.globalCompositeOperation='source-over';
+    ctx.globalAlpha=1;
+    ctx.fillStyle='rgba(246,241,231,0.055)';
+    ctx.fillRect(0,0,W,H);
+
+    /* pointer pours dye along its path */
+    if(ptr.has&&now-ptr.last<120){
+      var dx=ptr.x-ptr.lx, dy=ptr.y-ptr.ly;
+      var dist=Math.sqrt(dx*dx+dy*dy);
+      if(dist>0.5){
+        var n=Math.min(coarse?26:46,3+dist*0.5)|0;
+        for(var s=0;s<n;s++){
+          var f=s/n;
+          emit(ptr.lx+dx*f,ptr.ly+dy*f,dx*3.2,dy*3.2+8,1,4.5);
+        }
+      }
+      ptr.lx=ptr.x; ptr.ly=ptr.y;
+    }
+    maybeDrip(now);
+
+    /* advect + draw */
+    ctx.lineCap='round';
+    var lastStyle=null;
+    for(var i=0;i<N;i++){
+      var age=AGE[i],life=LIFE[i];
+      if(age>=life)continue;
+      var x=X[i],y=Y[i];
+      field(x*K,y*K);
+      var lerp=0.075;
+      VX[i]+=(fOut.x-VX[i])*lerp;
+      VY[i]+=(fOut.y-VY[i])*lerp+3.2*dt; /* tea sinks a little */
+      var nx=x+VX[i]*dt, ny=y+VY[i]*dt;
+      AGE[i]=age+dt;
+      /* alpha envelope: quick bloom in, slow fade out */
+      var a=Math.min(age*4,1)*(1-age/life);
+      var st=COLSTR[CI[i]][(a*20)|0];
+      if(st!==lastStyle){ctx.strokeStyle=st;lastStyle=st;}
+      ctx.lineWidth=SZ[i];
+      ctx.beginPath();ctx.moveTo(x,y);ctx.lineTo(nx,ny);ctx.stroke();
+      X[i]=nx;Y[i]=ny;
+    }
+
+    /* glyph mask — dye is pushed out of the letterforms */
+    ctx.globalCompositeOperation='destination-out';
+    ctx.globalAlpha=0.5;
+    ctx.drawImage(mask,0,0,W,H);
+    ctx.globalCompositeOperation='source-over';
+    ctx.globalAlpha=1;
+    drawTitle();
+  }
+  setRun(true);
+  /* opening drip so the water is alive before any input */
+  setTimeout(function(){emit(W*0.62,H*0.24,0,36,66,7);emit(W*0.62,H*0.24,0,10,22,34);},500);
+})();
+
+/* ===== reveal on scroll ===== */
+(function(){
+  var io=new IntersectionObserver(function(es){
+    es.forEach(function(e){if(e.isIntersecting){e.target.classList.add('in');io.unobserve(e.target);}});
+  },{threshold:0.18,rootMargin:'0px 0px -6% 0px'});
+  document.querySelectorAll('.rv').forEach(function(el){io.observe(el);});
+})();
+
+/* ===== booking (showcase only) ===== */
+(function(){
+  var form=document.getElementById('bookform');
+  form.addEventListener('submit',function(e){
+    e.preventDefault();
+    document.getElementById('bookbox').classList.add('booked');
+  });
+})();
+</script>
+
+<!-- PASS 1 (fluid physics & trails):
+     1. Trail fade raised 0.04 -> 0.055 so swirls stay legible instead of muddying to brown sludge.
+     2. Particle velocity lerp toward the curl field set to 0.075 with 3.2px/s sink so drips bloom then descend like real tea.
+     3. Pointer emission now interpolates along the movement segment (no dotted gaps on fast strokes) and inherits 3.2x stroke momentum.
+     4. Alpha strings pre-baked per color into 21 buckets with strokeStyle only reassigned on change, and the curl field's x/y components merged into one evaluation (8 trig calls per particle instead of 16).
+     PASS 2 (beauty & liveliness):
+     1. Palette rebalanced: 42% deep tea / 30% mid amber / 21% light amber / 7% matcha so blooms read warm with a green whisper, max alpha capped at 0.42.
+     2. Idle drips randomized (2.4-4.2s, 3 drift points +/-40px jitter) with a two-part emit: tight drop core plus wide soft halo.
+     3. Glyph mask drawn twice with 9% shadowBlur for a dense core and feathered halo; per-frame destination-out at 0.5 keeps STEEP crisp while dye curls around it.
+     4. Mobile budget: 1400 particles, smaller pointer/drip bursts, DPR clamped to 2, rAF fully cancelled when hero off-screen or tab hidden.
+     PASS 3 (page polish):
+     1. prefers-reduced-motion now paints a one-shot pre-bloomed triple-spiral of radial gradients behind the masked title, and disables reveals/steam/timeline animation in CSS.
+     2. Timeline dots pop with a back-easing scale, staggered 0.5s/1.7s/3.0s to land as the gradient fill reaches each node; mobile falls back to a vertical rail.
+     3. Steam wisps retimed to 4.4s with 1.4s/2.6s offsets and the middle wisp tinted celadon; cup glaze arc added so porcelain reads as thrown, not clipart.
+     4. Booking form given focus-visible rings, labelled fields, and an in-place italic confirmation; footer/back-link hover states unified.
+-->
+</body>
+</html>

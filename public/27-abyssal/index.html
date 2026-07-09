@@ -1,0 +1,843 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ABYSSAL — Institute for Deep-Ocean Research</title>
+<meta name="description" content="A continuous descent from the sunlit surface to the abyssal plain, 4000 metres down. Public outreach portal of the ABYSSAL deep-sea research institute.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Spectral:ital,wght@0,200;0,300;0,400;1,300&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --abyss:#030812;
+  --cyan:#3DF5FF;
+  --violet:#8A5CFF;
+  --pale:#DCE9F0;
+  --glass:rgba(220,233,240,.045);
+  --line:rgba(61,245,255,.18);
+}
+*{margin:0;padding:0;box-sizing:border-box}
+html{scroll-behavior:smooth}
+@media (prefers-reduced-motion: reduce){html{scroll-behavior:auto}}
+body{
+  background:var(--abyss);
+  color:var(--pale);
+  font-family:'Spectral',Georgia,serif;
+  font-weight:300;
+  overflow-x:hidden;
+  -webkit-font-smoothing:antialiased;
+}
+::selection{background:rgba(61,245,255,.25);color:#fff}
+#sea{
+  position:fixed;inset:0;width:100vw;height:100vh;
+  display:block;z-index:0;
+}
+/* ---------- fixed HUD ---------- */
+.back{
+  position:fixed;top:22px;left:24px;z-index:50;
+  font-family:'Space Mono',monospace;font-size:13px;
+  color:var(--pale);text-decoration:none;letter-spacing:.08em;
+  padding:8px 14px;border:1px solid rgba(220,233,240,.18);
+  border-radius:999px;background:rgba(3,8,18,.45);
+  backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);
+  transition:border-color .3s,color .3s;
+}
+.back:hover{border-color:var(--cyan);color:var(--cyan)}
+#hud{
+  position:fixed;top:50%;right:26px;transform:translateY(-50%);
+  z-index:50;font-family:'Space Mono',monospace;
+  text-align:right;color:var(--cyan);
+  text-shadow:0 0 12px rgba(61,245,255,.35);
+  pointer-events:none;user-select:none;
+}
+#hud .dnum{font-size:26px;font-weight:700;letter-spacing:.04em}
+#hud .dunit{font-size:12px;opacity:.7;margin-left:2px}
+#hud .zone{font-size:9px;letter-spacing:.28em;opacity:.75;margin-top:6px;text-transform:uppercase}
+#hud .press{font-size:9px;letter-spacing:.18em;opacity:.5;margin-top:3px}
+#gauge{
+  position:fixed;right:12px;top:50%;transform:translateY(-50%);
+  width:2px;height:min(46vh,380px);z-index:49;
+  background:rgba(220,233,240,.12);border-radius:2px;pointer-events:none;
+}
+#gauge i{
+  position:absolute;left:-2px;top:0;width:6px;height:6px;border-radius:50%;
+  background:var(--cyan);box-shadow:0 0 10px var(--cyan);
+}
+@media(max-width:720px){
+  #hud{top:auto;bottom:20px;right:18px;transform:none}
+  #hud .dnum{font-size:19px}
+  #gauge{display:none}
+}
+/* ---------- content flow ---------- */
+main{position:relative;z-index:2}
+section{
+  min-height:100vh;display:flex;align-items:center;
+  padding:14vh 6vw;
+}
+.gap{height:110vh}
+.drift{
+  position:relative;z-index:2;text-align:center;padding:4vh 8vw;
+  font-family:'Space Mono',monospace;font-size:10px;letter-spacing:.4em;
+  color:rgba(61,245,255,.4);text-transform:uppercase;
+}
+.panel{
+  max-width:620px;padding:46px 48px;
+  background:var(--glass);
+  border:1px solid var(--line);
+  border-radius:6px;
+  backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);
+  box-shadow:0 30px 80px rgba(0,0,0,.45), inset 0 1px 0 rgba(220,233,240,.06);
+}
+.right{margin-left:auto}
+.js .panel{opacity:0;transform:translateY(42px);transition:opacity 1.1s cubic-bezier(.16,1,.3,1),transform 1.1s cubic-bezier(.16,1,.3,1)}
+.js .panel.vis{opacity:1;transform:none}
+@media (prefers-reduced-motion: reduce){.js .panel{opacity:1;transform:none;transition:none}}
+.depthtag{
+  font-family:'Space Mono',monospace;font-size:10px;
+  letter-spacing:.32em;color:var(--cyan);text-transform:uppercase;
+  margin-bottom:22px;opacity:.85;
+}
+.depthtag::before{content:"— ";opacity:.5}
+h1,h2{font-weight:200;line-height:1.12}
+h2{font-size:clamp(28px,3.6vw,44px);margin-bottom:20px;color:#fff}
+h2 em{font-style:italic;color:var(--cyan);font-weight:300}
+p{font-size:17px;line-height:1.75;color:rgba(220,233,240,.82);margin-bottom:16px}
+p:last-child{margin-bottom:0}
+.mono{font-family:'Space Mono',monospace}
+/* hero */
+#hero{min-height:100vh;flex-direction:column;justify-content:center;text-align:center;padding-top:20vh}
+#hero .kicker{font-family:'Space Mono',monospace;font-size:11px;letter-spacing:.5em;color:var(--cyan);text-transform:uppercase;margin-bottom:26px}
+#hero h1{
+  font-size:clamp(58px,11vw,150px);letter-spacing:.16em;color:#fff;
+  text-shadow:0 0 40px rgba(61,245,255,.25),0 0 120px rgba(61,245,255,.12);
+  margin-left:.16em;
+}
+#hero .sub{font-size:clamp(17px,2vw,22px);font-style:italic;color:rgba(220,233,240,.75);max-width:560px;margin:26px auto 0}
+.cue{
+  margin-top:9vh;font-family:'Space Mono',monospace;font-size:10px;
+  letter-spacing:.3em;color:rgba(220,233,240,.55);text-transform:uppercase;
+}
+.cue b{display:block;color:var(--cyan);font-weight:400;margin-top:10px;animation:bob 2.6s ease-in-out infinite}
+@keyframes bob{0%,100%{transform:translateY(0);opacity:.5}50%{transform:translateY(9px);opacity:1}}
+@media (prefers-reduced-motion: reduce){.cue b{animation:none}}
+/* stats */
+.stats{display:flex;gap:34px;margin-top:30px;flex-wrap:wrap}
+.stat .n{font-family:'Space Mono',monospace;font-size:26px;color:var(--cyan);text-shadow:0 0 14px rgba(61,245,255,.3)}
+.stat .l{font-family:'Space Mono',monospace;font-size:9px;letter-spacing:.22em;opacity:.55;text-transform:uppercase;margin-top:6px}
+/* specimen cards */
+.cards{display:grid;gap:18px;margin-top:28px}
+.card{
+  padding:20px 22px;border-left:2px solid var(--cyan);
+  background:rgba(61,245,255,.04);border-radius:0 4px 4px 0;
+}
+.card.v{border-left-color:var(--violet);background:rgba(138,92,255,.05)}
+.card h3{font-weight:400;font-style:italic;font-size:20px;color:#fff}
+.card .lat{font-family:'Space Mono',monospace;font-size:10px;letter-spacing:.14em;color:var(--cyan);margin:4px 0 10px;opacity:.8}
+.card.v .lat{color:var(--violet)}
+.card p{font-size:15px;margin:0}
+/* CTA */
+.cta{
+  display:inline-block;margin-top:26px;padding:15px 34px;
+  font-family:'Space Mono',monospace;font-size:12px;letter-spacing:.24em;
+  text-transform:uppercase;text-decoration:none;color:var(--cyan);
+  border:1px solid var(--cyan);border-radius:2px;
+  background:rgba(61,245,255,.06);
+  box-shadow:0 0 22px rgba(61,245,255,.12), inset 0 0 22px rgba(61,245,255,.05);
+  transition:background .3s,box-shadow .3s,color .3s;
+}
+.cta:hover{background:rgba(61,245,255,.16);box-shadow:0 0 40px rgba(61,245,255,.3);color:#fff}
+.note{font-family:'Space Mono',monospace;font-size:10px;letter-spacing:.12em;opacity:.45;margin-top:16px}
+/* footer */
+footer{
+  position:relative;z-index:2;padding:16vh 6vw 8vh;text-align:center;
+  background:linear-gradient(to bottom,rgba(3,8,18,0),rgba(1,3,9,.92) 45%,#010309);
+}
+footer .floor{font-family:'Space Mono',monospace;font-size:10px;letter-spacing:.4em;color:var(--cyan);text-transform:uppercase;opacity:.8}
+footer h2{margin:22px 0 8px}
+footer nav{display:flex;gap:26px;justify-content:center;flex-wrap:wrap;margin:34px 0 26px}
+footer nav a{
+  font-family:'Space Mono',monospace;font-size:11px;letter-spacing:.2em;
+  color:rgba(220,233,240,.65);text-decoration:none;text-transform:uppercase;transition:color .3s;
+}
+footer nav a:hover{color:var(--cyan)}
+footer .guide-link{color:var(--violet)}
+footer .guide-link:hover{color:#b79bff}
+footer .fine{font-family:'Space Mono',monospace;font-size:9px;letter-spacing:.14em;opacity:.35}
+</style>
+</head>
+<body>
+<!--
+  PASS 1 (structure & motion):
+  1. Marine-snow parallax was inverted — particles now streak UPWARD while scrolling down, selling the descent.
+  2. Jellyfish tentacles snapped when a jelly wrapped vertically — teleport now offsets every tentacle point by the same delta.
+  3. Godrays rendered at all depths — now gated behind a depth<420m opacity ramp and skipped entirely when invisible.
+  4. Depth meter jittered at section boundaries — smoothed with exponential easing on smoothDepth.
+  PASS 2 (performance contract):
+  1. Removed per-frame shadowBlur from snow + jelly rim nodes — replaced with pre-rendered radial-gradient glow sprites (offscreen canvases, drawImage only).
+  2. Capped devicePixelRatio at 2 and particle counts at 400 desktop / 150 mobile; boids reduced to 36 on coarse pointers.
+  3. rAF now pauses on visibilitychange and clamps dt to 50ms so background tabs don't cause physics explosions.
+  4. Canvas context created with alpha:false; composite state is always restored to source-over after glow batches.
+  PASS 3 (polish & access):
+  1. Anglerfish silhouette flip was inverted (mouth faced AWAY from the lure) — scale sign corrected, stalk root and mouth-lit positions recomputed to match.
+  2. Panel depth tags disagreed with the live HUD by up to 2x — scroll gaps rebalanced (40/60/90/340vh) so tagged depths land within ~10% of the meter, and a lone interstitial line marks the long dark fall at ~2,500 m.
+  3. prefers-reduced-motion: full static painted-zone fallback (gradient + sparse fixed snow, no boids/jellies/rAF loop), scroll still updates the depth HUD; glow-mote alpha leak from preceding particles fixed.
+  4. Anglerfish lure eases toward the cursor with a whip-lag stalk, clamps inside the viewport, and wanders on its own for touch devices; teeth/eye brightness scales with lure proximity.
+-->
+<canvas id="sea" aria-hidden="true"></canvas>
+
+<a class="back" href="/">←&nbsp;25</a>
+
+<div id="hud" aria-hidden="true">
+  <div><span class="dnum" id="dnum">0000</span><span class="dunit">M</span></div>
+  <div class="zone" id="dzone">Sunlight</div>
+  <div class="press" id="dpress">1 ATM</div>
+</div>
+<div id="gauge"><i id="gdot"></i></div>
+
+<main>
+  <section id="hero">
+    <div class="kicker">Institute for Deep-Ocean Research · Est. 1962</div>
+    <h1>ABYSSAL</h1>
+    <p class="sub">The ocean's average depth is 3,700 metres. We have better maps of Mars than of the water that covers our own planet. This page is a dive. Everything below you is real.</p>
+    <div class="cue">Scroll to descend<b>▼ 4 000 M</b></div>
+  </section>
+
+  <div class="gap" style="height:40vh"></div>
+
+  <section id="mission">
+    <div class="panel">
+      <div class="depthtag">470 m · Mesopelagic — the Twilight Zone</div>
+      <h2>We go where light <em>gives up</em>.</h2>
+      <p>Below 200 metres, sunlight thins to a blue rumour. Below 1,000, it is gone entirely — and yet this is the largest habitat on Earth, holding more animal life than every forest, plain and reef combined.</p>
+      <p>ABYSSAL operates two research vessels and the crewed submersible <span class="mono">HALCYON-9</span> to census that darkness: who lives there, how they make their own light, and what they can teach us before the deep changes faster than we can read it.</p>
+      <div class="stats">
+        <div class="stat"><div class="n mono">2,318</div><div class="l">Dives logged</div></div>
+        <div class="stat"><div class="n mono">417</div><div class="l">Species described</div></div>
+        <div class="stat"><div class="n mono">5,109 m</div><div class="l">Deepest sample</div></div>
+      </div>
+    </div>
+  </section>
+
+  <div class="gap" style="height:60vh"></div>
+
+  <section id="specimens">
+    <div class="panel right">
+      <div class="depthtag">1,000 m · Field notes from the twilight</div>
+      <h2>Every night, the deep <em>rises</em>.</h2>
+      <p>After sunset, billions of twilight-zone animals swim hundreds of metres up to feed near the surface, then sink again before dawn — the largest migration on the planet, happening every single day, almost entirely unseen.</p>
+      <div class="cards">
+        <div class="card">
+          <h3>Lanternfish</h3>
+          <div class="lat">MYCTOPHIDAE · 300–1,200 M</div>
+          <p>Small, silver, and possibly the most abundant vertebrate family on Earth. Rows of photophores along their bellies erase their silhouettes against the dim light above.</p>
+        </div>
+        <div class="card v">
+          <h3>Vampire Squid</h3>
+          <div class="lat">VAMPYROTEUTHIS INFERNALIS · 600–900 M</div>
+          <p>Neither vampire nor true squid. When threatened it inverts its webbed arms over its body and ejects a cloud of glowing mucus instead of ink — there is no point in ink where there is no light.</p>
+        </div>
+        <div class="card">
+          <h3>Giant Siphonophore</h3>
+          <div class="lat">PRAYA DUBIA · 700–1,000 M</div>
+          <p>A drifting colonial chain that can exceed 40 metres — longer than a blue whale. Not one animal but thousands of specialised bodies acting as a single, luminous fishing line.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <div class="gap" style="height:90vh"></div>
+
+  <section id="gallery">
+    <div class="panel">
+      <div class="depthtag">1,700 m · Bathypelagic — the Midnight Zone</div>
+      <h2>Here, light is a <em>language</em>.</h2>
+      <p>An estimated three-quarters of midnight-zone animals make their own light. They flash to court, to startle, to lie. The crown jelly <em>Atolla wyvillei</em> spins a wheel of blue alarm-light when attacked — a burglar alarm meant to summon something large enough to eat its attacker.</p>
+      <p>The jellies drifting past this panel are drawn by our instruments in real time: a pulsing bell, trailing tentacles, and a soft halo of borrowed bioluminescence. Watch them long enough and the pulse starts to look like breathing. It is.</p>
+      <p class="mono" style="font-size:11px;letter-spacing:.14em;opacity:.55">HALCYON-9 · EXTERNAL CAM 2 · LIGHTS OFF · SPECIMENS UNDISTURBED</p>
+    </div>
+  </section>
+
+  <div class="gap" style="height:170vh"></div>
+  <div class="drift">— no sunlight has touched this water for sixty million years —</div>
+  <div class="gap" style="height:170vh"></div>
+
+  <section id="abyss">
+    <div class="panel right">
+      <div class="depthtag">3,400 m · Abyssopelagic — the Abyss</div>
+      <h2>The last light down here is a <em>lure</em>.</h2>
+      <p>Meet the humpback anglerfish, <em>Melanocetus johnsonii</em>. In a place with no sun, she carries her own: a rod grown from her forehead, tipped with a bulb of luminous bacteria. Whatever swims toward that little star is already inside her strike radius.</p>
+      <p>Move your cursor. That glow following you through the dark is her lure. Nothing personal — at 4,000 metres, curiosity and hunger are the same instinct.</p>
+      <p>Expedition 27 departs this autumn to survey the abyssal plain of the Puerto Rico Trench system. Twelve dives. Six berths for visiting researchers and one for a science communicator. The deep does not come to you.</p>
+      <a class="cta" href="#seafloor">Request Expedition Briefing</a>
+      <div class="note">RV MERIDIAN · BERTH APPLICATIONS CLOSE 30 SEPT</div>
+    </div>
+  </section>
+
+  <div class="gap" style="height:40vh"></div>
+</main>
+
+<footer id="seafloor">
+  <div class="floor">Seafloor reached · 4 000 m · Sediment age ± 60 million years</div>
+  <h2>You've touched the bottom.<br>Most of humanity never will.</h2>
+  <p style="max-width:520px;margin:0 auto">ABYSSAL is a public research institute. Our data, maps and specimen archives are open to everyone — the deep belongs to no one, which means it belongs to you too.</p>
+  <nav>
+    <a href="#mission">Mission</a>
+    <a href="#specimens">Specimens</a>
+    <a href="#gallery">Midnight Gallery</a>
+    <a href="#abyss">Expedition 27</a>
+    <a class="guide-link" href="/27-abyssal/guide/">How this dive was built →</a>
+  </nav>
+  <div class="fine">ABYSSAL INSTITUTE · OUTREACH DIVISION · NO ANIMALS WERE ILLUMINATED WITHOUT CONSENT</div>
+</footer>
+
+<script>
+(() => {
+'use strict';
+document.body.classList.add('js');
+
+const canvas = document.getElementById('sea');
+const ctx = canvas.getContext('2d', {alpha:false});
+const MAXD = 4000;
+const RM = matchMedia('(prefers-reduced-motion: reduce)').matches;
+const COARSE = matchMedia('(pointer: coarse)').matches;
+const MOBILE = COARSE || innerWidth < 760;
+const SNOWCAP = MOBILE ? 150 : 400;
+const FISHN = MOBILE ? 36 : 60;
+
+let W = 0, H = 0, DPR = 1;
+function resize(){
+  DPR = Math.min(devicePixelRatio || 1, 2);
+  W = innerWidth; H = innerHeight;
+  canvas.width = Math.round(W * DPR);
+  canvas.height = Math.round(H * DPR);
+  ctx.setTransform(DPR, 0, 0, DPR, 0, 0);
+  if (RM) paintStatic();
+}
+addEventListener('resize', resize);
+
+/* ---------- helpers ---------- */
+const clamp = (v,a,b) => v < a ? a : v > b ? b : v;
+const lerp = (a,b,t) => a + (b - a) * t;
+
+/* ---------- pre-rendered glow sprites (perf contract: no per-frame shadowBlur) ---------- */
+function makeGlow(r, rgb, core){
+  const c = document.createElement('canvas');
+  c.width = c.height = r * 2;
+  const g = c.getContext('2d');
+  const gr = g.createRadialGradient(r, r, 0, r, r, r);
+  gr.addColorStop(0, `rgba(${rgb},${core})`);
+  gr.addColorStop(.28, `rgba(${rgb},${core * .32})`);
+  gr.addColorStop(1, `rgba(${rgb},0)`);
+  g.fillStyle = gr;
+  g.fillRect(0, 0, r * 2, r * 2);
+  return c;
+}
+const G_CYAN  = makeGlow(48, '61,245,255', .9);
+const G_VIOLET= makeGlow(64, '138,92,255', .8);
+const G_PALE  = makeGlow(40, '220,233,240', .95);
+
+/* ---------- zone colour interpolation ---------- */
+const STOPS = [
+  [0,    [16,84,122], [7,52,80]],
+  [200,  [8,56,88],   [5,36,60]],
+  [1000, [4,26,48],   [3,16,32]],
+  [2600, [3,12,25],   [2,8,18]],
+  [4000, [3,8,18],    [1,3,9]]
+];
+function zoneCols(d){
+  let i = 0;
+  while (i < STOPS.length - 2 && d > STOPS[i + 1][0]) i++;
+  const a = STOPS[i], b = STOPS[i + 1];
+  const t = clamp((d - a[0]) / (b[0] - a[0]), 0, 1);
+  const mix = (u, v) => `rgb(${Math.round(lerp(u[0],v[0],t))},${Math.round(lerp(u[1],v[1],t))},${Math.round(lerp(u[2],v[2],t))})`;
+  return [mix(a[1], b[1]), mix(a[2], b[2])];
+}
+function zoneName(d){
+  return d < 200 ? 'Sunlight · Epipelagic'
+       : d < 1000 ? 'Twilight · Mesopelagic'
+       : d < 3000 ? 'Midnight · Bathypelagic'
+       : 'Abyss · Abyssopelagic';
+}
+
+/* ---------- scroll → depth ---------- */
+let depth = 0, smoothDepth = 0, lastScroll = 0;
+function targetDepth(){
+  const max = document.documentElement.scrollHeight - innerHeight;
+  return max > 0 ? (scrollY / max) * MAXD : 0;
+}
+
+/* ---------- HUD ---------- */
+const dnum = document.getElementById('dnum');
+const dzone = document.getElementById('dzone');
+const dpress = document.getElementById('dpress');
+const gdot = document.getElementById('gdot');
+let lastHud = -1;
+function updateHUD(){
+  const d = Math.round(smoothDepth);
+  if (d === lastHud) return;
+  lastHud = d;
+  dnum.textContent = String(d).padStart(4, '0');
+  dzone.textContent = zoneName(d);
+  dpress.textContent = (Math.round(d / 10) + 1) + ' ATM';
+  gdot.style.top = `calc(${(d / MAXD) * 100}% - 3px)`;
+}
+
+/* ---------- pointer ---------- */
+let mx = W * .5, my = H * .45, pointerSeen = false, lastPointerT = 0;
+addEventListener('pointermove', e => {
+  mx = e.clientX; my = e.clientY;
+  pointerSeen = true; lastPointerT = performance.now();
+}, {passive:true});
+
+/* ---------- marine snow ---------- */
+const snow = [];
+function initSnow(){
+  snow.length = 0;
+  for (let i = 0; i < SNOWCAP; i++){
+    snow.push({
+      x: Math.random() * W,
+      y: Math.random() * H,
+      r: .6 + Math.random() * 1.5,
+      v: 5 + Math.random() * 14,       // px/s sink
+      par: .25 + Math.random() * .85,  // scroll parallax
+      ph: Math.random() * 6.28,
+      sw: .3 + Math.random() * .8,
+      glow: i % 14 === 0               // occasional bioluminescent mote
+    });
+  }
+}
+function snowDensity(d){
+  if (d < 200)  return .35;
+  if (d < 1000) return lerp(.35, 1, (d - 200) / 800);
+  if (d < 3000) return 1;
+  return lerp(1, .5, (d - 3000) / 1000);
+}
+function stepSnow(dt, sd, t){
+  const n = Math.floor(SNOWCAP * snowDensity(smoothDepth));
+  const glowOn = smoothDepth > 250 && smoothDepth < 3200;
+  ctx.fillStyle = 'rgba(220,233,240,.5)';
+  for (let i = 0; i < n; i++){
+    const p = snow[i];
+    p.y += p.v * dt - sd * p.par;
+    p.x += Math.sin(t * p.sw + p.ph) * .25;
+    if (p.y > H + 12) { p.y = -12; p.x = Math.random() * W; }
+    else if (p.y < -14) { p.y = H + 12; p.x = Math.random() * W; }
+    if (p.x > W + 12) p.x = -12; else if (p.x < -12) p.x = W + 12;
+    if (p.glow && glowOn){
+      const s = 10 + Math.sin(t * 2 + p.ph) * 4;
+      ctx.globalAlpha = 1;
+      ctx.globalCompositeOperation = 'lighter';
+      ctx.drawImage(i % 28 === 0 ? G_VIOLET : G_CYAN, p.x - s/2, p.y - s/2, s, s);
+      ctx.globalCompositeOperation = 'source-over';
+      ctx.fillStyle = 'rgba(220,233,240,.5)';
+    } else {
+      ctx.globalAlpha = .25 + (p.r - .6) * .3;
+      ctx.fillRect(p.x, p.y, p.r, p.r);
+    }
+  }
+  ctx.globalAlpha = 1;
+}
+
+/* ---------- godrays (surface only) ---------- */
+const rays = [];
+for (let i = 0; i < 6; i++) rays.push({ fx: .08 + i * .16 + Math.random() * .06, w: 60 + Math.random() * 140, ph: Math.random() * 6.28, sp: .1 + Math.random() * .12 });
+function stepRays(t){
+  const f = clamp(1 - smoothDepth / 420, 0, 1);
+  if (f <= 0.01) return;
+  ctx.globalCompositeOperation = 'lighter';
+  for (const r of rays){
+    const a = f * (0.045 + 0.03 * Math.sin(t * r.sp * 4 + r.ph));
+    if (a <= 0.004) continue;
+    ctx.save();
+    ctx.translate(W * r.fx + Math.sin(t * r.sp + r.ph) * 30, -40);
+    ctx.rotate(.32 + Math.sin(t * r.sp * .7 + r.ph) * .05);
+    const g = ctx.createLinearGradient(0, 0, 0, H * .95);
+    g.addColorStop(0, `rgba(140,235,255,${a})`);
+    g.addColorStop(1, 'rgba(140,235,255,0)');
+    ctx.fillStyle = g;
+    ctx.beginPath();
+    ctx.moveTo(-r.w * .18, 0); ctx.lineTo(r.w * .18, 0);
+    ctx.lineTo(r.w * .55, H * .95); ctx.lineTo(-r.w * .55, H * .95);
+    ctx.closePath(); ctx.fill();
+    ctx.restore();
+  }
+  ctx.globalCompositeOperation = 'source-over';
+}
+
+/* ---------- boids-lite fish school ---------- */
+const fish = [];
+function initFish(){
+  fish.length = 0;
+  for (let i = 0; i < FISHN; i++){
+    const a = Math.random() * 6.28;
+    fish.push({ x: Math.random()*W, y: Math.random()*H, vx: Math.cos(a)*55, vy: Math.sin(a)*55 });
+  }
+}
+function stepFish(dt, sd){
+  const vis = smoothDepth < 2300 ? 1 : clamp(1 - (smoothDepth - 2300) / 500, 0, 1);
+  if (vis <= 0) return;
+  const COH = 8, ALI = 3.2, SEP = 60, FLEE = 340;
+  for (let i = 0; i < fish.length; i++){
+    const f = fish[i];
+    let cx=0, cy=0, ax=0, ay=0, sx=0, sy=0, n=0;
+    for (let j = 0; j < fish.length; j++){
+      if (j === i) continue;
+      const o = fish[j], dx = o.x - f.x, dy = o.y - f.y, d2 = dx*dx + dy*dy;
+      if (d2 < 4900){
+        cx += o.x; cy += o.y; ax += o.vx; ay += o.vy; n++;
+        if (d2 < 620 && d2 > 0.01){ const d = Math.sqrt(d2); sx -= dx/d; sy -= dy/d; }
+      }
+    }
+    if (n){
+      f.vx += ((cx/n - f.x) * COH * .01 + (ax/n - f.vx) * ALI * .02) * dt * 6;
+      f.vy += ((cy/n - f.y) * COH * .01 + (ay/n - f.vy) * ALI * .02) * dt * 6;
+    }
+    f.vx += sx * SEP * dt; f.vy += sy * SEP * dt;
+    // flee cursor
+    const mdx = f.x - mx, mdy = f.y - my, md2 = mdx*mdx + mdy*mdy;
+    if (pointerSeen && md2 < 19600 && md2 > 1){
+      const md = Math.sqrt(md2), push = (1 - md/140) * FLEE * dt;
+      f.vx += (mdx/md) * push; f.vy += (mdy/md) * push;
+    }
+    // gentle centering drift + speed clamp
+    f.vx += (W*.5 - f.x) * .012 * dt; f.vy += (H*.5 - f.y) * .012 * dt;
+    const sp = Math.hypot(f.vx, f.vy) || 1;
+    const target = clamp(sp, 42, 130);
+    f.vx = f.vx / sp * target; f.vy = f.vy / sp * target;
+    f.x += f.vx * dt; f.y += f.vy * dt - sd * .35;
+    if (f.x < -20) f.x = W + 20; else if (f.x > W + 20) f.x = -20;
+    if (f.y < -20) f.y = H + 20; else if (f.y > H + 20) f.y = -20;
+  }
+  // draw
+  ctx.fillStyle = `rgba(158,201,216,${.5 * vis})`;
+  for (const f of fish){
+    const a = Math.atan2(f.vy, f.vx);
+    ctx.save(); ctx.translate(f.x, f.y); ctx.rotate(a);
+    ctx.beginPath();
+    ctx.moveTo(5.5, 0);
+    ctx.quadraticCurveTo(-1, -2.4, -5.5, 0);
+    ctx.quadraticCurveTo(-1, 2.4, 5.5, 0);
+    ctx.fill(); ctx.restore();
+  }
+}
+
+/* ---------- procedural jellyfish ---------- */
+class Jelly {
+  constructor(fx, fy, s, violet){
+    this.fx = fx; this.fy = fy; this.s = s; this.violet = violet;
+    this.seed = Math.random() * 6.28;
+    this.x = 0; this.y = 0; this.inited = false;
+    this.tents = [];
+    const nT = 5, nSeg = 9;
+    for (let i = 0; i < nT; i++){
+      const pts = [];
+      for (let k = 0; k < nSeg; k++) pts.push({x:0, y:0});
+      this.tents.push({ off: (i/(nT-1) - .5) * s * 1.35, pts, ph: Math.random()*6.28 });
+    }
+  }
+  place(){
+    this.x = W * this.fx; this.y = H * this.fy;
+    for (const t of this.tents){
+      for (let k = 0; k < t.pts.length; k++){
+        t.pts[k].x = this.x + t.off; t.pts[k].y = this.y + k * this.s * .42;
+      }
+    }
+    this.inited = true;
+  }
+  shift(dx, dy){
+    this.x += dx; this.y += dy;
+    for (const t of this.tents) for (const p of t.pts){ p.x += dx; p.y += dy; }
+  }
+  step(dt, sd, t, alpha){
+    if (!this.inited) this.place();
+    const pulse = .86 + .17 * Math.sin(t * 1.1 + this.seed);
+    // bell swims up on contraction, drifts with sway; parallax with scroll
+    const rise = Math.max(0, Math.cos(t * 1.1 + this.seed)) * 14 * dt;
+    this.shift(Math.sin(t * .22 + this.seed) * 8 * dt, -rise - sd * .55 + 6 * dt);
+    // vertical wrap (teleport all points together — no tentacle snap)
+    if (this.y < -this.s * 6) this.shift((Math.random()-.5) * W * .3, H + this.s * 8);
+    else if (this.y > H + this.s * 7) this.shift((Math.random()-.5) * W * .3, -(H + this.s * 9));
+    if (this.x < -this.s * 4) this.shift(W + this.s * 7, 0);
+    else if (this.x > W + this.s * 4) this.shift(-(W + this.s * 7), 0);
+
+    // tentacle follow-through
+    const seg = this.s * .42;
+    for (const tn of this.tents){
+      tn.pts[0].x = this.x + tn.off * pulse;
+      tn.pts[0].y = this.y + this.s * .1;
+      for (let k = 1; k < tn.pts.length; k++){
+        const prev = tn.pts[k-1], p = tn.pts[k];
+        const sway = Math.sin(t * 1.3 + tn.ph + k * .55) * this.s * .05;
+        p.x += (prev.x + sway - p.x) * (1 - Math.pow(.0025, dt));
+        p.y += (prev.y + seg - p.y) * (1 - Math.pow(.0025, dt));
+      }
+    }
+    this.draw(pulse, alpha, t);
+  }
+  draw(pulse, alpha, t){
+    const s = this.s, rgb = this.violet ? '138,92,255' : '61,245,255';
+    const sprite = this.violet ? G_VIOLET : G_CYAN;
+    ctx.save();
+    ctx.globalAlpha = alpha;
+    // halo (pre-rendered sprite)
+    ctx.globalCompositeOperation = 'lighter';
+    const hs = s * 5;
+    ctx.globalAlpha = alpha * .5;
+    ctx.drawImage(sprite, this.x - hs/2, this.y - s*.5 - hs/2, hs, hs);
+    ctx.globalAlpha = alpha;
+    ctx.globalCompositeOperation = 'source-over';
+    // tentacles
+    ctx.lineCap = 'round';
+    for (const tn of this.tents){
+      ctx.beginPath();
+      ctx.moveTo(tn.pts[0].x, tn.pts[0].y);
+      for (let k = 1; k < tn.pts.length - 1; k++){
+        const p = tn.pts[k], q = tn.pts[k+1];
+        ctx.quadraticCurveTo(p.x, p.y, (p.x + q.x)/2, (p.y + q.y)/2);
+      }
+      ctx.strokeStyle = `rgba(${rgb},${.30 * alpha})`;
+      ctx.lineWidth = Math.max(1, s * .05);
+      ctx.stroke();
+    }
+    // bell
+    const w = s, hh = s * 1.18 * pulse, skirt = s * .16 * (1.9 - pulse);
+    ctx.save();
+    ctx.translate(this.x, this.y);
+    const g = ctx.createRadialGradient(0, -s*.45, s*.05, 0, -s*.3, s*1.35);
+    g.addColorStop(0, `rgba(${rgb},${.55 * alpha})`);
+    g.addColorStop(.55, `rgba(${rgb},${.16 * alpha})`);
+    g.addColorStop(1, `rgba(${rgb},0)`);
+    ctx.fillStyle = g;
+    ctx.beginPath();
+    ctx.moveTo(-w * pulse, 0);
+    ctx.bezierCurveTo(-w * 1.06 * pulse, -hh, w * 1.06 * pulse, -hh, w * pulse, 0);
+    ctx.bezierCurveTo(w * .55 * pulse, skirt, -w * .55 * pulse, skirt, -w * pulse, 0);
+    ctx.fill();
+    // inner organs hint
+    ctx.beginPath();
+    ctx.ellipse(0, -s * .42 * pulse, s * .28, s * .4 * pulse, 0, 0, 6.29);
+    ctx.fillStyle = `rgba(220,233,240,${.12 * alpha})`;
+    ctx.fill();
+    ctx.restore();
+    // rim nodes (sprite glints, no shadowBlur)
+    ctx.globalCompositeOperation = 'lighter';
+    for (let i = 0; i < 4; i++){
+      const rx = this.x + (i/3 - .5) * 2 * s * .8 * pulse;
+      const gs = 7 + Math.sin(t * 3 + i * 1.7 + this.seed) * 3;
+      ctx.globalAlpha = alpha * .8;
+      ctx.drawImage(sprite, rx - gs/2, this.y - 2 - gs/2, gs, gs);
+    }
+    ctx.restore();
+    ctx.globalCompositeOperation = 'source-over';
+    ctx.globalAlpha = 1;
+  }
+}
+const jellies = [
+  new Jelly(.22, .5, MOBILE ? 26 : 40, false),
+  new Jelly(.68, .34, MOBILE ? 34 : 54, true),
+  new Jelly(.84, .72, MOBILE ? 20 : 30, false)
+];
+function jellyAlpha(d){
+  if (d < 1050 || d > 3150) return 0;
+  if (d < 1350) return (d - 1050) / 300;
+  if (d > 2850) return 1 - (d - 2850) / 300;
+  return 1;
+}
+
+/* ---------- anglerfish ---------- */
+const angler = { face: 1, lx: 0, ly: 0, inited: false };
+function anglerAlpha(d){ return clamp((d - 2750) / 350, 0, 1); }
+function stepAngler(dt, t, alpha){
+  if (!angler.inited){ angler.lx = W * .5; angler.ly = H * .4; angler.inited = true; }
+  const s = clamp(Math.min(W, H) / 620, .55, 1.35) * (MOBILE ? .8 : 1);
+  const fx = W * .58 + Math.sin(t * .13) * 46;
+  const fy = H * .46 + Math.sin(t * .2) * 30;
+
+  // lure target: cursor, or slow wander when no pointer (touch)
+  let tx = mx, ty = my;
+  if (!pointerSeen || performance.now() - lastPointerT > 6000){
+    tx = W * .5 + Math.sin(t * .3) * W * .27;
+    ty = H * .42 + Math.cos(t * .23) * H * .2;
+  }
+  angler.lx += (clamp(tx, 50, W - 50) - angler.lx) * (1 - Math.pow(.02, dt));
+  angler.ly += (clamp(ty, H * .12, H * .88) - angler.ly) * (1 - Math.pow(.02, dt));
+
+  // face the lure (smooth flip)
+  const want = angler.lx < fx ? 1 : -1;
+  angler.face += (want - angler.face) * (1 - Math.pow(.3, dt));
+  const face = angler.face;
+
+  ctx.save();
+  ctx.globalAlpha = alpha;
+
+  // --- spotlight: the lure is the only light down here ---
+  const flick = .13 + .035 * Math.sin(t * 6.3) + .015 * Math.sin(t * 17);
+  const R = Math.min(W, H) * .62;
+  ctx.globalCompositeOperation = 'lighter';
+  const sg = ctx.createRadialGradient(angler.lx, angler.ly, 0, angler.lx, angler.ly, R);
+  sg.addColorStop(0, `rgba(120,235,255,${flick * alpha})`);
+  sg.addColorStop(.35, `rgba(70,180,220,${flick * .35 * alpha})`);
+  sg.addColorStop(1, 'rgba(40,120,180,0)');
+  ctx.fillStyle = sg;
+  ctx.fillRect(angler.lx - R, angler.ly - R, R * 2, R * 2);
+  // lure core
+  const cs = 56 + Math.sin(t * 6.3) * 8;
+  ctx.drawImage(G_PALE, angler.lx - cs/2, angler.ly - cs/2, cs, cs);
+  ctx.drawImage(G_CYAN, angler.lx - cs*.7, angler.ly - cs*.7, cs*1.4, cs*1.4);
+  ctx.globalCompositeOperation = 'source-over';
+  ctx.fillStyle = '#eafcff';
+  ctx.beginPath(); ctx.arc(angler.lx, angler.ly, 2.4, 0, 6.29); ctx.fill();
+
+  // --- illicium (stalk) from forehead to lure ---
+  const rootX = fx - 55 * s * face, rootY = fy - 50 * s;
+  ctx.strokeStyle = `rgba(10,20,32,${.9 * alpha})`;
+  ctx.lineWidth = 2.2 * s;
+  ctx.beginPath();
+  ctx.moveTo(rootX, rootY);
+  ctx.quadraticCurveTo((rootX + angler.lx) / 2, Math.min(rootY, angler.ly) - 70 * s, angler.lx, angler.ly);
+  ctx.stroke();
+
+  // --- silhouette (drawn after the light so it occludes it) ---
+  ctx.save();
+  ctx.translate(fx, fy);
+  ctx.scale(face * s, s); // path is drawn facing left; face=1 → mouth toward lure on left
+  ctx.fillStyle = 'rgba(1,4,10,.97)';
+  ctx.beginPath();
+  ctx.moveTo(-100, -4);                                   // snout tip
+  ctx.bezierCurveTo(-72, -50, 6, -64, 62, -50);           // forehead / back
+  ctx.bezierCurveTo(96, -42, 110, -22, 112, -6);          // rear taper
+  ctx.lineTo(146, -30);                                   // tail fin top
+  ctx.quadraticCurveTo(160, 0, 142, 30);                  // tail fan
+  ctx.lineTo(110, 8);                                     // tail rejoin
+  ctx.bezierCurveTo(92, 40, 26, 56, -52, 44);             // belly
+  ctx.lineTo(-104, 60);                                   // lower jaw tip
+  ctx.lineTo(-38, 12);                                    // inner mouth
+  ctx.closePath();
+  ctx.fill();
+  // dorsal spine
+  ctx.beginPath();
+  ctx.moveTo(20, -58); ctx.lineTo(34, -74); ctx.lineTo(48, -56);
+  ctx.fill();
+
+  // teeth + eye lit by lure proximity
+  const mouthWX = fx - 70 * s * face;
+  const lit = clamp(1 - Math.hypot(angler.lx - mouthWX, angler.ly - fy) / (520 * s), .12, 1) * alpha;
+  ctx.fillStyle = `rgba(220,233,240,${.8 * lit})`;
+  for (let i = 0; i < 6; i++){                            // upper teeth
+    const bx = -92 + i * 10, by = 2 + i * 1.6;
+    ctx.beginPath();
+    ctx.moveTo(bx, by); ctx.lineTo(bx + 3.4, by + 12 + (i%2)*4); ctx.lineTo(bx + 6, by + 1);
+    ctx.fill();
+  }
+  for (let i = 0; i < 6; i++){                            // lower teeth
+    const bx = -96 + i * 10.5, by = 52 - i * 6.4;
+    ctx.beginPath();
+    ctx.moveTo(bx, by); ctx.lineTo(bx + 5, by - 13 - (i%2)*4); ctx.lineTo(bx + 7, by + 1);
+    ctx.fill();
+  }
+  ctx.fillStyle = `rgba(61,245,255,${.55 * lit})`;
+  ctx.beginPath(); ctx.arc(-44, -20, 3.4, 0, 6.29); ctx.fill();
+  ctx.restore();
+
+  ctx.restore();
+  ctx.globalAlpha = 1;
+}
+
+/* ---------- background + vignette ---------- */
+function paintBG(){
+  const [top, bot] = zoneCols(smoothDepth);
+  const g = ctx.createLinearGradient(0, 0, 0, H);
+  g.addColorStop(0, top); g.addColorStop(1, bot);
+  ctx.fillStyle = g;
+  ctx.fillRect(0, 0, W, H);
+}
+function paintVignette(){
+  const a = clamp((smoothDepth - 900) / 3100, 0, .62);
+  if (a <= 0.01) return;
+  const r = Math.max(W, H) * .78;
+  const g = ctx.createRadialGradient(W/2, H/2, r * .3, W/2, H/2, r);
+  g.addColorStop(0, 'rgba(1,3,8,0)');
+  g.addColorStop(1, `rgba(1,3,8,${a})`);
+  ctx.fillStyle = g;
+  ctx.fillRect(0, 0, W, H);
+}
+
+/* ---------- reduced-motion static painting ---------- */
+function paintStatic(){
+  smoothDepth = targetDepth();
+  paintBG();
+  // sparse static snow, deterministic
+  ctx.fillStyle = 'rgba(220,233,240,.35)';
+  const n = Math.floor(80 * snowDensity(smoothDepth));
+  for (let i = 0; i < n; i++){
+    const x = ((i * 733) % 977) / 977 * W;
+    const y = ((i * 397) % 653) / 653 * H;
+    ctx.fillRect(x, y, 1.4, 1.4);
+  }
+  if (smoothDepth < 420) stepRays(1.7);
+  if (smoothDepth > 2900){
+    // static lure glow, centered
+    ctx.globalCompositeOperation = 'lighter';
+    ctx.drawImage(G_CYAN, W*.5 - 90, H*.42 - 90, 180, 180);
+    ctx.globalCompositeOperation = 'source-over';
+  }
+  paintVignette();
+  updateHUD();
+}
+
+/* ---------- main loop ---------- */
+let running = !RM, lastT = performance.now();
+function frame(now){
+  if (!running) return;
+  const dt = clamp((now - lastT) / 1000, 0.001, 0.05);
+  lastT = now;
+  const t = now / 1000;
+
+  depth = targetDepth();
+  smoothDepth += (depth - smoothDepth) * (1 - Math.pow(.0018, dt));
+  const sd = scrollY - lastScroll;   // scroll delta px (descent parallax)
+  lastScroll = scrollY;
+
+  paintBG();
+  stepRays(t);
+  stepSnow(dt, sd, t);
+  const ja = jellyAlpha(smoothDepth);
+  if (ja > 0) for (const j of jellies) j.step(dt, sd, t, ja);
+  stepFish(dt, sd);
+  paintVignette();
+  const aa = anglerAlpha(smoothDepth);
+  if (aa > 0) stepAngler(dt, t, aa);
+
+  updateHUD();
+  requestAnimationFrame(frame);
+}
+
+document.addEventListener('visibilitychange', () => {
+  if (RM) return;
+  if (document.hidden) running = false;
+  else if (!running){ running = true; lastT = performance.now(); lastScroll = scrollY; requestAnimationFrame(frame); }
+});
+
+/* ---------- section reveal ---------- */
+const io = new IntersectionObserver(es => {
+  for (const e of es) if (e.isIntersecting){ e.target.classList.add('vis'); io.unobserve(e.target); }
+}, {threshold: .18});
+document.querySelectorAll('.panel').forEach(p => io.observe(p));
+
+/* ---------- boot ---------- */
+resize();
+initSnow();
+initFish();
+lastScroll = scrollY;
+mx = W * .5; my = H * .45;
+if (RM){
+  paintStatic();
+  addEventListener('scroll', paintStatic, {passive:true});
+} else {
+  requestAnimationFrame(frame);
+}
+})();
+</script>
+</body>
+</html>

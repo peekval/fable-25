@@ -3,8 +3,8 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>FABLE / 25 — one model, twenty-five design languages</title>
-<meta name="description" content="25 fundamentally different websites, designed and built end-to-end by Fable. Every visual generated from code — shaders, canvas, SVG, CSS. Zero stock assets.">
+<title>FABLE / 25 — one model, forty design languages</title>
+<meta name="description" content="40 fundamentally different websites, designed and built end-to-end by Fable. Every visual generated from code — shaders, 3D, canvas, SVG, CSS. Zero stock assets.">
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='6' fill='%230B0B0E'/%3E%3Ctext x='16' y='22' font-size='14' font-family='monospace' fill='%23F5F3EE' text-anchor='middle'%3E25%3C/text%3E%3C/svg%3E">
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;700&family=Instrument+Serif:ital@0;1&display=swap" rel="stylesheet">
@@ -48,6 +48,9 @@ footer p{color:var(--mut);font-size:13.5px;font-weight:300;max-width:46ch;line-h
 footer p b{color:var(--ink);font-weight:500}
 .gbtn{display:inline-flex;align-items:center;gap:10px;border:1px solid rgba(245,243,238,.25);color:var(--ink);text-decoration:none;padding:14px 26px;border-radius:100px;font-size:14px;letter-spacing:.04em;transition:background .35s,color .35s}
 .gbtn:hover{background:var(--ink);color:var(--bg)}
+.wavehead{grid-column:1/-1;display:flex;align-items:baseline;gap:16px;padding:34px 4px 10px;border-bottom:1px solid var(--line);margin-bottom:8px}
+.wavehead span{font-size:12px;letter-spacing:.3em;text-transform:uppercase;color:var(--ink)}
+.wavehead em{font-family:"Instrument Serif",serif;font-style:italic;color:var(--mut);font-size:15px}
 @media (prefers-reduced-motion:reduce){.sw{animation:none}.card{transition:none;transform:none;opacity:1}}
 @media (max-width:520px){.grid{grid-template-columns:1fr 1fr;gap:10px}.tile{height:110px}.name{font-size:15px}.tag{display:none}.tech{margin-top:8px;font-size:9px}.body{padding:12px 12px 14px}}
 </style>
@@ -55,12 +58,12 @@ footer p b{color:var(--ink);font-weight:500}
 <body>
 <div class="wrap">
 <header>
-  <div class="kick">A design capability study — 25 sites, zero stock assets</div>
-  <h1>One model. <em>Twenty-five</em> design languages.</h1>
-  <p class="sub">Every site below is a complete, living landing page in a fundamentally different visual dialect — <b>and every pixel is generated from code</b>: WebGL shaders, canvas simulations, generative SVG, kinetic type. No photographs. No stock. Each passed three documented design-review iterations before shipping.</p>
+  <div class="kick">A design capability study — 40 sites, zero stock assets</div>
+  <h1>One model. <em>Forty</em> design languages.</h1>
+  <p class="sub">Every site below is a complete, living landing page in a fundamentally different visual dialect — <b>and every pixel is generated from code</b>: WebGL shaders, real-time 3D, canvas simulations, generative SVG, kinetic type. No photographs. No stock. Each passed three documented design-review iterations before shipping. Wave II sites each carry their own <b>/guide</b> with a copy-paste reproduction prompt.</p>
   <div class="meta-row">
-    <span><b>25</b>websites</span>
-    <span><b>75</b>iteration passes</span>
+    <span><b>40</b>websites</span>
+    <span><b>120</b>iteration passes</span>
     <span><b>0</b>stock images</span>
     <span><b>1</b>author — Fable</span>
   </div>
@@ -99,12 +102,28 @@ const SITES=[
 ["22","22-fieldnotes","FIELD NOTES","An illustrator's Portugal sketchbook that draws itself","svg line drawing",["#F8F4EA","#2B4C7E","#D97D54"]],
 ["23","23-void","VOID ATELIER","Monochrome architecture — light sweeps a concrete room","clip-path light",["#FFFFFF","#0D0D0D","#8a8a8a"]],
 ["24","24-wobble","WOBBLE","Gummy-candy brand with squishy physics and confetti","spring animation",["#FFF6E9","#FF9EC7","#A8E6CF"]],
-["25","25-seed","SEED","A generative gallery — every visit mints a new exhibition","seeded generative art",["#F5F5F2","#1C1C1C","#C73E2E"]]
+["25","25-seed","SEED","A generative gallery — every visit mints a new exhibition","seeded generative art",["#F5F5F2","#1C1C1C","#C73E2E"]],
+["26","26-voxelwerk","VOXELWERK","Game studio whose voxel island assembles itself around you","instanced 3d voxels",["#2A1E17","#E07856","#7FD8BE"]],
+["27","27-abyssal","ABYSSAL","One continuous dive to 4000m — jellyfish, boids, anglerfish","canvas deep-sea sims",["#030812","#3DF5FF","#8A5CFF"]],
+["28","28-pliage","PLIAGE","An origami crane folds itself out of a flat sheet","css 3d paper folding",["#FBF9F4","#D9302F","#B8B2A6"]],
+["29","29-framerate","FRAME:RATE","Fly a cinematic dolly through a tunnel of floating film titles","3d scroll dolly",["#0B0A0A","#FFB454","#8E1F2F"]],
+["30","30-terranova","TERRA NOVA","Terraform a procedural planet from rust to living green","planet shaders",["#05060B","#B0552F","#4CAF6E"]],
+["31","31-velum","VELUM","A real-time velvet curtain you brush — then it opens","verlet cloth sim",["#0D0709","#7A1425","#C9A55C"]],
+["32","32-noneuclid","NON-EUCLID","Impossible architecture raymarched live in your browser","glsl raymarching",["#E8E4DA","#2B3A9E","#FF5C1F"]],
+["33","33-steep","STEEP","Tea steeps around the type, following your cursor","fluid dye advection",["#F6F1E7","#B7C9B1","#4A3728"]],
+["34","34-prisma","PRISMA","A kaleidoscope you play with your hands","polar-fold shader",["#0A090D","#9B4DCA","#F5C542"]],
+["35","35-thermik","THERMIK","An endless low-poly dawn flight over the Alps","procedural terrain",["#FFC9A3","#C9B8E8","#5A4A6E"]],
+["36","36-glyphwerk","GLYPHWERK","3D shapes rendered as living ASCII, lit by your cursor","software ascii renderer",["#F4F2EC","#2743E0","#1B1B1F"]],
+["37","37-arcanum","ARCANUM","Holographic foil cards that shimmer under your pointer","holo foil tilt",["#0E0B18","#C9A227","#8A5CFF"]],
+["38","38-magnitude","MAGNITUDE","One scroll from the cosmic web down to a single atom","infinite zoom",["#0D1024","#7B6CFF","#46E3E3"]],
+["39","39-caldera","CALDERA","Molten lava you can stoke — hot sauce with scoville gauges","domain-warped fbm",["#16120F","#FF5A1F","#D42B12"]],
+["40","40-somnium","SOMNIUM","A dreamscape that drifts like falling asleep","damped depth parallax",["#232152","#B9AEE0","#F5C9B0"]]
 ];
 const grid=document.getElementById('grid');
-grid.innerHTML=SITES.map(([n,slug,name,tag,tech,cols])=>{
+grid.innerHTML=SITES.map(([n,slug,name,tag,tech,cols],i)=>{
   const g=`linear-gradient(125deg, ${cols[0]} 0%, ${cols[1]} 55%, ${cols[2]||cols[0]} 100%)`;
-  return `<a class="card" href="/${slug}/"><div class="tile"><div class="sw" style="--g:${g}"></div><span class="num">${n} / 25</span></div><div class="body"><div class="name">${name}<span class="arr">→</span></div><div class="tag">${tag}</div><div class="tech">${tech}</div></div></a>`;
+  const wave = i===0 ? `<div class="wavehead"><span>Wave I</span><em>the twenty-five dialects</em></div>` : (i===25 ? `<div class="wavehead"><span>Wave II</span><em>the escalation — heavier 3D, each with its own /guide + reproduction prompt</em></div>` : ``);
+  return wave+`<a class="card" href="/${slug}/"><div class="tile"><div class="sw" style="--g:${g}"></div><span class="num">${n} / 40</span></div><div class="body"><div class="name">${name}<span class="arr">→</span></div><div class="tag">${tag}</div><div class="tech">${tech}</div></div></a>`;
 }).join('');
 const io=new IntersectionObserver(es=>es.forEach((e,)=>{if(e.isIntersecting){e.target.classList.add('in');io.unobserve(e.target)}}),{threshold:.08});
 document.querySelectorAll('.card').forEach((c,i)=>{c.style.transitionDelay=(i%4*60)+'ms';io.observe(c)});

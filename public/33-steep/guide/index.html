@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>STEEP — How It Was Built</title>
+<meta name="description" content="How the STEEP tea-diffusion hero was built, and a reproduction prompt to make your own.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Infant:ital,wght@0,400;0,500;0,600;1,400&family=Karla:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+:root{
+  --celadon:#B7C9B1;
+  --cream:#F6F1E7;
+  --deep:#4A3728;
+  --matcha:#7A9B5E;
+  --deep12:rgba(74,55,40,.12);
+  --deep75:rgba(74,55,40,.78);
+}
+*{margin:0;padding:0;box-sizing:border-box}
+body{
+  background:var(--cream);color:var(--deep);
+  font-family:'Karla',sans-serif;font-size:17px;line-height:1.75;
+  -webkit-font-smoothing:antialiased;
+}
+::selection{background:var(--celadon);color:var(--deep)}
+h1,h2{font-family:'Cormorant Infant',serif;font-weight:500}
+.back{
+  position:fixed;top:1.1rem;left:1.2rem;z-index:60;
+  text-decoration:none;font-size:.85rem;letter-spacing:.12em;
+  color:var(--deep75);padding:.45rem .85rem;border-radius:99px;
+  background:rgba(246,241,231,.7);backdrop-filter:blur(6px);
+  border:1px solid var(--deep12);transition:background .3s,color .3s;
+}
+.back:hover{background:var(--deep);color:var(--cream)}
+main{max-width:760px;margin:0 auto;padding:9rem 1.5rem 5rem}
+.kicker{font-size:.78rem;letter-spacing:.36em;text-transform:uppercase;color:var(--matcha);font-weight:600;margin-bottom:1rem}
+h1{font-size:clamp(2.6rem,6vw,4.2rem);line-height:1.08;margin-bottom:1rem}
+.lede{font-family:'Cormorant Infant',serif;font-style:italic;font-size:1.35rem;color:var(--deep75);margin-bottom:4rem}
+h2{font-size:2rem;margin:3.5rem 0 1rem}
+p{color:var(--deep75);margin-bottom:1.1rem}
+.rule{width:52px;height:2px;background:var(--celadon);margin:3rem 0}
+.promptbox{
+  position:relative;background:#FFFDF8;border:1px solid var(--deep12);
+  border-radius:16px;padding:2.2rem 2rem;margin:1.5rem 0 1rem;
+  box-shadow:0 24px 48px -32px rgba(74,55,40,.3);
+}
+.promptbox p{
+  font-size:.95rem;line-height:1.8;color:var(--deep);margin:0;
+  white-space:pre-line;
+}
+.copybtn{
+  position:absolute;top:1rem;right:1rem;
+  background:var(--celadon);color:var(--deep);border:none;cursor:pointer;
+  font-family:'Karla',sans-serif;font-weight:600;font-size:.72rem;
+  letter-spacing:.14em;text-transform:uppercase;
+  padding:.55rem 1rem;border-radius:99px;transition:background .3s,color .3s;
+}
+.copybtn:hover{background:var(--matcha);color:var(--cream)}
+.copybtn:focus-visible{outline:2px solid var(--deep);outline-offset:2px}
+.links{display:flex;gap:1rem;flex-wrap:wrap;margin-top:3.5rem}
+.links a{
+  text-decoration:none;font-weight:600;font-size:.82rem;letter-spacing:.14em;text-transform:uppercase;
+  padding:.9rem 1.5rem;border-radius:99px;border:1px solid var(--deep);
+  color:var(--deep);transition:background .3s,color .3s;
+}
+.links a:hover{background:var(--deep);color:var(--cream)}
+.links a.primary{background:var(--deep);color:var(--cream)}
+.links a.primary:hover{background:var(--matcha);border-color:var(--matcha)}
+footer{max-width:760px;margin:0 auto;padding:0 1.5rem 3rem;font-size:.85rem;color:var(--deep75)}
+</style>
+</head>
+<body>
+
+<a class="back" href="/">←&nbsp;25</a>
+
+<main>
+  <p class="kicker">STEEP · Build notes</p>
+  <h1>How the tea steeps</h1>
+  <p class="lede">The hero is a small fluid illusion: no shaders, no physics library — one canvas, three thousand particles, and a field that never stops swirling.</p>
+
+  <h2>How it was built</h2>
+  <p>The dye is a pool of particles advected through a curl-noise velocity field — an analytic stream function whose curl guarantees divergence-free, swirling motion that reads as liquid rather than smoke. The canvas is never cleared; instead, every frame lays down a translucent wash of the cream background colour, so each particle's short stroke accumulates into long, soft diffusion trails that bloom and settle exactly like tea colouring still water.</p>
+  <p>Moving the cursor pours dye along the pointer's path, and the stroke's own momentum is handed to the new particles so a fast gesture flings colour before the field reclaims it. When the visitor is idle, a drip falls every few seconds from one of three drifting points, so the water is alive even untouched. The word STEEP sits inside the fluid: a blurred glyph mask is subtracted from the dye every frame, so the colour curls around and behind the letterforms instead of covering them. Everything runs in a single animation loop that pauses off-screen, caps device-pixel-ratio at two, halves the particle budget on mobile, and swaps to a pre-bloomed static swirl for reduced-motion visitors.</p>
+
+  <div class="rule"></div>
+
+  <h2>Reproduction prompt</h2>
+  <p>Paste this into your favourite coding agent to grow a sibling of this site.</p>
+
+  <div class="promptbox">
+    <button class="copybtn" id="copy" type="button">Copy</button>
+    <p id="prompt">Build a one-page website for STEEP, a modern tea house and ceremony studio. Palette: celadon #B7C9B1, cream porcelain #F6F1E7, deep tea #4A3728, matcha #7A9B5E. Fonts from Google: Cormorant Infant for headings, Karla for body. The hero is an interactive fluid simulation of tea steeping into clear water: a pool of roughly 3000 particles (half on mobile) advected by an analytic curl-noise velocity field, rendered as short soft strokes onto a canvas that is never cleared — fade it each frame with a translucent cream fill so trails accumulate into ink-like diffusion. Moving the cursor pours tea-brown dye along its path, inheriting stroke momentum; when idle, auto-drips fall every few seconds so the water stays alive. The giant serif title STEEP sits inside the fluid: subtract a blurred glyph mask from the dye each frame so colour flows around and behind the letters. Cap DPR at 2, use a single requestAnimationFrame loop, pause when hidden, and draw one static pre-bloomed swirl for prefers-reduced-motion. Below the hero: a philosophy section with a large italic pull-quote, three tea cards with hand-drawn porcelain-cup SVGs and animated bezier steam wisps, a horizontal ceremony timeline (0:30, 1:00, 2:00) whose gradient fill animates on scroll, and a quiet booking section on deep-tea brown. Mood: calm, precise, ceremonial — generous whitespace, slow easings, nothing loud.</p>
+  </div>
+
+  <div class="links">
+    <a class="primary" href="/33-steep/">Visit STEEP</a>
+    <a href="/">All 25 sites</a>
+  </div>
+</main>
+
+<footer>STEEP · built with one canvas and patience.</footer>
+
+<script>
+(function(){
+  var btn=document.getElementById('copy');
+  var txt=document.getElementById('prompt');
+  btn.addEventListener('click',function(){
+    var s=txt.textContent.trim();
+    function done(ok){
+      btn.textContent=ok?'Copied':'Select & copy';
+      setTimeout(function(){btn.textContent='Copy';},2000);
+    }
+    if(navigator.clipboard&&navigator.clipboard.writeText){
+      navigator.clipboard.writeText(s).then(function(){done(true);},function(){done(false);});
+    }else{
+      var r=document.createRange();r.selectNodeContents(txt);
+      var sel=getSelection();sel.removeAllRanges();sel.addRange(r);
+      done(document.execCommand('copy'));
+    }
+  });
+})();
+</script>
+</body>
+</html>

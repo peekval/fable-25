@@ -39,8 +39,8 @@ footer a{color:var(--ink);text-decoration:none;border-bottom:1px solid var(--lin
 <a class="back" href="/">←&nbsp;25</a>
 <div class="wrap">
 <div class="kick">The Guide</div>
-<h1>How twenty-five websites<br>were built <em>from nothing.</em></h1>
-<p class="lead">This entire showcase — 25 sites, every visual, every animation, all copywriting — was designed and built end-to-end by <b>Fable (Claude)</b> running in Claude Code, autonomously, in a single working session. Here is the exact process, so you can run it yourself.</p>
+<h1>How forty websites<br>were built <em>from nothing.</em></h1>
+<p class="lead">This entire showcase — 40 sites, every visual, every animation, all copywriting — was designed and built end-to-end by <b>Fable (Claude)</b> running in Claude Code, autonomously. Wave I shipped 25 dialects; Wave II escalated with 15 heavier 3D pieces. Here is the exact process, so you can run it yourself.</p>
 
 <h2>01 — The one rule</h2>
 <p><b>No external imagery. Zero.</b> The original plan considered generated images and video-animation pipelines, but those integrations weren't available in the environment — so the constraint became the concept: everything you see is produced by code at runtime. WebGL fragment shaders, three.js scenes, 2D-canvas particle and fluid simulations, generative algorithms with seeded randomness, self-drawing SVG line art, and pure CSS. A constraint like this is worth adopting even when you <em>do</em> have image models: it forces design instead of decoration, keeps every site under ~50&nbsp;KB, and means nothing on the page is borrowed.</p>
@@ -92,6 +92,10 @@ footer a{color:var(--ink);text-decoration:none;border-bottom:1px solid var(--lin
 <li>Ship everything as <b>one static deploy</b> with a gallery hub, so the work is browsable as a body of work.</li>
 </ol>
 </div>
+
+<h2>07 — Wave II: escalation &amp; reproduction prompts</h2>
+<p>The 15 Wave II sites (26–40) push into heavier real-time work — instanced voxel assembly, raymarched fractals, Verlet cloth, fluid dye advection, procedural planets, software ASCII rendering, holographic foil — under a strict performance contract: 60fps targets, instancing over per-object meshes, reduced internal shader resolution, capped particle counts with mobile fallbacks, paused offscreen renderers.</p>
+<p><b>Every Wave II site carries its own <code>/guide</code> route</b> (linked from its footer). Each one documents how that site was built and includes a boxed, copy-paste <b>reproduction prompt</b> — the exact palette hexes, font names, signature technique, layout principle and mood, precise enough for any capable AI to rebuild a similar site, without disclosing a line of source code. That is the template: <em>sell the recipe, keep the craft.</em></p>
 
 <footer>
 <span>Designed &amp; built end-to-end by Fable (Claude), July 2026.</span>

@@ -1,0 +1,157 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Guide — How GLYPHWERK was built</title>
+<meta name="description" content="How the GLYPHWERK ASCII 3D showcase was built: point projection, luminance ramps, row-string rendering and morphing point sets — plus a copy-paste reproduction prompt.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wght@700;900&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<!--
+  PASS 1: matched the main site's chrome (back pill, blue rules, section numbers);
+          fixed prompt box overflowing on mobile (pre-wrap + max-width);
+          corrected guide->site relative link to absolute /36-glyphwerk/.
+  PASS 2: copy button now uses navigator.clipboard with execCommand fallback,
+          confirms with "Copied ✓" state for 1.6s; prompt text moved into a
+          single <pre> so the copied string carries no HTML whitespace noise;
+          added decorative ASCII torus header as static text (no JS cost).
+  PASS 3: focus-visible rings, aria-live on the copy confirmation,
+          print styles (prompt box breaks cleanly), selection colors matched.
+-->
+<style>
+  :root{--paper:#F4F2EC;--ink:#1B1B1F;--blue:#2743E0;--rule:rgba(27,27,31,.18)}
+  *{margin:0;padding:0;box-sizing:border-box}
+  body{background:var(--paper);color:var(--ink);font-family:'IBM Plex Mono',monospace;font-size:15px;line-height:1.65;-webkit-font-smoothing:antialiased}
+  ::selection{background:var(--blue);color:var(--paper)}
+  h1,h2{font-family:'Archivo',sans-serif;font-weight:900;letter-spacing:-.02em;line-height:1;text-transform:uppercase}
+  a{color:inherit}
+  a:focus-visible,button:focus-visible{outline:3px solid var(--blue);outline-offset:3px}
+  .back{position:fixed;top:1.1rem;left:1.1rem;z-index:60;font-size:.8rem;font-weight:600;text-decoration:none;background:var(--ink);color:var(--paper);padding:.45rem .85rem;letter-spacing:.06em}
+  .back:hover{background:var(--blue)}
+  .wrap{max-width:860px;margin:0 auto;padding:6.5rem clamp(1.2rem,4vw,2.5rem) 4rem}
+  .kicker{font-size:.72rem;letter-spacing:.18em;text-transform:uppercase;color:var(--blue);font-weight:600;display:flex;align-items:center;gap:1rem}
+  .kicker .rule{flex:1;height:2px;background:var(--blue)}
+  h1{font-size:clamp(2.2rem,6.5vw,4rem);margin:.8rem 0 1.4rem}
+  h1 span{color:var(--blue)}
+  .torus-art{font-size:.6rem;line-height:1.05;color:var(--blue);margin:0 0 2rem;overflow:hidden;user-select:none}
+  .sec{border-top:2px solid var(--ink);padding-top:1.1rem;margin-top:3rem}
+  .sec .no{font-size:.75rem;color:var(--blue);font-weight:600}
+  .sec h2{font-size:clamp(1.4rem,3.4vw,2rem);margin:.3rem 0 1.2rem}
+  .sec p{max-width:64ch;margin-bottom:1rem}
+  .sec p b{color:var(--blue);font-weight:600}
+  .promptbox{border:2px solid var(--ink);position:relative;background:#fff;margin-top:1.4rem}
+  .promptbox .head{display:flex;justify-content:space-between;align-items:center;gap:1rem;border-bottom:2px solid var(--ink);padding:.6rem .9rem;background:var(--paper)}
+  .promptbox .head span{font-size:.68rem;letter-spacing:.14em;text-transform:uppercase;font-weight:600}
+  .promptbox pre{white-space:pre-wrap;word-break:break-word;font-family:'IBM Plex Mono',monospace;font-size:.82rem;line-height:1.7;padding:1.3rem 1.4rem;max-width:100%}
+  button.copy{font-family:'IBM Plex Mono',monospace;font-size:.72rem;font-weight:600;letter-spacing:.08em;text-transform:uppercase;background:var(--blue);color:var(--paper);border:2px solid var(--blue);padding:.4rem 1rem;cursor:pointer}
+  button.copy:hover{background:var(--paper);color:var(--blue)}
+  button.copy.done{background:var(--ink);border-color:var(--ink);color:var(--paper)}
+  .links{display:flex;gap:1rem;flex-wrap:wrap;margin-top:3rem}
+  .links a{text-decoration:none;border:2px solid var(--ink);padding:.75rem 1.5rem;font-size:.8rem;font-weight:600;letter-spacing:.08em;text-transform:uppercase}
+  .links a:hover{background:var(--blue);border-color:var(--blue);color:var(--paper)}
+  footer{border-top:1px solid var(--rule);margin-top:3.5rem;padding-top:1.2rem;font-size:.72rem;color:rgba(27,27,31,.6);display:flex;justify-content:space-between;gap:1rem;flex-wrap:wrap}
+  @media print{.back,.links,button.copy{display:none}.promptbox{break-inside:avoid}}
+</style>
+</head>
+<body>
+
+<a class="back" href="/">←&nbsp;25</a>
+
+<main class="wrap">
+  <div class="kicker"><span>Glyphwerk — Build Guide</span><span class="rule" aria-hidden="true"></span><span>No. 36</span></div>
+  <h1>How it <span>was built</span></h1>
+
+<pre class="torus-art" aria-hidden="true">
+                    .:-==++++==-:.
+                :=+*#%%%@@@@%%#*+=:
+              -+#%@@@%#*++++*#%@@@%#+-
+             =*%@@%+-:          :-+%@@%*=
+            +#@@%=:      ..       :=%@@#+
+            *%@@+:     :+**+:      :+@@%*
+            +#@@%=:     -==-      :=%@@#+
+             =*%@@%+-:          :-+%@@%*=
+              -+#%@@@%#*++++*#%@@@%#+-
+                :=+*#%%%@@@@%%#*+=:
+                    .:-==++++==-:.
+</pre>
+
+  <div class="sec">
+    <span class="no">01</span>
+    <h2>The technique</h2>
+    <p>The spinning shapes on the GLYPHWERK site are not WebGL and not video — they are <b>text</b>, redrawn sixty times a second on a plain 2D canvas. A few thousand points are generated once for each solid (torus, lat/long sphere, cube grid), rotated with two rotation matrices, and pushed through a simple perspective <b>point projection</b> onto a character grid of roughly 110 by 55 cells, with a z-buffer keeping only the nearest point per cell.</p>
+    <p>Each surviving point carries a surface normal; a single Lambert dot-product against a light vector — which follows the visitor's <b>cursor</b> — yields a brightness value, and that brightness indexes into the classic <b>luminance ramp</b> "&nbsp;.:-=+*#%@", so dense glyphs read as lit surface and sparse ones as shadow. The morphing happens because every shape has exactly the same point count: transitioning is a plain <b>lerp between point sets</b>, eased with smoothstep, normals re-normalized mid-flight.</p>
+    <p>Speed comes from <b>row-string rendering</b>: instead of thousands of fillText calls, each grid row is assembled into one ink string and one blue-highlight string, so a full frame costs about a hundred draw calls. ASCII canvases run at device-pixel-ratio 1, offscreen renderers are paused by an IntersectionObserver, and prefers-reduced-motion collapses everything to a single lit still frame.</p>
+  </div>
+
+  <div class="sec">
+    <span class="no">02</span>
+    <h2>Reproduction prompt</h2>
+    <p>Paste this into a capable coding model to rebuild the site from scratch. It contains no code — only the recipe.</p>
+
+    <div class="promptbox">
+      <div class="head">
+        <span>Prompt — ~230 words</span>
+        <button class="copy" id="copyBtn" type="button">Copy prompt</button>
+      </div>
+      <pre id="promptText">Build a single-file showcase website for "GLYPHWERK", a fictional Zürich school for creative coding, in a light Swiss-editorial style: newsprint background #F4F2EC, ink text #1B1B1F, international blue accent #2743E0. Google Fonts only: Archivo (black, uppercase editorial headings) and IBM Plex Mono (body, labels, and the artwork itself). No images, no libraries, no WebGL.
+
+Signature piece: a hero canvas showing real-time 3D rendered as ASCII text. Write a tiny software point projector on a 2D canvas: precompute equal-sized point sets (with normals) for a torus, a lat/long sphere, and a cube face grid; rotate them, perspective-project onto a ~110×55 character grid (~64×36 on mobile), z-buffer per cell, shade with a Lambert dot product against a light vector that follows the cursor, and map brightness to the ramp " .:-=+*#%@". Morph between the three solids every few seconds by lerping point sets with smoothstep. Render each frame as whole row strings (one ink layer, one blue highlight layer for the brightest cells) for 60fps; keep DPR at 1; pause offscreen canvases; show a static lit frame under prefers-reduced-motion.
+
+Sections: hero with big headline "Geometry, set in type."; a philosophy manifesto ("the renderer, not the framework"); three courses, each with a small live ASCII canvas (torus/sphere/cube in blue); a described student-work index; an apply section with semester terms; editorial footer. Sharp pedagogic copy throughout, thin blue rules, numbered sections, generous whitespace.</pre>
+    </div>
+    <p aria-live="polite" class="visuallyhidden" id="copyStatus" style="position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0)"></p>
+  </div>
+
+  <div class="sec">
+    <span class="no">03</span>
+    <h2>See it live</h2>
+    <div class="links">
+      <a href="/36-glyphwerk/">← Back to Glyphwerk</a>
+      <a href="/">All 25 sites</a>
+    </div>
+  </div>
+
+  <footer>
+    <span>Glyphwerk — build guide</span>
+    <span>Every image on that page is text.</span>
+  </footer>
+</main>
+
+<script>
+(function(){
+  var btn = document.getElementById("copyBtn");
+  var txt = document.getElementById("promptText");
+  var status = document.getElementById("copyStatus");
+  var t;
+  function done(ok){
+    btn.textContent = ok ? "Copied ✓" : "Select & copy manually";
+    btn.classList.add("done");
+    status.textContent = ok ? "Prompt copied to clipboard" : "Copy failed";
+    clearTimeout(t);
+    t = setTimeout(function(){
+      btn.textContent = "Copy prompt";
+      btn.classList.remove("done");
+    }, 1600);
+  }
+  btn.addEventListener("click", function(){
+    var s = txt.textContent;
+    if(navigator.clipboard && navigator.clipboard.writeText){
+      navigator.clipboard.writeText(s).then(function(){done(true);}, function(){fallback(s);});
+    } else { fallback(s); }
+  });
+  function fallback(s){
+    var ta = document.createElement("textarea");
+    ta.value = s;
+    ta.style.position = "fixed"; ta.style.opacity = "0";
+    document.body.appendChild(ta);
+    ta.select();
+    var ok = false;
+    try{ ok = document.execCommand("copy"); }catch(e){}
+    document.body.removeChild(ta);
+    done(ok);
+  }
+})();
+</script>
+</body>
+</html>

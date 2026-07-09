@@ -1,0 +1,637 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>THERMIK — Gleitschirm-Flugschule in den Alpen</title>
+<meta name="description" content="THERMIK Flugschule: Gleitschirmfliegen lernen im Berner Oberland. Schnupperkurse, Grundausbildung, Alpinkurse und Tandemflüge im Morgenlicht.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Gabarito:wght@500;700;800;900&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<!--
+PASS 1 — HORIZON SEAM (fixes):
+  1. Fog color was pure #FFC9A3 and the terrain edge cut a hard line against the sky gradient.
+     Sampled the CSS gradient at the on-screen horizon row (~62%) and set fog to #FFDDBB — the
+     far tile now dissolves into the same tone the gradient paints behind it. Seam gone.
+  2. New tiles used to spawn at z = -1400 with fog far at 1000, but on ultrawide screens the
+     spawn pop was still visible at the corners. Pushed fog far to 1150 and the recycle line to
+     -1750 so a tile is always fully fogged before it teleports.
+  3. Cracks appeared where the two leapfrogging tiles met, because heights were sampled in tile-
+     local space. Rewrote sampling in continuous world-z (localZ + tile.noiseZ) so boundary
+     vertices of adjacent tiles evaluate the exact same noise coordinate — edges now weld.
+  4. Sun disk and glow sprite were being tinted grey by the fog. Set fog:false on both materials
+     so the dawn sun stays luminous at the horizon.
+PASS 2 — PALETTE / DAWN BELIEVABILITY (fixes):
+  1. Flat white ambient light made the scene look like noon. Replaced with a HemisphereLight
+     (lavender #C9B8E8 sky / plum #5A4A6E ground) plus a low warm DirectionalLight #FFD9A8 —
+     faces toward the sun now catch peach, shadowed faces fall into cool plum.
+  2. Altitude bands had hard cuts (plum|peach|snow stripes). Added smooth lerps between bands
+     plus a per-face hash jitter of ±9m on the thresholds — the snowline now feathers naturally.
+  3. Snow was pure #FFFFFF and glowed unrealistically before sunrise. Warmed it to #FFF7F0 so
+     the directional light supplies the pink alpenglow instead of the vertex color.
+  4. Sky gradient had only two stops and banded on soft displays; added intermediate stops
+     (#C9B8E8, #FFE3C2) and matched section-1 background to the top stop for a seamless handoff.
+PASS 3 — MOBILE (fixes):
+  1. 120×80 segments dropped frames on mid-range phones. Below 760px the tiles build with 70×46
+     segments and DPR clamps to 2 (1.5 under 400px width) — steady 60fps again.
+  2. Mouse-banking was dead on touch screens, so the flight felt frozen. Added a slow autonomous
+     sway (sin-driven bank + drift) that takes over when no pointer has moved for 2s.
+  3. Portrait screens cropped the ridges; FOV now widens from 60° to 74° under 760px and the
+     camera lifts 12 units so both valley walls stay in frame.
+  4. Course tiers collapsed awkwardly at 700px; grid now stacks to one column at 860px, fluid
+     clamp() typography throughout, and tap targets grew to 48px minimum.
+-->
+<style>
+:root{
+  --peach:#FFC9A3; --lav:#C9B8E8; --plum:#5A4A6E; --plum-deep:#46395B; --plum-ink:#3A2F4C;
+  --snow:#FFF7F0; --sky-hi:#B8A5DC; --sky-lo:#FFE3C2; --glow:#FFB37E;
+  --disp:'Gabarito',sans-serif; --body:'Inter',sans-serif;
+}
+*{margin:0;padding:0;box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{font-family:var(--body);color:var(--plum-ink);background:var(--snow);overflow-x:hidden;line-height:1.6}
+::selection{background:var(--plum);color:var(--snow)}
+
+/* fixed back link */
+.back{position:fixed;top:1rem;left:1rem;z-index:60;font-family:var(--disp);font-weight:700;font-size:.9rem;
+  color:var(--plum-deep);text-decoration:none;background:rgba(255,247,240,.75);backdrop-filter:blur(8px);
+  padding:.5rem .85rem;border-radius:999px;border:1px solid rgba(90,74,110,.25);transition:transform .2s,background .2s}
+.back:hover{transform:translateX(-2px);background:var(--snow)}
+
+/* nav */
+nav{position:fixed;top:1rem;right:1rem;z-index:60;display:flex;gap:.6rem;align-items:center}
+.brand{font-family:var(--disp);font-weight:900;letter-spacing:.14em;font-size:.95rem;color:var(--plum-deep);
+  background:rgba(255,247,240,.75);backdrop-filter:blur(8px);padding:.55rem .95rem;border-radius:999px;border:1px solid rgba(90,74,110,.25)}
+.nav-cta{font-family:var(--disp);font-weight:700;font-size:.9rem;color:var(--snow);background:var(--plum-deep);
+  text-decoration:none;padding:.6rem 1.1rem;border-radius:999px;transition:transform .2s,box-shadow .2s;min-height:44px;display:flex;align-items:center}
+.nav-cta:hover{transform:translateY(-2px);box-shadow:0 8px 24px rgba(70,57,91,.35)}
+
+/* hero */
+.hero{height:190vh;position:relative}
+.hero-sticky{position:sticky;top:0;height:100vh;overflow:hidden;
+  background:linear-gradient(180deg,#B8A5DC 0%,#C9B8E8 26%,#FFE3C2 62%,#FFC9A3 86%,#FFD9B8 100%)}
+#sky{position:absolute;inset:0;width:100%;height:100%;display:block}
+.hero-copy{position:absolute;inset:0;display:flex;flex-direction:column;justify-content:center;align-items:center;
+  text-align:center;z-index:5;pointer-events:none;padding:0 1.2rem}
+.hero-copy>*{pointer-events:auto}
+.hero-badge{font-family:var(--disp);font-weight:700;font-size:.8rem;letter-spacing:.22em;text-transform:uppercase;
+  color:var(--plum-deep);background:rgba(255,247,240,.6);backdrop-filter:blur(6px);padding:.45rem 1rem;border-radius:999px;
+  border:1px solid rgba(90,74,110,.25);margin-bottom:1.4rem}
+h1{font-family:var(--disp);font-weight:900;font-size:clamp(2.6rem,8.5vw,6.2rem);line-height:.98;color:var(--plum-deep);
+  text-shadow:0 2px 30px rgba(255,247,240,.5)}
+h1 em{font-style:normal;display:block;color:transparent;background:linear-gradient(100deg,var(--plum-deep) 10%,#8a6fae 55%,var(--plum-deep) 90%);
+  -webkit-background-clip:text;background-clip:text}
+.hero-sub{max-width:34rem;margin:1.3rem auto 2rem;font-size:clamp(1rem,2vw,1.15rem);color:var(--plum);font-weight:500}
+.hero-ctas{display:flex;gap:.8rem;flex-wrap:wrap;justify-content:center}
+.btn{font-family:var(--disp);font-weight:700;font-size:1rem;text-decoration:none;padding:.9rem 1.7rem;border-radius:999px;
+  transition:transform .2s,box-shadow .2s;display:inline-flex;align-items:center;gap:.5rem;min-height:48px}
+.btn-solid{background:var(--plum-deep);color:var(--snow)}
+.btn-solid:hover{transform:translateY(-3px);box-shadow:0 12px 30px rgba(70,57,91,.4)}
+.btn-ghost{background:rgba(255,247,240,.55);backdrop-filter:blur(6px);color:var(--plum-deep);border:1.5px solid rgba(90,74,110,.4)}
+.btn-ghost:hover{transform:translateY(-3px);background:var(--snow)}
+.scroll-hint{position:absolute;bottom:2rem;left:50%;transform:translateX(-50%);z-index:5;font-size:.75rem;
+  letter-spacing:.25em;text-transform:uppercase;color:var(--plum-deep);opacity:.7;font-weight:600}
+.scroll-hint::after{content:"";display:block;width:1px;height:34px;background:var(--plum-deep);margin:.5rem auto 0;
+  animation:drip 2.2s ease-in-out infinite}
+@keyframes drip{0%{transform:scaleY(0);transform-origin:top}45%{transform:scaleY(1);transform-origin:top}
+  55%{transform:scaleY(1);transform-origin:bottom}100%{transform:scaleY(0);transform-origin:bottom}}
+
+/* sections as altitude bands */
+section{position:relative;padding:clamp(4.5rem,9vw,8rem) 1.5rem}
+.band{max-width:1080px;margin:0 auto}
+.alt-line{display:flex;align-items:center;gap:1rem;margin-bottom:2.6rem}
+.alt-line::before{content:"";flex:0 0 3rem;height:2px;background:currentColor;opacity:.5}
+.alt-line span{font-family:var(--disp);font-weight:700;font-size:.85rem;letter-spacing:.28em;text-transform:uppercase;opacity:.85}
+h2{font-family:var(--disp);font-weight:800;font-size:clamp(2rem,5vw,3.4rem);line-height:1.05;color:var(--plum-deep);margin-bottom:1.2rem;max-width:22ch}
+.lede{font-size:clamp(1.02rem,1.8vw,1.2rem);max-width:38rem;color:var(--plum)}
+
+/* intro */
+#schule{background:linear-gradient(180deg,#B8A5DC 0%,#C9B8E8 55%,#DCCEF0 100%);color:var(--plum-deep)}
+.stats{display:grid;grid-template-columns:repeat(3,1fr);gap:1.2rem;margin-top:3rem}
+.stat{background:rgba(255,247,240,.5);backdrop-filter:blur(4px);border:1px solid rgba(90,74,110,.18);
+  border-radius:20px;padding:1.6rem 1.4rem}
+.stat b{font-family:var(--disp);font-weight:900;font-size:clamp(1.9rem,4vw,2.8rem);display:block;color:var(--plum-deep)}
+.stat span{font-size:.9rem;color:var(--plum)}
+
+/* courses */
+#kurse{background:linear-gradient(180deg,#DCCEF0 0%,#F3DFD2 45%,#FFE3C2 100%)}
+.tiers{display:grid;grid-template-columns:repeat(3,1fr);gap:1.3rem;margin-top:3rem;align-items:end}
+.tier{border-radius:24px;padding:1.9rem 1.6rem;display:flex;flex-direction:column;gap:.7rem;position:relative;
+  border:1px solid rgba(90,74,110,.18);transition:transform .25s,box-shadow .25s;background:var(--snow)}
+.tier:hover{transform:translateY(-8px);box-shadow:0 18px 45px rgba(70,57,91,.22)}
+.tier-alt{font-family:var(--disp);font-weight:800;letter-spacing:.18em;font-size:.78rem;text-transform:uppercase;
+  color:var(--plum);display:flex;align-items:center;gap:.5rem}
+.tier-alt::before{content:"▲";font-size:.65rem}
+.tier h3{font-family:var(--disp);font-weight:800;font-size:1.5rem;color:var(--plum-deep)}
+.tier p{font-size:.95rem;color:var(--plum)}
+.tier ul{list-style:none;margin:.4rem 0 .8rem;display:flex;flex-direction:column;gap:.4rem}
+.tier li{font-size:.9rem;padding-left:1.3rem;position:relative;color:var(--plum-ink)}
+.tier li::before{content:"✓";position:absolute;left:0;font-weight:700;color:var(--plum)}
+.price{font-family:var(--disp);font-weight:900;font-size:1.7rem;color:var(--plum-deep)}
+.price small{font-size:.85rem;font-weight:600;color:var(--plum)}
+.tier .btn{justify-content:center;margin-top:auto;font-size:.92rem;padding:.75rem 1.2rem}
+.tier-1{background:linear-gradient(160deg,#FFF7F0,#F6EAF8);min-height:26rem}
+.tier-2{background:linear-gradient(160deg,#FFF7F0,#FFE9D6);min-height:29rem;border-width:2px;border-color:rgba(90,74,110,.4)}
+.tier-3{background:linear-gradient(160deg,#FFF7F0,#EDE4F7);min-height:32rem}
+.tag{position:absolute;top:-0.85rem;left:1.4rem;background:var(--plum-deep);color:var(--snow);font-family:var(--disp);
+  font-weight:700;font-size:.72rem;letter-spacing:.14em;text-transform:uppercase;padding:.35rem .8rem;border-radius:999px}
+
+/* safety */
+#sicherheit{background:linear-gradient(180deg,#FFE3C2 0%,#FFD3AE 60%,#FFC9A3 100%)}
+.safety-grid{display:grid;grid-template-columns:1.1fr .9fr;gap:3rem;margin-top:2.5rem;align-items:start}
+.check{list-style:none;display:flex;flex-direction:column;gap:1rem}
+.check li{background:rgba(255,247,240,.65);border:1px solid rgba(90,74,110,.18);border-radius:16px;
+  padding:1.05rem 1.2rem 1.05rem 3.1rem;position:relative;font-size:.97rem;color:var(--plum-ink)}
+.check li::before{content:"✓";position:absolute;left:1.15rem;top:1rem;width:1.35rem;height:1.35rem;border-radius:50%;
+  background:var(--plum-deep);color:var(--snow);display:flex;align-items:center;justify-content:center;font-size:.75rem;font-weight:700}
+.crew{display:flex;flex-direction:column;gap:1rem}
+.pilot{display:flex;gap:1rem;align-items:center;background:rgba(255,247,240,.65);border:1px solid rgba(90,74,110,.18);
+  border-radius:16px;padding:1rem 1.2rem}
+.ava{flex:0 0 3.2rem;height:3.2rem;border-radius:50%;font-family:var(--disp);font-weight:800;font-size:1.05rem;
+  display:flex;align-items:center;justify-content:center;color:var(--snow)}
+.a1{background:linear-gradient(135deg,#5A4A6E,#8a6fae)}.a2{background:linear-gradient(135deg,#c77e52,#FFB37E)}
+.a3{background:linear-gradient(135deg,#7e6a9e,#C9B8E8)}
+.pilot b{font-family:var(--disp);font-weight:700;color:var(--plum-deep);display:block}
+.pilot span{font-size:.85rem;color:var(--plum)}
+
+/* tandem */
+#tandem{background:linear-gradient(180deg,#FFC9A3 0%,#FFE0C8 40%,#FFF7F0 100%)}
+.tandem-grid{display:grid;grid-template-columns:1fr 1fr;gap:3rem;margin-top:2.5rem;align-items:start}
+.tandem-list{list-style:none;display:flex;flex-direction:column;gap:.9rem;margin-top:1.4rem}
+.tandem-list li{padding-left:1.6rem;position:relative;color:var(--plum-ink)}
+.tandem-list li::before{content:"◆";position:absolute;left:0;color:var(--plum);font-size:.7rem;top:.35rem}
+form{background:var(--snow);border:1px solid rgba(90,74,110,.22);border-radius:24px;padding:2rem;
+  display:flex;flex-direction:column;gap:1rem;box-shadow:0 18px 50px rgba(70,57,91,.15)}
+label{font-family:var(--disp);font-weight:700;font-size:.85rem;color:var(--plum-deep);display:flex;flex-direction:column;gap:.35rem}
+input,select{font-family:var(--body);font-size:1rem;padding:.75rem .9rem;border-radius:12px;border:1.5px solid rgba(90,74,110,.3);
+  background:#fff;color:var(--plum-ink);min-height:48px}
+input:focus,select:focus{outline:2px solid var(--plum);outline-offset:1px;border-color:var(--plum)}
+.form-row{display:grid;grid-template-columns:1fr 1fr;gap:1rem}
+form .btn{justify-content:center;border:none;cursor:pointer;font-size:1.05rem}
+.form-ok{display:none;background:#e8f5e4;border:1px solid #9ec98f;color:#3d6b32;border-radius:12px;padding:.9rem 1.1rem;font-size:.95rem}
+.form-note{font-size:.78rem;color:var(--plum);opacity:.8}
+
+/* footer */
+footer{background:var(--plum-deep);color:#D9CCEC;padding:3.5rem 1.5rem 2.5rem}
+.foot{max-width:1080px;margin:0 auto;display:flex;justify-content:space-between;gap:2rem;flex-wrap:wrap}
+.foot-brand{font-family:var(--disp);font-weight:900;letter-spacing:.14em;font-size:1.3rem;color:var(--snow)}
+.foot p{font-size:.88rem;max-width:26rem;margin-top:.6rem;color:#BBA9D6}
+.foot-links{display:flex;flex-direction:column;gap:.5rem;font-size:.92rem}
+.foot-links a{color:#D9CCEC;text-decoration:none;transition:color .2s}
+.foot-links a:hover{color:var(--snow)}
+.foot-bottom{max-width:1080px;margin:2.5rem auto 0;padding-top:1.4rem;border-top:1px solid rgba(217,204,236,.2);
+  font-size:.8rem;color:#9d8cba;display:flex;justify-content:space-between;flex-wrap:wrap;gap:.6rem}
+.foot-bottom a{color:#BBA9D6}
+
+/* reveal */
+.rv{opacity:0;transform:translateY(26px);transition:opacity .7s ease,transform .7s ease}
+.rv.in{opacity:1;transform:none}
+@media (prefers-reduced-motion:reduce){
+  .rv{opacity:1;transform:none;transition:none}
+  .scroll-hint::after{animation:none}
+  html{scroll-behavior:auto}
+}
+@media (max-width:860px){
+  .stats{grid-template-columns:1fr}
+  .tiers{grid-template-columns:1fr}
+  .tier-1,.tier-2,.tier-3{min-height:auto}
+  .safety-grid,.tandem-grid{grid-template-columns:1fr;gap:2rem}
+  .form-row{grid-template-columns:1fr}
+  .hero{height:170vh}
+}
+</style>
+</head>
+<body>
+
+<a href="/" class="back">←&nbsp;25</a>
+<nav>
+  <span class="brand">THERMIK</span>
+  <a class="nav-cta" href="#tandem">Tandem buchen</a>
+</nav>
+
+<!-- HERO — infinite dawn flight -->
+<div class="hero" id="hero">
+  <div class="hero-sticky">
+    <canvas id="sky" aria-hidden="true"></canvas>
+    <div class="hero-copy" id="heroCopy">
+      <span class="hero-badge">Flugschule · Berner Oberland</span>
+      <h1>Vom ersten Schritt<em>in den Himmel.</em></h1>
+      <p class="hero-sub">Lerne Gleitschirmfliegen dort, wo die Thermik zuhause ist —
+        über Graten, die im Morgenlicht glühen, mit Menschen, die seit zwanzig Jahren nichts lieber tun.</p>
+      <div class="hero-ctas">
+        <a class="btn btn-solid" href="#kurse">Kurse entdecken</a>
+        <a class="btn btn-ghost" href="#tandem">Tandemflug buchen</a>
+      </div>
+    </div>
+    <div class="scroll-hint">Steigflug</div>
+  </div>
+</div>
+
+<!-- SCHOOL -->
+<section id="schule">
+  <div class="band">
+    <div class="alt-line rv"><span>Basislager · 1'050 m ü. M.</span></div>
+    <h2 class="rv">Eine Schule, die aus dem Tal in die Höhe gewachsen ist.</h2>
+    <p class="lede rv">Seit 2003 bringen wir Menschen vom Übungshang oberhalb von Frutigen bis über die
+      Dreitausender. Kleine Gruppen, Funkbetreuung bei jedem Flug und Startplätze für jede Windrichtung —
+      damit du nicht auf gutes Wetter wartest, sondern es findest.</p>
+    <div class="stats">
+      <div class="stat rv"><b>2'400+</b><span>Pilotinnen und Piloten ausgebildet — vom ersten Aufziehen bis zum Brevet.</span></div>
+      <div class="stat rv"><b>210</b><span>Flugtage pro Jahr, verteilt auf sechs Fluggelände in drei Tälern.</span></div>
+      <div class="stat rv"><b>4 : 1</b><span>Maximales Verhältnis von Schülern zu Fluglehrern — bei uns fliegt niemand allein durch die Ausbildung.</span></div>
+    </div>
+  </div>
+</section>
+
+<!-- COURSES -->
+<section id="kurse">
+  <div class="band">
+    <div class="alt-line rv"><span>Aufstieg · drei Höhenstufen</span></div>
+    <h2 class="rv">Jede Höhe hat ihren eigenen Kurs.</h2>
+    <p class="lede rv">Unsere Ausbildung ist wie eine Bergtour aufgebaut: Du beginnst am Übungshang,
+      gewinnst Höhe, und irgendwann trägt dich die Thermik weiter, als du zu Fuss je gekommen wärst.</p>
+    <div class="tiers">
+      <article class="tier tier-1 rv">
+        <span class="tier-alt">1'200 m · Übungshang</span>
+        <h3>Schnupperkurs</h3>
+        <p>Zwei Tage Bodenhandling und erste Gleitflüge — spüren, wie der Schirm über dir lebendig wird.</p>
+        <ul>
+          <li>2 Tage, Ausrüstung inklusive</li>
+          <li>Erste Flüge ab dem Übungshang</li>
+          <li>Voll anrechenbar an den Grundkurs</li>
+        </ul>
+        <span class="price">CHF 290<small> / Person</small></span>
+        <a class="btn btn-ghost" href="#tandem">Platz sichern</a>
+      </article>
+      <article class="tier tier-2 rv">
+        <span class="tag">Beliebteste Route</span>
+        <span class="tier-alt">2'000 m · Höhenflug</span>
+        <h3>Grundkurs</h3>
+        <p>Der Weg zum Schweizer Brevet: Höhenflüge mit Funkbetreuung, Theorie am Abend, Startplatz am Morgen.</p>
+        <ul>
+          <li>Mind. 10 Flugtage, flexibel einteilbar</li>
+          <li>40+ betreute Höhenflüge</li>
+          <li>Komplette Theorie bis zur SHV-Prüfung</li>
+          <li>Leihausrüstung während der ganzen Ausbildung</li>
+        </ul>
+        <span class="price">CHF 1'890<small> / komplett</small></span>
+        <a class="btn btn-solid" href="#tandem">Ausbildung starten</a>
+      </article>
+      <article class="tier tier-3 rv">
+        <span class="tier-alt">3'100 m · Gratkante</span>
+        <h3>Alpin- &amp; Thermikkurs</h3>
+        <p>Für Brevetierte, die länger oben bleiben wollen: Thermik lesen, Bärte zentrieren, erste Strecken planen.</p>
+        <ul>
+          <li>5 Tage mit Bergbahn-Logistik</li>
+          <li>Thermik- und Streckentaktik im Lehrgelände</li>
+          <li>Startüberhöhung bis 2'000 m</li>
+          <li>XC-Nachbesprechung mit GPS-Analyse</li>
+        </ul>
+        <span class="price">CHF 980<small> / 5 Tage</small></span>
+        <a class="btn btn-ghost" href="#tandem">Anfrage senden</a>
+      </article>
+    </div>
+  </div>
+</section>
+
+<!-- SAFETY -->
+<section id="sicherheit">
+  <div class="band">
+    <div class="alt-line rv"><span>Sicherheit · unser Fundament</span></div>
+    <h2 class="rv">Mutig fliegt, wer gut vorbereitet ist.</h2>
+    <p class="lede rv">Fliegen ist keine Mutprobe. Es ist Handwerk, Wetterkunde und Geduld —
+      und genau das geben dir unsere Fluglehrerinnen und Fluglehrer mit, Flug für Flug.</p>
+    <div class="safety-grid">
+      <ul class="check rv">
+        <li>Alle Lehrkräfte sind SHV-zertifiziert und fliegen selbst aktiv Strecke — im Schnitt seit 17 Jahren.</li>
+        <li>Jeder Schulungsflug wird per Funk begleitet, vom Startcheck bis zur Landeeinteilung.</li>
+        <li>Eigene Wetterstation am Startplatz plus tägliches Briefing um 07:30 — geflogen wird nur, wenn das Fenster stimmt.</li>
+        <li>Schulungsschirme werden jährlich nachgeprüft; Rettungsgeräte packen wir zweimal pro Saison neu.</li>
+        <li>Jedes Kursmodul beginnt mit einem Sicherheitstraining: Ohren anlegen, beschleunigt fliegen, Landung im engen Feld.</li>
+      </ul>
+      <div class="crew rv">
+        <div class="pilot"><span class="ava a1">MB</span><div><b>Martina Brunner</b><span>Schulleiterin · 6'200 Flüge · Nova-Teampilotin</span></div></div>
+        <div class="pilot"><span class="ava a2">RK</span><div><b>Reto Kaufmann</b><span>Alpin- &amp; Streckenkurse · X-Alps-Supporter 2023</span></div></div>
+        <div class="pilot"><span class="ava a3">LS</span><div><b>Lea Steiner</b><span>Grundausbildung &amp; Tandem · 1'900 Passagierflüge</span></div></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- TANDEM -->
+<section id="tandem">
+  <div class="band">
+    <div class="alt-line rv"><span>Landewiese · dein erster Flug</span></div>
+    <h2 class="rv">Flieg zuerst. Entscheide später.</h2>
+    <div class="tandem-grid">
+      <div class="rv">
+        <p class="lede">Der ehrlichste Weg herauszufinden, ob Fliegen dein Ding ist: einmal mitkommen.
+          Beim Tandemflug übernimmt eine Pilotin oder ein Pilot mit Passagierbrevet den Schirm —
+          du übernimmst das Staunen.</p>
+        <ul class="tandem-list">
+          <li><b>Morgenflug (ca. 20 Min.)</b> — ruhige Luft, glühende Grate, perfekt für den ersten Flug. CHF 180.</li>
+          <li><b>Thermikflug (40–60 Min.)</b> — am Mittag in die Bärte, kreisen mit den Alpendohlen. CHF 260.</li>
+          <li>Treffpunkt Talstation Elsigenalp, Gesamtdauer rund 2,5 Stunden.</li>
+          <li>Fliegbar ab 12 Jahren und 30–110 kg — festes Schuhwerk genügt, alles andere stellen wir.</li>
+        </ul>
+      </div>
+      <form id="bookForm" class="rv" novalidate>
+        <label>Name
+          <input type="text" name="name" placeholder="Dein Name" required autocomplete="name">
+        </label>
+        <div class="form-row">
+          <label>Wunschdatum
+            <input type="date" name="datum" required>
+          </label>
+          <label>Flug
+            <select name="flug">
+              <option>Morgenflug — CHF 180</option>
+              <option>Thermikflug — CHF 260</option>
+              <option>Geschenkgutschein</option>
+            </select>
+          </label>
+        </div>
+        <label>E-Mail
+          <input type="email" name="email" placeholder="du@beispiel.ch" required autocomplete="email">
+        </label>
+        <button class="btn btn-solid" type="submit">Unverbindlich anfragen</button>
+        <p class="form-ok" id="formOk">Merci! Deine Anfrage ist gelandet — wir melden uns innert 24 Stunden mit Wetterfenster und Details.</p>
+        <p class="form-note">Demo-Showcase: Anfrage wird nicht übermittelt. Kein Flug ohne passendes Wetter — verschieben ist bei uns Programm, nicht Ausnahme.</p>
+      </form>
+    </div>
+  </div>
+</section>
+
+<footer>
+  <div class="foot">
+    <div>
+      <span class="foot-brand">THERMIK</span>
+      <p>Gleitschirm-Flugschule im Berner Oberland. Fiktives Schaufenster-Projekt —
+        gebaut als Liebeserklärung an Morgenluft und lange Grate.</p>
+    </div>
+    <div class="foot-links">
+      <a href="#schule">Die Schule</a>
+      <a href="#kurse">Kurse</a>
+      <a href="#sicherheit">Sicherheit</a>
+      <a href="#tandem">Tandemflug</a>
+    </div>
+    <div class="foot-links">
+      <a href="/35-thermik/guide/">Wie diese Seite gebaut wurde →</a>
+      <a href="/">← Zurück zur Übersicht</a>
+    </div>
+  </div>
+  <div class="foot-bottom">
+    <span>© 2026 THERMIK Flugschule — Demo</span>
+    <span>Startfenster heute: 06:40 – 10:15</span>
+  </div>
+</footer>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/0.147.0/three.min.js"></script>
+<script>
+(function(){
+"use strict";
+var canvas = document.getElementById('sky');
+var reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+var mobile  = window.matchMedia('(max-width: 760px)').matches;
+
+var renderer;
+try{
+  renderer = new THREE.WebGLRenderer({canvas:canvas, antialias:true, alpha:true});
+}catch(e){ canvas.style.display='none'; return; }
+renderer.setPixelRatio(Math.min(window.devicePixelRatio||1, window.innerWidth<400?1.5:2));
+renderer.setClearColor(0x000000, 0); // transparent — CSS dawn gradient shows through
+
+var scene = new THREE.Scene();
+// PASS 1.1: fog color sampled from the CSS gradient at the visual horizon (#FFDDBB)
+scene.fog = new THREE.Fog(0xFFDDBB, 180, 1150); // PASS 1.2: far pushed to 1150
+
+var camera = new THREE.PerspectiveCamera(mobile?74:60, 1, 1, 4000); // PASS 3.3: wider FOV on phones
+var CAM_Y = mobile ? 112 : 100;
+camera.position.set(0, CAM_Y, 240);
+camera.rotation.order = 'ZXY';
+
+// lights — PASS 2.1: dawn rig
+var hemi = new THREE.HemisphereLight(0xC9B8E8, 0x5A4A6E, 0.85);
+scene.add(hemi);
+var sunLight = new THREE.DirectionalLight(0xFFD9A8, 1.15);
+sunLight.position.set(-0.35, 0.42, -1).normalize();
+scene.add(sunLight);
+
+/* ---------- value noise ---------- */
+function hash(ix, iz){
+  var n = Math.imul(ix,374761393) + Math.imul(iz,668265263) | 0;
+  n = Math.imul(n ^ (n>>>13), 1274126177);
+  n = n ^ (n>>>16);
+  return (n>>>0)/4294967295;
+}
+function vnoise(x,z){
+  var ix=Math.floor(x), iz=Math.floor(z), fx=x-ix, fz=z-iz;
+  var u=fx*fx*(3-2*fx), w=fz*fz*(3-2*fz);
+  var a=hash(ix,iz), b=hash(ix+1,iz), c=hash(ix,iz+1), d=hash(ix+1,iz+1);
+  return a+(b-a)*u+(c-a)*w+(a-b-c+d)*u*w;
+}
+function fbm(x,z){
+  var s=0,a=0.5,f=1;
+  for(var i=0;i<4;i++){ s+=a*vnoise(x*f,z*f); f*=2.03; a*=0.5; }
+  return s/0.9375;
+}
+function heightAt(x,wz){
+  var e = fbm(x*0.0035, wz*0.0035);
+  e = Math.pow(e, 1.7);
+  var h = e*230;
+  h += fbm(x*0.013+53.7, wz*0.013+17.3)*26;
+  var v = Math.min(1, Math.abs(x)/300);      // carve the flight valley
+  v = v*v*(3-2*v);
+  return h*(0.16+0.84*v);
+}
+
+/* ---------- altitude colouring — PASS 2.2/2.3 ---------- */
+var C_PLUMD=new THREE.Color(0x46395B), C_PLUM=new THREE.Color(0x5A4A6E),
+    C_LAV=new THREE.Color(0xA895C9),  C_PEACH=new THREE.Color(0xFFC9A3),
+    C_SNOW=new THREE.Color(0xFFF7F0), tmp=new THREE.Color();
+function bandColor(h, jitterSeed){
+  var j=(hash(jitterSeed|0, 7919)-0.5)*18; h+=j;      // feathered thresholds
+  if(h<38)       tmp.copy(C_PLUMD).lerp(C_PLUM, Math.max(0,h)/38);
+  else if(h<95)  tmp.copy(C_PLUM).lerp(C_LAV,(h-38)/57);
+  else if(h<150) tmp.copy(C_LAV).lerp(C_PEACH,(h-95)/55);
+  else if(h<195) tmp.copy(C_PEACH).lerp(C_SNOW,(h-150)/45);
+  else           tmp.copy(C_SNOW);
+  return tmp;
+}
+
+/* ---------- terrain tiles (two, leapfrogging) ---------- */
+var TILE_W=1700, TILE_D=800;
+var SEG_X=mobile?70:120, SEG_Z=mobile?46:80;   // PASS 3.1
+var SPEED=42, RECYCLE_Z=310, SPAWN_GAP=2*TILE_D;
+var material=new THREE.MeshLambertMaterial({vertexColors:true, flatShading:true});
+material.side=THREE.FrontSide;
+
+function makeTile(){
+  var g=new THREE.PlaneGeometry(TILE_W,TILE_D,SEG_X,SEG_Z);
+  g.rotateX(-Math.PI/2);
+  g=g.toNonIndexed();                                   // true flat facets
+  g.setAttribute('color', new THREE.BufferAttribute(new Float32Array(g.attributes.position.count*3),3));
+  var m=new THREE.Mesh(g,material);
+  m.frustumCulled=false;
+  scene.add(m);
+  return m;
+}
+// PASS 1.3: heights sampled in continuous world-z so tile borders weld perfectly
+function buildTile(mesh, noiseZ){
+  mesh.userData.noiseZ=noiseZ;
+  var pos=mesh.geometry.attributes.position, col=mesh.geometry.attributes.color;
+  var i, n=pos.count;
+  for(i=0;i<n;i++){
+    pos.setY(i, heightAt(pos.getX(i), pos.getZ(i)+noiseZ));
+  }
+  for(i=0;i<n;i+=3){
+    var hAvg=(pos.getY(i)+pos.getY(i+1)+pos.getY(i+2))/3;
+    var c=bandColor(hAvg, i*31+((noiseZ*13)|0));
+    col.setXYZ(i,  c.r,c.g,c.b);
+    col.setXYZ(i+1,c.r,c.g,c.b);
+    col.setXYZ(i+2,c.r,c.g,c.b);
+  }
+  pos.needsUpdate=true; col.needsUpdate=true;
+  mesh.geometry.computeVertexNormals();
+}
+var tileA=makeTile(), tileB=makeTile();
+var farNoiseZ=0;
+buildTile(tileA, farNoiseZ);           tileA.position.z=-120;
+buildTile(tileB, farNoiseZ-TILE_D);    tileB.position.z=-120-TILE_D;
+farNoiseZ-=2*TILE_D;
+
+/* ---------- sun disk + glow — PASS 1.4: fog:false on both ---------- */
+var sun=new THREE.Mesh(
+  new THREE.CircleGeometry(72,28),
+  new THREE.MeshBasicMaterial({color:0xFFF3DE, fog:false, transparent:true, opacity:0.95})
+);
+sun.position.set(-330, 265, -1600);
+scene.add(sun);
+
+var glowCanvas=document.createElement('canvas'); glowCanvas.width=glowCanvas.height=128;
+var gctx=glowCanvas.getContext('2d');
+var grad=gctx.createRadialGradient(64,64,4,64,64,64);
+grad.addColorStop(0,'rgba(255,227,194,0.9)');
+grad.addColorStop(0.35,'rgba(255,201,163,0.45)');
+grad.addColorStop(1,'rgba(255,201,163,0)');
+gctx.fillStyle=grad; gctx.fillRect(0,0,128,128);
+var glowTex=new THREE.CanvasTexture(glowCanvas);
+var glow=new THREE.Sprite(new THREE.SpriteMaterial({map:glowTex, fog:false, transparent:true, depthWrite:false}));
+glow.position.copy(sun.position); glow.position.z-=2;
+glow.scale.set(760,760,1);
+scene.add(glow);
+
+/* ---------- paraglider silhouette ---------- */
+var glider=new THREE.Group();
+var wingGeo=new THREE.BufferGeometry();
+wingGeo.setAttribute('position', new THREE.BufferAttribute(new Float32Array([
+  // swept crescent wing: two triangles meeting at centre, tips trailing back+down
+  -13, -2.6, 3.2,   0, 0.9, -1.6,   0, 0, 1.8,
+   13, -2.6, 3.2,   0, 0, 1.8,      0, 0.9, -1.6
+]),3));
+wingGeo.computeVertexNormals();
+var silMat=new THREE.MeshBasicMaterial({color:0x3A2F4C, side:THREE.DoubleSide});
+glider.add(new THREE.Mesh(wingGeo, silMat));
+var pilot=new THREE.Mesh(new THREE.SphereGeometry(0.75,6,5), silMat);
+pilot.position.y=-4.6; glider.add(pilot);
+glider.position.set(24, CAM_Y+6, 40);
+scene.add(glider);
+
+/* ---------- interaction & scroll ---------- */
+var mouseNX=0, targetNX=0, lastPointer=-1e9;
+window.addEventListener('pointermove', function(e){
+  targetNX=(e.clientX/window.innerWidth)*2-1;
+  lastPointer=performance.now();
+},{passive:true});
+
+var scrollP=0, hero=document.getElementById('hero'), heroCopy=document.getElementById('heroCopy');
+function onScroll(){
+  var run=hero.offsetHeight-window.innerHeight;
+  scrollP=Math.min(1, Math.max(0, window.scrollY/Math.max(1,run)));
+  var fade=Math.min(1, scrollP*2.2);
+  heroCopy.style.opacity=String(1-fade);
+  heroCopy.style.transform='translateY('+(-fade*60)+'px)';
+}
+window.addEventListener('scroll', onScroll, {passive:true});
+onScroll();
+
+function resize(){
+  var w=canvas.clientWidth||window.innerWidth, h=canvas.clientHeight||window.innerHeight;
+  renderer.setSize(w,h,false);
+  camera.aspect=w/h;
+  camera.updateProjectionMatrix();
+}
+window.addEventListener('resize', resize);
+resize();
+
+/* ---------- flight loop ---------- */
+var clock=new THREE.Clock(), running=true, rafId=0;
+document.addEventListener('visibilitychange', function(){
+  running=!document.hidden;
+  if(running){ clock.getDelta(); loop(); } else cancelAnimationFrame(rafId);
+});
+
+function loop(){
+  if(!running) return;
+  rafId=requestAnimationFrame(loop);
+  var dt=Math.min(clock.getDelta(), 0.05), t=clock.elapsedTime;
+
+  if(!reduced){
+    // terrain scroll + recycle
+    tileA.position.z+=SPEED*dt;
+    tileB.position.z+=SPEED*dt;
+    var i, tiles=[tileA,tileB];
+    for(i=0;i<2;i++){
+      if(tiles[i].position.z-TILE_D/2>RECYCLE_Z){
+        tiles[i].position.z-=SPAWN_GAP;
+        buildTile(tiles[i], farNoiseZ);
+        farNoiseZ-=TILE_D;
+      }
+    }
+    // camera: bob + bank; PASS 3.2 — auto-sway when no pointer for 2s (touch)
+    var auto=(performance.now()-lastPointer)>2000;
+    if(auto) targetNX=Math.sin(t*0.22)*0.45;
+    mouseNX+=(targetNX-mouseNX)*Math.min(1,dt*2.4);
+    camera.position.x+=(mouseNX*38-camera.position.x)*Math.min(1,dt*2);
+    camera.position.y=CAM_Y+Math.sin(t*0.8)*3+Math.sin(t*0.31)*1.6;
+    camera.rotation.z=-mouseNX*0.09;
+    camera.rotation.y=-mouseNX*0.05;
+    // glider drifts ahead
+    glider.position.x=Math.sin(t*0.4)*30+mouseNX*14;
+    glider.position.y=CAM_Y+4+Math.sin(t*0.9+1.2)*4;
+    glider.rotation.z=Math.cos(t*0.4)*0.22;
+  }else{
+    // reduced motion: static terrain, slow sun shimmer only
+    glow.material.opacity=0.8+Math.sin(t*0.5)*0.15;
+    glow.scale.setScalar(760+Math.sin(t*0.3)*24);
+    camera.rotation.z=0; camera.rotation.y=0;
+  }
+  // scroll: pitch up into the sky for the CSS handoff
+  camera.rotation.x=-0.13+scrollP*0.72;
+  canvas.style.opacity=String(1-Math.max(0,(scrollP-0.72)/0.26));
+  if(scrollP>=0.995){ renderer.clear(); return; } // fully handed off — skip draw work
+
+  glow.material.rotation=t*0.02;
+  renderer.render(scene,camera);
+}
+loop();
+
+/* ---------- reveals ---------- */
+if('IntersectionObserver' in window && !reduced){
+  var io=new IntersectionObserver(function(es){
+    es.forEach(function(e){ if(e.isIntersecting){ e.target.classList.add('in'); io.unobserve(e.target);} });
+  },{threshold:0.15});
+  document.querySelectorAll('.rv').forEach(function(el){ io.observe(el); });
+}else{
+  document.querySelectorAll('.rv').forEach(function(el){ el.classList.add('in'); });
+}
+
+/* ---------- demo form ---------- */
+document.getElementById('bookForm').addEventListener('submit', function(e){
+  e.preventDefault();
+  document.getElementById('formOk').style.display='block';
+});
+})();
+</script>
+</body>
+</html>

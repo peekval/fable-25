@@ -1,0 +1,939 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>MAGNITUDE — a descent through 36 orders of magnitude</title>
+<meta name="description" content="A museum of scale: one continuous scroll-driven zoom from the cosmic web down to a single atom. Everything drawn in code.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Zilla+Slab:ital,wght@0,400;0,500;0,600;0,700;1,400&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#0D1024;
+  --bone:#EFECE6;
+  --bone-dim:rgba(239,236,230,.62);
+  --accent:#7B6CFF;
+  --violet:#7B6CFF; --gold:#FFD27A; --teal:#2EC4B6;
+  --green:#6FBF4E; --rose:#E76A8B; --cyan:#46E3E3;
+  --serif:"Zilla Slab",Georgia,serif;
+  --sans:"IBM Plex Sans",system-ui,sans-serif;
+}
+*{margin:0;padding:0;box-sizing:border-box}
+html{scroll-behavior:auto}
+body{
+  background:var(--bg);
+  color:var(--bone);
+  font-family:var(--sans);
+  overflow-x:hidden;
+  -webkit-font-smoothing:antialiased;
+}
+::selection{background:var(--accent);color:#0D1024}
+
+/* ---------- back link ---------- */
+.back{
+  position:fixed;top:18px;left:18px;z-index:60;
+  font-family:var(--sans);font-size:13px;letter-spacing:.08em;
+  color:var(--bone);text-decoration:none;
+  padding:8px 14px;border:1px solid rgba(239,236,230,.22);border-radius:999px;
+  background:rgba(13,16,36,.55);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);
+  transition:border-color .3s,color .3s;
+}
+.back:hover{border-color:var(--accent);color:var(--accent)}
+
+/* ---------- hero ---------- */
+.hero{
+  position:relative;min-height:100vh;min-height:100svh;
+  display:flex;flex-direction:column;align-items:center;justify-content:center;
+  text-align:center;padding:24px;overflow:hidden;
+}
+#heroStars{position:absolute;inset:0;width:100%;height:100%}
+.hero>*{position:relative}
+.hero-kicker{
+  font-family:var(--sans);font-size:12px;letter-spacing:.42em;text-transform:uppercase;
+  color:var(--bone-dim);margin-bottom:22px;
+}
+.hero h1{
+  font-family:var(--serif);font-weight:600;
+  font-size:clamp(56px,12vw,150px);
+  letter-spacing:.12em;line-height:1;
+  background:linear-gradient(120deg,#EFECE6 20%,#7B6CFF 50%,#46E3E3 85%);
+  -webkit-background-clip:text;background-clip:text;color:transparent;
+  margin-right:-.12em;
+}
+.hero-rule{
+  width:64px;height:1px;background:linear-gradient(90deg,transparent,var(--violet),transparent);
+  margin:30px auto 26px;
+}
+.hero-sub{
+  max-width:560px;font-size:clamp(15px,2vw,18px);line-height:1.65;color:var(--bone-dim);
+}
+.hero-sub strong{color:var(--bone);font-weight:500}
+.hero-cue{
+  position:absolute;bottom:34px;left:50%;transform:translateX(-50%);
+  font-size:11px;letter-spacing:.3em;text-transform:uppercase;color:var(--bone-dim);
+  display:flex;flex-direction:column;align-items:center;gap:12px;
+}
+.hero-cue .line{
+  width:1px;height:44px;overflow:hidden;position:relative;
+  background:rgba(239,236,230,.12);
+}
+.hero-cue .line::after{
+  content:"";position:absolute;left:0;top:-50%;width:1px;height:50%;
+  background:var(--accent);animation:cue 2.2s ease-in-out infinite;
+}
+@keyframes cue{0%{top:-50%}70%,100%{top:110%}}
+
+/* ---------- the dive ---------- */
+.dive{position:relative;height:1360vh}
+.stage{
+  position:sticky;top:0;height:100vh;height:100svh;overflow:hidden;
+  background:
+    radial-gradient(120% 90% at 50% 110%,#131735 0%,#0D1024 55%),
+    #0D1024;
+}
+.tint{
+  position:absolute;inset:0;pointer-events:none;z-index:1;
+  background-color:var(--accent);opacity:.07;
+  -webkit-mask-image:radial-gradient(85% 70% at 50% 55%,#000 0%,transparent 100%);
+  mask-image:radial-gradient(85% 70% at 50% 55%,#000 0%,transparent 100%);
+  transition:background-color 1s ease;
+}
+.layer{
+  position:absolute;inset:-15%;display:none;
+  transform-origin:50% 50%;
+  will-change:transform,opacity;
+  -webkit-mask-image:radial-gradient(circle,#000 52%,transparent 76%);
+  mask-image:radial-gradient(circle,#000 52%,transparent 76%);
+}
+.layer canvas,.layer svg{position:absolute;inset:0;width:100%;height:100%;display:block}
+.layer .spinwrap{position:absolute;inset:0}
+.l-galaxy .spinwrap{animation:slowspin 400s linear infinite}
+.l-cell .pulse{position:absolute;inset:0;animation:pulse 7s ease-in-out infinite}
+@keyframes slowspin{to{transform:rotate(360deg)}}
+@keyframes pulse{0%,100%{transform:scale(1)}50%{transform:scale(1.025)}}
+body.paused .layer *,body.paused .hero-cue .line::after{animation-play-state:paused!important}
+
+/* atom svg animation */
+.orbitspin{animation:orbit 7s linear infinite;transform-origin:0 0}
+.orbitspin.o2{animation-duration:9.5s;animation-direction:reverse}
+.orbitspin.o3{animation-duration:12s}
+@keyframes orbit{to{transform:rotate(360deg)}}
+
+/* ---------- captions ---------- */
+.cap{
+  position:absolute;z-index:5;
+  width:min(340px,calc(100vw - 48px));
+  bottom:15vh;left:6vw;
+  opacity:0;transform:translateY(14px);
+  pointer-events:none;
+  background:rgba(13,16,36,.62);
+  border:1px solid rgba(239,236,230,.13);
+  border-left:2px solid var(--accent);
+  border-radius:6px;
+  padding:18px 20px 20px;
+  backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);
+  transition:border-left-color 1s ease;
+}
+.cap.right{left:auto;right:6vw}
+.cap-scale{
+  display:block;font-size:10.5px;letter-spacing:.24em;text-transform:uppercase;
+  color:var(--accent);margin-bottom:9px;transition:color 1s ease;
+}
+.cap h3{font-family:var(--serif);font-weight:600;font-size:23px;letter-spacing:.02em;margin-bottom:8px}
+.cap p{font-size:13.5px;line-height:1.6;color:var(--bone-dim)}
+@media (max-width:640px){
+  .cap,.cap.right{left:50%;right:auto;transform:translate(-50%,14px);bottom:12vh}
+}
+
+/* ---------- HUD: readout + rail ---------- */
+.hud{opacity:0;pointer-events:none;transition:opacity .5s ease}
+body.diving .hud{opacity:1}
+.readout{
+  position:fixed;left:24px;bottom:22px;z-index:50;
+}
+.readout .r-label{
+  font-size:10px;letter-spacing:.3em;text-transform:uppercase;color:var(--bone-dim);
+  margin-bottom:4px;
+}
+.readout .r-num{
+  font-family:var(--serif);font-weight:500;font-size:clamp(30px,4.5vw,44px);
+  color:var(--bone);line-height:1;display:flex;align-items:baseline;
+}
+.readout .r-num sup{
+  font-size:.52em;margin-left:2px;transform:translateY(-.5em);
+  color:var(--accent);transition:color 1s ease;display:inline-block;min-width:3ch;
+}
+.readout .r-num sup.tick{animation:ticknum .28s ease}
+@keyframes ticknum{0%{opacity:0;transform:translateY(-.15em)}100%{opacity:1;transform:translateY(-.5em)}}
+.readout .r-unit{font-family:var(--serif);font-size:.6em;color:var(--bone-dim);margin-left:8px}
+.readout .r-world{
+  font-size:11.5px;color:var(--bone-dim);margin-top:6px;letter-spacing:.04em;
+  border-top:1px solid rgba(239,236,230,.12);padding-top:6px;max-width:200px;
+}
+.rail{
+  position:fixed;right:26px;top:50%;transform:translateY(-50%);z-index:50;
+  display:flex;flex-direction:column;align-items:center;gap:0;height:46vh;
+}
+.rail-track{position:relative;width:1px;flex:1;background:rgba(239,236,230,.14)}
+.rail-fill{position:absolute;top:0;left:0;width:1px;height:0;background:var(--accent);transition:background-color 1s ease}
+.rail-dots{position:absolute;inset:0}
+.rail-dot{
+  position:absolute;left:50%;width:7px;height:7px;border-radius:50%;
+  transform:translate(-50%,-50%);
+  background:#0D1024;border:1px solid rgba(239,236,230,.35);
+  cursor:pointer;padding:0;transition:background .3s,border-color .3s,box-shadow .3s;
+}
+.rail-dot.on{background:var(--accent);border-color:var(--accent);box-shadow:0 0 10px var(--accent)}
+.rail-dot:hover{border-color:var(--bone)}
+@media (max-width:640px){.rail{right:12px}.readout{left:16px;bottom:14px}}
+
+/* ---------- epilogue ---------- */
+.epilogue{
+  position:relative;min-height:100vh;
+  display:flex;flex-direction:column;align-items:center;justify-content:center;
+  text-align:center;padding:14vh 24px;
+  background:linear-gradient(180deg,#0D1024 0%,#10142c 50%,#0D1024 100%);
+}
+.epi-kicker{font-size:11px;letter-spacing:.42em;text-transform:uppercase;color:var(--cyan);margin-bottom:20px}
+.epilogue h2{font-family:var(--serif);font-weight:600;font-size:clamp(34px,6vw,64px);letter-spacing:.03em;margin-bottom:22px}
+.epilogue .epi-body{max-width:600px;font-size:clamp(14.5px,1.8vw,17px);line-height:1.7;color:var(--bone-dim)}
+.epilogue .epi-body strong{color:var(--bone);font-weight:500}
+.scalebar{width:min(720px,88vw);margin:56px auto 0}
+.scalebar svg{width:100%;height:auto;display:block;overflow:visible}
+.scalebar text{font-family:var(--sans);fill:var(--bone-dim)}
+.sb-note{font-size:11px;letter-spacing:.2em;text-transform:uppercase;color:var(--bone-dim);margin-top:18px}
+.sb-note b{color:var(--bone);font-weight:600}
+
+/* ---------- footer ---------- */
+footer{
+  border-top:1px solid rgba(239,236,230,.1);
+  padding:44px 24px 52px;text-align:center;
+}
+footer .f-title{font-family:var(--serif);font-size:19px;letter-spacing:.18em;margin-bottom:10px}
+footer p{font-size:12.5px;color:var(--bone-dim);line-height:1.7}
+footer nav{margin-top:16px;display:flex;gap:26px;justify-content:center;flex-wrap:wrap}
+footer a{
+  color:var(--bone);text-decoration:none;font-size:13px;letter-spacing:.06em;
+  border-bottom:1px solid rgba(239,236,230,.25);padding-bottom:2px;transition:color .3s,border-color .3s;
+}
+footer a:hover{color:var(--cyan);border-color:var(--cyan)}
+
+/* ---------- reduced motion ---------- */
+@media (prefers-reduced-motion:reduce){
+  .layer{transition:opacity .6s ease;-webkit-mask-image:none;mask-image:none}
+  .hero-cue .line::after,.l-galaxy .spinwrap,.l-cell .pulse,.orbitspin{animation:none!important}
+  .cap{transition:opacity .6s ease,border-left-color 1s ease}
+}
+</style>
+</head>
+<body>
+
+<a class="back" href="/">&#8592;&nbsp;25</a>
+
+<header class="hero">
+  <canvas id="heroStars" aria-hidden="true"></canvas>
+  <p class="hero-kicker">A museum of scale</p>
+  <h1>MAGNITUDE</h1>
+  <div class="hero-rule" aria-hidden="true"></div>
+  <p class="hero-sub">One continuous descent through <strong>thirty-six orders of magnitude</strong> — from the filaments of the cosmic web to a single atom. Every scene below is drawn in code. Scroll, and fall.</p>
+  <div class="hero-cue" aria-hidden="true"><span>Begin the descent</span><span class="line"></span></div>
+</header>
+
+<section class="dive" id="dive" aria-label="A scroll-driven zoom through seven scales of the universe">
+  <div class="stage" id="stage">
+    <div class="tint" aria-hidden="true"></div>
+
+    <div class="layer l-cosmic"  data-l="0"><canvas></canvas></div>
+    <div class="layer l-galaxy"  data-l="1"><div class="spinwrap"><canvas></canvas></div></div>
+    <div class="layer l-solar"   data-l="2"><canvas></canvas></div>
+    <div class="layer l-planet"  data-l="3"><canvas></canvas></div>
+    <div class="layer l-leaf"    data-l="4"><canvas></canvas></div>
+    <div class="layer l-cell"    data-l="5"><div class="pulse"><canvas></canvas></div></div>
+    <div class="layer l-atom"    data-l="6">
+      <svg viewBox="-500 -500 1000 1000" preserveAspectRatio="xMidYMid slice" aria-hidden="true">
+        <defs>
+          <radialGradient id="nucGlow" cx="50%" cy="50%" r="50%">
+            <stop offset="0%" stop-color="#46E3E3" stop-opacity=".5"/>
+            <stop offset="45%" stop-color="#46E3E3" stop-opacity=".12"/>
+            <stop offset="100%" stop-color="#46E3E3" stop-opacity="0"/>
+          </radialGradient>
+          <radialGradient id="eGlow" cx="50%" cy="50%" r="50%">
+            <stop offset="0%" stop-color="#EFECE6" stop-opacity=".9"/>
+            <stop offset="40%" stop-color="#46E3E3" stop-opacity=".45"/>
+            <stop offset="100%" stop-color="#46E3E3" stop-opacity="0"/>
+          </radialGradient>
+        </defs>
+        <circle r="200" fill="url(#nucGlow)"/>
+        <!-- inner shell : 2 electrons -->
+        <g><circle r="150" fill="none" stroke="#46E3E3" stroke-opacity=".35" stroke-width="1.6"/>
+          <g class="orbitspin o1">
+            <g transform="translate(150,0)"><circle r="26" fill="url(#eGlow)"/><circle r="7" fill="#EFECE6"/></g>
+            <g transform="translate(-150,0)"><circle r="26" fill="url(#eGlow)"/><circle r="7" fill="#EFECE6"/></g>
+          </g>
+        </g>
+        <!-- outer shells : 2 tilted rings, 2 electrons each = carbon's 6 -->
+        <g transform="rotate(58) scale(1,.38)">
+          <circle r="330" fill="none" stroke="#46E3E3" stroke-opacity=".4" stroke-width="1.6"/>
+          <g class="orbitspin o2">
+            <g transform="translate(330,0)"><circle r="30" fill="url(#eGlow)"/><circle r="8" fill="#EFECE6"/></g>
+            <g transform="translate(-330,0)"><circle r="30" fill="url(#eGlow)"/><circle r="8" fill="#EFECE6"/></g>
+          </g>
+        </g>
+        <g transform="rotate(-58) scale(1,.38)">
+          <circle r="330" fill="none" stroke="#46E3E3" stroke-opacity=".4" stroke-width="1.6"/>
+          <g class="orbitspin o3">
+            <g transform="translate(0,330)"><circle r="30" fill="url(#eGlow)"/><circle r="8" fill="#EFECE6"/></g>
+            <g transform="translate(0,-330)"><circle r="30" fill="url(#eGlow)"/><circle r="8" fill="#EFECE6"/></g>
+          </g>
+        </g>
+        <!-- nucleus : 6 protons + 6 neutrons -->
+        <g id="nucleus"></g>
+      </svg>
+    </div>
+
+    <!-- captions -->
+    <aside class="cap" data-l="0">
+      <span class="cap-scale">10&#178;&#8310; m &middot; ten billion light-years</span>
+      <h3>The cosmic web</h3>
+      <p>At this scale, galaxies are dust. They gather along filaments of dark matter — the largest known structures — wrapped around voids so empty that light crosses hundreds of millions of light-years without meeting anything.</p>
+    </aside>
+    <aside class="cap right" data-l="1">
+      <span class="cap-scale">10&#178;&#185; m &middot; one galaxy</span>
+      <h3>The Milky Way</h3>
+      <p>Roughly 100,000 light-years across, holding between 100 and 400 billion stars. The Sun rides one of the outer arms, completing a single orbit of the galactic centre about every 230 million years.</p>
+    </aside>
+    <aside class="cap" data-l="2">
+      <span class="cap-scale">10&#185;&#179; m &middot; one solar system</span>
+      <h3>The Sun's neighbourhood</h3>
+      <p>Sunlight takes about four hours to reach Neptune — and over four years to reach the next star, Proxima Centauri. Almost everything here, by volume, is nothing at all.</p>
+    </aside>
+    <aside class="cap right" data-l="3">
+      <span class="cap-scale">10&#8311; m &middot; one planet</span>
+      <h3>A living world</h3>
+      <p>Earth is 12,742 kilometres wide, yet nearly all of its weather lives in a film of air about a thousandth of that. Seen from orbit, the entire atmosphere is one thin blue line.</p>
+    </aside>
+    <aside class="cap" data-l="4">
+      <span class="cap-scale">10&#8315;&#185; m &middot; one leaf</span>
+      <h3>The vein network</h3>
+      <p>A leaf's veins branch until no green cell sits more than a few cells from water. Nearly every molecule of oxygen you have ever breathed was released by photosynthesis like this.</p>
+    </aside>
+    <aside class="cap right" data-l="5">
+      <span class="cap-scale">10&#8315;&#8309; m &middot; one living cell</span>
+      <h3>The cell</h3>
+      <p>A typical human cell measures a few hundredths of a millimetre. You are a cooperative of roughly 37 trillion of them — and every single one descends from one fertilised cell.</p>
+    </aside>
+    <aside class="cap" data-l="6">
+      <span class="cap-scale">10&#8315;&#185;&#8304; m &middot; one atom</span>
+      <h3>Carbon</h3>
+      <p>An atom is about a ten-billionth of a metre wide, and almost entirely empty space. Its nucleus is tens of thousands of times smaller — yet carries more than 99.9% of the mass.</p>
+    </aside>
+  </div>
+</section>
+
+<!-- fixed HUD -->
+<div class="readout hud" aria-hidden="true">
+  <div class="r-label">Field of view</div>
+  <div class="r-num">10<sup id="rExp">26</sup><span class="r-unit">m</span></div>
+  <div class="r-world" id="rWorld">ten billion light-years</div>
+</div>
+<div class="rail hud" aria-hidden="true">
+  <div class="rail-track">
+    <div class="rail-fill" id="railFill"></div>
+    <div class="rail-dots" id="railDots"></div>
+  </div>
+</div>
+
+<section class="epilogue">
+  <p class="epi-kicker">End of descent</p>
+  <h2>You are here.</h2>
+  <p class="epi-body">Between the cosmic web and the atom lie thirty-six powers of ten — and you live near the middle of them. On the logarithmic line from a single atom to the Sun, a human being stands <strong>close to the exact centre</strong>. Too large to feel the quantum world, too small to feel the curvature of space: the middle of it all is where noticing happens.</p>
+  <div class="scalebar" id="scalebar" aria-hidden="true"></div>
+  <p class="sb-note">every dot is a floor of this museum &middot; <b>the bone marker is you</b></p>
+</section>
+
+<footer>
+  <p class="f-title">MAGNITUDE</p>
+  <p>Seven nested scales, one scroll. No images, no video —<br>every galaxy, ridge, vein and orbital is drawn by code in your browser.</p>
+  <nav>
+    <a href="/38-magnitude/guide/">How it was built</a>
+    <a href="/">&#8592; All 25 sites</a>
+  </nav>
+</footer>
+
+<script>
+(function(){
+"use strict";
+var RM = matchMedia("(prefers-reduced-motion: reduce)").matches;
+var MOBILE = matchMedia("(max-width: 768px)").matches;
+var NARROW = matchMedia("(max-width: 640px)").matches;
+var DPR = Math.min(devicePixelRatio || 1, 2);
+var N = 7, Z = 18, PMAX = 6.4;
+var EXPS   = [26, 21, 13, 7, -1, -5, -10];
+var WORLDS = ["ten billion light-years","one galaxy","one solar system","one planet","one leaf","one living cell","one atom"];
+var ACCENTS= ["#7B6CFF","#FFD27A","#FFD27A","#2EC4B6","#6FBF4E","#E76A8B","#46E3E3"];
+
+var dive = document.getElementById("dive");
+var stage = document.getElementById("stage");
+var layers = [].slice.call(stage.querySelectorAll(".layer"));
+var caps = [].slice.call(stage.querySelectorAll(".cap"));
+var rExp = document.getElementById("rExp");
+var rWorld = document.getElementById("rWorld");
+var railFill = document.getElementById("railFill");
+var railDots = document.getElementById("railDots");
+var root = document.documentElement;
+
+function clamp(v,a,b){ return v<a?a:(v>b?b:v); }
+function rand(seedObj){ // small deterministic PRNG so resize redraws look identical
+  seedObj.s = (seedObj.s * 16807) % 2147483647;
+  return (seedObj.s - 1) / 2147483646;
+}
+
+/* ============ drawing ============ */
+function setupCanvas(cv, w, h){
+  // cap backing-store width so six oversized layers never exhaust GPU memory on 4K screens
+  var eff = Math.min(DPR, 2800 / Math.max(w, 1));
+  cv.width = Math.round(w * eff); cv.height = Math.round(h * eff);
+  var ctx = cv.getContext("2d");
+  ctx.setTransform(eff,0,0,eff,0,0);
+  return ctx;
+}
+function glowDot(ctx,x,y,r,color,alpha){
+  var g = ctx.createRadialGradient(x,y,0,x,y,r);
+  g.addColorStop(0,color); g.addColorStop(1,"rgba(13,16,36,0)");
+  ctx.globalAlpha = alpha; ctx.fillStyle = g;
+  ctx.beginPath(); ctx.arc(x,y,r,0,6.2832); ctx.fill();
+  ctx.globalAlpha = 1;
+}
+
+/* --- 0 · cosmic web --- */
+function drawCosmic(ctx,w,h){
+  var rs = {s:12345}, i, j;
+  // far stars
+  var stars = MOBILE ? 130 : 260;
+  for(i=0;i<stars;i++){
+    ctx.globalAlpha = .12 + rand(rs)*.3;
+    ctx.fillStyle = "#EFECE6";
+    ctx.fillRect(rand(rs)*w, rand(rs)*h, 1, 1);
+  }
+  ctx.globalAlpha = 1;
+  // filament nodes: sample along 9 random bezier curves + field noise
+  var nodes = [], f, t, x, y;
+  var fils = MOBILE ? 6 : 9, per = MOBILE ? 10 : 15;
+  for(f=0; f<fils; f++){
+    var x0=rand(rs)*w, y0=rand(rs)*h, x1=rand(rs)*w, y1=rand(rs)*h;
+    var cx=rand(rs)*w, cy=rand(rs)*h;
+    for(i=0;i<per;i++){
+      t = i/(per-1);
+      x = (1-t)*(1-t)*x0 + 2*(1-t)*t*cx + t*t*x1 + (rand(rs)-.5)*60;
+      y = (1-t)*(1-t)*y0 + 2*(1-t)*t*cy + t*t*y1 + (rand(rs)-.5)*60;
+      nodes.push([x,y]);
+    }
+  }
+  // a denser knot at exact centre — the galaxy we are falling toward
+  for(i=0;i<14;i++){
+    nodes.push([w/2 + (rand(rs)-.5)*110, h/2 + (rand(rs)-.5)*110]);
+  }
+  // filament threads
+  ctx.strokeStyle = "#7B6CFF"; ctx.lineWidth = .6;
+  var maxD = Math.min(w,h)*.13, d2, dx, dy;
+  for(i=0;i<nodes.length;i++){
+    for(j=i+1;j<nodes.length;j++){
+      dx = nodes[i][0]-nodes[j][0]; dy = nodes[i][1]-nodes[j][1];
+      d2 = Math.sqrt(dx*dx+dy*dy);
+      if(d2 < maxD){
+        ctx.globalAlpha = .09 * (1 - d2/maxD);
+        ctx.beginPath(); ctx.moveTo(nodes[i][0],nodes[i][1]); ctx.lineTo(nodes[j][0],nodes[j][1]); ctx.stroke();
+      }
+    }
+  }
+  ctx.globalAlpha = 1;
+  // galaxy nodes
+  for(i=0;i<nodes.length;i++){
+    var big = rand(rs) > .82;
+    glowDot(ctx, nodes[i][0], nodes[i][1], big?7:3.5, big?"#B7AEFF":"#7B6CFF", .5+rand(rs)*.4);
+  }
+  // the centre knot glows brighter
+  glowDot(ctx, w/2, h/2, 26, "#D9D3FF", .9);
+  glowDot(ctx, w/2, h/2, 9, "#FFFFFF", .95);
+}
+
+/* --- 1 · galaxy --- */
+function drawGalaxy(ctx,w,h){
+  var rs = {s:7777}, i;
+  // spiral core sits up-left of screen centre; one outer arm passes through
+  // the exact centre — where our Sun waits.
+  var gx = w/2 - w*.16, gy = h/2 - h*.11;
+  var R = Math.min(w,h)*.56;
+  var pts = MOBILE ? 1300 : 2600;
+  var arms = 2;
+  for(i=0;i<pts;i++){
+    var t = Math.pow(rand(rs), .6);          // density toward core
+    var r = t * R;
+    var arm = (i % arms) * Math.PI;
+    var th = arm + r*.011 + (rand(rs)-.5)*(.5 - t*.25);
+    var x = gx + Math.cos(th)*r;
+    var y = gy + Math.sin(th)*r*.78;         // slight tilt
+    var core = 1 - t;
+    var col = core > .6 ? "#FFD27A" : (rand(rs)>.75 ? "#B7AEFF" : "#EFECE6");
+    ctx.globalAlpha = .25 + core*.55 + rand(rs)*.2;
+    if(ctx.globalAlpha > 1) ctx.globalAlpha = 1;
+    ctx.fillStyle = col;
+    var s2 = core>.75 ? 1.7 : (rand(rs)>.9 ? 1.6 : 1);
+    ctx.fillRect(x,y,s2,s2);
+  }
+  ctx.globalAlpha = 1;
+  glowDot(ctx, gx, gy, R*.3, "#FFD27A", .5);
+  glowDot(ctx, gx, gy, R*.1, "#FFE9C2", .85);
+  // our star, at the exact centre of the screen
+  glowDot(ctx, w/2, h/2, 18, "#FFE9C2", .95);
+  glowDot(ctx, w/2, h/2, 5, "#FFFFFF", 1);
+}
+
+/* --- 2 · solar system --- */
+function drawSolar(ctx,w,h){
+  var m = Math.min(w,h);
+  // Sun offset left; Earth's ring passes through the exact screen centre
+  var sx = w/2 - m*.21, sy = h/2;
+  var rE = m*.21;
+  var rr = [ .38*rE, .66*rE, 1*rE, 1.4*rE, 2.1*rE, 2.9*rE, 3.7*rE, 4.5*rE ];
+  var cols = ["#B9B2A6","#F2E3C2","#2EC4B6","#E08A5A","#EAC9A0","#F0DDB4","#9FD8DF","#7FA8E8"];
+  var szs  = [2.2, 3.4, 3.8, 3, 8, 7, 5, 5];
+  var i;
+  // orbit rings
+  ctx.strokeStyle = "#FFD27A";
+  for(i=0;i<8;i++){
+    ctx.globalAlpha = .16;
+    ctx.lineWidth = 1;
+    ctx.beginPath(); ctx.arc(sx,sy,rr[i],0,6.2832); ctx.stroke();
+  }
+  ctx.globalAlpha = 1;
+  // sun
+  glowDot(ctx,sx,sy,m*.16,"#FFD27A",.85);
+  glowDot(ctx,sx,sy,m*.055,"#FFF3DA",1);
+  // planets — Earth placed exactly at screen centre (angle 0 from sun)
+  var angs = [ .9, 2.4, 0, 5.4, 3.9, 1.7, 4.6, 2.9 ];
+  for(i=0;i<8;i++){
+    var px = sx + Math.cos(angs[i])*rr[i];
+    var py = sy + Math.sin(angs[i])*rr[i];
+    glowDot(ctx,px,py,szs[i]*3.4,cols[i],.5);
+    ctx.fillStyle = cols[i];
+    ctx.beginPath(); ctx.arc(px,py,szs[i],0,6.2832); ctx.fill();
+    if(i===5){ // saturn ring
+      ctx.strokeStyle = "#F0DDB4"; ctx.globalAlpha = .7; ctx.lineWidth = 1.4;
+      ctx.beginPath(); ctx.ellipse(px,py,szs[i]*2.1,szs[i]*.8,-.5,0,6.2832); ctx.stroke();
+      ctx.globalAlpha = 1;
+    }
+  }
+  // Earth halo — the world we dive into
+  glowDot(ctx, sx+rE, sy, 26, "#2EC4B6", .75);
+}
+
+/* --- 3 · planet surface --- */
+function drawPlanet(ctx,w,h){
+  var rs = {s:4242}, i, x;
+  // stars above
+  for(i=0;i<(MOBILE?60:140);i++){
+    ctx.globalAlpha = .1 + rand(rs)*.3; ctx.fillStyle = "#EFECE6";
+    ctx.fillRect(rand(rs)*w, rand(rs)*h*.4, 1, 1);
+  }
+  ctx.globalAlpha = 1;
+  var hor = h*.42;
+  // atmosphere band — "one thin blue line"
+  var atm = ctx.createLinearGradient(0,hor-h*.16,0,hor);
+  atm.addColorStop(0,"rgba(46,196,182,0)");
+  atm.addColorStop(.75,"rgba(46,196,182,.28)");
+  atm.addColorStop(1,"rgba(160,235,228,.6)");
+  ctx.fillStyle = atm; ctx.fillRect(0,hor-h*.16,w,h*.16);
+  ctx.fillStyle = "rgba(210,248,244,.9)"; ctx.fillRect(0,hor-1,w,1.5);
+  // ridge layers (fill below each ridgeline)
+  function ridge(base, amp, f1, f2, ph, color){
+    ctx.beginPath(); ctx.moveTo(0,h);
+    for(x=0;x<=w;x+=6){
+      var y = base + Math.sin(x*f1+ph)*amp + Math.sin(x*f2+ph*2.7)*amp*.45 + Math.sin(x*f1*3.7+ph*1.3)*amp*.18;
+      ctx.lineTo(x,y);
+    }
+    ctx.lineTo(w,h); ctx.closePath();
+    ctx.fillStyle = color; ctx.fill();
+  }
+  ridge(hor+h*.05, h*.030, .006, .017, 1.2, "#1A2140");
+  ridge(hor+h*.16, h*.045, .005, .013, 4.1, "#151A36");
+  ridge(hor+h*.30, h*.060, .004, .011, 2.6, "#11152C");
+  ridge(hor+h*.46, h*.075, .003, .009, 5.0, "#0E1226");
+  // valley glow at the exact centre — the forest we fall into
+  glowDot(ctx, w/2, h/2, 90, "#2EC4B6", .28);
+  glowDot(ctx, w/2, h/2, 34, "#6FBF4E", .5);
+}
+
+/* --- 4 · leaf --- */
+function drawLeaf(ctx,w,h){
+  var rs = {s:9090};
+  // translucent membrane
+  var g = ctx.createRadialGradient(w/2,h/2,0,w/2,h/2,Math.max(w,h)*.62);
+  g.addColorStop(0,"rgba(111,191,78,.30)");
+  g.addColorStop(.6,"rgba(111,191,78,.14)");
+  g.addColorStop(1,"rgba(111,191,78,0)");
+  ctx.fillStyle = g; ctx.fillRect(0,0,w,h);
+  // cell speckle
+  var i;
+  for(i=0;i<(MOBILE?90:200);i++){
+    glowDot(ctx, rand(rs)*w, rand(rs)*h, 2+rand(rs)*4, "#8FD86E", .07+rand(rs)*.08);
+  }
+  // recursive veins
+  var maxDepth = MOBILE ? 6 : 8;
+  ctx.strokeStyle = "#9FE07F"; ctx.lineCap = "round";
+  function branch(x,y,ang,len,wd,depth){
+    if(depth > maxDepth || len < 5) return;
+    var nx = x + Math.cos(ang)*len;
+    var ny = y + Math.sin(ang)*len;
+    var mx = (x+nx)/2 + Math.cos(ang+1.5708)*(rand(rs)-.5)*len*.3;
+    var my = (y+ny)/2 + Math.sin(ang+1.5708)*(rand(rs)-.5)*len*.3;
+    ctx.globalAlpha = .16 + (maxDepth-depth)*.055;
+    ctx.lineWidth = wd;
+    ctx.beginPath(); ctx.moveTo(x,y); ctx.quadraticCurveTo(mx,my,nx,ny); ctx.stroke();
+    var spread = .38 + rand(rs)*.22;
+    branch(nx,ny, ang - spread, len*.72, wd*.68, depth+1);
+    branch(nx,ny, ang + spread, len*.72, wd*.68, depth+1);
+    if(depth < 3 && rand(rs) > .5) branch(nx,ny, ang + (rand(rs)-.5)*.2, len*.8, wd*.75, depth+1);
+  }
+  // midrib rises from bottom through the centre
+  var L = Math.min(w,h)*.24;
+  branch(w/2, h + L*.4, -1.5708, L, 7, 0);
+  ctx.globalAlpha = 1;
+  // luminous point at centre — one cell catching the light
+  glowDot(ctx, w/2, h/2, 60, "#D8F5C8", .3);
+  glowDot(ctx, w/2, h/2, 20, "#F3E2E8", .5);
+}
+
+/* --- 5 · cell --- */
+function drawCell(ctx,w,h){
+  var rs = {s:3141}, i, a;
+  var cx = w/2, cy = h/2, R = Math.min(w,h)*.44;
+  // cytoplasm
+  var g = ctx.createRadialGradient(cx,cy,R*.1,cx,cy,R);
+  g.addColorStop(0,"rgba(231,106,139,.16)");
+  g.addColorStop(.8,"rgba(231,106,139,.08)");
+  g.addColorStop(1,"rgba(231,106,139,.02)");
+  // wobbly membrane path
+  function membranePath(rad){
+    ctx.beginPath();
+    for(i=0;i<=96;i++){
+      a = i/96*6.2832;
+      var rr = rad*(1 + .045*Math.sin(a*3+1.7) + .028*Math.sin(a*7+.4));
+      var x = cx + Math.cos(a)*rr, y = cy + Math.sin(a)*rr;
+      if(i===0) ctx.moveTo(x,y); else ctx.lineTo(x,y);
+    }
+    ctx.closePath();
+  }
+  membranePath(R); ctx.fillStyle = g; ctx.fill();
+  ctx.strokeStyle = "rgba(231,106,139,.75)"; ctx.lineWidth = 2.4; membranePath(R); ctx.stroke();
+  ctx.strokeStyle = "rgba(231,106,139,.25)"; ctx.lineWidth = 7;   membranePath(R*1.012); ctx.stroke();
+  // mitochondria (capsules with inner folds)
+  function mito(x,y,rot,s2){
+    ctx.save(); ctx.translate(x,y); ctx.rotate(rot);
+    ctx.fillStyle = "rgba(231,106,139,.28)";
+    ctx.strokeStyle = "rgba(240,150,175,.7)"; ctx.lineWidth = 1.6;
+    ctx.beginPath(); ctx.ellipse(0,0,26*s2,11*s2,0,0,6.2832); ctx.fill(); ctx.stroke();
+    ctx.beginPath();
+    for(i=-2;i<=2;i++){
+      ctx.moveTo(i*9*s2, -8*s2);
+      ctx.quadraticCurveTo((i*9+4)*s2, 0, i*9*s2, 8*s2);
+    }
+    ctx.globalAlpha = .6; ctx.stroke(); ctx.globalAlpha = 1;
+    ctx.restore();
+  }
+  var mts = [[-.55,-.3,.7,1],[.5,-.42,2.2,.85],[-.48,.42,1.4,.9],[.58,.3,.4,1.05],[.1,-.62,1,.8],[-.15,.6,2.6,.95]];
+  for(i=0;i<mts.length;i++) mito(cx+mts[i][0]*R, cy+mts[i][1]*R, mts[i][2], mts[i][3]);
+  // golgi — nested arcs
+  ctx.strokeStyle = "rgba(240,150,175,.55)"; ctx.lineWidth = 2.2;
+  for(i=0;i<4;i++){
+    ctx.beginPath();
+    ctx.arc(cx - R*.34, cy - R*.05, 26+i*9, 2.6, 4.6);
+    ctx.stroke();
+  }
+  // vesicles
+  for(i=0;i<(MOBILE?10:18);i++){
+    a = rand(rs)*6.2832;
+    var vr = R*(.3+rand(rs)*.6);
+    glowDot(ctx, cx+Math.cos(a)*vr, cy+Math.sin(a)*vr, 4+rand(rs)*7, "#F096AF", .3+rand(rs)*.25);
+  }
+  // nucleus at the exact centre — where the atom is found
+  var nR = R*.21;
+  var ng = ctx.createRadialGradient(cx,cy,0,cx,cy,nR);
+  ng.addColorStop(0,"rgba(231,106,139,.55)");
+  ng.addColorStop(.85,"rgba(231,106,139,.3)");
+  ng.addColorStop(1,"rgba(231,106,139,.12)");
+  ctx.fillStyle = ng;
+  ctx.beginPath(); ctx.arc(cx,cy,nR,0,6.2832); ctx.fill();
+  ctx.strokeStyle = "rgba(240,150,175,.8)"; ctx.lineWidth = 1.8;
+  ctx.beginPath(); ctx.arc(cx,cy,nR,0,6.2832); ctx.stroke();
+  // chromatin speckle + nucleolus
+  for(i=0;i<26;i++){
+    a = rand(rs)*6.2832; var dr = rand(rs)*nR*.8;
+    glowDot(ctx, cx+Math.cos(a)*dr, cy+Math.sin(a)*dr, 3, "#FFD9E4", .35);
+  }
+  glowDot(ctx, cx, cy, 16, "#46E3E3", .6);
+  glowDot(ctx, cx, cy, 6, "#D6FFFF", .9);
+}
+
+/* --- atom nucleus (SVG, built once) --- */
+function buildNucleus(){
+  var g = document.getElementById("nucleus");
+  while(g.firstChild) g.removeChild(g.firstChild);
+  var rs = {s:606}, i;
+  var svgns = "http://www.w3.org/2000/svg";
+  for(i=0;i<12;i++){
+    var a = rand(rs)*6.2832, d = rand(rs)*34;
+    var c = document.createElementNS(svgns,"circle");
+    c.setAttribute("cx",(Math.cos(a)*d).toFixed(1));
+    c.setAttribute("cy",(Math.sin(a)*d).toFixed(1));
+    c.setAttribute("r", 19);
+    c.setAttribute("fill", i%2 ? "#46E3E3" : "#EFECE6");
+    c.setAttribute("fill-opacity", i%2 ? ".85" : ".75");
+    g.appendChild(c);
+  }
+}
+
+/* ============ layout / render ============ */
+var drawers = [drawCosmic, drawGalaxy, drawSolar, drawPlanet, drawLeaf, drawCell, null];
+function renderAll(){
+  var r = stage.getBoundingClientRect();
+  var w = Math.round(r.width * 1.3), h = Math.round(r.height * 1.3);
+  layers.forEach(function(layer,i){
+    if(!drawers[i]) return;
+    var cv = layer.querySelector("canvas");
+    var ctx = setupCanvas(cv, w, h);
+    ctx.clearRect(0,0,w,h);
+    drawers[i](ctx,w,h);
+  });
+  buildNucleus();
+}
+
+/* hero stars */
+function renderHero(){
+  var cv = document.getElementById("heroStars");
+  var w = cv.parentNode.clientWidth, h = cv.parentNode.clientHeight;
+  var ctx = setupCanvas(cv,w,h);
+  var rs = {s:2026}, i;
+  for(i=0;i<(MOBILE?90:190);i++){
+    var x = rand(rs)*w, y = rand(rs)*h;
+    ctx.globalAlpha = .1 + rand(rs)*.45;
+    ctx.fillStyle = rand(rs)>.85 ? "#B7AEFF" : "#EFECE6";
+    ctx.fillRect(x,y,rand(rs)>.9?2:1,rand(rs)>.9?2:1);
+  }
+  ctx.globalAlpha = 1;
+  glowDot(ctx, w*.78, h*.24, 60, "#7B6CFF", .18);
+  glowDot(ctx, w*.16, h*.7, 80, "#46E3E3", .1);
+}
+
+/* rail dots */
+(function(){
+  var i, frag = document.createDocumentFragment();
+  for(i=0;i<N;i++){
+    var b = document.createElement("button");
+    b.className = "rail-dot";
+    b.style.top = (i/(N-1)*100) + "%";
+    b.setAttribute("aria-label","Jump to level "+(i+1)+": "+WORLDS[i]);
+    b.title = "10^"+EXPS[i]+" m · "+WORLDS[i];
+    b.dataset.i = i;
+    frag.appendChild(b);
+  }
+  railDots.appendChild(frag);
+  railDots.addEventListener("click",function(e){
+    var t = e.target.closest(".rail-dot");
+    if(!t) return;
+    var i = +t.dataset.i;
+    var target = diveTop + (clamp(i + .28, 0, PMAX) / PMAX) * (diveH - vh);
+    scrollTo({top:target, behavior: RM ? "auto" : "smooth"});
+  });
+})();
+var dots = [].slice.call(railDots.children);
+
+/* scale readout */
+var lastExp = 26;
+function setReadout(e,world){
+  var ei = Math.round(e);
+  if(ei !== lastExp){
+    lastExp = ei;
+    rExp.textContent = ei;
+    rExp.classList.remove("tick");
+    void rExp.offsetWidth;
+    rExp.classList.add("tick");
+  }
+  if(rWorld.textContent !== world) rWorld.textContent = world;
+}
+
+/* accent */
+var lastAcc = "";
+function setAccent(c){
+  if(c === lastAcc) return;
+  lastAcc = c;
+  root.style.setProperty("--accent", c);
+}
+
+/* ============ main scroll loop ============ */
+var diveTop = 0, diveH = 0, vh = innerHeight;
+function measure(){
+  vh = innerHeight;
+  var r = dive.getBoundingClientRect();
+  diveTop = r.top + (window.pageYOffset || document.documentElement.scrollTop);
+  diveH = dive.offsetHeight;
+}
+
+var lastCur = -1;
+function update(){
+  var sy = window.pageYOffset || document.documentElement.scrollTop;
+  var frac = clamp((sy - diveTop) / (diveH - vh), 0, 1);
+  var p = frac * PMAX;
+  var cur = Math.min(Math.floor(p), N-1);
+  var t = p - cur;
+
+  // HUD visibility
+  var mid = sy + vh*.5;
+  document.body.classList.toggle("diving", mid > diveTop && mid < diveTop + diveH);
+
+  if(RM){
+    // stepped mode: nearest level shown at scale 1, neighbours kept in DOM for fade
+    var cs = Math.min(Math.round(p), N-1);
+    layers.forEach(function(layer,i){
+      var near = Math.abs(i-cs) <= 1;
+      layer.style.display = near ? "block" : "none";
+      layer.style.transform = "none";
+      layer.style.opacity = (i===cs) ? 1 : 0;
+    });
+    caps.forEach(function(c,i){ c.style.opacity = (i===cs) ? 1 : 0; });
+    setReadout(EXPS[cs], WORLDS[cs]);
+    setAccent(ACCENTS[cs]);
+    railFill.style.height = clamp(p/(N-1),0,1)*100 + "%";
+    dots.forEach(function(d,i){ d.classList.toggle("on", i<=cs); });
+    return;
+  }
+
+  layers.forEach(function(layer,i){
+    var active = (i===cur) || (i===cur+1);
+    layer.style.display = active ? "block" : "none";
+    if(!active) return;
+    var s, op;
+    if(i === cur){
+      s = Math.pow(Z, i===N-1 ? Math.min(t,.4)*.5 : t);
+      op = t < .72 ? 1 : clamp(1 - (t-.72)/.25, 0, 1);
+    } else {
+      s = Math.pow(Z, t-1);
+      op = clamp(t/.35, 0, 1);
+    }
+    layer.style.transform = "scale(" + s.toFixed(4) + ")";
+    layer.style.opacity = op.toFixed(3);
+  });
+
+  // captions: fade in early in each level, out before the blur gets heavy
+  caps.forEach(function(c,i){
+    var op = 0, ty = 14;
+    if(i === cur){
+      var tin = clamp((t-.06)/.14, 0, 1);
+      var tout = (i===N-1) ? 0 : clamp((t-.56)/.16, 0, 1);
+      op = tin * (1-tout);
+      ty = 14*(1-tin);
+    }
+    c.style.opacity = op.toFixed(3);
+    c.style.transform = (NARROW ? "translate(-50%," : "translate(0,") + ty.toFixed(1) + "px)";
+  });
+
+  // logarithmic readout
+  var e = (cur < N-1) ? EXPS[cur] + t*(EXPS[cur+1]-EXPS[cur]) : EXPS[N-1];
+  setReadout(e, WORLDS[cur]);
+  setAccent(ACCENTS[cur]);
+
+  // rail
+  railFill.style.height = clamp(p/(N-1),0,1)*100 + "%";
+  dots.forEach(function(d,i){ d.classList.toggle("on", p >= i - .04); });
+
+  lastCur = cur;
+}
+
+var queued = false;
+function onScroll(){
+  if(queued) return;
+  queued = true;
+  requestAnimationFrame(function(){ queued = false; update(); });
+}
+addEventListener("scroll", onScroll, {passive:true});
+
+var rsT;
+addEventListener("resize", function(){
+  clearTimeout(rsT);
+  rsT = setTimeout(function(){
+    MOBILE = matchMedia("(max-width: 768px)").matches;
+    NARROW = matchMedia("(max-width: 640px)").matches;
+    measure(); renderAll(); renderHero(); update();
+  }, 180);
+});
+
+document.addEventListener("visibilitychange", function(){
+  document.body.classList.toggle("paused", document.hidden);
+});
+
+/* epilogue scale bar */
+(function(){
+  var host = document.getElementById("scalebar");
+  var Wd = 720, Hd = 74, pad = 10;
+  function xOf(exp){ return pad + (26-exp)/36 * (Wd-2*pad); }
+  var s = '<svg viewBox="0 0 '+Wd+' '+Hd+'">';
+  s += '<line x1="'+pad+'" y1="34" x2="'+(Wd-pad)+'" y2="34" stroke="rgba(239,236,230,.2)" stroke-width="1"/>';
+  var names = ["10²⁶","10²¹","10¹³","10⁷","10⁻¹","10⁻⁵","10⁻¹⁰"];
+  for(var i=0;i<N;i++){
+    var x = xOf(EXPS[i]);
+    s += '<circle cx="'+x+'" cy="34" r="4.5" fill="'+ACCENTS[i]+'"/>';
+    s += '<text x="'+x+'" y="'+(i%2? 16:58)+'" font-size="10.5" text-anchor="middle">'+names[i]+'</text>';
+  }
+  var xy = xOf(0);
+  s += '<line x1="'+xy+'" y1="24" x2="'+xy+'" y2="44" stroke="#EFECE6" stroke-width="1.5"/>';
+  s += '<circle cx="'+xy+'" cy="34" r="3" fill="#EFECE6"/>';
+  s += '<text x="'+xy+'" y="14" font-size="10.5" text-anchor="middle" fill="#EFECE6" font-weight="600">you · 10⁰ m</text>';
+  s += '</svg>';
+  host.innerHTML = s;
+})();
+
+/* init */
+measure(); renderAll(); renderHero(); update();
+addEventListener("load", function(){ measure(); update(); });
+})();
+</script>
+
+<!-- PASS 1 (handoff seams + correctness):
+     1. Incoming layers appeared as hard-edged rectangles when tiny — added an always-on radial
+        alpha mask to every .layer so each level materialises as a soft-edged disc at the centre
+        of its parent scale.
+     2. Each level now plants a "seed" of the next at the exact screen centre (bright knot in the
+        cosmic web, lone star on the galaxy arm, teal Earth on the solar ring, green valley glow
+        on the ridge scene, luminous cell on the leaf, cyan point in the nucleus) so the zoom
+        target reads as the next world before it fades in.
+     3. Fixed the final segment: level 6 previously blew the atom up by Z^t like every other
+        level — capped its scale to a gentle Z^0.2 push so the dive ends resting on the atom.
+     4. Deterministic PRNG for all canvas drawing so a window resize redraws identical scenes
+        instead of reshuffling the universe mid-scroll. -->
+<!-- PASS 2 (motion + performance):
+     1. Two-active-layers rule enforced via display:none (was opacity:0, which kept all seven
+        composited layers alive); CSS animations on hidden layers no longer cost paint.
+     2. Scroll handler now measures nothing — diveTop/diveH/vh cached on resize, single rAF
+        gate, transform/opacity writes only; galaxy rotation and cell pulse moved to pure CSS
+        on inner wrappers so the scaling transform on .layer is never overwritten.
+     3. prefers-reduced-motion branch rewritten as stepped mode: nearest level at scale 1 with
+        opacity crossfade (neighbours kept in DOM so the CSS transition can run), captions and
+        readout snap per level, orbit/spin/pulse animations disabled.
+     4. document.hidden pauses all keyframe animations via body.paused; canvas backing stores
+        are capped at 2800px wide (DPR ≤ 2) so six 130%-oversized layers never exhaust GPU
+        memory on 4K displays; per-frame matchMedia() calls replaced with cached flags. -->
+<!-- PASS 3 (polish + accuracy):
+     1. Caption fade-out window (t=.56–.72) now ends before the outgoing layer's blur/fade
+        window (t=.72–.97) begins, so text never sits on top of a smeared texture; captions
+        alternate left/right and centre on mobile.
+     2. Readout exponent gets an odometer-style tick animation on integer change, with a
+        min-width so "10⁻¹" vs "10²⁶" never shifts the layout; world label swaps per level.
+     3. Fact-checked all copy: 10²⁶ m ≈ ten billion light-years, Sun's galactic year ≈ 230 Myr,
+        sunlight→Neptune ≈ 4 h, troposphere ≈ 1/1000 of Earth's diameter, ~37 trillion cells,
+        nucleus holds >99.9% of atomic mass; carbon atom drawn with 6 electrons (2+4) and a
+        12-nucleon nucleus; epilogue uses the true log-midpoint (atom↔Sun ≈ 0.37 m ≈ human).
+     4. Rail dots are real buttons with aria-labels that scroll to their level; accent colour
+        eases through violet→gold→teal→green→rose→cyan via a single --accent custom property. -->
+</body>
+</html>

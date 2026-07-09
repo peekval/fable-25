@@ -1,0 +1,155 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SOMNIUM — how this site was built</title>
+<meta name="description" content="How the SOMNIUM dreamscape site was built, plus a reproduction prompt.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,300..600;1,9..144,300..500&family=Albert+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+:root{
+  --lavender:#B9AEE0;
+  --peach:#F5C9B0;
+  --indigo:#232152;
+  --mist:#E9E4F4;
+  --star:#FFF3C9;
+  --ink:#f4f0ff;
+  --dim:rgba(233,228,244,.74);
+  --card:rgba(28,26,66,.6);
+  --line:rgba(185,174,224,.22);
+}
+*{margin:0;padding:0;box-sizing:border-box}
+body{
+  font-family:"Albert Sans",system-ui,sans-serif;
+  color:var(--ink);
+  background:linear-gradient(180deg,#14132f 0%,#232152 42%,#4b4285 78%,#6a5ea4 100%);
+  background-attachment:fixed;
+  min-height:100vh;
+  -webkit-font-smoothing:antialiased;
+}
+::selection{background:var(--star);color:var(--indigo)}
+h1,h2{font-family:"Fraunces",serif;font-weight:380}
+.wrap{max-width:760px;margin:0 auto;padding:6.5rem 1.4rem 5rem}
+.back{
+  position:fixed;top:1.1rem;left:1.2rem;z-index:9;
+  font-size:.85rem;letter-spacing:.08em;text-decoration:none;color:var(--mist);
+  background:rgba(20,19,47,.55);border:1px solid var(--line);border-radius:999px;
+  padding:.42rem .95rem;transition:background .3s,color .3s;
+}
+.back:hover{background:var(--mist);color:var(--indigo)}
+.kicker{font-size:.75rem;letter-spacing:.32em;text-transform:uppercase;color:var(--star);font-weight:600;margin-bottom:1rem}
+h1{font-size:clamp(2.1rem,5.5vw,3.2rem);line-height:1.12;margin-bottom:2.2rem}
+h1 em{font-style:italic;color:var(--peach)}
+h2{font-size:1.45rem;margin:3rem 0 1rem;color:var(--mist)}
+p{line-height:1.75;color:var(--dim);margin-bottom:1.05rem}
+.prompt-box{
+  background:var(--card);
+  border:1px solid var(--line);
+  border-radius:18px;
+  padding:1.8rem 1.9rem;
+  margin:1.4rem 0 1rem;
+  position:relative;
+}
+.prompt-box p{
+  font-size:.95rem;line-height:1.75;color:var(--mist);margin:0;
+  white-space:pre-line;
+}
+.copy-btn{
+  margin-top:1.1rem;cursor:pointer;font-family:inherit;font-size:.9rem;font-weight:500;
+  background:var(--star);color:var(--indigo);border:0;border-radius:999px;
+  padding:.7rem 1.6rem;letter-spacing:.02em;
+  transition:transform .3s,background .3s;
+}
+.copy-btn:hover{transform:translateY(-2px)}
+.copy-btn.done{background:var(--lavender)}
+.links{display:flex;gap:1rem;flex-wrap:wrap;margin-top:3rem}
+.links a{
+  text-decoration:none;font-size:.95rem;font-weight:500;color:var(--mist);
+  border:1px solid rgba(233,228,244,.4);border-radius:999px;padding:.75rem 1.6rem;
+  transition:background .3s,color .3s,transform .3s;
+}
+.links a:hover{background:var(--mist);color:var(--indigo);transform:translateY(-2px)}
+.stars{position:fixed;inset:0;pointer-events:none;z-index:0}
+.wrap{position:relative;z-index:1}
+.dot{position:absolute;width:2px;height:2px;border-radius:50%;background:var(--star);opacity:.7}
+@media (prefers-reduced-motion:no-preference){
+  .dot{animation:tw 7s ease-in-out infinite alternate}
+  @keyframes tw{from{opacity:.75}to{opacity:.25}}
+}
+</style>
+</head>
+<body>
+
+<a class="back" href="/">←&nbsp;25</a>
+<div class="stars" aria-hidden="true" id="stars"></div>
+
+<main class="wrap">
+  <p class="kicker">Somnium · build notes</p>
+  <h1>How a page learns <em>to fall asleep.</em></h1>
+
+  <h2>How it was built</h2>
+  <p>The hero is a single fixed dreamscape made of six stacked planes — starfield, cratered SVG moon,
+     two blurred cloud banks, and two ranks of floating islands with glowing windows — each moved by
+     one shared animation loop that blends pointer position and scroll depth at a different ratio per plane.</p>
+  <p>The pointer input is heavily damped (each frame closes only a few percent of the remaining distance),
+     which is what gives the scene its underwater slowness; nothing ever snaps to the cursor.</p>
+  <p>Independent drift loops with mismatched periods and negative delays keep clouds, islands and moon
+     breathing out of phase, so the scene never sits still and never looks synchronized.</p>
+  <p>Scrolling plays a bedtime arc: the dreamscape sinks gently upward while a fixed indigo overlay
+     fades in with scroll progress, deepening dusk lavender into deep-sleep indigo by the final section.</p>
+  <p>Eighty canvas dream-particles (forty on mobile) drift on slow sine paths using one pre-rendered
+     glow sprite, and a 4-7-8 breathing orb runs a real inhale–hold–exhale timer with text cues.</p>
+  <p>Everything animates with transforms and opacity only, pauses when the tab hides, and collapses
+     to a still, readable dreamscape under reduced-motion preferences.</p>
+
+  <h2>Reproduction prompt</h2>
+  <div class="prompt-box">
+    <p id="promptText">Build a one-page marketing site for SOMNIUM, a sleep and dream journal app, as a single self-contained HTML file (Google Fonts only; no images). Palette: dusk lavender #B9AEE0, drowsy peach #F5C9B0, deep-sleep indigo #232152, mist #E9E4F4, star glimmer #FFF3C9. Fonts: Fraunces for dreamy display headlines (italic accents), Albert Sans for body.
+
+The hero is a surreal floating dreamscape with true depth: a fixed full-viewport scene of 5–6 parallax planes — twinkling starfield, a giant slow SVG moon with radial shading and craters, soft blurred SVG cloud blobs near and far, and floating SVG islands with tiny glowing windows. One rAF loop moves each plane by a different ratio of damped pointer position (lerp ~0.035, underwater-slow) plus scroll offset, so scrolling sinks the dreamscape upward. Give every plane its own slow drift or bob animation with mismatched durations and negative delays so nothing moves in sync. Add ~80 canvas fireflies on slow sine drift (40 on mobile) and occasional falling-star streaks. As the user scrolls, fade in a fixed indigo overlay so the palette deepens dusk-to-indigo like falling asleep.
+
+Sections: how it works (three rituals), dream journal feature with sample half-awake entries, a genuinely usable 4-7-8 breathing widget (expanding orb, text cue, countdown), a science-of-sleep note, download CTA, footer. Barely-moving wavy SVG dividers between sections. Tender, unsappy copy. Transforms and opacity only, pause when hidden, full prefers-reduced-motion fallback with a static dreamscape and text-timed breathing.</p>
+  </div>
+  <button class="copy-btn" id="copyBtn" type="button">Copy prompt</button>
+
+  <div class="links">
+    <a href="/40-somnium/">Visit the Somnium site</a>
+    <a href="/">← All 25 sites</a>
+  </div>
+</main>
+
+<script>
+(function(){
+"use strict";
+var holder = document.getElementById("stars");
+for(var i=0;i<60;i++){
+  var d = document.createElement("div");
+  d.className = "dot";
+  d.style.left = (Math.random()*100)+"%";
+  d.style.top = (Math.random()*100)+"%";
+  d.style.animationDelay = (-Math.random()*7)+"s";
+  if(Math.random()<.2){ d.style.width = d.style.height = "3px"; }
+  holder.appendChild(d);
+}
+var btn = document.getElementById("copyBtn");
+btn.addEventListener("click", function(){
+  var txt = document.getElementById("promptText").textContent;
+  function ok(){ btn.textContent = "Copied — sleep well"; btn.classList.add("done");
+    setTimeout(function(){ btn.textContent = "Copy prompt"; btn.classList.remove("done"); }, 2400); }
+  if(navigator.clipboard && navigator.clipboard.writeText){
+    navigator.clipboard.writeText(txt).then(ok, fallback);
+  }else{ fallback(); }
+  function fallback(){
+    var ta = document.createElement("textarea");
+    ta.value = txt; ta.style.position = "fixed"; ta.style.opacity = "0";
+    document.body.appendChild(ta); ta.select();
+    try{ document.execCommand("copy"); ok(); }catch(e){}
+    ta.remove();
+  }
+});
+})();
+</script>
+</body>
+</html>

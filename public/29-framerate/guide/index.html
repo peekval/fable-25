@@ -1,0 +1,165 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Guide — How FRAME:RATE was built</title>
+<meta name="description" content="How the FRAME:RATE scroll-driven cinematic dolly site was built, plus a reproduction prompt.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Sora:wght@300;400;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --black:#0B0A0A;
+    --white:#F7F4EE;
+    --amber:#FFB454;
+    --red:#8E1F2F;
+  }
+  *{margin:0;padding:0;box-sizing:border-box}
+  body{
+    background:var(--black);
+    color:var(--white);
+    font-family:'Sora',sans-serif;
+    font-weight:300;
+    min-height:100vh;
+    background-image:
+      radial-gradient(ellipse 60% 40% at 50% 0%, rgba(255,180,84,.07), transparent 70%),
+      radial-gradient(ellipse 70% 60% at 50% 110%, rgba(142,31,47,.12), transparent 70%);
+  }
+  ::selection{background:var(--amber);color:var(--black)}
+  a{color:inherit;text-decoration:none}
+
+  #back25{
+    position:fixed;top:20px;left:22px;z-index:60;
+    font-size:13px;letter-spacing:.14em;color:var(--white);opacity:.72;
+    padding:8px 14px;border:1px solid rgba(247,244,238,.22);border-radius:999px;
+    background:rgba(11,10,10,.5);transition:opacity .25s,border-color .25s;
+  }
+  #back25:hover{opacity:1;border-color:var(--amber)}
+
+  .wrap{max-width:840px;margin:0 auto;padding:110px 6vw 90px}
+
+  .kicker{
+    font-size:11px;letter-spacing:.34em;text-transform:uppercase;color:var(--amber);margin-bottom:16px;
+  }
+  .kicker::before{content:'';display:inline-block;width:26px;height:1px;background:var(--red);vertical-align:middle;margin-right:12px}
+
+  h1{
+    font-family:'Bebas Neue',sans-serif;font-weight:400;
+    font-size:clamp(52px,9vw,104px);letter-spacing:.03em;line-height:.95;
+  }
+  h1 em{font-style:normal;color:var(--amber)}
+  .sub{margin-top:14px;font-size:14px;line-height:1.7;color:rgba(247,244,238,.6);max-width:56ch}
+
+  h2{
+    font-family:'Bebas Neue',sans-serif;font-weight:400;
+    font-size:clamp(28px,4vw,40px);letter-spacing:.05em;margin:64px 0 16px;
+  }
+  h2 .no{color:var(--red);margin-right:12px}
+
+  .prose p{font-size:15px;line-height:1.85;color:rgba(247,244,238,.78);margin-bottom:14px;max-width:66ch}
+  .prose strong{font-weight:600;color:var(--white)}
+  .prose .a{color:var(--amber)}
+
+  .promptbox{
+    position:relative;margin-top:18px;
+    border:1px solid rgba(255,180,84,.4);
+    background:rgba(11,10,10,.85);
+    box-shadow:0 0 60px rgba(255,180,84,.08), inset 0 0 40px rgba(0,0,0,.5);
+  }
+  .promptbox .bar{
+    display:flex;align-items:center;justify-content:space-between;
+    padding:12px 18px;border-bottom:1px dashed rgba(247,244,238,.16);
+    font-size:10px;letter-spacing:.3em;text-transform:uppercase;color:var(--amber);
+  }
+  #copybtn{
+    font-family:'Sora',sans-serif;font-size:10px;letter-spacing:.24em;text-transform:uppercase;
+    background:transparent;color:var(--white);border:1px solid rgba(247,244,238,.35);
+    padding:9px 18px;cursor:pointer;transition:all .25s;
+  }
+  #copybtn:hover{background:var(--amber);border-color:var(--amber);color:var(--black)}
+  #copybtn.done{background:var(--amber);border-color:var(--amber);color:var(--black)}
+  #prompt{
+    padding:24px 26px 28px;font-size:14px;line-height:1.9;color:rgba(247,244,238,.88);
+    white-space:pre-wrap;
+  }
+
+  .links{margin-top:70px;display:flex;gap:16px;flex-wrap:wrap}
+  .links a{
+    font-size:11px;letter-spacing:.26em;text-transform:uppercase;
+    border:1px solid rgba(247,244,238,.25);padding:14px 28px;transition:all .25s;
+  }
+  .links a:hover{border-color:var(--amber);color:var(--amber)}
+  .links a.glow{border-color:var(--amber);color:var(--amber)}
+  .links a.glow:hover{background:var(--amber);color:var(--black)}
+
+  .foot{margin-top:60px;font-size:10px;letter-spacing:.22em;text-transform:uppercase;color:rgba(247,244,238,.35)}
+</style>
+</head>
+<body>
+
+<a id="back25" href="/">←&nbsp;25</a>
+
+<main class="wrap">
+  <p class="kicker">Projection booth · Technical notes</p>
+  <h1>How FRAME<em>:</em>RATE<br>was built</h1>
+  <p class="sub">One HTML file, three.js from a CDN, two Google Fonts, zero images. Everything you fly through is text painted onto canvas textures and lit by fog.</p>
+
+  <h2><span class="no">01</span>The rig</h2>
+  <div class="prose">
+    <p>The whole site is a <strong>scroll-driven cinematic dolly</strong>: the page scroll is mapped to a single progress value that pushes a camera rig down a long Z-corridor, smoothed with frame-rate-independent exponential damping so trackpads, wheels and touch all feel like the same weighted dolly. The festival's marquee words and stray projection vocabulary are flat planes carrying <strong>CanvasTexture-rendered Bebas Neue</strong>, scattered at drifted angles along the corridor beside thin white-bordered film frames with sprocket holes. As the camera approaches each section boundary, a double-smoothstep <strong>lock-on</strong> pulls that zone's title from its drifted pose into perfect flat alignment for reading, then dissolves it as you fly through. Fixed HTML content sections are synced to the same progress value and crossfade in narrow windows so exactly one is readable at a time. Depth comes from fog falloff, a cone of additive dust motes in the projector beam, amber lens-glow sprites, and a vignette that flickers at exactly 24 steps per second — celluloid breathing, not a strobe. Mouse X banks the rig slightly, but the banking is suppressed while a title is locked, so the frame is always level when you read.</p>
+  </div>
+
+  <h2><span class="no">02</span>Reproduction prompt</h2>
+  <div class="promptbox">
+    <div class="bar">
+      <span>Prompt — paste into your agent</span>
+      <button id="copybtn" type="button">Copy</button>
+    </div>
+    <div id="prompt">Build a one-page website for FRAME:RATE, a fictional experimental film festival, as a single self-contained HTML file using three.js (UMD from a CDN) and Google Fonts only — no images. Palette: cinema black #0B0A0A background, projector white #F7F4EE text, amber lamp #FFB454 accents, deep curtain red #8E1F2F details. Type: Bebas Neue for huge marquee display words, Sora for body copy.
+
+Signature technique: a scroll-driven cinematic dolly through 3D space. Render festival words and film titles as flat white planes using CanvasTexture text, scattered at drifted angles along a long Z-corridor, alongside thin white-bordered film-frame rectangles with sprocket holes. Map page scroll to camera Z with frame-rate-independent damped lerp; add slight banking on mouse X, fog for depth falloff, additive amber glow sprites, a cone of dust motes like a projector beam, and a very subtle vignette flickering at 24 steps per second. When the camera nears a section boundary, snap that zone's title into perfect flat alignment for reading (smoothstep lock-on), then fade it as the camera passes through.
+
+Sync fixed HTML overlay sections to camera zones, crossfading so one is readable at a time: hero, program of four fictional experimental films with clever loglines, venues, ticket passes, credits footer. Keep 60fps: planes and sprites only, device pixel ratio capped at 2, fewer particles on mobile, pause when the tab is hidden. For prefers-reduced-motion, serve a static poster layout with all content readable and no tunnel. Mood: late-night projection booth — patient, warm, reverent about light.</div>
+  </div>
+
+  <div class="links">
+    <a class="glow" href="/29-framerate/">← Enter the tunnel</a>
+    <a href="/">All 25 sites</a>
+  </div>
+
+  <p class="foot">FRAME:RATE 2026 · Guide · Set in Bebas Neue &amp; Sora</p>
+</main>
+
+<script>
+(function(){
+  var btn = document.getElementById('copybtn');
+  var box = document.getElementById('prompt');
+  btn.addEventListener('click', function(){
+    var text = box.textContent;
+    function done(){
+      btn.textContent = 'Copied';
+      btn.classList.add('done');
+      setTimeout(function(){
+        btn.textContent = 'Copy';
+        btn.classList.remove('done');
+      }, 1600);
+    }
+    if (navigator.clipboard && navigator.clipboard.writeText){
+      navigator.clipboard.writeText(text).then(done).catch(fallback);
+    } else { fallback(); }
+    function fallback(){
+      var ta = document.createElement('textarea');
+      ta.value = text;
+      ta.style.position = 'fixed';
+      ta.style.opacity = '0';
+      document.body.appendChild(ta);
+      ta.select();
+      try { document.execCommand('copy'); done(); } catch(e){}
+      document.body.removeChild(ta);
+    }
+  });
+})();
+</script>
+</body>
+</html>

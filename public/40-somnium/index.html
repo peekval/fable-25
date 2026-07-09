@@ -1,0 +1,876 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SOMNIUM — a sleep &amp; dream journal</title>
+<meta name="description" content="Somnium keeps the hours you don't remember. A tender sleep & dream journal for winding down, drifting off, and catching dreams before they dissolve.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,300..600;1,9..144,300..500&family=Albert+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+:root{
+  --lavender:#B9AEE0;
+  --peach:#F5C9B0;
+  --indigo:#232152;
+  --indigo-deep:#14132f;
+  --mist:#E9E4F4;
+  --star:#FFF3C9;
+  --ink:#f4f0ff;
+  --dim:rgba(233,228,244,.72);
+  --card:rgba(28,26,66,.55);
+  --line:rgba(185,174,224,.22);
+}
+*{margin:0;padding:0;box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{
+  font-family:"Albert Sans",system-ui,sans-serif;
+  color:var(--ink);
+  background:
+    linear-gradient(180deg,
+      #1c1a43 0%,
+      #38316e 22%,
+      #6a5ea4 44%,
+      #a08cc4 62%,
+      #d3a8b8 78%,
+      var(--peach) 100%);
+  background-attachment:fixed;
+  overflow-x:hidden;
+  -webkit-font-smoothing:antialiased;
+}
+::selection{background:var(--star);color:var(--indigo)}
+h1,h2,h3,.serif{font-family:"Fraunces",serif;font-weight:400;letter-spacing:.01em}
+a{color:inherit}
+
+/* ---------- fixed back link ---------- */
+.back{
+  position:fixed;top:1.1rem;left:1.2rem;z-index:90;
+  font-size:.85rem;letter-spacing:.08em;text-decoration:none;
+  color:var(--mist);background:rgba(20,19,47,.45);
+  border:1px solid var(--line);border-radius:999px;
+  padding:.42rem .95rem;
+  transition:background .3s,color .3s;
+}
+.back:hover{background:var(--mist);color:var(--indigo)}
+
+/* ---------- dreamscape scene ---------- */
+#scene{
+  position:fixed;inset:0;z-index:0;overflow:hidden;
+  perspective:900px;perspective-origin:50% 40%;
+  pointer-events:none;
+  contain:strict;
+}
+.layer{position:absolute;inset:-8% -6%;will-change:transform}
+.drift{position:absolute;inset:0}
+.layer svg{position:absolute;overflow:visible}
+
+/* stars */
+.starfield{position:absolute;top:0;left:0;width:2px;height:2px;border-radius:50%;background:var(--star)}
+.tw-a{animation:twinkle 5.5s ease-in-out infinite}
+.tw-b{animation:twinkle 8s ease-in-out -2.5s infinite}
+.tw-c{animation:twinkle 11s ease-in-out -5s infinite}
+@keyframes twinkle{0%,100%{opacity:.9}50%{opacity:.35}}
+
+/* moon */
+.moon-halo{
+  position:absolute;width:60vmin;height:60vmin;border-radius:50%;
+  background:radial-gradient(circle,rgba(255,243,201,.32) 0%,rgba(255,243,201,.10) 42%,transparent 70%);
+  top:2%;right:6%;
+}
+.moon-svg{width:26vmin;height:26vmin;top:19%;right:17.5%}
+.drift-moon{animation:moonDrift 96s ease-in-out infinite alternate}
+@keyframes moonDrift{
+  0%{transform:translate3d(0,0,0) rotate(0deg)}
+  100%{transform:translate3d(-2.5vmin,1.6vmin,0) rotate(4deg)}
+}
+
+/* clouds */
+.cloud{opacity:.85}
+.drift-cloud-a{animation:cloudA 74s ease-in-out infinite alternate}
+.drift-cloud-b{animation:cloudB 58s ease-in-out -20s infinite alternate}
+.drift-cloud-c{animation:cloudC 46s ease-in-out -10s infinite alternate}
+@keyframes cloudA{0%{transform:translate3d(-2.5%,0,0)}100%{transform:translate3d(2.5%,-1%,0)}}
+@keyframes cloudB{0%{transform:translate3d(2%,.6%,0)}100%{transform:translate3d(-2.4%,-.8%,0)}}
+@keyframes cloudC{0%{transform:translate3d(-1.6%,-.5%,0)}100%{transform:translate3d(2%,.9%,0)}}
+
+/* islands */
+.drift-isle-a{animation:bobA 17s ease-in-out infinite alternate}
+.drift-isle-b{animation:bobB 13s ease-in-out -4s infinite alternate}
+.drift-isle-c{animation:bobC 21s ease-in-out -9s infinite alternate}
+@keyframes bobA{0%{transform:translate3d(0,-1.1vmin,0) rotate(-.6deg)}100%{transform:translate3d(.6vmin,1.1vmin,0) rotate(.6deg)}}
+@keyframes bobB{0%{transform:translate3d(0,1.4vmin,0) rotate(.5deg)}100%{transform:translate3d(-.8vmin,-1.2vmin,0) rotate(-.7deg)}}
+@keyframes bobC{0%{transform:translate3d(0,-.8vmin,0)}100%{transform:translate3d(0,.9vmin,0)}}
+.win{animation:winGlow 6s ease-in-out infinite alternate}
+.win:nth-child(2n){animation-delay:-2.2s}
+.win:nth-child(3n){animation-delay:-4.1s}
+@keyframes winGlow{0%{opacity:.55}100%{opacity:1}}
+
+/* falling star streaks */
+#streaks{position:absolute;inset:0;overflow:hidden}
+.streak{
+  position:absolute;width:130px;height:2px;border-radius:2px;
+  background:linear-gradient(90deg,transparent,var(--star) 70%,#fff);
+  transform:rotate(28deg);
+  opacity:0;
+  animation:shoot 1.6s ease-out forwards;
+}
+@keyframes shoot{
+  0%{opacity:0;transform:rotate(28deg) translate3d(0,0,0) scaleX(.3)}
+  12%{opacity:.95}
+  100%{opacity:0;transform:rotate(28deg) translate3d(46vw,0,0) scaleX(1)}
+}
+
+#dust{position:absolute;inset:0;width:100%;height:100%}
+
+/* nightfall — bedtime arc overlay */
+#nightfall{
+  position:fixed;inset:0;z-index:1;pointer-events:none;
+  background:linear-gradient(180deg,#0e0d26 0%,#191740 55%,var(--indigo) 100%);
+  opacity:0;
+  will-change:opacity;
+}
+
+/* ---------- content ---------- */
+main{position:relative;z-index:2}
+.wrap{max-width:1060px;margin:0 auto;padding:0 clamp(1.2rem,4vw,2.5rem)}
+
+/* hero */
+.hero{
+  min-height:100svh;display:flex;flex-direction:column;
+  justify-content:center;align-items:center;text-align:center;
+  padding:6rem 1.2rem 7rem;
+}
+.eyebrow{
+  font-size:.78rem;letter-spacing:.34em;text-transform:uppercase;
+  color:var(--star);margin-bottom:1.4rem;font-weight:500;
+}
+.hero h1{
+  font-size:clamp(2.6rem,7.2vw,5.4rem);
+  font-weight:340;line-height:1.06;
+  max-width:13ch;
+  text-shadow:0 2px 40px rgba(20,19,47,.45);
+}
+.hero h1 em{font-style:italic;font-weight:300;color:var(--star)}
+.hero p{
+  max-width:46ch;margin:1.6rem auto 2.4rem;
+  font-size:clamp(1rem,1.6vw,1.15rem);line-height:1.7;color:var(--ink);
+  text-shadow:0 1px 24px rgba(20,19,47,.5);
+}
+.cta-row{display:flex;gap:.9rem;flex-wrap:wrap;justify-content:center}
+.btn{
+  display:inline-block;text-decoration:none;font-weight:500;font-size:.95rem;
+  padding:.85rem 1.7rem;border-radius:999px;letter-spacing:.02em;
+  transition:transform .35s cubic-bezier(.2,.8,.2,1),background .3s,color .3s;
+}
+.btn-solid{background:var(--star);color:var(--indigo)}
+.btn-solid:hover{transform:translateY(-3px)}
+.btn-ghost{border:1px solid rgba(233,228,244,.5);color:var(--mist)}
+.btn-ghost:hover{background:rgba(233,228,244,.14);transform:translateY(-3px)}
+.sink-hint{
+  margin-top:4.2rem;font-size:.8rem;letter-spacing:.28em;text-transform:uppercase;
+  color:rgba(233,228,244,.65);
+  animation:hintSink 4s ease-in-out infinite;
+}
+@keyframes hintSink{0%,100%{transform:translateY(0);opacity:.65}50%{transform:translateY(8px);opacity:1}}
+
+/* wavy divider */
+.divider{height:90px;overflow:hidden;position:relative;pointer-events:none}
+.divider svg{
+  position:absolute;top:0;left:0;width:200%;height:100%;
+  animation:undulate 30s ease-in-out infinite alternate;
+  will-change:transform;
+}
+.divider.flip svg{animation-duration:38s;animation-direction:alternate-reverse}
+@keyframes undulate{0%{transform:translate3d(0,0,0)}100%{transform:translate3d(-12%,0,0)}}
+.divider path{fill:rgba(185,174,224,.10)}
+
+/* sections */
+section{padding:clamp(4.5rem,9vw,7.5rem) 0}
+.rise{opacity:0;transform:translateY(44px);transition:opacity 1.1s ease,transform 1.1s cubic-bezier(.16,.84,.3,1)}
+.rise.in{opacity:1;transform:translateY(0)}
+.kicker{font-size:.75rem;letter-spacing:.3em;text-transform:uppercase;color:var(--lavender);font-weight:600;margin-bottom:1rem}
+section h2{font-size:clamp(1.9rem,4.4vw,3rem);font-weight:360;line-height:1.15;max-width:22ch}
+section h2 em{font-style:italic;color:var(--peach)}
+.lede{max-width:56ch;margin-top:1.2rem;line-height:1.75;color:var(--dim);font-size:1.03rem}
+
+/* how it works */
+.steps{display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:1.1rem;margin-top:3rem}
+.step{
+  background:var(--card);border:1px solid var(--line);border-radius:20px;
+  padding:1.8rem 1.6rem;
+}
+.step .n{font-family:"Fraunces",serif;font-size:2rem;color:var(--star);font-weight:300;font-style:italic}
+.step h3{font-size:1.25rem;margin:.7rem 0 .55rem}
+.step p{color:var(--dim);line-height:1.65;font-size:.95rem}
+
+/* journal */
+.journal-grid{display:grid;grid-template-columns:1.05fr .95fr;gap:clamp(1.5rem,4vw,3.5rem);align-items:center;margin-top:2.6rem}
+.entries{display:flex;flex-direction:column;gap:1rem}
+.entry{
+  background:var(--card);border:1px solid var(--line);border-radius:18px;
+  padding:1.35rem 1.5rem;
+}
+.entry .date{font-size:.74rem;letter-spacing:.2em;text-transform:uppercase;color:var(--lavender);margin-bottom:.5rem}
+.entry .txt{font-family:"Fraunces",serif;font-style:italic;font-weight:340;font-size:1.12rem;line-height:1.5;color:var(--mist)}
+.tags{display:flex;gap:.45rem;margin-top:.85rem;flex-wrap:wrap}
+.tag{
+  font-size:.72rem;letter-spacing:.05em;padding:.22rem .7rem;border-radius:999px;
+  background:rgba(185,174,224,.16);color:var(--lavender);border:1px solid rgba(185,174,224,.25);
+}
+.tag.warm{background:rgba(245,201,176,.14);color:var(--peach);border-color:rgba(245,201,176,.28)}
+.journal-copy p{line-height:1.75;color:var(--dim);margin-top:1.1rem}
+.journal-copy strong{color:var(--ink);font-weight:500}
+
+/* breathing */
+.breathe-sec{text-align:center}
+.breathe-sec h2,.breathe-sec .lede{margin-left:auto;margin-right:auto}
+.breather{
+  margin:3.4rem auto 0;width:min(320px,74vw);aspect-ratio:1;
+  position:relative;display:flex;align-items:center;justify-content:center;
+}
+.ring{
+  position:absolute;inset:0;border-radius:50%;
+  border:1px solid rgba(185,174,224,.3);
+}
+.ring.r2{inset:-13%;border-color:rgba(185,174,224,.16)}
+.ring.r3{inset:-26%;border-color:rgba(185,174,224,.08)}
+.orb{
+  position:absolute;inset:14%;border-radius:50%;
+  background:radial-gradient(circle at 38% 32%,rgba(255,243,201,.85),rgba(245,201,176,.55) 38%,rgba(185,174,224,.4) 74%,rgba(185,174,224,.15));
+  box-shadow:0 0 70px rgba(245,201,176,.35),inset 0 0 40px rgba(255,243,201,.25);
+  transform:scale(.72);
+  will-change:transform;
+}
+.breath-cue{position:relative;z-index:2;pointer-events:none}
+.breath-cue .phase{font-family:"Fraunces",serif;font-size:1.5rem;font-weight:360;color:var(--indigo-deep)}
+.breath-cue .count{font-size:.85rem;letter-spacing:.24em;margin-top:.3rem;color:rgba(20,19,47,.72);font-weight:600}
+.breather[data-idle="1"] .breath-cue .phase{color:var(--mist);font-size:1.15rem}
+.breather[data-idle="1"] .breath-cue .count{color:var(--dim)}
+.breather[data-idle="1"] .orb{opacity:.35}
+.breathe-btn{
+  margin-top:2.4rem;cursor:pointer;font-family:inherit;font-size:.95rem;font-weight:500;
+  background:transparent;color:var(--mist);border:1px solid rgba(233,228,244,.45);
+  padding:.8rem 1.9rem;border-radius:999px;letter-spacing:.03em;
+  transition:background .3s,color .3s,transform .3s;
+}
+.breathe-btn:hover{background:var(--mist);color:var(--indigo);transform:translateY(-2px)}
+.breathe-note{margin-top:1.3rem;font-size:.85rem;color:rgba(233,228,244,.55)}
+
+/* science */
+.sci-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:1.1rem;margin-top:2.8rem}
+.fact{
+  border-left:2px solid rgba(245,201,176,.5);padding:.2rem 0 .2rem 1.2rem;
+}
+.fact h3{font-size:1.1rem;margin-bottom:.5rem;color:var(--peach);font-weight:400;font-style:italic}
+.fact p{color:var(--dim);line-height:1.65;font-size:.94rem}
+.sci-foot{margin-top:2.6rem;font-size:.85rem;color:rgba(233,228,244,.5);max-width:60ch;line-height:1.6}
+
+/* download */
+.dl{
+  text-align:center;
+  padding-bottom:clamp(5rem,10vw,8rem);
+}
+.dl h2{margin-left:auto;margin-right:auto}
+.dl .lede{margin-left:auto;margin-right:auto}
+.dl .cta-row{margin-top:2.4rem}
+.dl-small{margin-top:1.4rem;font-size:.82rem;color:rgba(233,228,244,.5)}
+
+/* footer */
+footer{
+  position:relative;z-index:2;
+  border-top:1px solid var(--line);
+  padding:2.6rem 0 3rem;
+  color:rgba(233,228,244,.6);font-size:.88rem;
+}
+footer .wrap{display:flex;justify-content:space-between;gap:1.2rem;flex-wrap:wrap;align-items:center}
+footer nav{display:flex;gap:1.6rem}
+footer a{text-decoration:none;transition:color .3s}
+footer a:hover{color:var(--star)}
+.foot-mark{font-family:"Fraunces",serif;font-style:italic;font-size:1.05rem;color:var(--mist)}
+
+@media (max-width:760px){
+  .journal-grid{grid-template-columns:1fr}
+  .hero h1{max-width:12ch}
+}
+
+/* ---------- reduced motion ---------- */
+@media (prefers-reduced-motion:reduce){
+  html{scroll-behavior:auto}
+  .drift-moon,.drift-cloud-a,.drift-cloud-b,.drift-cloud-c,
+  .drift-isle-a,.drift-isle-b,.drift-isle-c,
+  .win,.tw-a,.tw-b,.tw-c,.sink-hint,.divider svg{animation:none}
+  .rise{opacity:1;transform:none;transition:none}
+  .orb{transform:scale(1) !important;transition:none !important}
+  .streak{display:none}
+}
+</style>
+</head>
+<body>
+
+<a class="back" href="/">←&nbsp;25</a>
+
+<!-- ======= DREAMSCAPE ======= -->
+<div id="scene" aria-hidden="true">
+
+  <!-- L1: starfield -->
+  <div class="layer" id="lay-stars" data-dx="6" data-dy="4" data-ds="0.04"></div>
+
+  <!-- L2: moon -->
+  <div class="layer" id="lay-moon" data-dx="12" data-dy="8" data-ds="0.07">
+    <div class="drift drift-moon">
+      <div class="moon-halo"></div>
+      <svg class="moon-svg" viewBox="0 0 200 200">
+        <defs>
+          <radialGradient id="moonG" cx="38%" cy="34%" r="80%">
+            <stop offset="0%" stop-color="#FFF9E2"/>
+            <stop offset="48%" stop-color="#FFF3C9"/>
+            <stop offset="82%" stop-color="#F0D9B4"/>
+            <stop offset="100%" stop-color="#DDBF9F"/>
+          </radialGradient>
+        </defs>
+        <circle cx="100" cy="100" r="96" fill="url(#moonG)"/>
+        <ellipse cx="66" cy="72" rx="15" ry="13" fill="#E8CBA6" opacity=".75"/>
+        <ellipse cx="63" cy="69" rx="9" ry="8" fill="#DDBB94" opacity=".7"/>
+        <ellipse cx="128" cy="52" rx="9" ry="8" fill="#E8CBA6" opacity=".6"/>
+        <ellipse cx="142" cy="118" rx="18" ry="16" fill="#E8CBA6" opacity=".65"/>
+        <ellipse cx="146" cy="115" rx="10" ry="9" fill="#DDBB94" opacity=".6"/>
+        <ellipse cx="92" cy="146" rx="11" ry="9" fill="#E8CBA6" opacity=".6"/>
+        <ellipse cx="52" cy="120" rx="6" ry="5" fill="#E8CBA6" opacity=".55"/>
+        <ellipse cx="112" cy="96" rx="5" ry="4" fill="#E8CBA6" opacity=".5"/>
+      </svg>
+    </div>
+  </div>
+
+  <!-- L3: far clouds -->
+  <div class="layer" id="lay-cloud-far" data-dx="18" data-dy="10" data-ds="0.10">
+    <div class="drift drift-cloud-a">
+      <svg class="cloud" style="top:12%;left:-4%;width:52vmax;height:20vmax" viewBox="0 0 520 200" preserveAspectRatio="none">
+        <defs><filter id="bl1" x="-40%" y="-40%" width="180%" height="180%"><feGaussianBlur stdDeviation="22"/></filter></defs>
+        <g filter="url(#bl1)" fill="#B9AEE0" opacity=".38">
+          <ellipse cx="150" cy="120" rx="150" ry="52"/>
+          <ellipse cx="330" cy="95" rx="130" ry="44"/>
+          <ellipse cx="440" cy="130" rx="90" ry="36"/>
+        </g>
+      </svg>
+    </div>
+    <div class="drift drift-cloud-b">
+      <svg class="cloud" style="top:46%;right:-6%;width:44vmax;height:16vmax" viewBox="0 0 440 160" preserveAspectRatio="none">
+        <g filter="url(#bl1)" fill="#CBB8D9" opacity=".3">
+          <ellipse cx="140" cy="80" rx="140" ry="42"/>
+          <ellipse cx="320" cy="95" rx="110" ry="38"/>
+        </g>
+      </svg>
+    </div>
+  </div>
+
+  <!-- L4: far islands -->
+  <div class="layer" id="lay-isle-far" data-dx="26" data-dy="15" data-ds="0.16">
+    <div class="drift drift-isle-c">
+      <svg style="top:24%;left:8%;width:15vmin;height:15vmin" viewBox="0 0 120 120">
+        <path d="M14 52 Q22 40 60 40 Q100 40 106 52 L88 66 Q78 96 62 110 Q54 92 44 74 L30 62 Z" fill="#2c2960"/>
+        <path d="M14 52 Q22 40 60 40 Q100 40 106 52 L96 58 Q60 66 22 57 Z" fill="#403a7c"/>
+        <rect x="50" y="26" width="16" height="16" rx="2.5" fill="#343070"/>
+        <path d="M47 27 L58 17 L69 27 Z" fill="#2c2960"/>
+        <rect class="win" x="55" y="31" width="6" height="7" rx="1" fill="#FFF3C9"/>
+      </svg>
+    </div>
+    <div class="drift drift-isle-b">
+      <svg style="top:56%;right:9%;width:13vmin;height:13vmin" viewBox="0 0 120 120">
+        <path d="M18 56 Q30 44 60 44 Q94 44 102 56 L84 70 Q74 94 60 108 Q50 90 40 74 L28 64 Z" fill="#2c2960"/>
+        <path d="M18 56 Q30 44 60 44 Q94 44 102 56 L92 62 Q60 70 26 61 Z" fill="#403a7c"/>
+        <rect x="44" y="28" width="12" height="17" rx="2" fill="#343070"/>
+        <rect x="62" y="34" width="11" height="11" rx="2" fill="#343070"/>
+        <rect class="win" x="47" y="33" width="5" height="6" rx="1" fill="#FFF3C9"/>
+        <rect class="win" x="65" y="37" width="5" height="5" rx="1" fill="#F5C9B0"/>
+      </svg>
+    </div>
+  </div>
+
+  <!-- L5: near island -->
+  <div class="layer" id="lay-isle-near" data-dx="38" data-dy="22" data-ds="0.26">
+    <div class="drift drift-isle-a">
+      <svg style="top:52%;left:14%;width:26vmin;height:26vmin" viewBox="0 0 200 200">
+        <path d="M20 96 Q36 76 100 76 Q168 76 180 96 L152 118 Q136 160 104 188 Q88 158 68 128 L42 108 Z" fill="#232152"/>
+        <path d="M20 96 Q36 76 100 76 Q168 76 180 96 L164 106 Q100 120 34 105 Z" fill="#3b356f"/>
+        <path d="M20 96 Q36 76 100 76 Q168 76 180 96 L172 100 Q100 88 26 99 Z" fill="#4c4488"/>
+        <ellipse cx="64" cy="76" rx="10" ry="14" fill="#37325f"/>
+        <ellipse cx="150" cy="78" rx="8" ry="11" fill="#37325f"/>
+        <rect x="84" y="38" width="30" height="38" rx="4" fill="#2c2960"/>
+        <path d="M79 40 L99 22 L119 40 Z" fill="#232152"/>
+        <rect class="win" x="90" y="46" width="8" height="10" rx="1.5" fill="#FFF3C9"/>
+        <rect class="win" x="102" y="46" width="7" height="8" rx="1.5" fill="#F5C9B0"/>
+        <rect class="win" x="92" y="62" width="7" height="9" rx="1.5" fill="#FFF3C9"/>
+        <circle class="win" cx="99" cy="30" r="2.6" fill="#FFF3C9"/>
+      </svg>
+    </div>
+  </div>
+
+  <!-- particles -->
+  <canvas id="dust"></canvas>
+
+  <!-- L6: near clouds -->
+  <div class="layer" id="lay-cloud-near" data-dx="54" data-dy="30" data-ds="0.38">
+    <div class="drift drift-cloud-c">
+      <svg class="cloud" style="bottom:-6%;left:-8%;width:70vmax;height:24vmax" viewBox="0 0 700 240" preserveAspectRatio="none">
+        <defs><filter id="bl2" x="-40%" y="-40%" width="180%" height="180%"><feGaussianBlur stdDeviation="30"/></filter></defs>
+        <g filter="url(#bl2)" fill="#F5C9B0" opacity=".34">
+          <ellipse cx="200" cy="170" rx="210" ry="70"/>
+          <ellipse cx="480" cy="150" rx="180" ry="60"/>
+          <ellipse cx="620" cy="190" rx="130" ry="55"/>
+        </g>
+      </svg>
+    </div>
+    <div class="drift drift-cloud-b">
+      <svg class="cloud" style="top:4%;right:-10%;width:46vmax;height:15vmax" viewBox="0 0 460 150" preserveAspectRatio="none">
+        <g filter="url(#bl2)" fill="#B9AEE0" opacity=".26">
+          <ellipse cx="150" cy="75" rx="150" ry="42"/>
+          <ellipse cx="330" cy="85" rx="120" ry="36"/>
+        </g>
+      </svg>
+    </div>
+  </div>
+
+  <div id="streaks"></div>
+</div>
+
+<div id="nightfall" aria-hidden="true"></div>
+
+<!-- ======= CONTENT ======= -->
+<main>
+
+  <header class="hero">
+    <p class="eyebrow">Somnium · sleep &amp; dream journal</p>
+    <h1>Where your days go <em>to soften.</em></h1>
+    <p>Somnium keeps the hours you don't remember. Log the night in one gentle question,
+       catch the dream before it dissolves, and watch your sleep slowly make sense of itself.</p>
+    <div class="cta-row">
+      <a class="btn btn-solid" href="#download">Start tonight</a>
+      <a class="btn btn-ghost" href="#how">See how it works</a>
+    </div>
+    <p class="sink-hint">sink slowly</p>
+  </header>
+
+  <div class="divider" aria-hidden="true">
+    <svg viewBox="0 0 1440 90" preserveAspectRatio="none"><path d="M0,50 C120,30 240,70 360,52 C480,34 600,66 720,50 C840,34 960,68 1080,50 C1200,32 1320,66 1440,50 L1440,90 L0,90 Z"/></svg>
+  </div>
+
+  <section id="how">
+    <div class="wrap">
+      <div class="rise">
+        <p class="kicker">How it works</p>
+        <h2>Three small rituals. <em>Nothing to keep up with.</em></h2>
+        <p class="lede">Somnium is not a streak to defend or a score to chase. It asks for less than a minute
+           at either edge of the night — and stays out of the middle entirely.</p>
+      </div>
+      <div class="steps">
+        <div class="step rise">
+          <span class="n">i.</span>
+          <h3>Wind down</h3>
+          <p>One question before bed — how heavy does today feel? — answered with a swipe.
+             The screen dims itself as you answer, so the last thing you see is already half asleep.</p>
+        </div>
+        <div class="step rise">
+          <span class="n">ii.</span>
+          <h3>Sleep</h3>
+          <p>Somnium does nothing while you sleep. No microphone, no radar, no glow.
+             Phone face-down, app closed. The night belongs to you.</p>
+        </div>
+        <div class="step rise">
+          <span class="n">iii.</span>
+          <h3>Catch the dream</h3>
+          <p>Morning capture is built for half-closed eyes: giant type, voice first,
+             three-word entries welcome. Whatever you salvage, Somnium files it before it fades.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <div class="divider flip" aria-hidden="true">
+    <svg viewBox="0 0 1440 90" preserveAspectRatio="none"><path d="M0,46 C130,66 250,30 380,48 C510,66 620,32 750,48 C880,64 1000,30 1130,48 C1260,66 1360,36 1440,46 L1440,90 L0,90 Z"/></svg>
+  </div>
+
+  <section id="journal">
+    <div class="wrap">
+      <div class="rise">
+        <p class="kicker">The dream journal</p>
+        <h2>Dreams don't keep. <em>Write them half-awake.</em></h2>
+      </div>
+      <div class="journal-grid">
+        <div class="entries">
+          <article class="entry rise">
+            <p class="date">Tue · 06:41 · voice note</p>
+            <p class="txt">"A staircase in my grandmother's house that never existed.
+               It smelled like rain. I wasn't afraid, just late for something."</p>
+            <div class="tags"><span class="tag">recurring place</span><span class="tag warm">calm</span><span class="tag">family</span></div>
+          </article>
+          <article class="entry rise">
+            <p class="date">Thu · 07:03 · three words</p>
+            <p class="txt">"Lighthouse. Blue horses. Laughing?"</p>
+            <div class="tags"><span class="tag warm">strange</span><span class="tag">water</span></div>
+          </article>
+          <article class="entry rise">
+            <p class="date">Sun · 08:22 · typed</p>
+            <p class="txt">"The exam dream again, but this time I simply left the room.
+               Woke up feeling ten years lighter."</p>
+            <div class="tags"><span class="tag">recurring</span><span class="tag warm">resolved</span></div>
+          </article>
+        </div>
+        <div class="journal-copy rise">
+          <p>Most of a dream is gone within minutes of waking — which is exactly when
+             every other app asks you to unlock, log in, and find the right tab.</p>
+          <p><strong>Somnium opens straight into capture.</strong> Speak it, type it, or tap
+             three words from your own recurring vocabulary. Entries can be fragments;
+             fragments are the point.</p>
+          <p>Over weeks, the journal quietly maps your recurring places, people and moods —
+             so one morning you notice the staircase has been visiting you for years,
+             and it always shows up before a big decision.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <div class="divider" aria-hidden="true">
+    <svg viewBox="0 0 1440 90" preserveAspectRatio="none"><path d="M0,50 C120,30 240,70 360,52 C480,34 600,66 720,50 C840,34 960,68 1080,50 C1200,32 1320,66 1440,50 L1440,90 L0,90 Z"/></svg>
+  </div>
+
+  <section id="breathe" class="breathe-sec">
+    <div class="wrap">
+      <div class="rise">
+        <p class="kicker">Wind-down tool</p>
+        <h2>Borrow a slower rhythm. <em>4 · 7 · 8.</em></h2>
+        <p class="lede">In for four, held for seven, out for eight. A pattern old enough to have no owner,
+           gentle enough to try right now. Follow the orb — three rounds is usually enough
+           to feel your shoulders drop.</p>
+      </div>
+      <div class="breather rise" id="breather" data-idle="1">
+        <div class="ring"></div><div class="ring r2"></div><div class="ring r3"></div>
+        <div class="orb" id="orb"></div>
+        <div class="breath-cue">
+          <p class="phase" id="phaseText">Ready when you are</p>
+          <p class="count" id="countText">&nbsp;</p>
+        </div>
+      </div>
+      <button class="breathe-btn rise" id="breatheBtn" type="button">Begin breathing</button>
+      <p class="breathe-note rise">No account needed for this part. It's just breathing.</p>
+    </div>
+  </section>
+
+  <div class="divider flip" aria-hidden="true">
+    <svg viewBox="0 0 1440 90" preserveAspectRatio="none"><path d="M0,46 C130,66 250,30 380,48 C510,66 620,32 750,48 C880,64 1000,30 1130,48 C1260,66 1360,36 1440,46 L1440,90 L0,90 Z"/></svg>
+  </div>
+
+  <section id="science">
+    <div class="wrap">
+      <div class="rise">
+        <p class="kicker">A note on the science</p>
+        <h2>Sleep is not an off switch. <em>It's a tide.</em></h2>
+        <p class="lede">Somnium leans on what sleep research broadly agrees about — and refuses to
+           dress the rest up as fact.</p>
+      </div>
+      <div class="sci-grid">
+        <div class="fact rise">
+          <h3>Sleep moves in cycles</h3>
+          <p>A night is a series of roughly 90-minute cycles, drifting between deeper and
+             lighter stages. Waking from a light stage feels kinder — which is why mornings
+             differ so much even at the same alarm time.</p>
+        </div>
+        <div class="fact rise">
+          <h3>Dreams cluster late</h3>
+          <p>REM sleep, where vivid dreaming concentrates, grows longer toward morning.
+             The dream you can almost touch at 7 a.m. was probably minutes old — reach for it fast.</p>
+        </div>
+        <div class="fact rise">
+          <h3>Slow exhales calm</h3>
+          <p>Long, slow breaths out engage the body's rest-and-digest response.
+             You can't force sleep, but you can make the runway to it much smoother.</p>
+        </div>
+        <div class="fact rise">
+          <h3>Recall is a skill</h3>
+          <p>People who note dreams regularly tend to remember more of them over time.
+             The journal doesn't just store your dreams — it slowly turns the volume up.</p>
+        </div>
+      </div>
+      <p class="sci-foot rise">Somnium is a journal, not a medical device. If your sleep is
+         persistently painful, that deserves a real clinician — not another app.</p>
+    </div>
+  </section>
+
+  <div class="divider" aria-hidden="true">
+    <svg viewBox="0 0 1440 90" preserveAspectRatio="none"><path d="M0,50 C120,30 240,70 360,52 C480,34 600,66 720,50 C840,34 960,68 1080,50 C1200,32 1320,66 1440,50 L1440,90 L0,90 Z"/></svg>
+  </div>
+
+  <section id="download" class="dl">
+    <div class="wrap">
+      <div class="rise">
+        <p class="kicker">Tonight, then</p>
+        <h2>The night is already on its way. <em>Meet it prepared.</em></h2>
+        <p class="lede">Free to begin. Your journal stays on your device unless you choose otherwise.
+           No streaks, no shame, no 6 a.m. push notification cheerfully asking how you slept.</p>
+      </div>
+      <div class="cta-row rise">
+        <a class="btn btn-solid" href="#download">Get Somnium for iOS</a>
+        <a class="btn btn-ghost" href="#download">Get it for Android</a>
+      </div>
+      <p class="dl-small rise">Somnium — from the Latin for dream. Sleep well.</p>
+    </div>
+  </section>
+
+</main>
+
+<footer>
+  <div class="wrap">
+    <p class="foot-mark">Somnium</p>
+    <nav>
+      <a href="#how">How it works</a>
+      <a href="#journal">Journal</a>
+      <a href="#breathe">Breathe</a>
+      <a href="/40-somnium/guide/">How this site was built</a>
+    </nav>
+    <p>© 2026 Somnium. Made quietly.</p>
+  </div>
+</footer>
+
+<script>
+(function(){
+"use strict";
+var reduced = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+/* ---------- starfield ---------- */
+(function makeStars(){
+  var lay = document.getElementById("lay-stars");
+  var groups = [["tw-a",34],["tw-b",30],["tw-c",26]];
+  groups.forEach(function(g){
+    var el = document.createElement("div");
+    el.className = "starfield " + g[0];
+    var sh = [];
+    for(var i=0;i<g[1];i++){
+      var x=(Math.random()*100).toFixed(2), y=(Math.random()*72).toFixed(2);
+      var s=(Math.random()<.22?1.6:1).toFixed(1);
+      sh.push(x+"vw "+y+"vh 0 "+(s-1)+"px rgba(255,243,201,"+(0.5+Math.random()*0.5).toFixed(2)+")");
+    }
+    el.style.boxShadow = sh.join(",");
+    lay.appendChild(el);
+  });
+})();
+
+/* ---------- damped pointer + scroll parallax ---------- */
+var layers = [].slice.call(document.querySelectorAll("#scene .layer")).map(function(el){
+  return {el:el, dx:+el.dataset.dx||0, dy:+el.dataset.dy||0, ds:+el.dataset.ds||0};
+});
+var tx=0, ty=0, cx=0, cy=0;         // target / current pointer (-1..1)
+var scrollY=0, running=true;
+
+if(window.matchMedia("(pointer: fine)").matches){
+  window.addEventListener("pointermove", function(e){
+    tx = (e.clientX / window.innerWidth) * 2 - 1;
+    ty = (e.clientY / window.innerHeight) * 2 - 1;
+  }, {passive:true});
+}
+window.addEventListener("scroll", function(){ scrollY = window.pageYOffset; }, {passive:true});
+scrollY = window.pageYOffset;
+
+var nightfall = document.getElementById("nightfall");
+var docH = 1;
+function measure(){ docH = Math.max(1, document.documentElement.scrollHeight - window.innerHeight); }
+measure();
+window.addEventListener("resize", measure);
+window.addEventListener("load", measure);
+
+/* ---------- dream-dust canvas ---------- */
+var cv = document.getElementById("dust"), ctx = cv.getContext("2d");
+var DPR = Math.min(window.devicePixelRatio||1, 2);
+var motes = [], MOTES = 0, sprite = null;
+
+function makeSprite(){
+  var s = document.createElement("canvas"); s.width = s.height = 48;
+  var g = s.getContext("2d");
+  var rg = g.createRadialGradient(24,24,0,24,24,24);
+  rg.addColorStop(0,"rgba(255,243,201,.95)");
+  rg.addColorStop(.35,"rgba(255,243,201,.4)");
+  rg.addColorStop(1,"rgba(255,243,201,0)");
+  g.fillStyle = rg; g.fillRect(0,0,48,48);
+  return s;
+}
+function sizeCanvas(){
+  cv.width = Math.floor(cv.clientWidth * DPR);
+  cv.height = Math.floor(cv.clientHeight * DPR);
+  MOTES = (window.innerWidth < 768) ? 40 : 80;
+  motes.length = 0;
+  for(var i=0;i<MOTES;i++){
+    motes.push({
+      x: Math.random()*cv.width,
+      y: Math.random()*cv.height,
+      r: (1.2 + Math.random()*2.6) * DPR,
+      amp: (14 + Math.random()*36) * DPR,
+      sp: 0.00012 + Math.random()*0.00028,
+      ph: Math.random()*Math.PI*2,
+      vy: (0.028 + Math.random()*0.06) * DPR,
+      a: 0.25 + Math.random()*0.55
+    });
+  }
+}
+sprite = makeSprite();
+sizeCanvas();
+window.addEventListener("resize", sizeCanvas);
+
+function drawMotes(t){
+  ctx.clearRect(0,0,cv.width,cv.height);
+  for(var i=0;i<motes.length;i++){
+    var m = motes[i];
+    m.y -= m.vy;
+    if(m.y < -20){ m.y = cv.height + 20; m.x = Math.random()*cv.width; }
+    var x = m.x + Math.sin(t*m.sp + m.ph) * m.amp;
+    var pul = 0.75 + 0.25*Math.sin(t*0.0011 + m.ph*3);
+    ctx.globalAlpha = m.a * pul;
+    var d = m.r*6;
+    ctx.drawImage(sprite, x-d/2, m.y-d/2, d, d);
+  }
+  ctx.globalAlpha = 1;
+}
+
+/* ---------- main rAF loop ---------- */
+var DAMP = 0.035;   // underwater-slow
+function frame(t){
+  if(!running) return;
+  cx += (tx - cx) * DAMP;
+  cy += (ty - cy) * DAMP;
+  for(var i=0;i<layers.length;i++){
+    var L = layers[i];
+    var x = cx * L.dx;
+    var y = cy * L.dy - scrollY * L.ds;
+    L.el.style.transform = "translate3d(" + x.toFixed(2) + "px," + y.toFixed(2) + "px,0)";
+  }
+  var p = Math.min(1, scrollY / (docH * 0.72));
+  nightfall.style.opacity = (p * 0.88).toFixed(3);
+  if(!reduced) drawMotes(t);
+  requestAnimationFrame(frame);
+}
+if(reduced){
+  // static dreamscape: settle layers once, draw one calm frame of dust
+  layers.forEach(function(L){ L.el.style.transform = "translate3d(0,0,0)"; });
+  drawMotes(0);
+  window.addEventListener("scroll", function(){
+    var p = Math.min(1, window.pageYOffset / (docH * 0.72));
+    nightfall.style.opacity = (p * 0.88).toFixed(3);
+  }, {passive:true});
+}else{
+  requestAnimationFrame(frame);
+}
+document.addEventListener("visibilitychange", function(){
+  if(document.hidden){ running = false; }
+  else if(!reduced && !running){ running = true; requestAnimationFrame(frame); }
+});
+
+/* ---------- falling stars ---------- */
+var streaks = document.getElementById("streaks");
+function spawnStreak(){
+  if(!document.hidden && scrollY < window.innerHeight * 1.6){
+    var s = document.createElement("div");
+    s.className = "streak";
+    s.style.top = (4 + Math.random()*38) + "%";
+    s.style.left = (2 + Math.random()*44) + "%";
+    s.addEventListener("animationend", function(){ s.remove(); });
+    streaks.appendChild(s);
+  }
+  setTimeout(spawnStreak, 6500 + Math.random()*8500);
+}
+if(!reduced) setTimeout(spawnStreak, 3000);
+
+/* ---------- section rise ---------- */
+var io = new IntersectionObserver(function(es){
+  es.forEach(function(e){
+    if(e.isIntersecting){ e.target.classList.add("in"); io.unobserve(e.target); }
+  });
+},{threshold:0.15, rootMargin:"0px 0px -6% 0px"});
+document.querySelectorAll(".rise").forEach(function(el){ io.observe(el); });
+
+/* ---------- 4-7-8 breathing ---------- */
+var breather = document.getElementById("breather");
+var orb = document.getElementById("orb");
+var phaseText = document.getElementById("phaseText");
+var countText = document.getElementById("countText");
+var btn = document.getElementById("breatheBtn");
+var PHASES = [
+  {label:"Breathe in", secs:4, scale:1.0},
+  {label:"Hold",       secs:7, scale:1.0},
+  {label:"Breathe out",secs:8, scale:0.72}
+];
+var active = false, phaseIdx = 0, tickTimer = null, secsLeft = 0;
+
+function setOrb(scale, secs){
+  if(reduced) return; // text-timed only
+  orb.style.transition = "transform " + secs + "s cubic-bezier(.42,0,.35,1)";
+  orb.style.transform = "scale(" + scale + ")";
+}
+function runPhase(){
+  if(!active) return;
+  var ph = PHASES[phaseIdx];
+  phaseText.textContent = ph.label;
+  secsLeft = ph.secs;
+  countText.textContent = secsLeft;
+  setOrb(ph.scale, ph.label === "Hold" ? 0.4 : ph.secs);
+  clearInterval(tickTimer);
+  tickTimer = setInterval(function(){
+    secsLeft--;
+    if(secsLeft > 0){
+      countText.textContent = secsLeft;
+    }else{
+      phaseIdx = (phaseIdx + 1) % PHASES.length;
+      runPhase();
+    }
+  }, 1000);
+}
+function stopBreathing(){
+  active = false;
+  clearInterval(tickTimer);
+  breather.dataset.idle = "1";
+  phaseText.textContent = "Ready when you are";
+  countText.innerHTML = "&nbsp;";
+  btn.textContent = "Begin breathing";
+  if(!reduced){ orb.style.transition = "transform 2.5s ease"; orb.style.transform = "scale(.72)"; }
+}
+btn.addEventListener("click", function(){
+  if(active){ stopBreathing(); return; }
+  active = true;
+  phaseIdx = 0;
+  breather.dataset.idle = "0";
+  btn.textContent = "Rest";
+  runPhase();
+});
+document.addEventListener("visibilitychange", function(){
+  if(document.hidden && active) stopBreathing();
+});
+})();
+</script>
+
+<!-- PASS 1 (drift choreography & depth):
+     1. Layer drift loops were all near-identical periods (felt mechanical, synchronized) — spread to 96/74/58/46s
+        clouds and 17/13/21s island bobs with negative animation-delays so no two layers ever breathe in phase.
+     2. Pointer parallax originally applied raw dx to every layer with the same ratio — retuned per-layer
+        dx/dy pairs (6/4 stars up to 54/30 near clouds) so horizontal travel dominates and depth reads as stacked planes.
+     3. Damping factor was 0.08 (too responsive, felt like a cursor toy) — lowered to 0.035 for the underwater lag.
+     4. Near peach cloud bank sat mid-screen and fought the hero headline — moved to bottom edge, opacity .34.
+     5. Moon drift added a slow 4° rotation so craters visibly wander instead of the disc merely translating. -->
+<!-- PASS 2 (performance & correctness):
+     1. Canvas glow was drawn with ctx.shadowBlur per mote (fps sink) — replaced with one pre-rendered
+        radial-gradient sprite drawn via drawImage; mobile cap 40, desktop 80.
+     2. Scroll/pointer handlers only write targets; all reads/writes happen inside a single rAF —
+        no layout thrash, transforms/opacity only (nightfall arc animates opacity, never background).
+     3. rAF loop and mote drawing halt on visibilitychange and restart cleanly; breathing timer also
+        stops when the tab hides so the count never desyncs from the orb.
+     4. Streak elements remove themselves on animationend and never spawn once scrolled past ~1.6 viewports.
+     5. contain:strict on #scene plus will-change limited to the six layers — no accidental giant layers. -->
+<!-- PASS 3 (polish & access):
+     1. prefers-reduced-motion: every drift/twinkle/undulation animation disabled, layers settled at rest,
+        one static frame of dream-dust drawn, streaks hidden, breathing widget becomes text+countdown only
+        (orb pinned, no scaling), nightfall arc still tracks scroll via passive listener.
+     2. Breathing cue text was low-contrast peach-on-peach inside the lit orb — switched to deep indigo
+        with a dimmed idle state via [data-idle].
+     3. Wavy dividers alternate direction/duration (30s vs 38s reverse) so consecutive seams never move together.
+     4. Journal grid collapses to one column under 760px; hero headline max-width tightened for small screens.
+     5. Footer link to /40-somnium/guide/, fixed back pill, and anchor nav verified; selection color, focusable
+        buttons and aria-hidden on all decorative layers added.
+     6. Pointer parallax gated to (pointer:fine) so touch-scroll drags never yank the scene; document height
+        re-measured on load so the nightfall arc stays calibrated after fonts settle. -->
+</body>
+</html>

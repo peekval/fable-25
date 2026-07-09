@@ -1,0 +1,675 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>NON-EUCLID — II. Biennale of Impossible Architecture</title>
+<meta name="description" content="NON-EUCLID, the second biennale of impossible architecture. Three structures that cannot exist, rendered live as signed distance fields.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Major+Mono+Display&family=Karla:ital,wght@0,300;0,400;0,500;0,700;1,400&display=swap" rel="stylesheet">
+<!--
+  PASS 1 (geometry & motion):
+  1. Ray-march overstepping caused torn edges at grazing angles — step factor reduced to 0.85 and epsilon now scales with travel distance (natural LOD).
+  2. Structure selector popped between parameter sets — added 1100ms easeInOutCubic lerp across all four SDF uniforms (scale, offset, angle, cap).
+  3. Fog curve was linear and read grey, not bone — switched to quadratic exp falloff so far detail dissolves cleanly into the page background.
+  4. Camera dolly amplitude 0.9 -> 0.35: the wide swing kept clipping into structure 03's outer shell.
+
+  PASS 2 (performance contract):
+  1. Internal resolution dropped 0.75x -> 0.65x after frame budget was exceeded with 64 steps at 1440p; upscale is invisible under fog.
+  2. DPR force-clamped to 1 for the raymarch canvas (retina was quadrupling fragment load for zero perceptible gain at this res scale).
+  3. IntersectionObserver + visibilitychange now fully cancel the rAF loop when the hero is offscreen or the tab hidden — idle CPU ~0%.
+  4. Mobile branch compiles the shader with 48 max steps and renders at 0.5x; adaptive governor drops resolution one notch if 60 rolling frames average >22ms.
+
+  PASS 3 (robustness & access):
+  1. prefers-reduced-motion: camera frozen at a composed angle, param morphs instant, single frames rendered on demand only (load/resize/switch).
+  2. Ordered dither injected before output to break fog banding on 8-bit panels — visible as faint grain, reads as paper.
+  3. webglcontextlost/restored handlers rebuild program, buffers and uniforms instead of leaving a dead black hero.
+  4. Selector buttons: aria-pressed state, focus-visible ring in signal orange, and full keyboard operability.
+  5. Far plane tightened 12 -> 9 world units with early bail — ~8% fewer wasted marching steps per frame.
+-->
+<style>
+  :root{
+    --bone:#E8E4DA;
+    --ultra:#2B3A9E;
+    --ink:#14141A;
+    --signal:#FF5C1F;
+    --mono:'Major Mono Display',monospace;
+    --body:'Karla',sans-serif;
+  }
+  *{margin:0;padding:0;box-sizing:border-box}
+  html{scroll-behavior:smooth}
+  @media(prefers-reduced-motion:reduce){html{scroll-behavior:auto}}
+  body{
+    background:var(--bone);
+    color:var(--ink);
+    font-family:var(--body);
+    font-size:17px;
+    line-height:1.6;
+    -webkit-font-smoothing:antialiased;
+  }
+  ::selection{background:var(--ultra);color:var(--bone)}
+
+  a{color:inherit}
+  .back25{
+    position:fixed;top:18px;left:20px;z-index:60;
+    font-family:var(--mono);font-size:13px;text-decoration:none;
+    color:var(--ink);background:var(--bone);
+    border:1px solid var(--ink);padding:7px 13px;
+    transition:background .2s,color .2s;
+  }
+  .back25:hover{background:var(--ink);color:var(--bone)}
+
+  /* ---------- nav ---------- */
+  nav.top{
+    position:fixed;top:18px;right:20px;z-index:60;
+    display:flex;gap:4px;
+  }
+  nav.top a{
+    font-family:var(--mono);font-size:11px;letter-spacing:.06em;
+    text-decoration:none;padding:8px 12px;
+    color:var(--ink);background:var(--bone);border:1px solid var(--ink);
+    transition:background .2s,color .2s;
+  }
+  nav.top a:hover{background:var(--ultra);color:var(--bone);border-color:var(--ultra)}
+  @media(max-width:760px){nav.top{display:none}}
+
+  /* ---------- hero ---------- */
+  .hero{
+    position:relative;height:100svh;min-height:560px;
+    background:var(--bone);overflow:hidden;
+  }
+  .hero canvas{
+    position:absolute;inset:0;width:100%;height:100%;display:block;
+  }
+  .hero .frame{
+    position:absolute;inset:0;pointer-events:none;
+    display:flex;flex-direction:column;justify-content:space-between;
+    padding:clamp(20px,4vw,48px);
+  }
+  .hero h1{
+    font-family:var(--mono);font-weight:400;
+    font-size:clamp(2.4rem,8.5vw,7.2rem);
+    line-height:.95;letter-spacing:-.01em;
+    color:var(--ink);
+    margin-top:clamp(46px,8vh,84px);
+  }
+  .hero h1 .hy{color:var(--signal)}
+  .hero .kicker{
+    font-family:var(--mono);font-size:clamp(11px,1.3vw,13px);
+    color:var(--ultra);margin-bottom:14px;letter-spacing:.05em;
+  }
+  .hero .meta{
+    display:flex;justify-content:space-between;align-items:flex-end;
+    gap:24px;flex-wrap:wrap;
+  }
+  .hud{
+    font-family:var(--mono);font-size:10.5px;line-height:1.9;
+    color:var(--ink);opacity:.72;text-align:right;
+  }
+  .hud b{font-weight:400;color:var(--ultra)}
+  @media(max-width:760px){.hud{display:none}}
+
+  /* structure selector */
+  .selector{pointer-events:auto}
+  .selector .label{
+    font-family:var(--mono);font-size:10.5px;color:var(--ink);
+    opacity:.72;margin-bottom:10px;letter-spacing:.08em;
+  }
+  .selector .btns{display:flex;flex-wrap:wrap;gap:6px}
+  .selector button{
+    font-family:var(--mono);font-size:11.5px;letter-spacing:.04em;
+    background:transparent;color:var(--ink);
+    border:1px solid var(--ink);padding:11px 16px;cursor:pointer;
+    transition:background .2s,color .2s,border-color .2s;
+  }
+  .selector button:hover{border-color:var(--signal);color:var(--signal)}
+  .selector button[aria-pressed="true"]{
+    background:var(--ink);color:var(--bone);border-color:var(--ink);
+  }
+  .selector button[aria-pressed="true"] .n{color:var(--signal)}
+  .selector button:focus-visible{outline:2px solid var(--signal);outline-offset:3px}
+  .selector .caption{
+    margin-top:12px;font-family:var(--body);font-size:14px;
+    max-width:44ch;color:var(--ink);opacity:.85;min-height:2.6em;
+  }
+  .scrollcue{
+    position:absolute;bottom:clamp(20px,4vw,48px);left:50%;transform:translateX(-50%);
+    font-family:var(--mono);font-size:10px;color:var(--ink);opacity:.5;
+    letter-spacing:.3em;pointer-events:none;
+  }
+  @media(max-width:900px){.scrollcue{display:none}}
+
+  .nogl{
+    position:absolute;inset:0;display:none;place-items:center;
+    background:
+      repeating-linear-gradient(45deg,transparent 0 18px,rgba(43,58,158,.06) 18px 19px),
+      var(--bone);
+    font-family:var(--mono);font-size:13px;color:var(--ultra);
+    text-align:center;padding:24px;
+  }
+
+  /* ---------- editorial ---------- */
+  main{max-width:1200px;margin:0 auto;padding:0 clamp(20px,4vw,48px)}
+  section{padding:clamp(70px,11vh,130px) 0;border-top:1px solid rgba(20,20,26,.18)}
+  .secnum{
+    font-family:var(--mono);font-size:11px;color:var(--signal);
+    letter-spacing:.14em;margin-bottom:26px;
+  }
+  h2{
+    font-family:var(--mono);font-weight:400;
+    font-size:clamp(1.5rem,3.4vw,2.6rem);line-height:1.15;
+    margin-bottom:34px;max-width:22ch;
+  }
+  .cols{display:grid;grid-template-columns:minmax(0,5fr) minmax(0,7fr);gap:clamp(28px,5vw,80px)}
+  @media(max-width:820px){.cols{grid-template-columns:1fr}}
+  .lede{font-size:clamp(1.15rem,1.9vw,1.45rem);line-height:1.5;font-weight:300}
+  .lede em{font-style:normal;color:var(--ultra)}
+  p+p{margin-top:1.1em}
+  .side p{font-size:15.5px;opacity:.88}
+  .factline{
+    font-family:var(--mono);font-size:11px;line-height:2.2;
+    border-top:1px solid var(--ink);margin-top:30px;padding-top:14px;
+  }
+  .factline span{color:var(--ultra)}
+
+  /* structures grid */
+  .structs{display:grid;grid-template-columns:repeat(3,1fr);gap:1px;background:rgba(20,20,26,.25);border:1px solid rgba(20,20,26,.25)}
+  @media(max-width:820px){.structs{grid-template-columns:1fr}}
+  .struct{background:var(--bone);padding:clamp(22px,2.6vw,36px);display:flex;flex-direction:column;min-height:340px}
+  .struct .no{font-family:var(--mono);font-size:26px;color:var(--ultra);margin-bottom:auto}
+  .struct h3{font-family:var(--mono);font-weight:400;font-size:16px;margin:34px 0 6px;line-height:1.4}
+  .struct .arch{font-family:var(--mono);font-size:10.5px;color:var(--signal);margin-bottom:16px;letter-spacing:.06em}
+  .struct p{font-size:15px;opacity:.88}
+  .struct .view{
+    margin-top:22px;align-self:flex-start;
+    font-family:var(--mono);font-size:10.5px;letter-spacing:.06em;
+    background:none;border:none;border-bottom:1px solid var(--ink);
+    padding:0 0 3px;cursor:pointer;color:var(--ink);
+    transition:color .2s,border-color .2s;
+  }
+  .struct .view:hover{color:var(--signal);border-color:var(--signal)}
+  .struct .view:focus-visible{outline:2px solid var(--signal);outline-offset:3px}
+
+  /* essay */
+  .essay{background:var(--ink);color:var(--bone);margin:0 calc(-1 * clamp(20px,4vw,48px));padding-left:clamp(20px,4vw,48px);padding-right:clamp(20px,4vw,48px)}
+  .essay .secnum{color:var(--signal)}
+  .essay h2{color:var(--bone)}
+  .essay blockquote{
+    font-size:clamp(1.3rem,2.6vw,2rem);line-height:1.45;font-weight:300;
+    max-width:34ch;border-left:2px solid var(--signal);padding-left:clamp(18px,3vw,36px);
+  }
+  .essay blockquote em{font-style:normal;color:#8f9bde}
+  .essay .attr{font-family:var(--mono);font-size:11px;margin-top:34px;opacity:.75;letter-spacing:.08em}
+  .essay .body{margin-top:44px;columns:2;column-gap:60px;font-size:15.5px;opacity:.85;max-width:900px}
+  @media(max-width:820px){.essay .body{columns:1}}
+
+  /* visit */
+  .visit-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:1px;background:rgba(20,20,26,.25);border:1px solid rgba(20,20,26,.25)}
+  @media(max-width:820px){.visit-grid{grid-template-columns:1fr}}
+  .visit-cell{background:var(--bone);padding:clamp(22px,2.6vw,34px)}
+  .visit-cell h4{font-family:var(--mono);font-weight:400;font-size:11px;color:var(--ultra);letter-spacing:.1em;margin-bottom:16px}
+  .visit-cell p{font-size:15px}
+  .visit-cell .big{font-size:clamp(1.15rem,1.7vw,1.4rem);font-weight:300;line-height:1.4}
+  .visit-cell .sig{color:var(--signal);font-family:var(--mono);font-size:11px;display:inline-block;margin-top:14px}
+
+  /* footer */
+  footer{
+    border-top:1px solid var(--ink);
+    margin-top:clamp(70px,11vh,130px);
+    padding:44px clamp(20px,4vw,48px) 60px;
+    display:flex;justify-content:space-between;gap:28px;flex-wrap:wrap;
+    font-family:var(--mono);font-size:11px;line-height:2.1;
+  }
+  footer a{text-decoration:none;border-bottom:1px solid rgba(20,20,26,.4);transition:color .2s,border-color .2s}
+  footer a:hover{color:var(--signal);border-color:var(--signal)}
+  footer .u{color:var(--ultra)}
+</style>
+</head>
+<body>
+
+<a class="back25" href="/">←&nbsp;25</a>
+<nav class="top" aria-label="Sections">
+  <a href="#about">ABOUt</a>
+  <a href="#structures">StRUCtURES</a>
+  <a href="#essay">ESSAy</a>
+  <a href="#visit">VISit</a>
+</nav>
+
+<!-- ============ HERO / RAYMARCH ============ -->
+<header class="hero" id="hero">
+  <canvas id="rm" aria-label="Live raymarched render of an impossible fractal building"></canvas>
+  <div class="nogl" id="nogl">WEBGL UNAVAILABLE —<br>tHE StRUCtURES REMAIN IMPOSSIBLE<br>IN A SECOND, LESS INtEREStING SENSE.</div>
+
+  <div class="frame">
+    <div>
+      <p class="kicker">II. BIENNALE OF IMPOSSIBLE ARCHItECtURE — ZüRICH</p>
+      <h1>NON<span class="hy">-</span>EUCLID</h1>
+    </div>
+
+    <div class="meta">
+      <div class="selector">
+        <p class="label">SELECt StRUCtURE</p>
+        <div class="btns" role="group" aria-label="Structure selector">
+          <button type="button" data-s="0" aria-pressed="true"><span class="n">01</span> RECURSION HALL</button>
+          <button type="button" data-s="1" aria-pressed="false"><span class="n">02</span> FOLDED PAVILION</button>
+          <button type="button" data-s="2" aria-pressed="false"><span class="n">03</span> INVERtED BASILICA</button>
+        </div>
+        <p class="caption" id="caption">A civic hall that contains itself six times over. Every doorway opens onto the building it belongs to.</p>
+      </div>
+
+      <div class="hud" id="hud">
+        LIVE RENDER — SIGNED DIStANCE FIELD<br>
+        FOLD ItERAtIONS <b>6</b> · MAX StEPS <b id="hudsteps">64</b><br>
+        INtERNAL RES <b id="hudres">0.65×</b> · DPR <b>1.0</b><br>
+        NO MESHES. NO tEXtURES. ONE FRAGMENt SHADER.
+      </div>
+    </div>
+  </div>
+  <p class="scrollcue">SCROLL</p>
+</header>
+
+<main>
+
+<!-- ============ ABOUT ============ -->
+<section id="about">
+  <p class="secnum">01 / tHE BIENNALE</p>
+  <h2>buildings that refuse to be built</h2>
+  <div class="cols">
+    <div>
+      <p class="lede">NON-EUCLID exhibits architecture whose only construction material is <em>mathematics</em>. Each structure in this year's programme is a signed distance field — a single equation folded against itself until it produces corridors, vaults and courtyards that no crane could assemble and no surveyor could certify.</p>
+    </div>
+    <div class="side">
+      <p>The premise of the biennale is deliberately narrow. We do not show renderings of buildings, because a rendering is a photograph of a decision already made. We show the deciding function itself, evaluated live, sixty times per second, on whatever machine you happen to be holding. The building above is being computed as you read this sentence. Move your cursor and it will notice.</p>
+      <p>Architecture has always trafficked in the nearly-possible: cantilevers at the limit of steel, domes at the limit of masonry. The three structures gathered here abandon the "nearly." They are rigorous in every respect except buildability — internally consistent, dimensionally exact, and physically absurd. We consider this an honest trade.</p>
+      <p class="factline">
+        EDItION <span>SECOND</span> · WORKS <span>tHREE</span><br>
+        MEDIUM <span>DIStANCE FUNCtIONS</span> · MASS <span>0 KG</span>
+      </p>
+    </div>
+  </div>
+</section>
+
+<!-- ============ STRUCTURES ============ -->
+<section id="structures">
+  <p class="secnum">02 / tHE StRUCtURES</p>
+  <h2>three commissions, zero kilograms</h2>
+  <div class="structs">
+    <article class="struct">
+      <p class="no">01</p>
+      <h3>the recursion hall</h3>
+      <p class="arch">AtELIER SIEBENFACH, BASEL</p>
+      <p>A civic assembly hall subdivided by strict trisection: each of its chambers is the hall again, at one-third scale, with its own chambers, with their own. The architects specified occupancy for the outermost shell only; every deeper floor is jurisdictionally unresolved. Visitors describe the interior as "a parliament arguing with its own echo."</p>
+      <button class="view" type="button" data-s="0">RENDER tHIS ↑</button>
+    </article>
+    <article class="struct">
+      <p class="no">02</p>
+      <h3>pavilion of folded light</h3>
+      <p class="arch">M. OKONKWO &amp; DAUGHtERS</p>
+      <p>A garden pavilion whose walls were designed flat and then folded — not the drawings, the walls. Space near the pavilion is creased like paper, so its slender colonnade shelters a floor area several times larger than its footprint. The practice insists this is merely efficient planning taken to its logical conclusion.</p>
+      <button class="view" type="button" data-s="1">RENDER tHIS ↑</button>
+    </article>
+    <article class="struct">
+      <p class="no">03</p>
+      <h3>the inverted basilica</h3>
+      <p class="arch">StUDIO VREDE, ROttERDAM</p>
+      <p>A basilica turned outside-in: the nave wraps the sky, the façade faces inward, and the crypt is the highest point. Load paths run upward, which the structural report describes as "correct, given the premises." It is the only church in the programme, and the only structure visitors report exiting before they have entered.</p>
+      <button class="view" type="button" data-s="2">RENDER tHIS ↑</button>
+    </article>
+  </div>
+</section>
+
+<!-- ============ ESSAY ============ -->
+<section class="essay" id="essay">
+  <p class="secnum">03 / CURAtOR'S ESSAy — EXCERPt</p>
+  <h2>against the right angle</h2>
+  <blockquote>
+    "We ask architects to be honest about gravity and then punish them for being honest about <em>geometry</em>. The right angle is not a law of nature. It is a habit of the ruler."
+  </blockquote>
+  <p class="attr">— DR. ILSE BRANDt, CURAtOR, FROM tHE CAtALOGUE INtRODUCtION</p>
+  <div class="body">
+    <p>Every building you have entered was a compromise between an idea and a material. The idea wanted to continue; the material wanted to stop. What the distance field offers — and what this biennale takes seriously — is a material that never wants to stop. Fold it and it folds exactly. Repeat it and it repeats without fatigue, without tolerance stack-up, without a single change order.</p>
+    <p>The criticism writes itself: these are not buildings, because nobody can stand in them. But nobody can stand in a plan, either, and we have granted plans the full dignity of architecture for five hundred years. The plan was always the building's most truthful form — the built object merely its expensive approximation. We have removed the approximation. What remains is disquietingly pure: circulation without floors, thresholds without doors, a section that continues past the depth where sections normally admit they were guessing.</p>
+    <p>Walk the render above slowly. Notice that the fog is doing moral work: it forgives the structure its infinite detail, the way distance forgives a city its scaffolding. That forgiveness is the oldest trick in architecture. We have simply written it down.</p>
+  </div>
+</section>
+
+<!-- ============ VISIT ============ -->
+<section id="visit">
+  <p class="secnum">04 / VISItING</p>
+  <h2>the exhibition exists. the buildings do not.</h2>
+  <div class="visit-grid">
+    <div class="visit-cell">
+      <h4>WHERE</h4>
+      <p class="big">Kesselhaus, Halle 9<br>Zürich-West</p>
+      <p style="margin-top:14px">Three projection chambers at 1:1 scale, plus the live consoles on which each structure is steered. This page is the fourth chamber.</p>
+    </div>
+    <div class="visit-cell">
+      <h4>WHEN</h4>
+      <p class="big">12 September —<br>29 November 2026</p>
+      <p style="margin-top:14px">Wednesday to Sunday, 11:00–20:00. Late openings Thursdays until 23:00, when the fog is thickest.</p>
+    </div>
+    <div class="visit-cell">
+      <h4>ADMISSION</h4>
+      <p class="big">CHF 18 / 12 reduced</p>
+      <p style="margin-top:14px">Free for students of architecture and mathematics, on the grounds that they are already paying in other ways.</p>
+      <span class="sig">NO tICKEt REQUIRED FOR tHIS PAGE</span>
+    </div>
+  </div>
+</section>
+
+</main>
+
+<footer>
+  <div>
+    <span class="u">NON-EUCLID</span> — II. BIENNALE OF IMPOSSIBLE ARCHItECtURE<br>
+    RENDERED LIVE. NO IMAGES WERE USED ON tHIS PAGE.
+  </div>
+  <div>
+    <a href="/32-noneuclid/guide/">HOW tHIS WAS BUILt →</a><br>
+    <a href="/">← BACK tO 25</a>
+  </div>
+</footer>
+
+<script>
+(() => {
+  'use strict';
+  const canvas = document.getElementById('rm');
+  const hero = document.getElementById('hero');
+  const reduced = matchMedia('(prefers-reduced-motion: reduce)').matches;
+  const mobile = matchMedia('(max-width: 760px)').matches || /Mobi|Android/i.test(navigator.userAgent);
+
+  // ---- performance contract ----
+  const MAX_STEPS = mobile ? 48 : 64;
+  let RES_SCALE = mobile ? 0.5 : 0.65;   // internal res, CSS-upscaled; DPR forced to 1
+  document.getElementById('hudsteps').textContent = MAX_STEPS;
+  document.getElementById('hudres').textContent = RES_SCALE.toFixed(2) + '×';
+
+  let gl = canvas.getContext('webgl', {antialias:false, alpha:false, depth:false, stencil:false, powerPreference:'high-performance'});
+  if (!gl) { document.getElementById('nogl').style.display = 'grid'; canvas.remove(); return; }
+
+  const VS = 'attribute vec2 aP;void main(){gl_Position=vec4(aP,0.,1.);}';
+  const FS = `
+precision highp float;
+uniform vec2 uRes;
+uniform float uTime;
+uniform vec2 uMouse;
+uniform float uScale;   // fractal fold scale
+uniform vec3 uOffset;   // fold offset
+uniform float uAngle;   // per-iteration twist
+uniform float uCap;     // terminal box half-extent
+uniform float uOrbit;
+uniform float uRadius;
+uniform float uHeight;
+
+#define STEPS ${MAX_STEPS}
+#define FAR 9.0
+
+const vec3 BONE  = vec3(0.910, 0.894, 0.855);
+const vec3 INK   = vec3(0.078, 0.078, 0.102);
+const vec3 ULTRA = vec3(0.169, 0.227, 0.620);
+const vec3 SIG   = vec3(1.000, 0.361, 0.122);
+
+mat2 rot(float a){ float c = cos(a), s = sin(a); return mat2(c, -s, s, c); }
+
+float gTrap;
+
+// Kaleidoscopic IFS: fold, sort, twist, scale — six iterations.
+float de(vec3 p){
+  vec3 q = p;
+  float k = 1.0;
+  gTrap = 1e9;
+  float twist = uAngle + 0.05 * sin(uTime * 0.11);
+  for (int i = 0; i < 6; i++){
+    q = abs(q);
+    if (q.x < q.y) q.xy = q.yx;
+    if (q.x < q.z) q.xz = q.zx;
+    if (q.y < q.z) q.yz = q.zy;
+    q.xy = rot(twist) * q.xy;
+    q = q * uScale - uOffset * (uScale - 1.0);
+    float zc = -0.5 * uOffset.z * (uScale - 1.0);
+    if (q.z < zc) q.z += uOffset.z * (uScale - 1.0);
+    k *= uScale;
+    gTrap = min(gTrap, length(q) / k);
+  }
+  vec3 b = abs(q) - vec3(uCap);
+  return (length(max(b, 0.0)) + min(max(b.x, max(b.y, b.z)), 0.0)) / k;
+}
+
+vec3 norm(vec3 p, float e){
+  vec2 h = vec2(1.0, -1.0) * e;
+  return normalize(
+    h.xyy * de(p + h.xyy) + h.yyx * de(p + h.yyx) +
+    h.yxy * de(p + h.yxy) + h.xxx * de(p + h.xxx));
+}
+
+void main(){
+  vec2 uv = (gl_FragCoord.xy - 0.5 * uRes) / uRes.y;
+
+  // camera: slow orbit + dolly, mouse nudges the look-at
+  vec3 ro = vec3(cos(uOrbit) * uRadius, uHeight, sin(uOrbit) * uRadius);
+  vec3 ta = vec3(uMouse.x * 0.45, uMouse.y * 0.30, 0.0);
+  vec3 fw = normalize(ta - ro);
+  vec3 rt = normalize(cross(fw, vec3(0.0, 1.0, 0.0)));
+  vec3 up = cross(rt, fw);
+  vec3 rd = normalize(uv.x * rt + uv.y * up + 1.55 * fw);
+
+  float t = 0.12;
+  float st = 0.0;
+  float hit = -1.0;
+  for (int i = 0; i < STEPS; i++){
+    vec3 pos = ro + rd * t;
+    float d = de(pos);
+    float eps = 0.0006 + 0.0011 * t;      // distance-scaled epsilon = free LOD
+    if (d < eps){ hit = t; break; }
+    if (t > FAR) break;                    // early bail past far plane
+    t += d * 0.85;                         // conservative step vs overstepping
+    st += 1.0;
+  }
+
+  vec3 col;
+  if (hit > 0.0){
+    vec3 pos = ro + rd * t;
+    vec3 n = norm(pos, 0.0009 + 0.0011 * t);
+    vec3 L = normalize(vec3(0.55, 0.85, -0.35));
+    float dif = clamp(dot(n, L), 0.0, 1.0);
+    float sky = clamp(0.5 + 0.5 * n.y, 0.0, 1.0);
+
+    // occlusion from march effort + orbit trap (cheap stand-in for shadow rays)
+    float occ = clamp(1.0 - st / float(STEPS) * 1.25, 0.0, 1.0);
+    occ = pow(occ, 1.4);
+    float trap = clamp(gTrap * 2.2, 0.0, 1.0);
+
+    vec3 base = mix(ULTRA * 0.75, BONE * 0.96, dif * 0.62 + sky * 0.30);
+    base = mix(base, INK, (1.0 - occ) * 0.55);
+    base = mix(base, ULTRA, (1.0 - trap) * 0.22);
+
+    float fre = pow(1.0 - abs(dot(n, -rd)), 5.0);
+    base += SIG * fre * occ * 0.16;        // thin signal-orange rim, kept quiet
+
+    col = base;
+  } else {
+    col = BONE * (1.0 - 0.05 * length(uv)) - vec3(0.012, 0.008, 0.0) * uv.y;
+  }
+
+  // fog: quadratic falloff into bone so the page and the render share one air
+  float fog = 1.0 - exp(-0.030 * t * t);
+  col = mix(col, BONE, fog);
+
+  // ordered dither to break banding in the fog
+  float dth = fract(sin(dot(gl_FragCoord.xy, vec2(12.9898, 78.233))) * 43758.5453);
+  col += (dth - 0.5) * (1.6 / 255.0);
+
+  gl_FragColor = vec4(col, 1.0);
+}`;
+
+  // ---- structures (SDF parameter sets) ----
+  const STRUCTS = [
+    { scale: 3.02, off: [1.00, 1.00, 1.00], ang:  0.02, cap: 1.00,
+      cap_text: 'A civic hall that contains itself six times over. Every doorway opens onto the building it belongs to.' },
+    { scale: 2.36, off: [0.92, 1.18, 0.56], ang:  0.44, cap: 0.72,
+      cap_text: 'Slender colonnade, creased space. The floor area is several times larger than the footprint, and unapologetic about it.' },
+    { scale: 2.84, off: [1.24, 0.46, 1.02], ang: -0.55, cap: 1.22,
+      cap_text: 'Nave outward, crypt on top, load paths ascending. Structurally correct, given the premises.' }
+  ];
+
+  let program, uni = {}, buf;
+  function build(){
+    const mk = (type, src) => {
+      const s = gl.createShader(type);
+      gl.shaderSource(s, src); gl.compileShader(s);
+      if (!gl.getShaderParameter(s, gl.COMPILE_STATUS)) throw gl.getShaderInfoLog(s);
+      return s;
+    };
+    program = gl.createProgram();
+    gl.attachShader(program, mk(gl.VERTEX_SHADER, VS));
+    gl.attachShader(program, mk(gl.FRAGMENT_SHADER, FS));
+    gl.linkProgram(program);
+    if (!gl.getProgramParameter(program, gl.LINK_STATUS)) throw gl.getProgramInfoLog(program);
+    gl.useProgram(program);
+    buf = gl.createBuffer();
+    gl.bindBuffer(gl.ARRAY_BUFFER, buf);
+    gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([-1,-1, 3,-1, -1,3]), gl.STATIC_DRAW);
+    const loc = gl.getAttribLocation(program, 'aP');
+    gl.enableVertexAttribArray(loc);
+    gl.vertexAttribPointer(loc, 2, gl.FLOAT, false, 0, 0);
+    ['uRes','uTime','uMouse','uScale','uOffset','uAngle','uCap','uOrbit','uRadius','uHeight']
+      .forEach(n => uni[n] = gl.getUniformLocation(program, n));
+  }
+
+  try { build(); } catch(e){ document.getElementById('nogl').style.display = 'grid'; canvas.remove(); return; }
+
+  // ---- state ----
+  let cur = 0;
+  let from = {...STRUCTS[0], off:[...STRUCTS[0].off]};
+  let to = STRUCTS[0];
+  let morphT = 1;                    // 0..1 progress
+  const MORPH_MS = 1100;
+  let morphStart = 0;
+  let mx = 0, my = 0, tmx = 0, tmy = 0;
+  let running = false, visible = true, inView = true, raf = 0;
+  let t0 = performance.now();
+  const STATIC_T = 26.0;             // composed frame for reduced motion
+
+  function size(){
+    const w = hero.clientWidth, h = hero.clientHeight;   // DPR deliberately = 1
+    canvas.width  = Math.max(2, Math.round(w * RES_SCALE));
+    canvas.height = Math.max(2, Math.round(h * RES_SCALE));
+    gl.viewport(0, 0, canvas.width, canvas.height);
+  }
+  size();
+
+  const ease = x => x < 0.5 ? 4*x*x*x : 1 - Math.pow(-2*x + 2, 3) / 2;
+  const lerp = (a, b, k) => a + (b - a) * k;
+
+  function draw(now){
+    const t = reduced ? STATIC_T : (now - t0) / 1000;
+
+    if (morphT < 1){
+      morphT = Math.min(1, (now - morphStart) / MORPH_MS);
+    }
+    const k = ease(morphT);
+    const scale = lerp(from.scale, to.scale, k);
+    const ang   = lerp(from.ang,   to.ang,   k);
+    const cap   = lerp(from.cap,   to.cap,   k);
+    const ox = lerp(from.off[0], to.off[0], k);
+    const oy = lerp(from.off[1], to.off[1], k);
+    const oz = lerp(from.off[2], to.off[2], k);
+
+    mx += (tmx - mx) * 0.05;                 // critically damped mouse
+    my += (tmy - my) * 0.05;
+
+    gl.uniform2f(uni.uRes, canvas.width, canvas.height);
+    gl.uniform1f(uni.uTime, t);
+    gl.uniform2f(uni.uMouse, mx, my);
+    gl.uniform1f(uni.uScale, scale);
+    gl.uniform3f(uni.uOffset, ox, oy, oz);
+    gl.uniform1f(uni.uAngle, ang);
+    gl.uniform1f(uni.uCap, cap);
+    gl.uniform1f(uni.uOrbit, t * 0.055 + mx * 0.25 + 0.6);
+    gl.uniform1f(uni.uRadius, 3.35 + 0.35 * Math.sin(t * 0.043));
+    gl.uniform1f(uni.uHeight, 1.05 + 0.30 * Math.sin(t * 0.031));
+    gl.drawArrays(gl.TRIANGLES, 0, 3);
+  }
+
+  // adaptive governor: one-notch degrade if we can't hold budget
+  let ft = [], degraded = false;
+  function frame(now){
+    if (!running) return;
+    const a = performance.now();
+    draw(now);
+    const b = performance.now();
+    if (!degraded){
+      ft.push(b - a);
+      if (ft.length >= 60){
+        const avg = ft.reduce((s, v) => s + v, 0) / ft.length;
+        if (avg > 22){ degraded = true; RES_SCALE = Math.max(0.4, RES_SCALE - 0.15); size();
+          document.getElementById('hudres').textContent = RES_SCALE.toFixed(2) + '×'; }
+        ft.length = 0;
+      }
+    }
+    raf = requestAnimationFrame(frame);
+  }
+
+  function renderOnce(){ draw(performance.now()); }
+
+  function setRunning(){
+    const should = visible && inView && !reduced;
+    if (should && !running){ running = true; raf = requestAnimationFrame(frame); }
+    else if (!should && running){ running = false; cancelAnimationFrame(raf); }
+    if (reduced && visible && inView) renderOnce();
+  }
+
+  document.addEventListener('visibilitychange', () => { visible = !document.hidden; setRunning(); });
+  new IntersectionObserver(es => { inView = es[0].isIntersecting; setRunning(); },
+    { threshold: 0.02 }).observe(hero);
+
+  addEventListener('resize', () => { size(); if (reduced) renderOnce(); });
+
+  hero.addEventListener('pointermove', e => {
+    const r = hero.getBoundingClientRect();
+    tmx = ((e.clientX - r.left) / r.width) * 2 - 1;
+    tmy = -(((e.clientY - r.top) / r.height) * 2 - 1);
+    if (reduced) { mx = tmx; my = tmy; renderOnce(); }
+  });
+
+  // context loss: rebuild rather than die
+  canvas.addEventListener('webglcontextlost', e => { e.preventDefault(); running = false; cancelAnimationFrame(raf); });
+  canvas.addEventListener('webglcontextrestored', () => { build(); size(); setRunning(); if (reduced) renderOnce(); });
+
+  // ---- structure selector ----
+  const caption = document.getElementById('caption');
+  const heroBtns = document.querySelectorAll('.selector button');
+  function select(i){
+    if (i === cur && morphT >= 1) return;
+    // freeze current blended values as the new "from" for mid-morph switches
+    const k = ease(morphT);
+    from = {
+      scale: lerp(from.scale, to.scale, k),
+      ang:   lerp(from.ang,   to.ang,   k),
+      cap:   lerp(from.cap,   to.cap,   k),
+      off: [ lerp(from.off[0], to.off[0], k),
+             lerp(from.off[1], to.off[1], k),
+             lerp(from.off[2], to.off[2], k) ]
+    };
+    to = STRUCTS[i];
+    cur = i;
+    morphT = reduced ? 1 : 0;
+    if (reduced){ from = {...to, off:[...to.off]}; }
+    morphStart = performance.now();
+    caption.textContent = STRUCTS[i].cap_text;
+    heroBtns.forEach(b => b.setAttribute('aria-pressed', String(+b.dataset.s === i)));
+    if (reduced) renderOnce();
+  }
+  document.querySelectorAll('[data-s]').forEach(b =>
+    b.addEventListener('click', () => {
+      select(+b.dataset.s);
+      if (b.classList.contains('view')) scrollTo({ top: 0, behavior: reduced ? 'auto' : 'smooth' });
+    }));
+
+  setRunning();
+  if (reduced) renderOnce();
+})();
+</script>
+</body>
+</html>

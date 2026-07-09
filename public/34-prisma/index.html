@@ -1,0 +1,719 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>PRISMA — Festival of Living Light</title>
+<meta name="description" content="PRISMA — three nights of light art and projection. A living kaleidoscope you can play with your hands.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Monoton&family=Outfit:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+<!--
+  PASS 1 (color harmony + shader): citrine was flooding the field — capped its mix weight and
+  gated it behind a high-fbm threshold so it reads as veins of gold, not mustard wash; deepened
+  velvet shadow floor so jewel tones sit on true black; softened the mirror-seam glow from hard
+  lines to a faint citrine breath; slowed fbm drift 40% so the pattern breathes instead of boils.
+  PASS 2 (interaction + motion): fixed angle-lerp wrap so the fold axis never whips the long way
+  around at the ±PI seam; zoom easing switched to exponential smoothing (frame-rate independent);
+  auto segment cycle now pauses permanently after the first pill press; added idle drift so the
+  mandala keeps turning slowly when the cursor rests; minis got per-seed time offsets so the
+  three thumbnails never pulse in sync.
+  PASS 3 (polish + a11y + perf): hero title clamp() retuned for 360px screens (was clipping);
+  added :focus-visible rings in citrine on all pills/links; prefers-reduced-motion now renders
+  one curated still frame (t=47.0, seg locked) and pill presses do instant single-frame steps;
+  contexts created with alpha:false + antialias:false and DPR hard-capped (hero 1.25, minis 1);
+  IntersectionObserver margins widened so minis wake just before entering the viewport.
+-->
+<style>
+  :root{
+    --velvet:#0A090D;
+    --amethyst:#9B4DCA;
+    --emerald:#1FA97A;
+    --citrine:#F5C542;
+    --sapphire:#2E6BD6;
+    --ink:#EDEAF2;
+    --ink-dim:#9B93A8;
+    --hairline:rgba(155,77,202,.22);
+  }
+  *{margin:0;padding:0;box-sizing:border-box}
+  html{scroll-behavior:smooth}
+  body{
+    background:var(--velvet);
+    color:var(--ink);
+    font-family:'Outfit',sans-serif;
+    font-weight:300;
+    overflow-x:hidden;
+    -webkit-font-smoothing:antialiased;
+  }
+  ::selection{background:var(--amethyst);color:#fff}
+  a{color:inherit}
+  h2,h3{font-weight:600}
+
+  /* ---------- fixed back link ---------- */
+  .back{
+    position:fixed;top:1.1rem;left:1.2rem;z-index:60;
+    font-size:.85rem;font-weight:500;letter-spacing:.08em;
+    text-decoration:none;color:var(--ink-dim);
+    padding:.45rem .85rem;border:1px solid var(--hairline);border-radius:999px;
+    background:rgba(10,9,13,.55);backdrop-filter:blur(8px);
+    transition:color .25s,border-color .25s;
+  }
+  .back:hover{color:var(--citrine);border-color:var(--citrine)}
+
+  /* ---------- hero ---------- */
+  .hero{
+    position:relative;height:100svh;min-height:600px;
+    display:flex;align-items:center;justify-content:center;
+    overflow:hidden;cursor:crosshair;
+  }
+  #kaleido{position:absolute;inset:0;width:100%;height:100%;display:block}
+  .hero-veil{
+    position:absolute;inset:0;pointer-events:none;
+    background:
+      radial-gradient(ellipse 90% 60% at 50% 50%, transparent 40%, rgba(10,9,13,.55) 100%),
+      linear-gradient(to bottom, rgba(10,9,13,.35), transparent 25%, transparent 70%, var(--velvet) 100%);
+  }
+  .hero-inner{position:relative;z-index:2;text-align:center;padding:0 1.5rem;pointer-events:none}
+  .hero-kicker{
+    font-size:.8rem;font-weight:500;letter-spacing:.45em;text-transform:uppercase;
+    color:var(--citrine);margin-bottom:1.4rem;text-shadow:0 0 18px rgba(245,197,66,.5);
+  }
+  .hero-title{
+    font-family:'Monoton',cursive;font-weight:400;
+    font-size:clamp(2.6rem,13vw,9.5rem);
+    line-height:1;letter-spacing:.06em;
+    background:linear-gradient(115deg,var(--amethyst) 0%,var(--sapphire) 28%,var(--emerald) 55%,var(--citrine) 78%,var(--amethyst) 100%);
+    background-size:280% 100%;
+    -webkit-background-clip:text;background-clip:text;color:transparent;
+    animation:hueSpin 14s linear infinite, gradSlide 11s ease-in-out infinite alternate;
+    user-select:none;
+  }
+  @keyframes hueSpin{
+    from{filter:hue-rotate(0deg) drop-shadow(0 0 26px rgba(155,77,202,.5))}
+    to  {filter:hue-rotate(360deg) drop-shadow(0 0 26px rgba(155,77,202,.5))}
+  }
+  @keyframes gradSlide{from{background-position:0% 50%}to{background-position:100% 50%}}
+  .hero-sub{
+    margin-top:1.6rem;font-size:clamp(1rem,2.2vw,1.35rem);font-weight:300;
+    color:var(--ink);max-width:34ch;margin-left:auto;margin-right:auto;
+    text-shadow:0 1px 12px rgba(10,9,13,.9);
+  }
+  .hero-meta{
+    margin-top:1rem;font-size:.85rem;font-weight:500;letter-spacing:.3em;
+    text-transform:uppercase;color:var(--ink-dim);text-shadow:0 1px 10px rgba(10,9,13,.9);
+  }
+  .hero-hint{
+    position:absolute;bottom:6.6rem;left:50%;transform:translateX(-50%);
+    z-index:2;font-size:.75rem;letter-spacing:.22em;text-transform:uppercase;
+    color:var(--ink-dim);pointer-events:none;white-space:nowrap;
+    animation:hintFade 4s ease-in-out infinite;
+  }
+  @keyframes hintFade{0%,100%{opacity:.45}50%{opacity:1}}
+
+  /* segment pills */
+  .segs{
+    position:absolute;bottom:2.4rem;left:50%;transform:translateX(-50%);
+    z-index:3;display:flex;align-items:center;gap:.5rem;
+    padding:.4rem .55rem;border-radius:999px;
+    border:1px solid var(--hairline);
+    background:rgba(10,9,13,.6);backdrop-filter:blur(10px);
+  }
+  .segs-label{font-size:.65rem;letter-spacing:.3em;text-transform:uppercase;color:var(--ink-dim);padding:0 .5rem}
+  .segs button{
+    font-family:'Outfit',sans-serif;font-size:.9rem;font-weight:600;
+    width:2.6rem;height:2.6rem;border-radius:999px;cursor:pointer;
+    border:1px solid transparent;background:transparent;color:var(--ink-dim);
+    transition:color .3s,background .3s,border-color .3s,box-shadow .3s;
+  }
+  .segs button:hover{color:var(--ink)}
+  .segs button[aria-pressed="true"]{
+    color:var(--velvet);background:var(--citrine);border-color:var(--citrine);
+    box-shadow:0 0 18px rgba(245,197,66,.55);
+  }
+  .segs button:focus-visible,.back:focus-visible,.btn:focus-visible,a:focus-visible{
+    outline:2px solid var(--citrine);outline-offset:3px;border-radius:6px;
+  }
+  .segs button:focus-visible{border-radius:999px}
+
+  /* ---------- shared section chrome ---------- */
+  section{position:relative;padding:7rem 1.5rem}
+  .wrap{max-width:1080px;margin:0 auto}
+  .eyebrow{
+    font-size:.75rem;font-weight:600;letter-spacing:.4em;text-transform:uppercase;
+    margin-bottom:1.1rem;display:flex;align-items:center;gap:.8rem;
+  }
+  .eyebrow::before{content:"";width:2.2rem;height:1px;background:currentColor;opacity:.6}
+  .eyebrow.am{color:var(--amethyst)} .eyebrow.em{color:var(--emerald)}
+  .eyebrow.ci{color:var(--citrine)} .eyebrow.sa{color:var(--sapphire)}
+  h2{font-size:clamp(1.9rem,4.6vw,3.1rem);font-weight:700;line-height:1.12;letter-spacing:-.01em;max-width:22ch}
+  .lede{margin-top:1.4rem;font-size:1.1rem;line-height:1.75;color:var(--ink-dim);max-width:62ch}
+  .lede strong{color:var(--ink);font-weight:500}
+
+  /* ---------- about ---------- */
+  .stats{
+    margin-top:3.2rem;display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));
+    gap:1px;background:var(--hairline);border:1px solid var(--hairline);border-radius:14px;overflow:hidden;
+  }
+  .stat{background:var(--velvet);padding:1.6rem 1.4rem}
+  .stat b{display:block;font-size:2rem;font-weight:700;background:linear-gradient(120deg,var(--amethyst),var(--sapphire));-webkit-background-clip:text;background-clip:text;color:transparent}
+  .stat:nth-child(2) b{background:linear-gradient(120deg,var(--emerald),var(--sapphire));-webkit-background-clip:text;background-clip:text;color:transparent}
+  .stat:nth-child(3) b{background:linear-gradient(120deg,var(--citrine),var(--emerald));-webkit-background-clip:text;background-clip:text;color:transparent}
+  .stat:nth-child(4) b{background:linear-gradient(120deg,var(--sapphire),var(--amethyst));-webkit-background-clip:text;background-clip:text;color:transparent}
+  .stat span{font-size:.8rem;letter-spacing:.14em;text-transform:uppercase;color:var(--ink-dim)}
+
+  /* ---------- installations ---------- */
+  .cards{margin-top:3.4rem;display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:1.4rem}
+  .card{
+    position:relative;padding:1.8rem;border-radius:18px;
+    border:1px solid var(--hairline);
+    background:linear-gradient(160deg,rgba(155,77,202,.07),rgba(10,9,13,0) 45%);
+    transition:transform .35s cubic-bezier(.2,.8,.2,1),border-color .35s,box-shadow .35s;
+  }
+  .card:hover{transform:translateY(-6px);border-color:rgba(245,197,66,.4);box-shadow:0 24px 60px -30px rgba(155,77,202,.55)}
+  .card-head{display:flex;align-items:center;gap:1.1rem;margin-bottom:1.2rem}
+  .mini-wrap{
+    width:120px;height:120px;flex:none;border-radius:50%;overflow:hidden;
+    border:1px solid var(--hairline);
+    box-shadow:0 0 30px -6px rgba(46,107,214,.4), inset 0 0 20px rgba(10,9,13,.6);
+  }
+  .mini-wrap canvas{width:100%;height:100%;display:block}
+  .card h3{font-size:1.3rem;font-weight:700;letter-spacing:.04em}
+  .card .who{font-size:.82rem;letter-spacing:.12em;text-transform:uppercase;color:var(--ink-dim);margin-top:.3rem}
+  .card p{font-size:.95rem;line-height:1.7;color:var(--ink-dim)}
+  .card .tag{
+    display:inline-block;margin-top:1.1rem;font-size:.7rem;font-weight:600;
+    letter-spacing:.2em;text-transform:uppercase;padding:.35rem .8rem;border-radius:999px;
+  }
+  .tag.am{color:var(--amethyst);border:1px solid rgba(155,77,202,.45)}
+  .tag.em{color:var(--emerald);border:1px solid rgba(31,169,122,.45)}
+  .tag.sa{color:var(--sapphire);border:1px solid rgba(46,107,214,.55)}
+
+  /* ---------- artists ---------- */
+  .lineup{margin-top:3rem;display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:1px;background:var(--hairline);border:1px solid var(--hairline);border-radius:14px;overflow:hidden}
+  .artist{background:var(--velvet);padding:1.35rem 1.4rem;display:flex;align-items:baseline;gap:.8rem;transition:background .3s}
+  .artist:hover{background:#100E17}
+  .artist i{flex:none;width:.55rem;height:.55rem;border-radius:2px;transform:rotate(45deg) translateY(-1px)}
+  .artist:nth-child(4n+1) i{background:var(--amethyst);box-shadow:0 0 10px var(--amethyst)}
+  .artist:nth-child(4n+2) i{background:var(--emerald);box-shadow:0 0 10px var(--emerald)}
+  .artist:nth-child(4n+3) i{background:var(--citrine);box-shadow:0 0 10px var(--citrine)}
+  .artist:nth-child(4n+4) i{background:var(--sapphire);box-shadow:0 0 10px var(--sapphire)}
+  .artist b{font-weight:600;font-size:1rem}
+  .artist span{font-size:.78rem;color:var(--ink-dim);letter-spacing:.06em}
+
+  /* ---------- nights / tickets ---------- */
+  .nights{margin-top:3.4rem;display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:1.4rem}
+  .night{
+    border-radius:18px;padding:2rem 1.8rem;display:flex;flex-direction:column;gap:.9rem;
+    border:1px solid var(--hairline);background:rgba(255,255,255,.015);
+    transition:transform .35s cubic-bezier(.2,.8,.2,1),box-shadow .35s;
+  }
+  .night:hover{transform:translateY(-6px)}
+  .night.n1:hover{box-shadow:0 26px 70px -32px rgba(155,77,202,.7)}
+  .night.n2:hover{box-shadow:0 26px 70px -32px rgba(31,169,122,.7)}
+  .night.n3{border-color:rgba(245,197,66,.45);background:linear-gradient(170deg,rgba(245,197,66,.06),rgba(10,9,13,0) 50%)}
+  .night.n3:hover{box-shadow:0 26px 70px -32px rgba(245,197,66,.7)}
+  .night .date{font-size:.75rem;letter-spacing:.3em;text-transform:uppercase;color:var(--ink-dim)}
+  .night h3{font-size:1.45rem;font-weight:700}
+  .night h3 em{font-style:normal}
+  .n1 h3 em{color:var(--amethyst)} .n2 h3 em{color:var(--emerald)} .n3 h3 em{color:var(--citrine)}
+  .night p{font-size:.92rem;line-height:1.65;color:var(--ink-dim);flex:1}
+  .price{font-size:1.7rem;font-weight:700}
+  .price small{font-size:.8rem;font-weight:400;color:var(--ink-dim);letter-spacing:.08em}
+  .btn{
+    font-family:'Outfit',sans-serif;display:inline-block;text-align:center;text-decoration:none;
+    font-size:.85rem;font-weight:700;letter-spacing:.18em;text-transform:uppercase;
+    padding:.9rem 1.4rem;border-radius:10px;cursor:pointer;border:1px solid var(--hairline);
+    color:var(--ink);background:transparent;transition:background .3s,color .3s,border-color .3s;
+  }
+  .btn:hover{border-color:var(--ink);background:rgba(255,255,255,.04)}
+  .btn.gold{background:var(--citrine);border-color:var(--citrine);color:var(--velvet)}
+  .btn.gold:hover{background:#ffd968;border-color:#ffd968}
+
+  /* ---------- footer ---------- */
+  footer{border-top:1px solid var(--hairline);padding:3.4rem 1.5rem 2.6rem;margin-top:2rem}
+  .foot{max-width:1080px;margin:0 auto;display:flex;flex-wrap:wrap;gap:2rem;justify-content:space-between;align-items:flex-end}
+  .foot-mark{font-family:'Monoton',cursive;font-size:1.6rem;color:var(--amethyst);text-shadow:0 0 16px rgba(155,77,202,.5)}
+  .foot nav{display:flex;gap:1.6rem;flex-wrap:wrap}
+  .foot nav a{font-size:.85rem;letter-spacing:.1em;text-decoration:none;color:var(--ink-dim);transition:color .25s}
+  .foot nav a:hover{color:var(--citrine)}
+  .foot-small{width:100%;font-size:.75rem;color:var(--ink-dim);opacity:.7;letter-spacing:.05em}
+
+  @media (max-width:640px){
+    section{padding:5rem 1.2rem}
+    .hero-hint{bottom:6.9rem;font-size:.62rem}
+    .card-head{flex-direction:column;align-items:flex-start}
+  }
+  @media (prefers-reduced-motion: reduce){
+    html{scroll-behavior:auto}
+    *,*::before,*::after{animation-duration:.01ms !important;animation-iteration-count:1 !important;transition-duration:.01ms !important}
+    .hero-title{filter:drop-shadow(0 0 26px rgba(155,77,202,.5))}
+  }
+</style>
+</head>
+<body>
+
+<a class="back" href="/">←&nbsp;25</a>
+
+<!-- ============ HERO / LIVING KALEIDOSCOPE ============ -->
+<header class="hero" id="hero">
+  <canvas id="kaleido" aria-hidden="true"></canvas>
+  <div class="hero-veil"></div>
+  <div class="hero-inner">
+    <p class="hero-kicker">Festival of Living Light</p>
+    <h1 class="hero-title">PRISMA</h1>
+    <p class="hero-sub">Three nights inside a kaleidoscope the size of a turbine hall. You are holding the mirror.</p>
+    <p class="hero-meta">12 — 14 March · Zürich-West</p>
+  </div>
+  <p class="hero-hint">Move your cursor — the light follows your hand</p>
+  <div class="segs" role="group" aria-label="Kaleidoscope symmetry">
+    <span class="segs-label">Symmetry</span>
+    <button type="button" data-n="6"  aria-pressed="false">6</button>
+    <button type="button" data-n="8"  aria-pressed="true">8</button>
+    <button type="button" data-n="12" aria-pressed="false">12</button>
+  </div>
+</header>
+
+<!-- ============ ABOUT ============ -->
+<section id="about">
+  <div class="wrap">
+    <p class="eyebrow am">The Idea</p>
+    <h2>Light is the only material we brought.</h2>
+    <p class="lede">
+      For three nights each March, a decommissioned turbine hall on the western edge of Zürich
+      goes dark — and then it doesn't. <strong>Twelve installations, twenty-four artists, zero screens
+      between you and the work.</strong> Every piece at PRISMA is projected, refracted or folded light,
+      and almost every piece answers to the people standing inside it. Walk closer and the symmetry
+      tightens. Raise a hand and the field turns. The hall is the instrument; the audience plays it.
+    </p>
+    <p class="lede">
+      The festival takes its name from its oldest trick: a beam of white split into everything it was
+      hiding. Amethyst, emerald, citrine, sapphire — the four tones of this year's palette — run through
+      every room like a signature in the margin.
+    </p>
+    <div class="stats">
+      <div class="stat"><b>3</b><span>Nights</span></div>
+      <div class="stat"><b>12</b><span>Installations</span></div>
+      <div class="stat"><b>24</b><span>Artists</span></div>
+      <div class="stat"><b>9&thinsp;600&thinsp;m²</b><span>of darkness</span></div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ INSTALLATIONS ============ -->
+<section id="installations">
+  <div class="wrap">
+    <p class="eyebrow sa">Signature Works</p>
+    <h2>Three rooms you will tell people about.</h2>
+    <p class="lede">Each thumbnail below is not a picture — it is the actual shader that drives the room, running live at a whisper. The hall runs it at forty metres.</p>
+    <div class="cards">
+      <article class="card">
+        <div class="card-head">
+          <div class="mini-wrap"><canvas class="mini" data-seed="1.7" data-seg="6" data-speed="0.8" width="120" height="120" aria-hidden="true"></canvas></div>
+          <div>
+            <h3>MERIDIAN</h3>
+            <p class="who">Aya Lindqvist · SE</p>
+          </div>
+        </div>
+        <p>A forty-metre corridor folded into six mirrored wedges of slow amethyst weather. Visitors' silhouettes are captured, refracted and sent walking back toward them from six directions at once. Most people stop talking about a minute in.</p>
+        <span class="tag am">6-fold · Hall A</span>
+      </article>
+      <article class="card">
+        <div class="card-head">
+          <div class="mini-wrap"><canvas class="mini" data-seed="4.2" data-seg="8" data-speed="1.1" width="120" height="120" aria-hidden="true"></canvas></div>
+          <div>
+            <h3>CHRYSALIS</h3>
+            <p class="who">Studio Voltaic · CH</p>
+          </div>
+        </div>
+        <p>An eight-metre cone of suspended gauze, lit from within by an eight-fold emerald bloom that opens and closes on the room's collective heartbeat — pulse sensors at the entrance, no explanation given. When the room calms down, so does the light.</p>
+        <span class="tag em">8-fold · Hall B</span>
+      </article>
+      <article class="card">
+        <div class="card-head">
+          <div class="mini-wrap"><canvas class="mini" data-seed="8.9" data-seg="12" data-speed="0.65" width="120" height="120" aria-hidden="true"></canvas></div>
+          <div>
+            <h3>DEEP FIELD</h3>
+            <p class="who">Ilya Marchenko &amp; KHROMA Ensemble · UA/DE</p>
+          </div>
+        </div>
+        <p>The hall floor becomes a twelve-fold sapphire ocean, scored live each night by a string quartet whose bowing pressure steers the current. Lie down. That's not a suggestion printed on the wall — it's what everyone ends up doing anyway.</p>
+        <span class="tag sa">12-fold · Turbine Floor</span>
+      </article>
+    </div>
+  </div>
+</section>
+
+<!-- ============ ARTISTS ============ -->
+<section id="artists">
+  <div class="wrap">
+    <p class="eyebrow em">Lineup</p>
+    <h2>Twenty-four hands on the light.</h2>
+    <p class="lede">Projection artists, laser sculptors, shader poets and one string quartet that agreed to be an input device.</p>
+    <div class="lineup">
+      <div class="artist"><i></i><div><b>Aya Lindqvist</b><br><span>Mirror corridors · Stockholm</span></div></div>
+      <div class="artist"><i></i><div><b>Studio Voltaic</b><br><span>Responsive volumes · Zürich</span></div></div>
+      <div class="artist"><i></i><div><b>Ilya Marchenko</b><br><span>Floor-scale projection · Kyiv</span></div></div>
+      <div class="artist"><i></i><div><b>KHROMA Ensemble</b><br><span>Strings as sensors · Berlin</span></div></div>
+      <div class="artist"><i></i><div><b>Mara Obrist</b><br><span>Laser haze sculpture · Basel</span></div></div>
+      <div class="artist"><i></i><div><b>Ten Thousand Suns</b><br><span>Slow strobes · Seoul</span></div></div>
+      <div class="artist"><i></i><div><b>Édouard Klein</b><br><span>Caustics &amp; water · Lyon</span></div></div>
+      <div class="artist"><i></i><div><b>NOCTUA</b><br><span>Generative shaders · Rotterdam</span></div></div>
+      <div class="artist"><i></i><div><b>Priya Raghunathan</b><br><span>Fibre-optic textile · London</span></div></div>
+      <div class="artist"><i></i><div><b>Halle &amp; Sturm</b><br><span>Architectural mapping · Wien</span></div></div>
+      <div class="artist"><i></i><div><b>Selma Duarte</b><br><span>Phosphor murals · Lisboa</span></div></div>
+      <div class="artist"><i></i><div><b>The Dim Collective</b><br><span>Darkness curation · Zürich</span></div></div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ NIGHTS / TICKETS ============ -->
+<section id="tickets">
+  <div class="wrap">
+    <p class="eyebrow ci">Three Nights</p>
+    <h2>Pick your color. Or take all of them.</h2>
+    <div class="nights">
+      <article class="night n1">
+        <p class="date">Thu · 12 March</p>
+        <h3>Night I — <em>Amethyst</em></h3>
+        <p>Opening night. All twelve installations at first light, artists in the rooms, and the only night MERIDIAN runs its unmirrored "single corridor" prologue.</p>
+        <p class="price">45&nbsp;CHF <small>/ evening</small></p>
+        <a class="btn" href="#tickets" aria-label="Reserve Night I">Reserve</a>
+      </article>
+      <article class="night n2">
+        <p class="date">Fri · 13 March</p>
+        <h3>Night II — <em>Emerald</em></h3>
+        <p>The loud one. KHROMA plays three full DEEP FIELD sets, late bar until 03:00, and CHRYSALIS is rumoured to misbehave beautifully after midnight.</p>
+        <p class="price">45&nbsp;CHF <small>/ evening</small></p>
+        <a class="btn" href="#tickets" aria-label="Reserve Night II">Reserve</a>
+      </article>
+      <article class="night n3">
+        <p class="date">Thu — Sat · All Access</p>
+        <h3>Full <em>Spectrum</em></h3>
+        <p>All three nights including Saturday's closing — the only evening every installation is synchronised to a single twelve-fold score. Priority entry, no queue for the corridor.</p>
+        <p class="price">110&nbsp;CHF <small>/ festival</small></p>
+        <a class="btn gold" href="#tickets" aria-label="Reserve Full Spectrum pass">Full Spectrum</a>
+      </article>
+    </div>
+  </div>
+</section>
+
+<!-- ============ FOOTER ============ -->
+<footer>
+  <div class="foot">
+    <span class="foot-mark">PRISMA</span>
+    <nav>
+      <a href="#about">Idea</a>
+      <a href="#installations">Works</a>
+      <a href="#artists">Lineup</a>
+      <a href="#tickets">Nights</a>
+      <a href="/34-prisma/guide/">How it was built</a>
+      <a href="/">← 25</a>
+    </nav>
+    <p class="foot-small">PRISMA Festival of Living Light · Turbinenhalle Zürich-West · A fictional festival built as a WebGL showcase. The hero and every thumbnail run one shared kaleidoscope shader, live.</p>
+  </div>
+</footer>
+
+<script>
+(function(){
+"use strict";
+
+/* ============================================================
+   PRISMA living kaleidoscope engine
+   One fragment shader, many canvases, one shared rAF loop.
+   ============================================================ */
+
+var VERT = [
+  "attribute vec2 p;",
+  "void main(){ gl_Position = vec4(p, 0.0, 1.0); }"
+].join("\n");
+
+var FRAG = [
+"#ifdef GL_FRAGMENT_PRECISION_HIGH",
+"precision highp float;",
+"#else",
+"precision mediump float;",
+"#endif",
+"uniform vec2  uRes;",
+"uniform float uTime;",
+"uniform float uSeg;",   // mirror wedge count (float for smooth morph)
+"uniform float uRot;",   // fold-axis rotation (mouse angle)
+"uniform float uZoom;",  // pattern zoom (mouse distance)
+"uniform float uSeed;",  // per-instance flavour
+"",
+"const vec3 VELVET   = vec3(0.039, 0.035, 0.051);",
+"const vec3 AMETHYST = vec3(0.608, 0.302, 0.792);",
+"const vec3 EMERALD  = vec3(0.122, 0.663, 0.478);",
+"const vec3 CITRINE  = vec3(0.961, 0.773, 0.259);",
+"const vec3 SAPPHIRE = vec3(0.180, 0.420, 0.839);",
+"const float TAU = 6.28318530718;",
+"",
+"float hash(vec2 p){ return fract(sin(dot(p, vec2(127.1, 311.7))) * 43758.5453123); }",
+"float noise(vec2 p){",
+"  vec2 i = floor(p), f = fract(p);",
+"  vec2 u = f * f * (3.0 - 2.0 * f);",
+"  return mix(mix(hash(i), hash(i + vec2(1.0, 0.0)), u.x),",
+"             mix(hash(i + vec2(0.0, 1.0)), hash(i + vec2(1.0, 1.0)), u.x), u.y);",
+"}",
+"float fbm(vec2 p){",
+"  float v = 0.0, a = 0.5;",
+"  mat2 m = mat2(1.6, 1.2, -1.2, 1.6);",
+"  for(int i = 0; i < 5; i++){ v += a * noise(p); p = m * p; a *= 0.5; }",
+"  return v;",
+"}",
+"",
+"vec3 field(vec2 q, float t){",
+"  // PASS 1: drift slowed (0.12->0.07 etc) so the pattern breathes, not boils",
+"  float n1 = fbm(q * 1.8 + vec2(t * 0.07, -t * 0.055) + uSeed);",
+"  float n2 = fbm(q * 3.1 - vec2(t * 0.045, t * 0.065) + n1 * 1.7 + uSeed * 0.37);",
+"  float band  = 0.5 + 0.5 * sin(q.x * 4.5 + q.y * 3.2 + t * 0.5 + n2 * 5.0);",
+"  float band2 = 0.5 + 0.5 * sin(length(q) * 6.5 - t * 0.65 + n1 * 4.0);",
+"  vec3 col = mix(AMETHYST, SAPPHIRE, band);",
+"  col = mix(col, EMERALD, smoothstep(0.38, 0.85, n2) * 0.75);",
+"  // PASS 1: citrine gated behind high-fbm threshold + capped -> gold veins, not wash",
+"  col = mix(col, CITRINE, min(0.55, pow(band2, 3.0)) * smoothstep(0.55, 0.92, n1));",
+"  // PASS 1: deepened velvet floor so jewels sit on true black",
+"  float lum = smoothstep(0.12, 0.78, n1 * 0.55 + band2 * 0.45);",
+"  col = mix(VELVET, col, lum);",
+"  // sparse gold sparkle along fbm ridgelines",
+"  col += CITRINE * pow(0.5 + 0.5 * sin(n2 * 12.0 + t * 0.8), 10.0) * 0.18;",
+"  return col;",
+"}",
+"",
+"void main(){",
+"  vec2 uv = (gl_FragCoord.xy - 0.5 * uRes) / min(uRes.x, uRes.y);",
+"  float r = length(uv);",
+"  float a = atan(uv.y, uv.x) + uRot;",
+"  // --- the polar fold: N mirrored wedges ---",
+"  float wedge = TAU / uSeg;",
+"  a = mod(a, wedge);",
+"  a = abs(a - wedge * 0.5);",
+"  vec2 q = r * vec2(cos(a), sin(a)) * uZoom + vec2(uSeed * 3.1, uSeed * 1.7);",
+"  float t = uTime;",
+"  vec3 col = field(q + vec2(t * 0.03, 0.0), t);",
+"  // PASS 1: seam glow softened from hard lines to a faint citrine breath",
+"  float seam = smoothstep(0.020, 0.0, a) + smoothstep(0.020, 0.0, wedge * 0.5 - a);",
+"  col += CITRINE * seam * 0.05;",
+"  // vignette + centre jewel glow",
+"  col *= 1.0 - smoothstep(0.55, 1.2, r) * 0.7;",
+"  col += mix(AMETHYST, SAPPHIRE, 0.5) * exp(-r * 3.5) * 0.30;",
+"  gl_FragColor = vec4(col, 1.0);",
+"}"
+].join("\n");
+
+var TAU = Math.PI * 2;
+var reduced = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+var STILL_T = 47.0; // PASS 3: curated still frame for reduced motion
+
+function compile(gl, type, src){
+  var s = gl.createShader(type);
+  gl.shaderSource(s, src);
+  gl.compileShader(s);
+  if(!gl.getShaderParameter(s, gl.COMPILE_STATUS)){
+    console.warn(gl.getShaderInfoLog(s));
+    return null;
+  }
+  return s;
+}
+
+function lerpAngle(a, b, k){
+  // PASS 2: shortest-path lerp so the fold axis never whips across the +/-PI seam
+  var d = (b - a) % TAU;
+  if(d >  Math.PI) d -= TAU;
+  if(d < -Math.PI) d += TAU;
+  return a + d * k;
+}
+
+function makeKaleido(canvas, opts){
+  var gl = canvas.getContext("webgl", { antialias:false, alpha:false, depth:false, stencil:false, powerPreference:"high-performance" })
+        || canvas.getContext("experimental-webgl", { antialias:false, alpha:false });
+  if(!gl) return null;
+  var vs = compile(gl, gl.VERTEX_SHADER, VERT);
+  var fs = compile(gl, gl.FRAGMENT_SHADER, FRAG);
+  if(!vs || !fs) return null;
+  var prog = gl.createProgram();
+  gl.attachShader(prog, vs); gl.attachShader(prog, fs);
+  gl.linkProgram(prog);
+  if(!gl.getProgramParameter(prog, gl.LINK_STATUS)) return null;
+  gl.useProgram(prog);
+  var buf = gl.createBuffer();
+  gl.bindBuffer(gl.ARRAY_BUFFER, buf);
+  gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([-1,-1, 3,-1, -1,3]), gl.STATIC_DRAW);
+  var loc = gl.getAttribLocation(prog, "p");
+  gl.enableVertexAttribArray(loc);
+  gl.vertexAttribPointer(loc, 2, gl.FLOAT, false, 0, 0);
+
+  var K = {
+    canvas: canvas, gl: gl, active: false,
+    dprCap: opts.dprCap || 1,
+    seed: opts.seed || 0,
+    speed: opts.speed || 1,
+    tOff: (opts.seed || 0) * 13.7,      // PASS 2: per-seed time offset, minis never pulse in sync
+    seg: opts.seg || 8, targetSeg: opts.seg || 8,
+    rot: 0, targetRot: 0,
+    zoom: opts.zoom || 1.45, targetZoom: opts.zoom || 1.45,
+    u: {
+      res:  gl.getUniformLocation(prog, "uRes"),
+      time: gl.getUniformLocation(prog, "uTime"),
+      seg:  gl.getUniformLocation(prog, "uSeg"),
+      rot:  gl.getUniformLocation(prog, "uRot"),
+      zoom: gl.getUniformLocation(prog, "uZoom"),
+      seed: gl.getUniformLocation(prog, "uSeed")
+    },
+    resize: function(){
+      var dpr = Math.min(window.devicePixelRatio || 1, this.dprCap);
+      var w = Math.max(1, Math.round(this.canvas.clientWidth  * dpr));
+      var h = Math.max(1, Math.round(this.canvas.clientHeight * dpr));
+      if(this.canvas.width !== w || this.canvas.height !== h){
+        this.canvas.width = w; this.canvas.height = h;
+        this.gl.viewport(0, 0, w, h);
+      }
+    },
+    draw: function(t, dt){
+      // PASS 2: exponential smoothing -> frame-rate independent easing
+      var k = 1 - Math.exp(-dt * 4.0);
+      this.seg  += (this.targetSeg  - this.seg)  * k;
+      this.zoom += (this.targetZoom - this.zoom) * k;
+      this.rot   = lerpAngle(this.rot, this.targetRot, k);
+      var gl = this.gl, u = this.u;
+      gl.uniform2f(u.res, this.canvas.width, this.canvas.height);
+      gl.uniform1f(u.time, (t + this.tOff) * this.speed);
+      gl.uniform1f(u.seg, Math.max(2.0, this.seg));
+      gl.uniform1f(u.rot, this.rot);
+      gl.uniform1f(u.zoom, this.zoom);
+      gl.uniform1f(u.seed, this.seed);
+      gl.drawArrays(gl.TRIANGLES, 0, 3);
+    },
+    still: function(){
+      this.resize();
+      this.seg = this.targetSeg; this.rot = this.targetRot; this.zoom = this.targetZoom;
+      this.draw(STILL_T, 0);
+    }
+  };
+  return K;
+}
+
+/* ---------- instances ---------- */
+var instances = [];
+var MAX_MINIS_LIVE = 3;
+
+var heroCanvas = document.getElementById("kaleido");
+var hero = makeKaleido(heroCanvas, { dprCap: 1.25, seed: 0.0, seg: 8, zoom: 1.45, speed: 1 });
+if(hero){ hero.resize(); instances.push(hero); }
+
+var minis = [];
+document.querySelectorAll("canvas.mini").forEach(function(c){
+  var m = makeKaleido(c, {
+    dprCap: 1,                                     // minis at DPR 1
+    seed:  parseFloat(c.dataset.seed)  || 1,
+    seg:   parseFloat(c.dataset.seg)   || 8,
+    speed: parseFloat(c.dataset.speed) || 1,
+    zoom:  1.15
+  });
+  if(m){ m.resize(); minis.push(m); instances.push(m); }
+});
+
+/* ---------- shared render loop with visibility gating ---------- */
+var raf = null, lastT = 0;
+function liveMiniCount(){
+  var n = 0;
+  for(var i = 0; i < minis.length; i++) if(minis[i].active) n++;
+  return n;
+}
+function frame(now){
+  raf = requestAnimationFrame(frame);
+  var t = now * 0.001;
+  var dt = Math.min(0.05, t - lastT || 0.016);
+  lastT = t;
+  for(var i = 0; i < instances.length; i++){
+    if(instances[i].active) instances[i].draw(t, dt);
+  }
+}
+function startLoop(){ if(!raf && !reduced){ lastT = performance.now() * 0.001; raf = requestAnimationFrame(frame); } }
+function stopLoop(){ if(raf){ cancelAnimationFrame(raf); raf = null; } }
+
+document.addEventListener("visibilitychange", function(){
+  if(document.hidden) stopLoop(); else startLoop();
+});
+
+/* IntersectionObserver: wake canvases just before they enter the viewport (PASS 3: wider margin) */
+if("IntersectionObserver" in window){
+  var io = new IntersectionObserver(function(entries){
+    entries.forEach(function(e){
+      var inst = instances.find(function(k){ return k.canvas === e.target; });
+      if(!inst) return;
+      if(e.isIntersecting){
+        if(minis.indexOf(inst) !== -1 && liveMiniCount() >= MAX_MINIS_LIVE && !inst.active) return;
+        inst.active = true;
+        inst.resize();
+        if(reduced) inst.still();
+      } else {
+        inst.active = false;
+      }
+    });
+  }, { rootMargin: "120px 0px 120px 0px", threshold: 0.01 });
+  instances.forEach(function(k){ io.observe(k.canvas); });
+} else {
+  instances.forEach(function(k){ k.active = true; if(reduced) k.still(); });
+}
+
+window.addEventListener("resize", function(){
+  instances.forEach(function(k){ k.resize(); if(reduced && k.active) k.still(); });
+});
+
+/* ---------- hero interaction: angle -> fold axis, distance -> zoom ---------- */
+var heroEl = document.getElementById("hero");
+var lastPointer = 0;
+if(hero && !reduced){ // PASS 3: reduced motion keeps the still truly still — no cursor chase
+  heroEl.addEventListener("pointermove", function(e){
+    lastPointer = performance.now();
+    var r = heroEl.getBoundingClientRect();
+    var dx = (e.clientX - (r.left + r.width  / 2)) / (r.width  / 2);
+    var dy = (e.clientY - (r.top  + r.height / 2)) / (r.height / 2);
+    hero.targetRot = Math.atan2(dy, dx);
+    var d = Math.min(1, Math.hypot(dx, dy));
+    hero.targetZoom = 0.85 + d * 1.15;   // centre = zoomed in, edge = wide field
+  }, { passive: true });
+
+  // PASS 2: idle drift — the mandala keeps turning slowly when the cursor rests
+  if(!reduced){
+    setInterval(function(){
+      if(performance.now() - lastPointer > 3000) hero.targetRot += 0.02;
+    }, 90);
+  }
+}
+
+/* ---------- segment pills + slow auto morph 6 -> 8 -> 12 ---------- */
+var pills = Array.prototype.slice.call(document.querySelectorAll(".segs button"));
+var autoSeq = [6, 8, 12], autoIdx = 1, userLocked = false;
+
+function setSeg(n){
+  if(hero) hero.targetSeg = n;
+  pills.forEach(function(b){ b.setAttribute("aria-pressed", String(parseInt(b.dataset.n, 10) === n)); });
+  if(reduced && hero && hero.active){ hero.targetSeg = n; hero.still(); } // PASS 3: instant step
+}
+pills.forEach(function(b){
+  b.addEventListener("click", function(){
+    userLocked = true;   // PASS 2: auto cycle stops for good once the audience takes over
+    setSeg(parseInt(b.dataset.n, 10));
+  });
+});
+if(!reduced){
+  setInterval(function(){
+    if(userLocked) return;
+    autoIdx = (autoIdx + 1) % autoSeq.length;
+    setSeg(autoSeq[autoIdx]);
+  }, 9000);
+}
+
+/* ---------- go ---------- */
+if(reduced){
+  instances.forEach(function(k){ if(k.active) k.still(); });
+  if(hero){ hero.active = true; hero.still(); }
+} else {
+  startLoop();
+}
+
+})();
+</script>
+</body>
+</html>

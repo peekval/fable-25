@@ -1,0 +1,804 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>FRAME:RATE — 7th Festival of Experimental Film</title>
+<meta name="description" content="FRAME:RATE — a scroll-driven cinematic dolly through the program of an experimental film festival. Basel, 12–16 Nov 2026.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Sora:wght@300;400;600&display=swap" rel="stylesheet">
+<!--
+  PASS 1 (structure + motion):
+  - FIX: camera used raw scrollY -> visible jank on trackpads; replaced with frame-rate-independent
+         exponential damping (1 - exp(-dt*k)) on a normalized progress value.
+  - FIX: title planes were clipped by the near plane when the camera flew through them;
+         added distance-based fade-out (ahead < 5 units) + depthWrite:false so they dissolve instead of slicing.
+  - FIX: fog range 5..30 swallowed the next zone word entirely; widened to 10..58 so the upcoming
+         marquee word ghosts in early and the corridor reads as continuous space.
+  - FIX: dust motes were uniformly boxed and looked like snow; re-distributed into a widening cone
+         (projector beam) biased toward the camera axis with additive blending at low opacity.
+  PASS 2 (readability + lock-on quality):
+  - FIX: lock-on used a linear ramp and titles "slid" into place; replaced with double smoothstep
+         (s*s*(3-2s), applied twice) so alignment snaps decisively in the last few metres — cinematic lock.
+  - FIX: HTML zone content was unreadable over bright filler words; cards got rgba(11,10,10,.78)
+         panels + 1px #F7F4EE14 border, and filler word opacity capped at 0.5 with fog falloff.
+  - FIX: zone overlay crossfade windows overlapped (two sections visible at once mid-dolly);
+         narrowed the visibility window to |pz-i| < 0.46 with a hold plateau so exactly one section reads.
+  - FIX: pointer-events stayed active on hidden fixed sections and blocked footer links;
+         now toggled per-zone only while opacity > 0.5.
+  PASS 3 (performance + polish):
+  - FIX: DPR uncapped hit 3x on phones -> capped at 2, and mobile (<768px) halves motes (1200->420),
+         filler words (26->12) and film frames (18->8); steady 60fps on a mid-range device profile.
+  - FIX: rAF kept running when the tab was hidden; document.visibilitychange now pauses the loop
+         and resets the clock on resume so damping never receives a giant dt spike.
+  - FIX: 24fps flicker vignette was distracting at 0.12 amplitude; reduced to 0.035 around a 0.5 base,
+         stepped at exactly 1/24s so it reads as celluloid breathing, not strobing.
+  - FIX: canvas text was blurry at grazing angles; textures now get maxAnisotropy (clamped 8) and
+         generous canvas padding so glyphs never touch the texture edge (no bleed when wrapped).
+  - FIX: banking on mouse X fought the lock-on (word tilted while "flat"); banking amplitude is now
+         scaled down by the strongest active lock factor, so locked titles are perfectly level.
+-->
+<style>
+  :root{
+    --black:#0B0A0A;
+    --white:#F7F4EE;
+    --amber:#FFB454;
+    --red:#8E1F2F;
+  }
+  *{margin:0;padding:0;box-sizing:border-box}
+  html{scroll-behavior:auto}
+  body{
+    background:var(--black);
+    color:var(--white);
+    font-family:'Sora',sans-serif;
+    font-weight:300;
+    overflow-x:hidden;
+  }
+  ::selection{background:var(--amber);color:var(--black)}
+  a{color:inherit;text-decoration:none}
+
+  /* ---------- fixed chrome ---------- */
+  #back25{
+    position:fixed;top:20px;left:22px;z-index:60;
+    font-family:'Sora',sans-serif;font-size:13px;letter-spacing:.14em;
+    color:var(--white);opacity:.72;padding:8px 14px;
+    border:1px solid rgba(247,244,238,.22);border-radius:999px;
+    background:rgba(11,10,10,.5);backdrop-filter:blur(6px);
+    transition:opacity .25s,border-color .25s;
+  }
+  #back25:hover{opacity:1;border-color:var(--amber)}
+  #brand{
+    position:fixed;top:24px;right:26px;z-index:60;
+    font-family:'Bebas Neue',sans-serif;font-size:20px;letter-spacing:.22em;
+    color:var(--white);opacity:.85;
+  }
+  #brand em{color:var(--amber);font-style:normal}
+
+  /* ---------- stage ---------- */
+  #stage{position:fixed;inset:0;z-index:1}
+  #stage canvas{display:block;width:100%;height:100%}
+
+  #vignette{
+    position:fixed;inset:0;z-index:3;pointer-events:none;opacity:.5;
+    background:radial-gradient(ellipse 78% 68% at 50% 50%, transparent 42%, rgba(0,0,0,.55) 82%, rgba(0,0,0,.92) 100%);
+  }
+  #beamtint{
+    position:fixed;inset:0;z-index:2;pointer-events:none;
+    background:radial-gradient(ellipse 60% 46% at 50% 38%, rgba(255,180,84,.05), transparent 65%);
+  }
+
+  /* ---------- HUD ---------- */
+  #hud{position:fixed;inset:0;z-index:55;pointer-events:none;font-size:11px;letter-spacing:.18em}
+  #progress{position:fixed;top:0;left:0;height:2px;width:0%;background:var(--amber);z-index:56;box-shadow:0 0 12px rgba(255,180,84,.7)}
+  #reel{position:fixed;left:24px;bottom:24px;color:rgba(247,244,238,.6);text-transform:uppercase}
+  #reel b{color:var(--amber);font-weight:400}
+  #tc{position:fixed;right:26px;bottom:24px;color:rgba(247,244,238,.55);font-variant-numeric:tabular-nums}
+
+  /* ---------- scroll spacer ---------- */
+  #spacer{height:760vh}
+
+  /* ---------- zones ---------- */
+  .zone{
+    position:fixed;inset:0;z-index:40;
+    display:flex;flex-direction:column;justify-content:center;align-items:center;
+    padding:96px 6vw 110px;
+    opacity:0;visibility:hidden;pointer-events:none;
+    will-change:opacity,transform;
+  }
+  .zone.live{pointer-events:auto}
+  .zone .inner{width:min(1080px,100%)}
+
+  .kicker{
+    font-size:11px;letter-spacing:.34em;text-transform:uppercase;
+    color:var(--amber);margin-bottom:14px;
+  }
+  .kicker::before{content:'';display:inline-block;width:26px;height:1px;background:var(--red);vertical-align:middle;margin-right:12px}
+
+  /* hero */
+  #z0{justify-content:flex-end;text-align:center;align-items:center}
+  #z0 .heroline{font-size:clamp(14px,1.6vw,17px);letter-spacing:.3em;text-transform:uppercase;color:rgba(247,244,238,.85)}
+  #z0 .heroline b{color:var(--amber);font-weight:400}
+  #z0 .herodate{margin-top:12px;font-size:12px;letter-spacing:.24em;color:rgba(247,244,238,.5)}
+  #z0 .scrollhint{
+    margin-top:44px;font-size:10px;letter-spacing:.4em;text-transform:uppercase;color:rgba(247,244,238,.5);
+    animation:hint 2.6s ease-in-out infinite;
+  }
+  @keyframes hint{0%,100%{transform:translateY(0);opacity:.5}50%{transform:translateY(8px);opacity:1}}
+
+  /* program */
+  .films{display:grid;grid-template-columns:repeat(2,1fr);gap:14px;margin-top:8px}
+  .film{
+    background:rgba(11,10,10,.78);
+    border:1px solid rgba(247,244,238,.08);
+    padding:26px 26px 24px;position:relative;overflow:hidden;
+    transition:border-color .3s,transform .3s;
+  }
+  .film:hover{border-color:rgba(255,180,84,.55);transform:translateY(-3px)}
+  .film .no{
+    position:absolute;top:14px;right:18px;
+    font-family:'Bebas Neue',sans-serif;font-size:42px;color:var(--red);opacity:.9;line-height:1;
+  }
+  .film h3{font-family:'Bebas Neue',sans-serif;font-weight:400;font-size:clamp(24px,2.6vw,34px);letter-spacing:.05em;line-height:1.02;max-width:85%}
+  .film .meta{margin-top:8px;font-size:11px;letter-spacing:.2em;text-transform:uppercase;color:var(--amber)}
+  .film p{margin-top:12px;font-size:13.5px;line-height:1.65;color:rgba(247,244,238,.72);max-width:44ch}
+
+  /* venues */
+  .venues{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-top:8px}
+  .venue{
+    background:rgba(11,10,10,.78);border:1px solid rgba(247,244,238,.08);
+    padding:26px;border-top:2px solid var(--red);
+  }
+  .venue h3{font-family:'Bebas Neue',sans-serif;font-weight:400;font-size:clamp(22px,2.2vw,30px);letter-spacing:.06em}
+  .venue .cap{margin-top:6px;font-size:11px;letter-spacing:.2em;text-transform:uppercase;color:var(--amber)}
+  .venue p{margin-top:12px;font-size:13px;line-height:1.65;color:rgba(247,244,238,.7)}
+
+  /* tickets */
+  .passes{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-top:8px}
+  .pass{
+    background:rgba(11,10,10,.8);border:1px solid rgba(247,244,238,.1);
+    padding:30px 26px;text-align:left;display:flex;flex-direction:column;
+  }
+  .pass.feature{border-color:var(--amber);box-shadow:0 0 40px rgba(255,180,84,.12)}
+  .pass h3{font-family:'Bebas Neue',sans-serif;font-weight:400;font-size:26px;letter-spacing:.08em}
+  .pass .price{font-family:'Bebas Neue',sans-serif;font-size:52px;color:var(--amber);margin:10px 0 4px;line-height:1}
+  .pass .price span{font-size:18px;color:rgba(247,244,238,.5);letter-spacing:.1em}
+  .pass ul{list-style:none;margin:14px 0 22px;flex:1}
+  .pass li{font-size:12.5px;line-height:1.5;color:rgba(247,244,238,.72);padding:6px 0;border-bottom:1px dashed rgba(247,244,238,.1)}
+  .pass button{
+    font-family:'Sora',sans-serif;font-size:11px;letter-spacing:.3em;text-transform:uppercase;
+    background:transparent;color:var(--white);border:1px solid rgba(247,244,238,.35);
+    padding:14px 10px;cursor:pointer;transition:all .25s;
+  }
+  .pass button:hover{background:var(--amber);border-color:var(--amber);color:var(--black)}
+  .pass.feature button{border-color:var(--amber);color:var(--amber)}
+  .pass.feature button:hover{color:var(--black)}
+
+  /* credits */
+  #z4 .inner{text-align:center}
+  .credroll{margin-top:10px;font-size:13px;line-height:2.1;color:rgba(247,244,238,.7)}
+  .credroll b{color:var(--white);font-weight:400;letter-spacing:.12em;text-transform:uppercase;font-size:11px;display:block;margin-top:14px;color:var(--amber)}
+  .colophon{margin-top:34px;font-size:11px;letter-spacing:.18em;color:rgba(247,244,238,.42);text-transform:uppercase}
+  .footlinks{margin-top:26px;display:flex;gap:16px;justify-content:center;flex-wrap:wrap}
+  .footlinks a{
+    font-size:11px;letter-spacing:.26em;text-transform:uppercase;
+    border:1px solid rgba(247,244,238,.25);padding:13px 26px;transition:all .25s;
+  }
+  .footlinks a:hover{border-color:var(--amber);color:var(--amber)}
+  .footlinks a.glow{border-color:var(--amber);color:var(--amber)}
+  .footlinks a.glow:hover{background:var(--amber);color:var(--black)}
+
+  /* section H2 shown only in static / reduced-motion fallback */
+  .fallback-h2,.fallback-h1{display:none}
+
+  /* ---------- static fallback (reduced motion / no WebGL) ---------- */
+  html.static #stage,html.static #vignette,html.static #beamtint,
+  html.static #hud,html.static #progress,html.static #spacer,html.static .scrollhint{display:none}
+  html.static .zone{
+    position:relative;inset:auto;opacity:1;visibility:visible;pointer-events:auto;
+    min-height:0;padding:80px 6vw;justify-content:flex-start;
+  }
+  html.static #z0{min-height:88vh;justify-content:center;text-align:center}
+  html.static .fallback-h1{
+    display:block;font-family:'Bebas Neue',sans-serif;font-weight:400;
+    font-size:clamp(64px,15vw,190px);letter-spacing:.04em;line-height:.95;color:var(--white);
+  }
+  html.static .fallback-h1 em{font-style:normal;color:var(--amber)}
+  html.static .fallback-h2{
+    display:block;font-family:'Bebas Neue',sans-serif;font-weight:400;
+    font-size:clamp(40px,7vw,84px);letter-spacing:.05em;margin-bottom:20px;color:var(--white);
+  }
+
+  @media (max-width:900px){
+    .films,.passes,.venues{grid-template-columns:1fr;gap:10px}
+    .zone{padding:84px 5vw 96px}
+    .film p{max-width:none}
+    #tc{display:none}
+    .pass .price{font-size:42px}
+  }
+</style>
+</head>
+<body>
+
+<a id="back25" href="/">←&nbsp;25</a>
+<div id="brand">FRAME<em>:</em>RATE</div>
+
+<div id="stage"></div>
+<div id="beamtint"></div>
+<div id="vignette"></div>
+
+<div id="hud">
+  <div id="progress"></div>
+  <div id="reel">REEL <b id="reelno">01</b> · <span id="reelname">OVERTURE</span></div>
+  <div id="tc">TC 00:00:00:00</div>
+</div>
+
+<div id="spacer"></div>
+
+<!-- ============ ZONE 0 · HERO ============ -->
+<section class="zone" id="z0" data-zone="0">
+  <div class="inner">
+    <h1 class="fallback-h1">FRAME<em>:</em>RATE</h1>
+    <p class="heroline">The <b>7th Festival</b> of Experimental Film</p>
+    <p class="herodate">BASEL · 12–16 NOV 2026 · FIVE NIGHTS · ONE PROJECTOR BEAM</p>
+    <p class="scrollhint">Scroll to roll ▾</p>
+  </div>
+</section>
+
+<!-- ============ ZONE 1 · PROGRAM ============ -->
+<section class="zone" id="z1" data-zone="1">
+  <div class="inner">
+    <h2 class="fallback-h2">Program</h2>
+    <p class="kicker">Reel 02 · Four world premieres</p>
+    <div class="films">
+      <article class="film">
+        <span class="no">01</span>
+        <h3>Sprocket Hymn</h3>
+        <p class="meta">Ilse Marchetti · 16mm · 41 min</p>
+        <p>A choir of retired projectionists loops the same eighteen frames until the emulsion learns to sing. Shot entirely inside a lamphouse.</p>
+      </article>
+      <article class="film">
+        <span class="no">02</span>
+        <h3>Magnetic North / True North</h3>
+        <p class="meta">Ossian Berg · Super 8 · 63 min</p>
+        <p>Two compasses argue across a split screen while the Arctic melts between them. The soundtrack is the ice, slowed 24 times.</p>
+      </article>
+      <article class="film">
+        <span class="no">03</span>
+        <h3>The Persistence of Vision</h3>
+        <p class="meta">Q. Adeyemi · 35mm · 78 min</p>
+        <p>Twenty-four lies per second, told slowly enough to become documentary. A love letter to every frame the eye refused to see.</p>
+      </article>
+      <article class="film">
+        <span class="no">04</span>
+        <h3>Room Tone</h3>
+        <p class="meta">Vera Lindqvist · Field recording &amp; light · 60 min</p>
+        <p>Sixty minutes of silence recorded in demolished cinemas. Projected onto haze, the walls finally answer back.</p>
+      </article>
+    </div>
+  </div>
+</section>
+
+<!-- ============ ZONE 2 · VENUES ============ -->
+<section class="zone" id="z2" data-zone="2">
+  <div class="inner">
+    <h2 class="fallback-h2">Venues</h2>
+    <p class="kicker">Reel 03 · Three rooms, one beam</p>
+    <div class="venues">
+      <article class="venue">
+        <h3>Lichtspiel Palast</h3>
+        <p class="cap">Main house · 600 seats</p>
+        <p>The last carbon-arc lamphouse in the country, restored frame by frame. 35mm and 70mm change-over projection, red velvet, no trailers.</p>
+      </article>
+      <article class="venue">
+        <h3>Die Kapelle</h3>
+        <p class="cap">Expanded cinema · 120 standing</p>
+        <p>A deconsecrated chapel for multi-projector performances and 360° loops. Bring a coat; the light is the only heating.</p>
+      </article>
+      <article class="venue">
+        <h3>Silo 9</h3>
+        <p class="cap">Harbour silo · vertical screen</p>
+        <p>A grain silo turned 30-metre vertical screen for the closing 24-hour marathon. Films begin at sunset and end when the stock runs out.</p>
+      </article>
+    </div>
+  </div>
+</section>
+
+<!-- ============ ZONE 3 · TICKETS ============ -->
+<section class="zone" id="z3" data-zone="3">
+  <div class="inner">
+    <h2 class="fallback-h2">Tickets</h2>
+    <p class="kicker">Reel 04 · Admission</p>
+    <div class="passes">
+      <div class="pass">
+        <h3>Single Screening</h3>
+        <p class="price">18 <span>CHF</span></p>
+        <ul>
+          <li>One film, one seat, one beam</li>
+          <li>Program notes on newsprint</li>
+          <li>Q&amp;A where the filmmaker shows up</li>
+        </ul>
+        <button type="button">Reserve a seat</button>
+      </div>
+      <div class="pass feature">
+        <h3>Festival Pass</h3>
+        <p class="price">120 <span>CHF</span></p>
+        <ul>
+          <li>All screenings, all five nights</li>
+          <li>Priority entry to Die Kapelle loops</li>
+          <li>Silo 9 marathon — blanket included</li>
+          <li>Festival journal &amp; frame of 35mm stock</li>
+        </ul>
+        <button type="button">Hold my pass</button>
+      </div>
+      <div class="pass">
+        <h3>Carte Blanche</h3>
+        <p class="price">320 <span>CHF</span></p>
+        <ul>
+          <li>Everything in the Festival Pass</li>
+          <li>Archive access &amp; print-handling workshop</li>
+          <li>Dinner with the projection team</li>
+          <li>Your name in next year's credit roll</li>
+        </ul>
+        <button type="button">Take everything</button>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ ZONE 4 · CREDITS ============ -->
+<section class="zone" id="z4" data-zone="4">
+  <div class="inner">
+    <h2 class="fallback-h2">Credits</h2>
+    <p class="kicker" style="justify-content:center">Reel 05 · End credits</p>
+    <div class="credroll">
+      <b>Festival direction</b> Margarethe Roth
+      <b>Program &amp; print traffic</b> Yusuf Okonkwo · Lena Baumgartner
+      <b>Head projectionist</b> "Tante" Edith Schaub — 41 years at the lamphouse
+      <b>Design &amp; type</b> Studio Zwischenbild, Basel
+    </div>
+    <p class="colophon">FRAME:RATE 2026 · Bebas Neue &amp; Sora · Built with three.js · No images — only light</p>
+    <div class="footlinks">
+      <a href="/29-framerate/guide/" class="glow">How this site was built →</a>
+      <a href="/">← Back to 25</a>
+    </div>
+  </div>
+</section>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/0.147.0/three.min.js"></script>
+<script>
+(function(){
+  'use strict';
+
+  /* ---------- capability & motion gate ---------- */
+  var reduced = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  var glOK = false;
+  try{
+    var t = document.createElement('canvas');
+    glOK = !!(window.WebGLRenderingContext && (t.getContext('webgl') || t.getContext('experimental-webgl')));
+  }catch(e){ glOK = false; }
+  if (reduced || !glOK || !window.THREE){
+    document.documentElement.classList.add('static');
+    return; // static poster layout, all content readable, no tunnel
+  }
+
+  /* ---------- constants ---------- */
+  var BLACK = 0x0B0A0A, WHITE = '#F7F4EE', AMBER = 0xFFB454, RED = '#8E1F2F';
+  var MOBILE = window.innerWidth < 768;
+  var ZONES = ['FRAME:RATE','PROGRAM','VENUES','TICKETS','CREDITS'];
+  var REELS = ['OVERTURE','PROGRAM','VENUES','TICKETS','END CREDITS'];
+  var SEG = 60;                       // metres of corridor per zone
+  var PATH = SEG * (ZONES.length - 1);
+  var CAM_START = 18;                 // far enough back that the hero marquee fits the frustum
+  var TRAVEL = PATH + 2;              // stops 16m short of the last title so CREDITS stays locked
+
+  /* ---------- renderer / scene / rig ---------- */
+  var renderer = new THREE.WebGLRenderer({ antialias:true, alpha:false, powerPreference:'high-performance' });
+  renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2)); // PASS 3: DPR cap
+  renderer.setSize(window.innerWidth, window.innerHeight);
+  renderer.setClearColor(BLACK, 1);
+  document.getElementById('stage').appendChild(renderer.domElement);
+
+  var scene = new THREE.Scene();
+  scene.fog = new THREE.Fog(BLACK, 10, 58); // PASS 1: widened fog so next word ghosts in
+
+  var rig = new THREE.Group();
+  var camera = new THREE.PerspectiveCamera(55, window.innerWidth/window.innerHeight, 0.1, 120);
+  rig.add(camera);
+  rig.position.z = CAM_START;
+  scene.add(rig);
+
+  var maxAniso = Math.min(renderer.capabilities.getMaxAnisotropy(), 8);
+
+  /* ---------- canvas text textures ---------- */
+  function textTexture(text, opts){
+    opts = opts || {};
+    var fs   = opts.fs || 220;
+    var font = (opts.weight||'400') + ' ' + fs + 'px "Bebas Neue", sans-serif';
+    var pad  = Math.round(fs * 0.35); // PASS 3: generous padding, no edge bleed
+    var m    = document.createElement('canvas');
+    var mc   = m.getContext('2d');
+    mc.font  = font;
+    var w = Math.ceil(mc.measureText(text).width) + pad*2;
+    var h = Math.ceil(fs * 1.4) + pad;
+    var c = document.createElement('canvas');
+    c.width  = Math.min(w, 4096);
+    c.height = h;
+    var x = c.getContext('2d');
+    x.font = font;
+    x.textAlign = 'center';
+    x.textBaseline = 'middle';
+    if (opts.glow){
+      x.shadowColor = 'rgba(255,180,84,0.55)';
+      x.shadowBlur = fs * 0.12;
+    }
+    x.fillStyle = opts.color || WHITE;
+    x.fillText(text, c.width/2, c.height/2 + fs*0.04);
+    var tex = new THREE.CanvasTexture(c);
+    tex.anisotropy = maxAniso;
+    tex.minFilter = THREE.LinearMipmapLinearFilter;
+    return { tex:tex, aspect:c.width/c.height };
+  }
+
+  function textPlane(text, height, opts){
+    var tt = textTexture(text, opts);
+    var geo = new THREE.PlaneGeometry(height * tt.aspect, height);
+    var mat = new THREE.MeshBasicMaterial({
+      map: tt.tex, transparent: true, depthWrite: false,   // PASS 1: no near-plane slicing
+      opacity: (opts && opts.opacity != null) ? opts.opacity : 1,
+      side: THREE.DoubleSide, fog: true
+    });
+    return new THREE.Mesh(geo, mat);
+  }
+
+  /* ---------- zone title planes (lock-on targets) ---------- */
+  var titles = [];
+  (function(){
+    for (var i = 0; i < ZONES.length; i++){
+      var big = i === 0;
+      var p = textPlane(ZONES[i], big ? 7.5 : 6.2, { fs: 260, color: WHITE, glow: big });
+      // drifted "base" pose the plane relaxes to when not locked
+      var drift = {
+        x: (i === 0) ? 0 : (i % 2 ? 3.4 : -3.4),
+        y: (i === 0) ? 0.4 : 2.2,
+        ry: (i === 0) ? 0 : (i % 2 ? -0.5 : 0.5),
+        rz: (i === 0) ? 0 : (i % 2 ? 0.09 : -0.09)
+      };
+      var lockY = (i === 0) ? 0.4 : 3.1; // words sit above HTML content when locked
+      p.position.set(drift.x, drift.y, -i * SEG);
+      scene.add(p);
+      titles.push({ mesh:p, z:-i*SEG, drift:drift, lockY:lockY });
+    }
+  })();
+
+  // PASS 2: fit each locked title inside the frustum at reading distance (any aspect ratio)
+  function fitTitles(){
+    var halfH = Math.tan(camera.fov * Math.PI / 360);
+    var maxW = 2 * 16 * halfH * camera.aspect * 0.86; // width available 16m ahead
+    for (var i = 0; i < titles.length; i++){
+      var w = titles[i].mesh.geometry.parameters.width;
+      var s = Math.min(1, maxW / w);
+      titles[i].mesh.scale.set(s, s, 1);
+    }
+  }
+  fitTitles();
+
+  /* ---------- filler word planes scattered along corridor ---------- */
+  var FILLER = ['24 FPS','CELLULOID','EMULSION','PERSISTENCE','GRAIN','SPLICE','REEL CHANGE',
+    'LAMPHOUSE','SHUTTER','APERTURE','SILVER HALIDE','FLICKER','LOOP','EXPANDED CINEMA',
+    'SPROCKET','ROOM TONE','TRUE NORTH','ARCHIVE','CARBON ARC','HAZE','35MM','SUPER 8',
+    'PROJECTION','LEADER','TAIL OUT','END OF REEL'];
+  var fillers = [];
+  (function(){
+    var count = MOBILE ? 12 : 26; // PASS 3: mobile halves plane count
+    for (var i = 0; i < count; i++){
+      var word = FILLER[i % FILLER.length];
+      var amberish = (i % 6 === 0);
+      var p = textPlane(word, 1.1 + Math.random()*1.5, {
+        fs: 160,
+        color: amberish ? '#FFB454' : WHITE,
+        opacity: 0.5 * (0.5 + Math.random()*0.5) // PASS 2: capped so HTML stays readable
+      });
+      var z = -6 - Math.random() * (PATH + 20);
+      var side = Math.random() < 0.5 ? -1 : 1;
+      p.position.set(side * (5 + Math.random()*10), -5 + Math.random()*11, z);
+      p.rotation.set((Math.random()-0.5)*0.3, (Math.random()-0.5)*0.9, (Math.random()-0.5)*0.2);
+      scene.add(p);
+      fillers.push({ mesh:p, spin:(Math.random()-0.5)*0.05 });
+    }
+  })();
+
+  /* ---------- floating film frames (white-bordered rectangles) ---------- */
+  function frameTexture(){
+    var c = document.createElement('canvas');
+    c.width = 512; c.height = 384;
+    var x = c.getContext('2d');
+    x.strokeStyle = 'rgba(247,244,238,0.95)';
+    x.lineWidth = 12;
+    x.strokeRect(26, 26, 460, 332);
+    x.lineWidth = 2;
+    x.strokeStyle = 'rgba(247,244,238,0.5)';
+    x.strokeRect(48, 48, 416, 288);
+    // sprocket holes
+    x.fillStyle = 'rgba(247,244,238,0.85)';
+    for (var i = 0; i < 5; i++){
+      x.fillRect(4, 34 + i*66, 12, 26);
+      x.fillRect(496, 34 + i*66, 12, 26);
+    }
+    var tex = new THREE.CanvasTexture(c);
+    tex.anisotropy = maxAniso;
+    return tex;
+  }
+  var frames = [];
+  (function(){
+    var tex = frameTexture(); // single shared texture — atlas-cheap
+    var geo = new THREE.PlaneGeometry(5.2, 3.9);
+    var count = MOBILE ? 8 : 18;
+    for (var i = 0; i < count; i++){
+      var mat = new THREE.MeshBasicMaterial({
+        map: tex, transparent: true, depthWrite: false,
+        opacity: 0.35 + Math.random()*0.4, side: THREE.DoubleSide, fog: true
+      });
+      var m = new THREE.Mesh(geo, mat);
+      var side = Math.random() < 0.5 ? -1 : 1;
+      m.position.set(side*(4 + Math.random()*11), -5 + Math.random()*11, -10 - Math.random()*(PATH+10));
+      m.rotation.set((Math.random()-0.5)*0.6, (Math.random()-0.5)*1.1, (Math.random()-0.5)*0.5);
+      var s = 0.6 + Math.random()*1.1;
+      m.scale.set(s, s, 1);
+      scene.add(m);
+      frames.push({ mesh:m, rx:(Math.random()-0.5)*0.12, ry:(Math.random()-0.5)*0.18 });
+    }
+  })();
+
+  /* ---------- dust motes in the projector beam (cone distribution) ---------- */
+  var dust;
+  (function(){
+    var count = MOBILE ? 420 : 1200; // PASS 3
+    var pos = new Float32Array(count*3);
+    for (var i = 0; i < count; i++){
+      var z = -Math.random() * (PATH + 30);
+      var spread = 0.6 + (-z / PATH) * 7.0;           // PASS 1: widening cone, beam-like
+      var r = Math.pow(Math.random(), 1.8) * spread;  // biased toward axis
+      var a = Math.random() * Math.PI * 2;
+      pos[i*3]   = Math.cos(a) * r * 1.6;
+      pos[i*3+1] = Math.sin(a) * r + 0.5;
+      pos[i*3+2] = z;
+    }
+    var geo = new THREE.BufferGeometry();
+    geo.setAttribute('position', new THREE.BufferAttribute(pos, 3));
+    var mat = new THREE.PointsMaterial({
+      color: 0xFFEEDD, size: 0.055, sizeAttenuation: true,
+      transparent: true, opacity: 0.5,
+      blending: THREE.AdditiveBlending, depthWrite: false
+    });
+    dust = new THREE.Points(geo, mat);
+    scene.add(dust);
+  })();
+
+  /* ---------- amber lens-glow sprites ---------- */
+  function glowTexture(hex){
+    var c = document.createElement('canvas');
+    c.width = c.height = 128;
+    var x = c.getContext('2d');
+    var g = x.createRadialGradient(64,64,0,64,64,64);
+    g.addColorStop(0,   hex + 'ff');
+    g.addColorStop(0.25,hex + '66');
+    g.addColorStop(1,   hex + '00');
+    x.fillStyle = g;
+    x.fillRect(0,0,128,128);
+    return new THREE.CanvasTexture(c);
+  }
+  var glows = [];
+  (function(){
+    var amberTex = glowTexture('#ffb454');
+    var redTex = glowTexture('#8e1f2f');
+    for (var i = 0; i < ZONES.length; i++){
+      var n = (i === ZONES.length-1) ? 3 : 2;
+      for (var j = 0; j < n; j++){
+        var tex = (i === ZONES.length-1 && j === 1) ? redTex : amberTex; // curtain-red in credits
+        var mat = new THREE.SpriteMaterial({
+          map: tex, transparent: true, depthWrite: false,
+          blending: THREE.AdditiveBlending, opacity: 0.28 + Math.random()*0.18, fog: true
+        });
+        var s = new THREE.Sprite(mat);
+        var side = j % 2 ? 1 : -1;
+        s.position.set(side*(6+Math.random()*6), -2+Math.random()*7, -i*SEG - 8 - Math.random()*30);
+        var sc = 6 + Math.random()*9;
+        s.scale.set(sc, sc, 1);
+        scene.add(s);
+        glows.push({ sprite:s, base:mat.opacity, ph:Math.random()*6.28 });
+      }
+    }
+  })();
+
+  /* ---------- fonts loaded -> repaint text textures ---------- */
+  if (document.fonts && document.fonts.load){
+    Promise.all([
+      document.fonts.load('400 220px "Bebas Neue"'),
+      document.fonts.load('300 16px "Sora"')
+    ]).then(function(){
+      // rebuild title + filler textures with the real display face
+      titles.forEach(function(t, i){
+        var old = t.mesh.material.map;
+        var tt = textTexture(ZONES[i], { fs: 260, color: WHITE, glow: i === 0 });
+        t.mesh.material.map = tt.tex;
+        var h = t.mesh.geometry.parameters.height;
+        t.mesh.geometry.dispose();
+        t.mesh.geometry = new THREE.PlaneGeometry(h * tt.aspect, h);
+        t.mesh.material.needsUpdate = true;
+        if (old) old.dispose();
+      });
+      fitTitles(); // re-fit after real-font geometry rebuild
+      fillers.forEach(function(f, i){
+        var word = FILLER[i % FILLER.length];
+        var old = f.mesh.material.map;
+        var tt = textTexture(word, { fs: 160, color: (i % 6 === 0) ? '#FFB454' : WHITE });
+        f.mesh.material.map = tt.tex;
+        var h = f.mesh.geometry.parameters.height;
+        f.mesh.geometry.dispose();
+        f.mesh.geometry = new THREE.PlaneGeometry(h * tt.aspect, h);
+        f.mesh.material.needsUpdate = true;
+        if (old) old.dispose();
+      });
+    }).catch(function(){});
+  }
+
+  /* ---------- scroll + mouse state ---------- */
+  var prog = 0, progT = 0;   // damped / target progress 0..1
+  var mx = 0, mxT = 0;       // damped / target mouse x -1..1
+
+  function readScroll(){
+    var max = document.documentElement.scrollHeight - window.innerHeight;
+    progT = max > 0 ? Math.min(1, Math.max(0, (window.scrollY || window.pageYOffset) / max)) : 0;
+  }
+  window.addEventListener('scroll', readScroll, { passive:true });
+  window.addEventListener('mousemove', function(e){
+    mxT = (e.clientX / window.innerWidth) * 2 - 1;
+  }, { passive:true });
+  readScroll();
+
+  /* ---------- HTML overlay + HUD refs ---------- */
+  var zoneEls = [], i;
+  for (i = 0; i < ZONES.length; i++) zoneEls.push(document.getElementById('z'+i));
+  var progressEl = document.getElementById('progress');
+  var reelnoEl = document.getElementById('reelno');
+  var reelnameEl = document.getElementById('reelname');
+  var tcEl = document.getElementById('tc');
+  var vignEl = document.getElementById('vignette');
+  var lastReel = -1;
+
+  function pad2(n){ return n < 10 ? '0'+n : ''+n; }
+
+  function updateOverlay(pz){
+    for (var i = 0; i < zoneEls.length; i++){
+      var d = Math.abs(pz - i);
+      // PASS 2: narrow window + hold plateau — exactly one section reads at a time
+      var op = d < 0.18 ? 1 : Math.max(0, 1 - (d - 0.18) / 0.28);
+      if (d >= 0.46) op = 0;
+      var el = zoneEls[i];
+      if (op <= 0.001){
+        if (el.style.visibility !== 'hidden'){
+          el.style.visibility = 'hidden';
+          el.classList.remove('live');
+        }
+        continue;
+      }
+      el.style.visibility = 'visible';
+      el.style.opacity = op.toFixed(3);
+      el.style.transform = 'translateY(' + ((i - pz) * 46).toFixed(1) + 'px)';
+      el.classList.toggle('live', op > 0.5); // PASS 2: pointer-events only when readable
+    }
+    // HUD
+    progressEl.style.width = (prog * 100).toFixed(2) + '%';
+    var reel = Math.min(ZONES.length-1, Math.max(0, Math.round(pz)));
+    if (reel !== lastReel){
+      lastReel = reel;
+      reelnoEl.textContent = pad2(reel + 1);
+      reelnameEl.textContent = REELS[reel];
+    }
+    var secs = prog * 96;
+    var fr = Math.floor((secs % 1) * 24);
+    tcEl.textContent = 'TC 00:' + pad2(Math.floor(secs/60)) + ':' + pad2(Math.floor(secs%60)) + ':' + pad2(fr);
+  }
+
+  /* ---------- 24fps celluloid flicker ---------- */
+  var flickAcc = 0;
+  function updateFlicker(dt){
+    flickAcc += dt;
+    if (flickAcc >= 1/24){           // stepped at exactly 24fps
+      flickAcc = 0;
+      vignEl.style.opacity = (0.5 + (Math.random() - 0.5) * 0.07).toFixed(3); // PASS 3: subtle
+    }
+  }
+
+  /* ---------- main loop ---------- */
+  var clock = new THREE.Clock();
+  var running = true;
+  var smooth = function(s){ return s*s*(3-2*s); };
+
+  function frameLoop(){
+    if (!running) return;
+    requestAnimationFrame(frameLoop);
+    var dt = Math.min(clock.getDelta(), 0.05);
+    var et = clock.elapsedTime;
+
+    // PASS 1: exponential, frame-rate-independent damping (no scroll-jank)
+    var k = 1 - Math.exp(-dt * 3.4);
+    prog += (progT - prog) * k;
+    mx   += (mxT - mx) * (1 - Math.exp(-dt * 2.6));
+
+    var camZ = CAM_START - prog * TRAVEL;
+    rig.position.z = camZ;
+
+    // lock-on for each zone title
+    var maxLock = 0;
+    for (var i = 0; i < titles.length; i++){
+      var t = titles[i];
+      var ahead = camZ - t.z;                 // distance the title is in front of camera
+      var m = t.mesh;
+      if (ahead < -2 || ahead > 70){ m.visible = false; continue; }
+      m.visible = true;
+      // alignment factor: 0 far away -> 1 locked flat, snappy double smoothstep (PASS 2)
+      var a = 1 - Math.min(1, Math.max(0, (ahead - 20) / 18));
+      a = smooth(smooth(a));
+      if (a > maxLock && ahead > 4) maxLock = a;
+      var d = t.drift;
+      var wob = Math.sin(et * 0.5 + i * 1.7) * 0.06;
+      m.position.x = d.x * (1 - a);
+      m.position.y = d.y * (1 - a) + t.lockY * a + wob * (1 - a);
+      m.rotation.y = d.ry * (1 - a);
+      m.rotation.z = d.rz * (1 - a);
+      // fade out as camera flies through (PASS 1)
+      m.material.opacity = Math.min(1, Math.max(0, ahead / 5)) * Math.min(1, (70 - ahead) / 25 + 0.4);
+    }
+
+    // banking on mouse X — suppressed while a title is locked (PASS 3)
+    var bank = 1 - maxLock * 0.8;
+    rig.rotation.z = -mx * 0.055 * bank;
+    rig.rotation.y = -mx * 0.045 * bank;
+    camera.position.x = mx * 0.9;
+
+    // ambient life
+    for (var f = 0; f < fillers.length; f++){
+      fillers[f].mesh.rotation.y += fillers[f].spin * dt;
+    }
+    for (var g = 0; g < frames.length; g++){
+      frames[g].mesh.rotation.x += frames[g].rx * dt;
+      frames[g].mesh.rotation.y += frames[g].ry * dt;
+    }
+    for (var h = 0; h < glows.length; h++){
+      glows[h].sprite.material.opacity = glows[h].base * (0.75 + 0.25 * Math.sin(et * 1.3 + glows[h].ph));
+    }
+    dust.position.y = Math.sin(et * 0.12) * 0.6;
+    dust.rotation.z = et * 0.008;
+
+    updateOverlay(prog * (ZONES.length - 1));
+    updateFlicker(dt);
+    renderer.render(scene, camera);
+  }
+
+  /* ---------- pause when hidden (PASS 3) ---------- */
+  document.addEventListener('visibilitychange', function(){
+    if (document.hidden){
+      running = false;
+    } else if (!running){
+      running = true;
+      clock.getDelta(); // swallow the dt spike
+      frameLoop();
+    }
+  });
+
+  window.addEventListener('resize', function(){
+    camera.aspect = window.innerWidth / window.innerHeight;
+    camera.updateProjectionMatrix();
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
+    renderer.setSize(window.innerWidth, window.innerHeight);
+    fitTitles();
+    readScroll();
+  });
+
+  frameLoop();
+})();
+</script>
+</body>
+</html>

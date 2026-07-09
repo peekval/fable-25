@@ -1,0 +1,879 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CALDERA — Small-Batch Hot Sauce Foundry</title>
+<meta name="description" content="CALDERA is a small-batch hot sauce foundry. Sauces forged over open flame, bottled at the vent. Heat you can see.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Alfa+Slab+One&family=Inter+Tight:ital,wght@0,400;0,500;0,600;0,700;1,400&display=swap" rel="stylesheet">
+<style>
+:root{
+  --crust:#16120F;
+  --magma:#FF5A1F;
+  --ember:#D42B12;
+  --ash:#8E857C;
+  --heat:#FFE8D6;
+  --crust2:#1E1813;
+  --crust3:#0E0B09;
+}
+*{margin:0;padding:0;box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{
+  background:var(--crust);
+  color:var(--heat);
+  font-family:"Inter Tight",system-ui,sans-serif;
+  font-size:17px;
+  line-height:1.6;
+  overflow-x:hidden;
+  -webkit-font-smoothing:antialiased;
+}
+h1,h2,h3,.slab{font-family:"Alfa Slab One",serif;font-weight:400;line-height:1.05;letter-spacing:.01em}
+a{color:var(--magma)}
+::selection{background:var(--magma);color:var(--crust)}
+
+/* ---------- fixed back link ---------- */
+.backlink{
+  position:fixed;top:18px;left:18px;z-index:60;
+  font-family:"Inter Tight",sans-serif;font-weight:600;font-size:14px;
+  color:var(--heat);text-decoration:none;
+  background:rgba(22,18,15,.72);backdrop-filter:blur(8px);
+  border:1px solid rgba(255,90,31,.35);
+  padding:8px 14px;border-radius:999px;
+  transition:border-color .25s,color .25s;
+}
+.backlink:hover{border-color:var(--magma);color:var(--magma)}
+
+/* ---------- hero ---------- */
+.hero{
+  position:relative;height:100svh;min-height:620px;
+  display:flex;align-items:center;justify-content:center;
+  overflow:hidden;
+}
+#lava{
+  position:absolute;inset:0;width:100%;height:100%;
+  display:block;
+}
+#embers{
+  position:absolute;inset:0;width:100%;height:100%;
+  pointer-events:none;
+}
+.hero-shade{
+  position:absolute;inset:0;pointer-events:none;
+  background:
+    radial-gradient(ellipse 90% 60% at 50% 46%, rgba(14,11,9,.18) 0%, rgba(14,11,9,.55) 78%),
+    linear-gradient(to bottom, rgba(14,11,9,.35) 0%, rgba(14,11,9,0) 22%, rgba(14,11,9,0) 70%, rgba(14,11,9,.85) 100%);
+}
+.hero-inner{
+  position:relative;z-index:5;text-align:center;padding:0 24px;
+  max-width:980px;
+}
+.hero-kicker{
+  font-size:13px;font-weight:700;letter-spacing:.42em;text-transform:uppercase;
+  color:var(--heat);opacity:.85;margin-bottom:22px;
+}
+.hero h1{
+  font-size:clamp(64px,14vw,190px);
+  color:var(--heat);
+  text-shadow:0 0 34px rgba(255,90,31,.55), 0 0 90px rgba(212,43,18,.4), 0 4px 0 rgba(14,11,9,.6);
+  margin-bottom:18px;
+  user-select:none;
+}
+.hero-sub{
+  font-size:clamp(17px,2.2vw,23px);font-weight:500;
+  color:var(--heat);max-width:560px;margin:0 auto;
+  text-shadow:0 2px 12px rgba(14,11,9,.9);
+}
+.hero-sub em{color:var(--magma);font-style:normal;font-weight:700}
+.hero-cta{
+  display:inline-block;margin-top:34px;
+  font-family:"Alfa Slab One",serif;font-size:15px;letter-spacing:.08em;
+  color:var(--crust);background:var(--magma);text-decoration:none;
+  padding:15px 34px;border-radius:6px;
+  box-shadow:0 0 28px rgba(255,90,31,.55),0 6px 0 rgba(120,26,6,.9);
+  transition:transform .18s,box-shadow .18s;
+}
+.hero-cta:hover{transform:translateY(-3px);box-shadow:0 0 46px rgba(255,90,31,.8),0 9px 0 rgba(120,26,6,.9)}
+.hero-hint{
+  position:absolute;bottom:26px;left:0;right:0;text-align:center;z-index:5;
+  font-size:12px;letter-spacing:.3em;text-transform:uppercase;color:var(--ash);
+  animation:hintPulse 3s ease-in-out infinite;
+}
+@keyframes hintPulse{0%,100%{opacity:.5}50%{opacity:1}}
+
+/* ---------- torn charred divider ---------- */
+.tear{display:block;width:100%;height:64px;margin-top:-1px}
+.tear svg{display:block;width:100%;height:100%}
+
+/* ---------- sections ---------- */
+section{position:relative}
+.wrap{max-width:1120px;margin:0 auto;padding:96px 28px}
+.kicker{
+  font-size:12px;font-weight:700;letter-spacing:.4em;text-transform:uppercase;
+  color:var(--magma);margin-bottom:16px;
+}
+h2{font-size:clamp(36px,5.4vw,64px);color:var(--heat);margin-bottom:28px}
+h2 .dim{color:var(--ash)}
+.lede{font-size:clamp(18px,2vw,21px);color:#D8CFC5;max-width:640px}
+.lede strong{color:var(--heat)}
+
+/* foundry / story */
+.foundry{background:var(--crust2)}
+.story-grid{display:grid;grid-template-columns:1.1fr .9fr;gap:64px;align-items:start;margin-top:40px}
+.story-grid p{color:#C9BFB4;margin-bottom:20px}
+.story-grid p strong{color:var(--heat)}
+.stat-slab{
+  border:1px solid rgba(255,90,31,.25);border-radius:12px;
+  background:linear-gradient(160deg,rgba(255,90,31,.08),rgba(22,18,15,0) 55%);
+  padding:34px 30px;
+}
+.stat-slab dl{display:grid;gap:26px}
+.stat-slab dt{font-size:12px;letter-spacing:.3em;text-transform:uppercase;color:var(--ash)}
+.stat-slab dd{font-family:"Alfa Slab One",serif;font-size:clamp(30px,3.6vw,44px);color:var(--magma);line-height:1.1}
+.stat-slab dd small{font-family:"Inter Tight",sans-serif;font-size:14px;font-weight:600;color:var(--heat);letter-spacing:.05em}
+
+/* ---------- sauces ---------- */
+.sauces{background:var(--crust3)}
+.sauce-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:28px;margin-top:56px}
+.card{
+  position:relative;
+  background:linear-gradient(180deg,#1B1611 0%,#141009 100%);
+  border:1px solid rgba(142,133,124,.18);
+  border-radius:14px;overflow:hidden;
+  padding:0 26px 30px;
+  transition:transform .3s cubic-bezier(.2,.8,.2,1),border-color .3s,box-shadow .3s;
+  cursor:pointer;
+}
+.card:hover,.card.lit{transform:translateY(-8px);border-color:rgba(255,90,31,.55);box-shadow:0 24px 60px -20px rgba(212,43,18,.45)}
+.card:focus-visible{outline:2px solid var(--magma);outline-offset:3px}
+
+/* heat warning marquee (hottest) */
+.marquee{
+  position:relative;left:-26px;width:calc(100% + 52px);
+  background:repeating-linear-gradient(45deg,var(--ember) 0 14px,var(--crust3) 14px 28px);
+  overflow:hidden;height:34px;margin-bottom:6px;
+}
+.marquee .track{
+  position:absolute;inset:0;display:flex;align-items:center;white-space:nowrap;
+  font-family:"Alfa Slab One",serif;font-size:13px;letter-spacing:.14em;color:var(--heat);
+  text-shadow:0 1px 0 var(--crust3),0 0 8px rgba(212,43,18,.8);
+  animation:marq 14s linear infinite;will-change:transform;
+}
+@keyframes marq{from{transform:translateX(0)}to{transform:translateX(-50%)}}
+.card-spacer{height:34px;margin-bottom:6px}
+
+/* bottle */
+.bottle-stage{
+  height:290px;display:flex;align-items:flex-end;justify-content:center;
+  position:relative;margin-bottom:8px;
+}
+.shelf{
+  position:absolute;bottom:6px;left:8%;right:8%;height:14px;border-radius:3px;
+  background:linear-gradient(180deg,#241A12,#0B0806);
+  box-shadow:0 6px 18px rgba(0,0,0,.7),inset 0 1px 0 rgba(255,90,31,.18);
+}
+.shelf::after{
+  content:"";position:absolute;inset:2px 6px auto 6px;height:3px;border-radius:2px;
+  background:repeating-linear-gradient(90deg,rgba(255,90,31,.22) 0 9px,transparent 9px 22px);
+  filter:blur(1px);
+}
+.bottle{position:relative;z-index:2;transform-origin:50% 100%;transition:transform .4s cubic-bezier(.2,.9,.3,1.3)}
+.card:hover .bottle,.card.lit .bottle{transform:translateY(-10px) rotate(-1.6deg)}
+.bottle svg{display:block;filter:drop-shadow(0 14px 16px rgba(0,0,0,.65))}
+
+.sauce-name{font-family:"Alfa Slab One",serif;font-size:24px;color:var(--heat);margin-bottom:4px}
+.sauce-tag{font-size:14px;color:var(--ash);margin-bottom:18px;min-height:44px}
+
+/* scoville gauge */
+.gauge{border-top:1px dashed rgba(142,133,124,.3);padding-top:16px;position:relative}
+.gauge-label{font-size:11px;letter-spacing:.32em;text-transform:uppercase;color:var(--ash);margin-bottom:10px}
+.flames{display:flex;gap:5px;margin-bottom:12px}
+.flame{
+  width:22px;height:28px;color:#2A2119;
+  transition:color .15s,filter .15s,transform .15s;
+  transform-origin:50% 100%;
+}
+.flame svg{width:100%;height:100%;display:block}
+.flame.on{color:var(--magma);filter:drop-shadow(0 0 6px rgba(255,90,31,.9));animation:flick .9s ease-in-out infinite alternate}
+.flame.on.hot{color:var(--heat);filter:drop-shadow(0 0 9px rgba(255,232,214,.95))}
+@keyframes flick{
+  0%{transform:scaleY(1) skewX(0deg)}
+  40%{transform:scaleY(1.12) skewX(-3deg)}
+  100%{transform:scaleY(.95) skewX(2.5deg)}
+}
+.shu{font-family:"Alfa Slab One",serif;font-size:30px;color:var(--heat);font-variant-numeric:tabular-nums;line-height:1}
+.shu .unit{font-family:"Inter Tight",sans-serif;font-size:13px;font-weight:700;letter-spacing:.2em;color:var(--magma);margin-left:6px}
+.burst{
+  position:absolute;width:5px;height:5px;border-radius:50%;
+  background:var(--magma);pointer-events:none;z-index:8;
+  box-shadow:0 0 6px rgba(255,90,31,.9);
+}
+
+/* ---------- philosophy ---------- */
+.philosophy{background:var(--crust2)}
+.tenets{display:grid;grid-template-columns:repeat(3,1fr);gap:26px;margin-top:48px}
+.tenet{
+  border-left:3px solid var(--ember);padding:6px 0 6px 22px;
+}
+.tenet .n{font-family:"Alfa Slab One",serif;font-size:15px;color:var(--magma);letter-spacing:.1em;display:block;margin-bottom:8px}
+.tenet h3{font-size:21px;color:var(--heat);margin-bottom:10px}
+.tenet p{font-size:15px;color:#C0B6AB}
+.pull{
+  margin-top:72px;text-align:center;
+  font-family:"Alfa Slab One",serif;
+  font-size:clamp(26px,4.4vw,46px);
+  color:var(--heat);line-height:1.25;
+}
+.pull span{color:var(--magma);text-shadow:0 0 24px rgba(255,90,31,.6)}
+
+/* ---------- stockists ---------- */
+.stockists{background:var(--crust3)}
+.stock-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:56px;margin-top:44px;align-items:start}
+.stock-list{list-style:none;display:grid;gap:0}
+.stock-list li{
+  display:flex;justify-content:space-between;align-items:baseline;gap:18px;
+  padding:16px 0;border-bottom:1px dashed rgba(142,133,124,.3);
+}
+.stock-list .place{font-weight:700;color:var(--heat);font-size:17px}
+.stock-list .city{color:var(--ash);font-size:14px;letter-spacing:.06em;text-transform:uppercase;white-space:nowrap}
+.order-box{
+  border:1px solid rgba(255,90,31,.35);border-radius:14px;padding:36px 32px;
+  background:
+    radial-gradient(120% 90% at 100% 0%,rgba(212,43,18,.16),transparent 60%),
+    linear-gradient(180deg,#1B1611,#120E0A);
+}
+.order-box h3{font-size:26px;margin-bottom:14px;color:var(--heat)}
+.order-box p{color:#C9BFB4;font-size:15px;margin-bottom:22px}
+.order-btn{
+  display:inline-block;font-family:"Alfa Slab One",serif;font-size:15px;letter-spacing:.06em;
+  color:var(--crust);background:var(--heat);text-decoration:none;
+  padding:14px 28px;border-radius:6px;
+  box-shadow:0 5px 0 rgba(120,26,6,.9);
+  transition:background .2s,transform .18s,box-shadow .18s;
+}
+.order-btn:hover{background:var(--magma);transform:translateY(-2px);box-shadow:0 7px 0 rgba(120,26,6,.9),0 0 30px rgba(255,90,31,.5)}
+.small-print{margin-top:18px;font-size:12px;color:var(--ash)}
+
+/* ---------- footer ---------- */
+footer{background:#0A0806;border-top:1px solid rgba(255,90,31,.2)}
+.foot{max-width:1120px;margin:0 auto;padding:54px 28px;display:flex;flex-wrap:wrap;gap:26px;align-items:center;justify-content:space-between}
+.foot .mark{font-family:"Alfa Slab One",serif;font-size:22px;color:var(--heat)}
+.foot .mark span{color:var(--magma)}
+.foot nav{display:flex;gap:26px;flex-wrap:wrap}
+.foot a{color:var(--ash);text-decoration:none;font-size:14px;font-weight:600;letter-spacing:.06em;transition:color .2s}
+.foot a:hover{color:var(--magma)}
+.foot .fine{width:100%;font-size:12px;color:#5C554E}
+
+/* ---------- responsive ---------- */
+@media (max-width:960px){
+  .sauce-grid{grid-template-columns:1fr;max-width:460px;margin-left:auto;margin-right:auto}
+  .story-grid{grid-template-columns:1fr;gap:40px}
+  .tenets{grid-template-columns:1fr}
+  .stock-grid{grid-template-columns:1fr;gap:40px}
+  .wrap{padding:72px 22px}
+}
+@media (prefers-reduced-motion:reduce){
+  html{scroll-behavior:auto}
+  .marquee .track,.hero-hint,.flame.on{animation:none}
+  .card,.bottle,.hero-cta,.order-btn{transition:none}
+}
+</style>
+</head>
+<body>
+<!-- PASS 1 (lava believability — verified against headless WebGL renders): 1) first render read as "fire wash", not crusted melt: the ridge term (1-|2f-1|) of domain-warped fbm rarely drops below 0.5, so veins covered the whole field — widened it to (1-|2f-1|*2.2) so plates between veins now fall to true charcoal; 2) crack sharpening moved from bare pow() to smoothstep(0.2,1.0)^3, giving hot cores with ember borders instead of uniform glow; 3) reduced the subsurface glow-pool weight 0.32→0.26 and slowed master time to 0.16 so plates drift instead of boiling; 4) white-hot stage only enters above t=0.86 with a squared blend, killing milky over-bright cores; added low-frequency "plate" fbm gating so cracks die out over cooled plates and concentrate along seams. -->
+<!-- PASS 2 (interaction & gauges): 1) gauge ignition made touch/keyboard accessible — cards respond to click and Enter/Space with role=button + aria-pressed, not just hover; 2) SHU count-up now eases out over the full ignition stagger and formats with locale separators (1,200,000 not 1200000); 3) ember bursts spawn at each flame as it ignites (was one burst at card center) and are cleaned up after animation to avoid DOM leak; 4) cursor stoke uniform now eases in/out via lerp instead of snapping, and is aspect-corrected so the hot spot is round on wide screens. -->
+<!-- PASS 3 (performance, robustness & label polish — screenshot-verified): 1) shader canvas locked at 0.75x internal resolution with DPR clamped to 2 and CSS upscale; resize debounced; hero rAF fully pauses via IntersectionObserver + visibilitychange (shader AND embers), ember count capped at 50 under 768px; prefers-reduced-motion renders one static magma frame at t=12, skips embers, gauges fill instantly; 2) added shader compile/link status checks with a charred-gradient CSS fallback so a WebGL failure never leaves a black hero; 3) bottle label micro-type overflowed the SVG labels in renders — pinned with textLength/lengthAdjust, shrank the Blast Furnace black chevron so "90,000 SHU · HABANERO" no longer sits on black, and lifted Ventblack's SHU line from dark red to heat-white for contrast; 4) fixed marquee seam (track duplicated to exactly 2x, translateX(-50%)) and added tabular-nums so SHU digits don't jitter while counting. -->
+
+<a class="backlink" href="/">←&nbsp;25</a>
+
+<!-- ================= HERO ================= -->
+<header class="hero" id="top">
+  <canvas id="lava" aria-hidden="true"></canvas>
+  <canvas id="embers" aria-hidden="true"></canvas>
+  <div class="hero-shade" aria-hidden="true"></div>
+  <div class="hero-inner">
+    <p class="hero-kicker">Small-Batch Hot Sauce Foundry · Est. 2019</p>
+    <h1>CALDERA</h1>
+    <p class="hero-sub">We don't cook sauce. We <em>cast</em> it. Poured over open flame, bottled at the vent — <em>heat you can see.</em></p>
+    <a class="hero-cta" href="#sauces">Meet the melts</a>
+  </div>
+  <p class="hero-hint">Move your cursor — stoke the crucible</p>
+</header>
+
+<!-- torn charred edge -->
+<div class="tear" aria-hidden="true"><svg viewBox="0 0 1440 64" preserveAspectRatio="none"><path fill="#1E1813" d="M0 64V38l38-9 24 14 41-21 29 13 36-19 27 22 44-26 22 12 39-7 31 17 28-21 45 15 24-13 38 20 30-16 41 9 26 18 37-24 33 13 29-9 40 21 25-15 44 8 27-17 36 23 31-12 42 16 23-20 39 11 34-14 28 19 43-10 26 15 38-22 30 13 45-6 21 17 39-13 32 10V64Z"/></svg></div>
+
+<!-- ================= FOUNDRY / STORY ================= -->
+<section class="foundry" id="foundry">
+  <div class="wrap">
+    <p class="kicker">The Foundry</p>
+    <h2>Born in a burn barrel.<br><span class="dim">Raised on obsession.</span></h2>
+    <div class="story-grid">
+      <div>
+        <p><strong>CALDERA started as a mistake we refused to apologize for.</strong> A batch of fresnos left too long over a dying fire, skins blistered black, sugars caramelized to the edge of ruin. Everyone said throw it out. We bottled it. That bottle is why you're here.</p>
+        <p>Today we run a converted iron foundry on the edge of town — actual firebrick, actual flame, no steam-jacketed kettles pretending. Every pepper we melt is grown by farmers we know by first name, char-roasted in small cast batches of <strong>300 bottles or fewer</strong>, and rested in oak like it earned it. Because it did.</p>
+        <p>We ferment slow, we char hard, and we never — <strong>ever</strong> — round the edges off. Extracts are for cowards. Additives are for accountants. If a batch doesn't glow, it doesn't ship.</p>
+      </div>
+      <aside class="stat-slab" aria-label="Foundry numbers">
+        <dl>
+          <div><dt>Batch ceiling</dt><dd>300 <small>BOTTLES</small></dd></div>
+          <div><dt>Ferment, minimum</dt><dd>90 <small>DAYS IN OAK</small></dd></div>
+          <div><dt>Flame temperature</dt><dd>840°C <small>AT THE CRUCIBLE</small></dd></div>
+          <div><dt>Apologies issued</dt><dd>0 <small>SINCE 2019</small></dd></div>
+        </dl>
+      </aside>
+    </div>
+  </div>
+</section>
+
+<div class="tear" aria-hidden="true"><svg viewBox="0 0 1440 64" preserveAspectRatio="none"><path fill="#0E0B09" d="M0 64V30l33 12 29-19 40 14 25-22 43 17 30-11 35 21 27-16 44 9 23 15 39-23 31 11 42-14 24 19 37-8 34 16 28-21 41 13 26-10 45 18 22-15 38 7 32-19 29 22 43-12 25 9 40-17 30 14 36-20 27 11 44-7 21 18 39-14 33 20 28-12V64Z"/></svg></div>
+
+<!-- ================= SAUCES ================= -->
+<section class="sauces" id="sauces">
+  <div class="wrap">
+    <p class="kicker">The Melts · Current Pour</p>
+    <h2>Three castings.<br><span class="dim">One regret policy: none.</span></h2>
+    <p class="lede">Hover a bottle — or tap it — and watch the gauge ignite. The Scoville numbers are lab-verified per batch. <strong>We print the real figure or we don't print one.</strong></p>
+
+    <div class="sauce-grid">
+
+      <!-- FIRST LIGHT -->
+      <article class="card" data-shu="8000" data-level="3" tabindex="0" role="button" aria-pressed="false" aria-label="First Light, 8,000 Scoville. Activate to ignite the heat gauge.">
+        <div class="card-spacer"></div>
+        <div class="bottle-stage">
+          <div class="shelf"></div>
+          <div class="bottle">
+            <svg width="104" height="248" viewBox="0 0 104 248">
+              <rect x="40" y="0" width="24" height="18" rx="3" fill="#241A12"/>
+              <rect x="40" y="16" width="24" height="6" fill="#FF5A1F"/>
+              <path d="M42 22h20v28c0 8 18 16 18 38v140a16 16 0 0 1-16 16H40a16 16 0 0 1-16-16V88c0-22 18-30 18-38Z" fill="#3A1006"/>
+              <path d="M42 22h8v30c0 10-14 16-14 36v144h-4a8 8 0 0 1-8-8V88c0-22 18-30 18-38Z" fill="#5A1F0A" opacity=".55"/>
+              <rect x="27" y="108" width="50" height="86" rx="4" fill="#FFE8D6"/>
+              <rect x="30" y="111" width="44" height="80" rx="2" fill="none" stroke="#D42B12" stroke-width="2"/>
+              <text x="52" y="136" text-anchor="middle" font-family="'Alfa Slab One',serif" font-size="12" fill="#16120F">FIRST</text>
+              <text x="52" y="151" text-anchor="middle" font-family="'Alfa Slab One',serif" font-size="12" fill="#D42B12">LIGHT</text>
+              <path d="M52 160c-4 6-7 8-7 13a7 7 0 0 0 14 0c0-5-3-7-7-13z" fill="#FF5A1F"/>
+              <text x="52" y="186" text-anchor="middle" font-family="'Inter Tight',sans-serif" font-weight="700" font-size="7" fill="#8E857C" textLength="44" lengthAdjust="spacingAndGlyphs">8,000 SHU · OAK SMOKED</text>
+              <rect x="27" y="200" width="50" height="10" fill="#D42B12"/>
+              <text x="52" y="208" text-anchor="middle" font-family="'Inter Tight',sans-serif" font-weight="700" font-size="6.5" letter-spacing="2" fill="#FFE8D6">CALDERA</text>
+            </svg>
+          </div>
+        </div>
+        <h3 class="sauce-name">First Light</h3>
+        <p class="sauce-tag">Oak-smoked fresno &amp; guajillo. The dawn pour — warmth that walks in, shakes your hand, stays for breakfast.</p>
+        <div class="gauge">
+          <p class="gauge-label">Scoville Gauge</p>
+          <div class="flames" aria-hidden="true"></div>
+          <p class="shu"><span class="num">0</span><span class="unit">SHU</span></p>
+        </div>
+      </article>
+
+      <!-- BLAST FURNACE -->
+      <article class="card" data-shu="90000" data-level="6" tabindex="0" role="button" aria-pressed="false" aria-label="Blast Furnace, 90,000 Scoville. Activate to ignite the heat gauge.">
+        <div class="card-spacer"></div>
+        <div class="bottle-stage">
+          <div class="shelf"></div>
+          <div class="bottle">
+            <svg width="104" height="248" viewBox="0 0 104 248">
+              <rect x="40" y="0" width="24" height="18" rx="3" fill="#0B0806"/>
+              <rect x="40" y="16" width="24" height="6" fill="#D42B12"/>
+              <path d="M42 22h20v24c0 10 22 14 22 40v138a16 16 0 0 1-16 16H36a16 16 0 0 1-16-16V86c0-26 22-30 22-40Z" fill="#4A1206"/>
+              <path d="M42 22h8v26c0 12-18 14-18 38v152h-6a8 8 0 0 1-8-8V86c0-26 22-30 22-40Z" fill="#6B2408" opacity=".5"/>
+              <rect x="25" y="104" width="54" height="92" rx="4" fill="#FF5A1F"/>
+              <path d="M25 104h54v14l-54 18z" fill="#16120F"/>
+              <path d="M25 196h54v-7l-54-13z" fill="#16120F"/>
+              <text x="52" y="146" text-anchor="middle" font-family="'Alfa Slab One',serif" font-size="11" fill="#16120F">BLAST</text>
+              <text x="52" y="161" text-anchor="middle" font-family="'Alfa Slab One',serif" font-size="11" fill="#16120F" textLength="46" lengthAdjust="spacingAndGlyphs">FURNACE</text>
+              <text x="52" y="176" text-anchor="middle" font-family="'Inter Tight',sans-serif" font-weight="700" font-size="7" fill="#5A1F0A" textLength="46" lengthAdjust="spacingAndGlyphs">90,000 SHU · HABANERO</text>
+              <text x="52" y="118" text-anchor="middle" font-family="'Inter Tight',sans-serif" font-weight="700" font-size="6.5" letter-spacing="2" fill="#FF5A1F">CALDERA</text>
+              <rect x="25" y="204" width="54" height="8" fill="#0B0806"/>
+            </svg>
+          </div>
+        </div>
+        <h3 class="sauce-name">Blast Furnace</h3>
+        <p class="sauce-tag">Habanero, charred pineapple, scotch bonnet. Sweet on approach, industrial on arrival. Wear gloves. We do.</p>
+        <div class="gauge">
+          <p class="gauge-label">Scoville Gauge</p>
+          <div class="flames" aria-hidden="true"></div>
+          <p class="shu"><span class="num">0</span><span class="unit">SHU</span></p>
+        </div>
+      </article>
+
+      <!-- VENTBLACK -->
+      <article class="card" data-shu="1200000" data-level="10" tabindex="0" role="button" aria-pressed="false" aria-label="Ventblack, 1.2 million Scoville. Extreme heat. Activate to ignite the heat gauge.">
+        <div class="marquee" aria-hidden="true"><div class="track">
+          <span>&nbsp;⚠ HEAT WARNING · 1.2M SHU · SIGN THE WAIVER · NOT A DARE · ⚠ HEAT WARNING · 1.2M SHU · SIGN THE WAIVER · NOT A DARE ·</span><span>&nbsp;⚠ HEAT WARNING · 1.2M SHU · SIGN THE WAIVER · NOT A DARE · ⚠ HEAT WARNING · 1.2M SHU · SIGN THE WAIVER · NOT A DARE ·</span>
+        </div></div>
+        <div class="bottle-stage">
+          <div class="shelf"></div>
+          <div class="bottle">
+            <svg width="104" height="248" viewBox="0 0 104 248">
+              <rect x="40" y="0" width="24" height="18" rx="3" fill="#FF5A1F"/>
+              <rect x="40" y="16" width="24" height="6" fill="#0B0806"/>
+              <path d="M42 22h20v20c0 12 24 12 24 44v138a16 16 0 0 1-16 16H34a16 16 0 0 1-16-16V86c0-32 24-32 24-44Z" fill="#12100D"/>
+              <path d="M42 22h8v22c0 14-20 12-20 42v156h-8a8 8 0 0 1-8-8V86c0-32 24-32 24-44Z" fill="#26211B" opacity=".8"/>
+              <rect x="24" y="100" width="56" height="98" rx="4" fill="#0B0806" stroke="#FF5A1F" stroke-width="2"/>
+              <path d="M26 102h52v10H26z" fill="url(#hz)"/>
+              <path d="M26 186h52v10H26z" fill="url(#hz)"/>
+              <defs><pattern id="hz" width="12" height="10" patternUnits="userSpaceOnUse"><rect width="12" height="10" fill="#FF5A1F"/><path d="M0 10 10 0h6L4 10z" fill="#0B0806"/></pattern></defs>
+              <text x="52" y="136" text-anchor="middle" font-family="'Alfa Slab One',serif" font-size="10.5" fill="#FFE8D6">VENT</text>
+              <text x="52" y="151" text-anchor="middle" font-family="'Alfa Slab One',serif" font-size="10.5" fill="#FF5A1F">BLACK</text>
+              <text x="52" y="167" text-anchor="middle" font-family="'Inter Tight',sans-serif" font-weight="700" font-size="7" letter-spacing="1" fill="#FFE8D6">1,200,000 SHU</text>
+              <text x="52" y="178" text-anchor="middle" font-family="'Inter Tight',sans-serif" font-weight="700" font-size="6" fill="#8E857C" textLength="48" lengthAdjust="spacingAndGlyphs">REAPER · DISTILLATE-FREE</text>
+              <rect x="24" y="206" width="56" height="9" fill="#D42B12"/>
+              <text x="52" y="213" text-anchor="middle" font-family="'Inter Tight',sans-serif" font-weight="700" font-size="6" letter-spacing="2" fill="#FFE8D6">HANDLE AS FUEL</text>
+            </svg>
+          </div>
+        </div>
+        <h3 class="sauce-name">Ventblack</h3>
+        <p class="sauce-tag">Pure Carolina reaper mash, triple-fermented, zero extract. Our magma chamber in glass. Legally, a condiment.</p>
+        <div class="gauge">
+          <p class="gauge-label">Scoville Gauge</p>
+          <div class="flames" aria-hidden="true"></div>
+          <p class="shu"><span class="num">0</span><span class="unit">SHU</span></p>
+        </div>
+      </article>
+
+    </div>
+  </div>
+</section>
+
+<div class="tear" aria-hidden="true"><svg viewBox="0 0 1440 64" preserveAspectRatio="none"><path fill="#1E1813" d="M0 64V34l36 10 26-18 42 15 28-21 39 18 31-9 37 20 24-16 45 8 22 17 40-22 33 12 41-15 23 20 38-9 35 14 27-19 43 11 25-12 44 17 21-14 39 9 30-20 32 21 42-13 24 10 41-16 29 15 35-18 28 12 45-8 20 19 40-15 34 18 26-10V64Z"/></svg></div>
+
+<!-- ================= PHILOSOPHY ================= -->
+<section class="philosophy" id="philosophy">
+  <div class="wrap">
+    <p class="kicker">Heat Philosophy</p>
+    <h2>Heat is an ingredient.<br><span class="dim">Not a stunt.</span></h2>
+    <p class="lede">Anyone can hurt you with an extract and a skull label. We're not interested. <strong>Heat should arrive like weather</strong> — you feel it building, it breaks, and it leaves the flavor standing.</p>
+    <div class="tenets">
+      <div class="tenet">
+        <span class="n">TENET 01</span>
+        <h3>Char is flavor's dark twin</h3>
+        <p>Every pepper crosses live flame before it ferments. The blister carries smoke into the mash where a kettle never could. Burnt is a defect; charred is a decision.</p>
+      </div>
+      <div class="tenet">
+        <span class="n">TENET 02</span>
+        <h3>Time does the heavy lifting</h3>
+        <p>Ninety days in oak, minimum. Fermentation rounds capsaicin's spike into a slow rolling swell — the difference between a slap and a tide.</p>
+      </div>
+      <div class="tenet">
+        <span class="n">TENET 03</span>
+        <h3>Print the real number</h3>
+        <p>Every batch is lab-tested and the bottle wears its true Scoville figure. No "XXX", no "insanity" — a measurement. Fear the honest ones.</p>
+      </div>
+    </div>
+    <p class="pull">"If a batch doesn't <span>glow</span>,<br>it doesn't ship."</p>
+  </div>
+</section>
+
+<div class="tear" aria-hidden="true"><svg viewBox="0 0 1440 64" preserveAspectRatio="none"><path fill="#0E0B09" d="M0 64V32l34 11 28-20 41 16 26-13 44 19 29-22 36 14 25-9 43 21 22-17 40 8 32-15 30 22 39-11 27 13 42-19 23 10 45-14 21 18 38-8 33 15 29-21 41 12 24-16 37 19 31-10 44 7 20 16 42-20 28 13 35-17 26 21 43-12V64Z"/></svg></div>
+
+<!-- ================= STOCKISTS / ORDER ================= -->
+<section class="stockists" id="order">
+  <div class="wrap">
+    <p class="kicker">Stockists &amp; Orders</p>
+    <h2>Get it while it's <span class="dim">molten.</span></h2>
+    <div class="stock-grid">
+      <div>
+        <ul class="stock-list">
+          <li><span class="place">Brandhalle Feinkost</span><span class="city">Zürich</span></li>
+          <li><span class="place">Glut &amp; Korn</span><span class="city">Basel</span></li>
+          <li><span class="place">The Pepper Vault</span><span class="city">Berlin</span></li>
+          <li><span class="place">Feuerwerk Delikatessen</span><span class="city">München</span></li>
+          <li><span class="place">Smoke Signal Provisions</span><span class="city">Wien</span></li>
+          <li><span class="place">Ember &amp; Rind</span><span class="city">Hamburg</span></li>
+        </ul>
+        <p class="small-print">Stockists receive allocations per casting. When a batch sells through, it's gone — we don't re-pour a melt. Ever.</p>
+      </div>
+      <div class="order-box">
+        <h3>Order from the vent</h3>
+        <p>Each casting drops on the first Friday of the month, 300 bottles, numbered by hand. First Light usually survives the weekend. Ventblack usually doesn't survive the hour.</p>
+        <a class="order-btn" href="#top">Join the next pour →</a>
+        <p class="small-print">Ships EU &amp; CH. Ventblack ships with nitrile gloves and our full respect.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ================= FOOTER ================= -->
+<footer>
+  <div class="foot">
+    <p class="mark">CAL<span>DERA</span></p>
+    <nav>
+      <a href="#foundry">Foundry</a>
+      <a href="#sauces">Sauces</a>
+      <a href="#philosophy">Philosophy</a>
+      <a href="#order">Order</a>
+      <a href="/39-caldera/guide/">How it was built</a>
+      <a href="/">← 25</a>
+    </nav>
+    <p class="fine">© 2026 Caldera Foundry Works — a fictional showcase. Forged in raw WebGL: no images, no libraries, one shader. Keep away from children and mild people.</p>
+  </div>
+</footer>
+
+<script>
+(function(){
+"use strict";
+var reduced = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+var DPR = Math.min(window.devicePixelRatio || 1, 2);
+
+/* ==================== LAVA SHADER ==================== */
+var canvas = document.getElementById("lava");
+var gl = canvas.getContext("webgl", {antialias:false, alpha:false, powerPreference:"high-performance"});
+
+var FRAG = [
+"precision highp float;",
+"uniform vec2 uRes;",
+"uniform float uTime;",
+"uniform vec2 uMouse;",   // uv space, aspect-corrected
+"uniform float uStoke;",  // 0..1 eased
+"",
+"float hash(vec2 p){ p = fract(p*vec2(123.34,456.21)); p += dot(p,p+45.32); return fract(p.x*p.y); }",
+"float noise(vec2 p){",
+"  vec2 i = floor(p), f = fract(p);",
+"  f = f*f*(3.0-2.0*f);",
+"  float a = hash(i), b = hash(i+vec2(1.,0.)), c = hash(i+vec2(0.,1.)), d = hash(i+vec2(1.,1.));",
+"  return mix(mix(a,b,f.x), mix(c,d,f.x), f.y);",
+"}",
+"float fbm(vec2 p){",
+"  float v = 0.0, a = 0.5;",
+"  mat2 rot = mat2(0.8,0.6,-0.6,0.8);",
+"  for(int i=0;i<5;i++){ v += a*noise(p); p = rot*p*2.03; a *= 0.5; }",
+"  return v;",
+"}",
+"/* heat color ramp: charcoal -> dark ember -> ember red -> magma -> heat white */",
+"vec3 heatRamp(float t){",
+"  t = clamp(t,0.0,1.0);",
+"  vec3 charcoal = vec3(0.055,0.043,0.035);",
+"  vec3 darkEmber = vec3(0.30,0.055,0.012);",
+"  vec3 ember = vec3(0.831,0.169,0.071);",
+"  vec3 magma = vec3(1.0,0.353,0.122);",
+"  vec3 hotWhite = vec3(1.0,0.91,0.84);",
+"  vec3 c = mix(charcoal, darkEmber, smoothstep(0.05,0.42,t));",
+"  c = mix(c, ember, smoothstep(0.40,0.66,t));",
+"  c = mix(c, magma, smoothstep(0.62,0.86,t));",
+"  float w = smoothstep(0.86,1.0,t); c = mix(c, hotWhite, w*w);",
+"  return c;",
+"}",
+"void main(){",
+"  vec2 uv = gl_FragCoord.xy / uRes;",
+"  float aspect = uRes.x / uRes.y;",
+"  /* heat-distortion shimmer along top edge: secondary UV wobble */",
+"  float edge = smoothstep(0.62, 1.0, uv.y);",
+"  uv.x += (sin(uv.y*46.0 + uTime*2.6) * 0.0035 + (noise(vec2(uv.x*9.0, uTime*1.3))-0.5)*0.018) * edge;",
+"  uv.y += sin(uv.x*30.0 + uTime*2.0) * 0.0022 * edge;",
+"",
+"  vec2 p = vec2(uv.x*aspect, uv.y) * 2.6;",
+"  float t = uTime * 0.16;",
+"",
+"  /* domain-warped fbm: q warps r warps the field */",
+"  vec2 q = vec2( fbm(p + vec2(0.0,0.0) + t*0.28),",
+"                 fbm(p + vec2(5.2,1.3) - t*0.19) );",
+"  vec2 r = vec2( fbm(p + 2.7*q + vec2(1.7,9.2) + t*0.42),",
+"                 fbm(p + 2.7*q + vec2(8.3,2.8) + t*0.31) );",
+"  float f = fbm(p + 2.5*r);",
+"",
+"  /* glowing cracks: ridge of the warped field, sharpened */",
+"  float ridge = 1.0 - abs(2.0*f - 1.0) * 2.2;",
+"  float crack = pow(smoothstep(0.2, 1.0, max(ridge, 0.0)), 3.0);",
+"",
+"  /* cooled plates: low-freq field gates vein brightness */",
+"  float plate = fbm(p*0.45 + r*0.8 + vec2(3.1,7.7));",
+"  float plateHeat = smoothstep(0.32, 0.72, plate);",
+"",
+"  /* broad subsurface glow pools */",
+"  float glow = fbm(p*0.7 + q*1.2 - vec2(t*0.1, t*0.05));",
+"",
+"  float temp = crack * (0.55 + 0.85*plateHeat)",
+"             + smoothstep(0.50,0.92,glow) * 0.26 * plateHeat",
+"             + glow * 0.07",
+"             + 0.05;",
+"",
+"  /* slow breathing of the melt */",
+"  temp *= 0.88 + 0.12 * sin(uTime*0.5 + f*7.0 + plate*4.0);",
+"",
+"  /* cursor stokes the heat: radial temperature raise */",
+"  vec2 pa = vec2(uv.x*aspect, uv.y);",
+"  vec2 ma = vec2(uMouse.x*aspect, uMouse.y);",
+"  float d = length(pa - ma);",
+"  float stoke = uStoke * exp(-d*d*9.0);",
+"  temp += stoke * (0.28 + 0.9*crack + 0.25*plateHeat);",
+"",
+"  vec3 col = heatRamp(temp);",
+"  /* faint ash speckle on the crust */",
+"  col += (hash(gl_FragCoord.xy) - 0.5) * 0.02;",
+"  gl_FragColor = vec4(col, 1.0);",
+"}"
+].join("\n");
+
+var VERT = "attribute vec2 aPos; void main(){ gl_Position = vec4(aPos,0.0,1.0); }";
+
+var program = null, uRes, uTime, uMouse, uStoke;
+function makeShader(type, src){
+  var s = gl.createShader(type);
+  gl.shaderSource(s, src); gl.compileShader(s);
+  if (!gl.getShaderParameter(s, gl.COMPILE_STATUS)) return null;
+  return s;
+}
+if (gl){
+  var vs = makeShader(gl.VERTEX_SHADER, VERT);
+  var fs = makeShader(gl.FRAGMENT_SHADER, FRAG);
+  if (vs && fs){
+    program = gl.createProgram();
+    gl.attachShader(program, vs);
+    gl.attachShader(program, fs);
+    gl.linkProgram(program);
+    if (!gl.getProgramParameter(program, gl.LINK_STATUS)) program = null;
+  }
+}
+if (!gl || !program){
+  /* no WebGL: fall back to a charred gradient so the hero never goes void-black */
+  canvas.style.background = "radial-gradient(120% 90% at 50% 110%, #D42B12 0%, #5A1206 34%, #16120F 72%)";
+}
+if (gl && program){
+  gl.useProgram(program);
+  var buf = gl.createBuffer();
+  gl.bindBuffer(gl.ARRAY_BUFFER, buf);
+  gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([-1,-1, 3,-1, -1,3]), gl.STATIC_DRAW);
+  var loc = gl.getAttribLocation(program, "aPos");
+  gl.enableVertexAttribArray(loc);
+  gl.vertexAttribPointer(loc, 2, gl.FLOAT, false, 0, 0);
+  uRes = gl.getUniformLocation(program, "uRes");
+  uTime = gl.getUniformLocation(program, "uTime");
+  uMouse = gl.getUniformLocation(program, "uMouse");
+  uStoke = gl.getUniformLocation(program, "uStoke");
+}
+
+var SHADER_SCALE = 0.75; // internal res, CSS-upscaled
+function sizeLava(){
+  if (!gl) return;
+  var w = canvas.clientWidth, h = canvas.clientHeight;
+  canvas.width = Math.max(2, Math.round(w * DPR * SHADER_SCALE));
+  canvas.height = Math.max(2, Math.round(h * DPR * SHADER_SCALE));
+  gl.viewport(0, 0, canvas.width, canvas.height);
+}
+
+/* mouse stoking — eased */
+var mouse = {x:0.5, y:0.45}, stokeTarget = 0, stokeVal = 0;
+var hero = document.querySelector(".hero");
+hero.addEventListener("pointermove", function(e){
+  var rc = hero.getBoundingClientRect();
+  mouse.x = (e.clientX - rc.left) / rc.width;
+  mouse.y = 1 - (e.clientY - rc.top) / rc.height;
+  stokeTarget = 1;
+});
+hero.addEventListener("pointerleave", function(){ stokeTarget = 0; });
+hero.addEventListener("pointerdown", function(e){
+  var rc = hero.getBoundingClientRect();
+  mouse.x = (e.clientX - rc.left) / rc.width;
+  mouse.y = 1 - (e.clientY - rc.top) / rc.height;
+  stokeTarget = 1;
+});
+/* touch never fires pointerleave — let the stoke cool back down on release */
+hero.addEventListener("pointerup", function(e){ if (e.pointerType === "touch") stokeTarget = 0; });
+hero.addEventListener("pointercancel", function(){ stokeTarget = 0; });
+
+/* ==================== EMBER PARTICLES ==================== */
+var ec = document.getElementById("embers");
+var ectx = ec.getContext("2d");
+var EMBER_COUNT = (window.innerWidth < 768 ? 50 : 120);
+var embers = [];
+function sizeEmbers(){
+  ec.width = Math.round(ec.clientWidth * DPR);
+  ec.height = Math.round(ec.clientHeight * DPR);
+}
+function spawnEmber(e, init){
+  e.x = Math.random() * ec.width;
+  e.y = init ? Math.random() * ec.height : ec.height + 10 * DPR;
+  e.vy = (0.35 + Math.random() * 0.9) * DPR;
+  e.vx = (Math.random() - 0.5) * 0.3 * DPR;
+  e.r = (0.7 + Math.random() * 1.8) * DPR;
+  e.phase = Math.random() * Math.PI * 2;
+  e.flick = 4 + Math.random() * 7;
+  e.hot = Math.random() < 0.18;
+  return e;
+}
+for (var i = 0; i < EMBER_COUNT; i++) embers.push(spawnEmber({}, true));
+
+function drawEmbers(now){
+  ectx.clearRect(0, 0, ec.width, ec.height);
+  var ts = now * 0.001;
+  for (var i = 0; i < embers.length; i++){
+    var e = embers[i];
+    e.y -= e.vy;
+    e.x += e.vx + Math.sin(ts * 1.4 + e.phase) * 0.28 * DPR;
+    if (e.y < -12 * DPR) spawnEmber(e, false);
+    var fl = 0.45 + 0.55 * Math.abs(Math.sin(ts * e.flick + e.phase));
+    var a = fl * Math.min(1, e.y / (ec.height * 0.25) + 0.15);
+    ectx.beginPath();
+    ectx.arc(e.x, e.y, e.r * (0.8 + 0.4 * fl), 0, 6.2832);
+    ectx.fillStyle = e.hot
+      ? "rgba(255,232,214," + (a * 0.95).toFixed(3) + ")"
+      : "rgba(255,90,31," + (a * 0.85).toFixed(3) + ")";
+    ectx.fill();
+  }
+}
+
+/* ==================== RENDER LOOP + PAUSE ==================== */
+var heroVisible = true, pageVisible = !document.hidden, rafId = null, startT = performance.now();
+
+function frame(now){
+  rafId = null;
+  if (!heroVisible || !pageVisible) return;
+  var t = (now - startT) * 0.001;
+  stokeVal += (stokeTarget - stokeVal) * 0.06;
+  if (gl && program){
+    gl.uniform2f(uRes, canvas.width, canvas.height);
+    gl.uniform1f(uTime, t);
+    gl.uniform2f(uMouse, mouse.x, mouse.y);
+    gl.uniform1f(uStoke, stokeVal);
+    gl.drawArrays(gl.TRIANGLES, 0, 3);
+  }
+  drawEmbers(now);
+  rafId = requestAnimationFrame(frame);
+}
+function kick(){ if (rafId === null && heroVisible && pageVisible && !reduced) rafId = requestAnimationFrame(frame); }
+
+function renderStatic(){
+  /* prefers-reduced-motion: one still magma frame, no embers */
+  if (gl && program){
+    gl.uniform2f(uRes, canvas.width, canvas.height);
+    gl.uniform1f(uTime, 12.0);
+    gl.uniform2f(uMouse, 0.5, 0.45);
+    gl.uniform1f(uStoke, 0.0);
+    gl.drawArrays(gl.TRIANGLES, 0, 3);
+  }
+}
+
+var resizeT;
+function onResize(){
+  clearTimeout(resizeT);
+  resizeT = setTimeout(function(){
+    DPR = Math.min(window.devicePixelRatio || 1, 2);
+    sizeLava(); sizeEmbers();
+    if (reduced) renderStatic();
+  }, 120);
+}
+window.addEventListener("resize", onResize);
+
+sizeLava(); sizeEmbers();
+
+if (reduced){
+  renderStatic();
+} else {
+  if ("IntersectionObserver" in window){
+    new IntersectionObserver(function(en){
+      heroVisible = en[0].isIntersecting;
+      kick();
+    }, {threshold: 0.02}).observe(hero);
+  }
+  document.addEventListener("visibilitychange", function(){
+    pageVisible = !document.hidden;
+    kick();
+  });
+  kick();
+}
+
+/* ==================== SCOVILLE GAUGES ==================== */
+var FLAME_PATH = "M11 1C7.5 7 4 9.4 4 14.6 4 19 7.1 22 11 22s7-3 7-7.4C18 9.4 14.5 7 11 1z";
+var TOTAL_FLAMES = 10;
+
+document.querySelectorAll(".card").forEach(function(card){
+  var level = parseInt(card.dataset.level, 10);
+  var target = parseInt(card.dataset.shu, 10);
+  var flamesBox = card.querySelector(".flames");
+  var numEl = card.querySelector(".num");
+  var flames = [];
+  for (var i = 0; i < TOTAL_FLAMES; i++){
+    var d = document.createElement("div");
+    d.className = "flame";
+    d.innerHTML = '<svg viewBox="0 0 22 23"><path fill="currentColor" d="' + FLAME_PATH + '"/></svg>';
+    flamesBox.appendChild(d);
+    flames.push(d);
+  }
+  var timers = [], counting = null, lit = false;
+
+  function burstAt(el){
+    if (reduced) return;
+    var rc = el.getBoundingClientRect(), cc = card.getBoundingClientRect();
+    for (var b = 0; b < 5; b++){
+      var s = document.createElement("span");
+      s.className = "burst";
+      s.style.left = (rc.left - cc.left + rc.width / 2) + "px";
+      s.style.top = (rc.top - cc.top) + "px";
+      card.appendChild(s);
+      var dx = (Math.random() - 0.5) * 42;
+      var dy = -(26 + Math.random() * 46);
+      var anim = s.animate([
+        {transform:"translate(0,0) scale(1)", opacity:1},
+        {transform:"translate(" + dx + "px," + dy + "px) scale(.2)", opacity:0}
+      ], {duration: 520 + Math.random() * 360, easing:"cubic-bezier(.2,.7,.3,1)"});
+      anim.onfinish = (function(node){ return function(){ node.remove(); }; })(s);
+    }
+  }
+
+  function countTo(val, dur){
+    if (counting) cancelAnimationFrame(counting);
+    if (reduced || dur === 0){ numEl.textContent = val.toLocaleString("en-US"); return; }
+    var t0 = performance.now();
+    (function step(now){
+      var k = Math.min(1, (now - t0) / dur);
+      k = 1 - Math.pow(1 - k, 3); /* ease-out cubic */
+      numEl.textContent = Math.round(val * k).toLocaleString("en-US");
+      if (k < 1) counting = requestAnimationFrame(step);
+      else counting = null;
+    })(t0);
+  }
+
+  function ignite(){
+    if (lit) return;
+    lit = true;
+    card.classList.add("lit");
+    card.setAttribute("aria-pressed", "true");
+    if (reduced){
+      flames.forEach(function(f, i){
+        if (i < level){ f.classList.add("on"); if (level >= 9) f.classList.add("hot"); }
+      });
+      countTo(target, 0);
+      return;
+    }
+    var stagger = 110;
+    for (var i = 0; i < level; i++){
+      (function(i){
+        timers.push(setTimeout(function(){
+          flames[i].classList.add("on");
+          if (level >= 9 && i >= level - 3) flames[i].classList.add("hot");
+          burstAt(flames[i]);
+        }, i * stagger));
+      })(i);
+    }
+    countTo(target, level * stagger + 700);
+  }
+
+  function quench(){
+    if (!lit) return;
+    lit = false;
+    card.classList.remove("lit");
+    card.setAttribute("aria-pressed", "false");
+    timers.forEach(clearTimeout); timers = [];
+    if (counting){ cancelAnimationFrame(counting); counting = null; }
+    flames.forEach(function(f){ f.classList.remove("on", "hot"); });
+    numEl.textContent = "0";
+  }
+
+  card.addEventListener("mouseenter", ignite);
+  card.addEventListener("mouseleave", quench);
+  card.addEventListener("click", function(){ lit ? quench() : ignite(); });
+  card.addEventListener("keydown", function(e){
+    if (e.key === "Enter" || e.key === " "){
+      e.preventDefault();
+      lit ? quench() : ignite();
+    }
+  });
+});
+})();
+</script>
+</body>
+</html>
