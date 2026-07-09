@@ -1,0 +1,784 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>BOREAL — Slow Expeditions Above the Arctic Circle</title>
+<meta name="description" content="BOREAL runs slow-travel expeditions in Lapland: ski traverses, polar-night cabin weeks and aurora watches, at the speed of weather.">
+<!--
+PASS 1: (a) aligned itinerary timeline dots to the SVG rail centerline (desktop left:-42.5px → center 32.5px vs rail x=32; mobile -38.5px vs rail x=12); (b) restored a visible dropdown indicator on the expedition <select> lost to appearance:none, via .field.sel::after chevron; (c) re-measure section offsets + rebuild rail path after document.fonts.ready, since Fraunces/Outfit loading changes layout heights and left stale scroll thresholds; (d) canvas given role="img" + descriptive aria-label.
+PASS 2: (a) skipped the wide soft-glow ribbon pass on viewports <640px, halving per-frame fill cost on phones; (b) debounced the canvas resize rebuild (150ms) so drag-resizing no longer re-allocates the backing store per event; (c) wrapped .exp hover effects in @media(hover:hover) to kill sticky-hover states on touch; (d) 390px polish: tighter section padding, capped chip row width, reduced wordmark glow, smaller departure rows, left-aligned footer meta.
+PASS 3: (a) added :focus-visible outlines (aurora green, 3px offset) for keyboard navigation on links/inputs/buttons; (b) raised --ink-faint .38→.46 and --ink-dim .62→.64 for mono-label contrast on the night background; (c) added .hero::after bottom fade so aurora/starfield don't cut hard against the philosophy section; (d) reduced-motion timeline dots now fill solid (border + background) instead of outline-only; (e) booking submit button disables itself after confirmation to prevent re-fire.
+-->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,300;9..144,400;9..144,600&family=Outfit:wght@300;400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root{
+  --night:#0B1026;
+  --aurora-g:#6BFFB0;
+  --aurora-v:#9D7BFF;
+  --snow:#EAF2F6;
+  --ember:#FF9E6B;
+  --ink-dim:rgba(234,242,246,.64);
+  --ink-faint:rgba(234,242,246,.46);
+  --hair:rgba(234,242,246,.14);
+  --disp:"Fraunces",serif;
+  --body:"Outfit",sans-serif;
+  --mono:"IBM Plex Mono",monospace;
+}
+*{margin:0;padding:0;box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{
+  font-family:var(--body);
+  background:var(--night);
+  color:var(--snow);
+  font-weight:300;
+  line-height:1.6;
+  overflow-x:hidden;
+  -webkit-font-smoothing:antialiased;
+}
+::selection{background:var(--aurora-g);color:var(--night)}
+a:focus-visible,button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-visible{
+  outline:2px solid var(--aurora-g);outline-offset:3px;border-radius:2px;
+}
+
+/* ---------- scroll-linked background scenes ---------- */
+.scenes{position:fixed;inset:0;z-index:-1;pointer-events:none}
+.scenes>div{position:absolute;inset:0;will-change:opacity}
+.sc-night{background:linear-gradient(180deg,#0B1026 0%,#0d1330 46%,#090d20 100%)}
+.sc-blue{opacity:0;background:linear-gradient(180deg,#14224a 0%,#1c3161 48%,#0e1938 100%)}
+.sc-ember{opacity:0;background:
+  radial-gradient(120% 80% at 50% 108%,rgba(255,158,107,.20) 0%,rgba(255,158,107,0) 55%),
+  linear-gradient(180deg,#171130 0%,#241626 52%,#120d1d 100%)}
+
+/* ---------- fixed back link ---------- */
+.back{
+  position:fixed;top:20px;left:22px;z-index:60;
+  font-family:var(--mono);font-size:12px;letter-spacing:.12em;
+  color:var(--ink-dim);text-decoration:none;
+  padding:8px 14px;border:1px solid var(--hair);border-radius:99px;
+  background:rgba(11,16,38,.5);backdrop-filter:blur(8px);
+  transition:color .3s,border-color .3s;
+}
+.back:hover{color:var(--aurora-g);border-color:rgba(107,255,176,.4)}
+
+/* ---------- hero ---------- */
+.hero{position:relative;height:100svh;min-height:640px;overflow:hidden}
+.hero::after{
+  content:"";position:absolute;left:0;right:0;bottom:0;height:16vh;z-index:4;pointer-events:none;
+  background:linear-gradient(180deg,rgba(11,16,38,0),rgba(11,16,38,.85));
+}
+#aurora{position:absolute;inset:0;width:100%;height:100%;display:block}
+.mtn{position:absolute;left:0;right:0;bottom:-2px;pointer-events:none;will-change:transform}
+.mtn svg{display:block;width:100%;height:30vh;min-height:170px}
+.m3 svg{height:38vh}.m2 svg{height:30vh}.m1 svg{height:22vh}
+.hero-inner{
+  position:relative;z-index:5;height:100%;
+  display:flex;flex-direction:column;justify-content:center;align-items:center;
+  text-align:center;padding:0 24px;
+}
+.eyebrow{
+  font-family:var(--mono);font-size:11px;letter-spacing:.42em;text-transform:uppercase;
+  color:var(--aurora-g);margin-bottom:26px;
+}
+h1.wordmark{
+  font-family:var(--disp);font-weight:300;
+  font-size:clamp(64px,14vw,180px);
+  letter-spacing:.08em;line-height:.95;
+  text-shadow:0 0 60px rgba(107,255,176,.25);
+}
+.hero-sub{
+  margin-top:22px;max-width:430px;
+  font-size:clamp(15px,1.4vw,18px);color:var(--ink-dim);
+}
+.chips{display:flex;flex-wrap:wrap;justify-content:center;gap:10px;margin-top:34px}
+.chip{
+  font-family:var(--mono);font-size:11px;letter-spacing:.08em;
+  padding:7px 13px;border:1px solid var(--hair);border-radius:99px;
+  color:var(--ink-dim);background:rgba(11,16,38,.35);
+  display:inline-flex;align-items:center;gap:8px;
+}
+.chip b{color:var(--snow);font-weight:500}
+.chip .dot{width:5px;height:5px;border-radius:50%;background:var(--aurora-g);box-shadow:0 0 8px var(--aurora-g)}
+.scroll-cue{
+  position:absolute;bottom:26px;left:50%;transform:translateX(-50%);z-index:6;
+  font-family:var(--mono);font-size:10px;letter-spacing:.3em;color:var(--ink-faint);
+  display:flex;flex-direction:column;align-items:center;gap:10px;text-transform:uppercase;
+}
+.scroll-cue::after{
+  content:"";width:1px;height:44px;
+  background:linear-gradient(180deg,var(--aurora-g),transparent);
+  animation:cue 2.6s ease-in-out infinite;
+}
+@keyframes cue{0%,100%{opacity:.25;transform:scaleY(.6);transform-origin:top}50%{opacity:1;transform:scaleY(1)}}
+
+/* ---------- shared section chrome ---------- */
+section{position:relative;padding:clamp(90px,14vh,160px) 24px}
+.wrap{max-width:1060px;margin:0 auto;position:relative}
+.kicker{
+  font-family:var(--mono);font-size:11px;letter-spacing:.36em;text-transform:uppercase;
+  color:var(--aurora-v);margin-bottom:20px;display:flex;align-items:center;gap:14px;
+}
+.kicker::before{content:"";width:34px;height:1px;background:var(--aurora-v);opacity:.6}
+h2{
+  font-family:var(--disp);font-weight:300;
+  font-size:clamp(34px,5vw,62px);line-height:1.08;letter-spacing:.01em;
+  max-width:15ch;
+}
+h2 em{font-style:italic;color:var(--aurora-g)}
+.lede{margin-top:26px;max-width:52ch;color:var(--ink-dim);font-size:clamp(15px,1.3vw,17.5px)}
+
+/* frost ornament */
+.frost{position:absolute;width:150px;height:150px;opacity:.16;pointer-events:none;color:var(--snow)}
+.frost.tl{top:-30px;left:-14px}
+.frost.tr{top:-30px;right:-14px;transform:scaleX(-1)}
+
+/* reveal */
+.rv{opacity:0;transform:translateY(26px);transition:opacity .9s cubic-bezier(.2,.6,.2,1),transform .9s cubic-bezier(.2,.6,.2,1)}
+.rv.in{opacity:1;transform:none}
+.rv.d1{transition-delay:.12s}.rv.d2{transition-delay:.24s}.rv.d3{transition-delay:.36s}
+
+/* ---------- philosophy ---------- */
+.phil-grid{display:grid;grid-template-columns:1.1fr .9fr;gap:60px;margin-top:64px;align-items:start}
+.phil-grid p+p{margin-top:1.2em}
+.phil-grid p{color:var(--ink-dim)}
+.phil-grid p strong{color:var(--snow);font-weight:500}
+.tenets{border-left:1px solid var(--hair);padding-left:34px;display:flex;flex-direction:column;gap:30px}
+.tenet .n{font-family:var(--mono);font-size:11px;color:var(--aurora-g);letter-spacing:.2em}
+.tenet h3{font-family:var(--disp);font-weight:400;font-size:21px;margin:6px 0 6px}
+.tenet p{font-size:14.5px;color:var(--ink-dim)}
+
+/* ---------- expeditions ---------- */
+.exp-list{margin-top:70px;display:flex;flex-direction:column}
+.exp{
+  display:grid;grid-template-columns:80px 1fr 340px;gap:34px;align-items:baseline;
+  padding:44px 10px;border-top:1px solid var(--hair);
+  position:relative;transition:background .4s;
+}
+.exp:last-child{border-bottom:1px solid var(--hair)}
+.exp::before{
+  content:"";position:absolute;left:0;top:0;height:1px;width:0;
+  background:linear-gradient(90deg,var(--aurora-g),var(--aurora-v));
+  transition:width .8s cubic-bezier(.2,.7,.2,1);
+}
+@media(hover:hover){
+  .exp:hover::before{width:100%}
+  .exp:hover{background:rgba(234,242,246,.025)}
+}
+.exp-no{font-family:var(--mono);font-size:12px;color:var(--ink-faint);letter-spacing:.15em}
+.exp h3{font-family:var(--disp);font-weight:400;font-size:clamp(26px,3.4vw,40px);line-height:1.1}
+.exp h3 span{display:block;font-size:15px;font-family:var(--body);font-weight:300;color:var(--ink-dim);margin-top:10px;max-width:46ch}
+.exp-meta{display:flex;flex-direction:column;gap:9px}
+.exp-meta .row{display:flex;justify-content:space-between;gap:14px;font-family:var(--mono);font-size:12px;letter-spacing:.05em}
+.exp-meta .row .k{color:var(--ink-faint)}
+.exp-meta .row .v{color:var(--snow)}
+.exp-meta .row .v.g{color:var(--aurora-g)}
+.exp-meta .row .v.vv{color:var(--aurora-v)}
+
+/* ---------- itinerary timeline ---------- */
+.itin{margin-top:76px;position:relative;padding-left:70px}
+.itin-svg{position:absolute;left:0;top:0;height:100%;width:64px;overflow:visible}
+.itin-svg .rail{stroke:rgba(234,242,246,.1);stroke-width:1.5;fill:none}
+.itin-svg .draw{stroke:url(#railGrad);stroke-width:1.5;fill:none;filter:drop-shadow(0 0 6px rgba(107,255,176,.5))}
+.day{padding:30px 0 46px;position:relative;max-width:560px}
+.day::before{
+  content:"";position:absolute;left:-42.5px;top:44px;width:9px;height:9px;border-radius:50%;
+  background:var(--night);border:1.5px solid var(--ink-faint);
+  transition:border-color .6s,box-shadow .6s,background .6s;
+}
+.day.in::before{border-color:var(--aurora-g);background:var(--aurora-g);box-shadow:0 0 14px rgba(107,255,176,.7)}
+.day .dnum{font-family:var(--mono);font-size:11px;letter-spacing:.3em;color:var(--aurora-v);text-transform:uppercase}
+.day h4{font-family:var(--disp);font-weight:400;font-size:23px;margin:8px 0 8px}
+.day p{color:var(--ink-dim);font-size:15px}
+.day .dchip{margin-top:12px;display:inline-flex}
+
+/* ---------- cabin night ---------- */
+#cabin{overflow:hidden}
+.fireglow{
+  position:absolute;inset:0;pointer-events:none;
+  background:radial-gradient(58% 46% at 50% 96%,rgba(255,158,107,.32) 0%,rgba(255,120,60,.10) 44%,rgba(255,158,107,0) 72%);
+  animation:flick 4.2s ease-in-out infinite;
+  transform-origin:50% 100%;
+}
+@keyframes flick{
+  0%,100%{opacity:.85;transform:scale(1)}
+  17%{opacity:1;transform:scale(1.03)}
+  34%{opacity:.78;transform:scale(.985)}
+  55%{opacity:.96;transform:scale(1.02)}
+  72%{opacity:.82;transform:scale(.99)}
+  86%{opacity:1;transform:scale(1.015)}
+}
+.cabin-grid{display:grid;grid-template-columns:1fr 1fr;gap:70px;margin-top:60px;align-items:center}
+.cabin-copy p{color:var(--ink-dim)}
+.cabin-copy p+p{margin-top:1.2em}
+.cabin-copy em{color:var(--ember);font-style:italic}
+blockquote{
+  font-family:var(--disp);font-style:italic;font-weight:300;
+  font-size:clamp(22px,2.6vw,30px);line-height:1.35;
+  border-left:2px solid var(--ember);padding-left:28px;
+}
+blockquote footer{font-family:var(--mono);font-style:normal;font-size:11px;letter-spacing:.2em;color:var(--ink-faint);margin-top:18px;text-transform:uppercase}
+.temp-pair{display:flex;gap:12px;margin-top:34px;flex-wrap:wrap}
+.temp-pair .chip b.warm{color:var(--ember)}
+
+/* ---------- booking ---------- */
+.book-grid{display:grid;grid-template-columns:.9fr 1.1fr;gap:70px;margin-top:60px}
+.departures{display:flex;flex-direction:column;gap:0;border-top:1px solid var(--hair)}
+.dep{display:flex;justify-content:space-between;align-items:center;gap:14px;padding:17px 4px;border-bottom:1px solid var(--hair);font-family:var(--mono);font-size:12.5px;letter-spacing:.04em}
+.dep .d{color:var(--snow)}
+.dep .s{color:var(--ink-faint)}
+.dep .st{color:var(--aurora-g)}
+.dep .st.few{color:var(--ember)}
+form{display:flex;flex-direction:column;gap:26px}
+.field{display:flex;flex-direction:column;gap:8px}
+.field label{font-family:var(--mono);font-size:10.5px;letter-spacing:.28em;text-transform:uppercase;color:var(--ink-faint)}
+.field input,.field select,.field textarea{
+  font-family:var(--body);font-weight:300;font-size:16px;color:var(--snow);
+  background:transparent;border:0;border-bottom:1px solid var(--hair);
+  padding:10px 2px;outline:none;border-radius:0;transition:border-color .3s;
+  appearance:none;-webkit-appearance:none;
+}
+.field select option{background:#131a33;color:var(--snow)}
+.field.sel{position:relative}
+.field.sel::after{
+  content:"";position:absolute;right:6px;bottom:18px;pointer-events:none;
+  width:7px;height:7px;border-right:1px solid var(--ink-dim);border-bottom:1px solid var(--ink-dim);
+  transform:rotate(45deg);
+}
+.field textarea{resize:vertical;min-height:80px}
+.field input:focus,.field select:focus,.field textarea:focus{border-bottom-color:var(--aurora-g)}
+.two{display:grid;grid-template-columns:1fr 1fr;gap:26px}
+button.cta{
+  margin-top:8px;align-self:flex-start;cursor:pointer;
+  font-family:var(--mono);font-size:12px;letter-spacing:.28em;text-transform:uppercase;
+  color:var(--night);background:var(--aurora-g);border:0;border-radius:99px;
+  padding:17px 38px;font-weight:500;
+  box-shadow:0 0 30px rgba(107,255,176,.25);
+  transition:box-shadow .35s,transform .35s;
+}
+button.cta:hover{box-shadow:0 0 50px rgba(107,255,176,.5);transform:translateY(-2px)}
+.book-note{font-size:13.5px;color:var(--ink-faint);margin-top:16px;max-width:38ch}
+
+/* ---------- footer ---------- */
+footer.site{
+  border-top:1px solid var(--hair);
+  padding:60px 24px 46px;
+}
+.foot-grid{max-width:1060px;margin:0 auto;display:flex;justify-content:space-between;align-items:flex-end;gap:30px;flex-wrap:wrap}
+.foot-mark{font-family:var(--disp);font-size:30px;letter-spacing:.14em}
+.foot-mark span{color:var(--aurora-g)}
+.foot-meta{font-family:var(--mono);font-size:11px;letter-spacing:.1em;color:var(--ink-faint);line-height:2;text-align:right}
+.foot-meta a{color:var(--ink-dim);text-decoration:none}
+.foot-meta a:hover{color:var(--aurora-g)}
+
+/* ---------- responsive ---------- */
+@media(max-width:900px){
+  .phil-grid,.cabin-grid,.book-grid{grid-template-columns:1fr;gap:48px}
+  .exp{grid-template-columns:1fr;gap:18px;padding:38px 4px}
+  .exp-no{order:-1}
+  .exp-meta{gap:7px;max-width:420px}
+  .itin{padding-left:46px}
+  .day::before{left:-38.5px}
+  .itin-svg{width:40px}
+  .frost{width:110px;height:110px}
+}
+@media(max-width:480px){
+  section{padding:76px 20px}
+  .two{grid-template-columns:1fr}
+  .chips{gap:8px;max-width:320px}
+  .chip{font-size:10px;padding:6px 10px}
+  h1.wordmark{letter-spacing:.05em;text-shadow:0 0 36px rgba(107,255,176,.22)}
+  blockquote{padding-left:18px}
+  .dep{font-size:11px;padding:15px 2px}
+  .foot-meta{text-align:left}
+}
+
+/* ---------- reduced motion ---------- */
+@media(prefers-reduced-motion:reduce){
+  html{scroll-behavior:auto}
+  *,*::before,*::after{animation:none!important;transition:none!important}
+  .rv{opacity:1;transform:none}
+  .day::before{border-color:var(--aurora-g);background:var(--aurora-g)}
+  .scroll-cue::after{opacity:.6}
+  .fireglow{opacity:.9}
+}
+</style>
+</head>
+<body>
+
+<a class="back" href="/">←&nbsp;25</a>
+
+<div class="scenes" aria-hidden="true">
+  <div class="sc-night"></div>
+  <div class="sc-blue" id="scBlue"></div>
+  <div class="sc-ember" id="scEmber"></div>
+</div>
+
+<!-- =============== HERO =============== -->
+<header class="hero" id="top">
+  <canvas id="aurora" role="img" aria-label="Aurora borealis curtains shifting between green and violet over a starfield"></canvas>
+
+  <div class="mtn m3" data-p="0.30" aria-hidden="true">
+    <svg viewBox="0 0 1440 320" preserveAspectRatio="none">
+      <path fill="#1a2244" d="M0,320 L0,208 L96,150 L178,196 L266,118 L352,176 L438,96 L540,182 L634,128 L742,206 L838,142 L922,190 L1014,108 L1112,178 L1204,132 L1298,196 L1372,160 L1440,204 L1440,320 Z"/>
+    </svg>
+  </div>
+  <div class="mtn m2" data-p="0.16" aria-hidden="true">
+    <svg viewBox="0 0 1440 320" preserveAspectRatio="none">
+      <path fill="#121a38" d="M0,320 L0,236 L88,178 L196,232 L294,150 L400,224 L494,168 L602,244 L710,164 L818,238 L910,186 L1024,248 L1128,172 L1236,240 L1330,196 L1440,244 L1440,320 Z"/>
+    </svg>
+  </div>
+  <div class="mtn m1" data-p="0.06" aria-hidden="true">
+    <svg viewBox="0 0 1440 320" preserveAspectRatio="none">
+      <path fill="#0B1026" d="M0,320 L0,266 L110,214 L228,262 L342,196 L470,258 L586,216 L716,272 L836,208 L964,266 L1082,224 L1208,270 L1318,236 L1440,272 L1440,320 Z"/>
+    </svg>
+  </div>
+
+  <div class="hero-inner">
+    <p class="eyebrow">Lapland &middot; 66.5&deg;N and above</p>
+    <h1 class="wordmark">BOREAL</h1>
+    <p class="hero-sub">Slow expeditions above the Arctic Circle. Eight travellers, one guide, and a sky that cannot be scheduled.</p>
+    <div class="chips">
+      <span class="chip"><span class="dot"></span><b>68.35&deg;N</b> LAT</span>
+      <span class="chip">OUTSIDE <b>&minus;22&deg;C</b></span>
+      <span class="chip">KP INDEX <b>5.3</b></span>
+      <span class="chip">DAYLIGHT <b>0H 00M</b></span>
+    </div>
+  </div>
+  <div class="scroll-cue">Begin the descent</div>
+</header>
+
+<main>
+<!-- =============== PHILOSOPHY =============== -->
+<section id="philosophy" aria-labelledby="phil-h">
+  <div class="wrap">
+    <svg class="frost tl" viewBox="0 0 100 100" fill="none" stroke="currentColor" stroke-width="1" aria-hidden="true">
+      <path d="M4 4 L64 64 M4 4 L4 40 M4 4 L40 4 M16 16 L16 34 M16 16 L34 16 M28 28 L28 44 M28 28 L44 28 M40 40 L40 54 M40 40 L54 40 M10 22 L22 10 M22 34 L34 22 M34 46 L46 34"/>
+    </svg>
+    <p class="kicker rv">The philosophy</p>
+    <h2 class="rv d1">We travel at the <em>speed of weather.</em></h2>
+    <div class="phil-grid">
+      <div class="rv d2">
+        <p>Most Arctic tourism is a checklist run at highway speed: bus, lookout, bus, hotel. <strong>BOREAL is the opposite instrument.</strong> We stay in one valley long enough to learn its wind. We ski at the pace of the slowest person and call it the right pace. We let the aurora decide the evening, not the other way around.</p>
+        <p>Our expeditions are capped at eight travellers. Your guides are people who overwinter here — a Sámi-taught musher from Jukkasjärvi, a former Abisko research-station cook, a mountain guide who has crossed Sarek forty-one times and still checks the ice twice.</p>
+        <p>Nothing about the polar night is empty. You just have to arrive slowly enough to see it fill.</p>
+      </div>
+      <div class="tenets rv d3">
+        <div class="tenet">
+          <span class="n">01</span>
+          <h3>One valley, deeply</h3>
+          <p>No transfers after arrival. The landscape changes because the light does — hourly.</p>
+        </div>
+        <div class="tenet">
+          <span class="n">02</span>
+          <h3>Weather is the itinerary</h3>
+          <p>Every plan has a storm-day version. Some of our guests' best days were the storm days.</p>
+        </div>
+        <div class="tenet">
+          <span class="n">03</span>
+          <h3>Warmth is earned nightly</h3>
+          <p>Wood you split yourself, a sauna at 85&nbsp;&deg;C, and a fire that needs tending. That's the luxury.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- =============== EXPEDITIONS =============== -->
+<section id="expeditions" aria-labelledby="exp-h">
+  <div class="wrap">
+    <p class="kicker rv">Winter 2026 / 27</p>
+    <h2 id="exp-h" class="rv d1">Three ways <em>north.</em></h2>
+    <p class="lede rv d2">Each expedition runs four to six times a season. Small windows, small groups, long evenings.</p>
+
+    <div class="exp-list">
+      <article class="exp rv">
+        <span class="exp-no">EXP&mdash;01</span>
+        <h3>Sarek Traverse
+          <span>Nine days on skis through Europe's last great roadless wilderness. Rapadalen under two metres of snow, nights split between mountain huts and one deliberate bivouac beneath the open sky.</span>
+        </h3>
+        <div class="exp-meta">
+          <div class="row"><span class="k">LATITUDE</span><span class="v">67.28&deg;N</span></div>
+          <div class="row"><span class="k">DURATION</span><span class="v">9 DAYS</span></div>
+          <div class="row"><span class="k">SEASON</span><span class="v vv">FEB &mdash; APR</span></div>
+          <div class="row"><span class="k">TYPICAL LOW</span><span class="v">&minus;28&deg;C</span></div>
+          <div class="row"><span class="k">FROM</span><span class="v g">&euro;3,400</span></div>
+        </div>
+      </article>
+
+      <article class="exp rv">
+        <span class="exp-no">EXP&mdash;02</span>
+        <h3>Kilpisjärvi Stillness
+          <span>Six nights in a log cabin below Saana fell, deep in the polar night. Ice fishing on the frozen lake, a wood-fired sauna every evening, and an aurora watch that begins when the fire burns low.</span>
+        </h3>
+        <div class="exp-meta">
+          <div class="row"><span class="k">LATITUDE</span><span class="v">69.05&deg;N</span></div>
+          <div class="row"><span class="k">DURATION</span><span class="v">6 DAYS</span></div>
+          <div class="row"><span class="k">SEASON</span><span class="v vv">DEC &mdash; JAN</span></div>
+          <div class="row"><span class="k">TYPICAL LOW</span><span class="v">&minus;24&deg;C</span></div>
+          <div class="row"><span class="k">FROM</span><span class="v g">&euro;2,150</span></div>
+        </div>
+      </article>
+
+      <article class="exp rv">
+        <span class="exp-no">EXP&mdash;03</span>
+        <h3>Varanger Shore
+          <span>Five days where the Arctic Ocean refuses to freeze. Blue-hour walks along the Varanger coast, sea eagles over black water, and the strange comfort of a fishing village that keeps its lights on all winter.</span>
+        </h3>
+        <div class="exp-meta">
+          <div class="row"><span class="k">LATITUDE</span><span class="v">70.37&deg;N</span></div>
+          <div class="row"><span class="k">DURATION</span><span class="v">5 DAYS</span></div>
+          <div class="row"><span class="k">SEASON</span><span class="v vv">OCT &mdash; NOV</span></div>
+          <div class="row"><span class="k">TYPICAL LOW</span><span class="v">&minus;9&deg;C</span></div>
+          <div class="row"><span class="k">FROM</span><span class="v g">&euro;1,900</span></div>
+        </div>
+      </article>
+    </div>
+  </div>
+</section>
+
+<!-- =============== ITINERARY TIMELINE =============== -->
+<section id="itinerary" aria-labelledby="itin-h">
+  <div class="wrap">
+    <p class="kicker rv">A week, drawn slowly</p>
+    <h2 id="itin-h" class="rv d1">Kilpisjärvi, <em>day by day.</em></h2>
+    <p class="lede rv d2">The honest version of a BOREAL itinerary — including the parts other operators leave out.</p>
+
+    <div class="itin" id="itin">
+      <svg class="itin-svg" aria-hidden="true">
+        <defs>
+          <linearGradient id="railGrad" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0" stop-color="#6BFFB0"/>
+            <stop offset="1" stop-color="#9D7BFF"/>
+          </linearGradient>
+        </defs>
+        <path class="rail" id="railBase" d=""/>
+        <path class="draw" id="railDraw" d=""/>
+      </svg>
+
+      <div class="day">
+        <span class="dnum">Day 01 &mdash; Arrival</span>
+        <h4>Tromsø to the treeline</h4>
+        <p>Minibus south-east through three hours of blue dusk. We stop once, on purpose, at the Finnish border where the last streetlight ends. Cabin keys, wood-stove briefing, a late fish soup.</p>
+        <span class="chip dchip">SUNLIGHT <b>0H</b>&nbsp;&middot;&nbsp;BLUE HOUR <b>4H</b></span>
+      </div>
+      <div class="day">
+        <span class="dnum">Day 02 &mdash; Calibration</span>
+        <h4>Learning to move at &minus;20</h4>
+        <p>A short ski, deliberately short. Layers, pace, how to drink before you're thirsty. In the afternoon you split your first wood. The sauna reaches 85&nbsp;&deg;C by six.</p>
+      </div>
+      <div class="day">
+        <span class="dnum">Day 03 &mdash; Stillness</span>
+        <h4>The silence day</h4>
+        <p>No plan until 15:00. Read, sleep, drill a fishing hole through 60&nbsp;cm of lake ice. Guests resist this day in advance and defend it forever after.</p>
+      </div>
+      <div class="day">
+        <span class="dnum">Day 04 &mdash; Ascent</span>
+        <h4>Saana in the dark</h4>
+        <p>Headlamps up the sacred fell, 1,029&nbsp;m of it. At the top we switch the lamps off. If the sky cooperates, this is the night. If it doesn't, the descent to a lit cabin is its own reward.</p>
+        <span class="chip dchip">KP FORECAST <b>4&ndash;6</b>&nbsp;&middot;&nbsp;SUMMIT <b>&minus;27&deg;C</b></span>
+      </div>
+      <div class="day">
+        <span class="dnum">Day 05 &mdash; Harvest</span>
+        <h4>Ice, fire, table</h4>
+        <p>Morning on the lake with the fishing lines. Whatever comes up, our cook turns into dinner; whatever doesn't, she covers with reindeer stew and lingonberries. The fire stays lit until the last person leaves it.</p>
+      </div>
+      <div class="day">
+        <span class="dnum">Day 06 &mdash; Return</span>
+        <h4>Back toward the light</h4>
+        <p>The minibus retraces the road north-west. Most groups are quiet for the first hour. That's normal. That's the point.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- =============== CABIN NIGHT =============== -->
+<section id="cabin" aria-labelledby="cabin-h">
+  <div class="fireglow" aria-hidden="true"></div>
+  <div class="wrap">
+    <p class="kicker rv">After the cold</p>
+    <h2 id="cabin-h" class="rv d1">The cabin <em>night.</em></h2>
+    <div class="cabin-grid">
+      <div class="cabin-copy rv d2">
+        <p>Every BOREAL day ends the same way: boots in the drying room, wool socks on pine boards, and the specific sound of a birch log settling in the stove. Outside it is <em>&minus;24&nbsp;&deg;C</em> and absolutely still. Inside it is <em>+21&nbsp;&deg;C</em> and smells of resin and coffee.</p>
+        <p>There is no Wi-Fi in the cabins. There is a shelf of maps, a deck of cards missing one seven, and a guide who will tell you — if you ask twice — about the January the lake ice sang for three nights.</p>
+        <div class="temp-pair">
+          <span class="chip">OUTSIDE <b>&minus;24&deg;C</b></span>
+          <span class="chip">INSIDE <b class="warm">+21&deg;C</b></span>
+          <span class="chip">SAUNA <b class="warm">+85&deg;C</b></span>
+        </div>
+      </div>
+      <blockquote class="rv d3">
+        &ldquo;I came for the aurora. I still think about the fire.&rdquo;
+        <footer>&mdash; Guest, Kilpisjärvi Stillness, January 2026</footer>
+      </blockquote>
+    </div>
+  </div>
+</section>
+
+<!-- =============== BOOKING =============== -->
+<section id="booking" aria-labelledby="book-h">
+  <div class="wrap">
+    <svg class="frost tr" viewBox="0 0 100 100" fill="none" stroke="currentColor" stroke-width="1" aria-hidden="true">
+      <path d="M4 4 L64 64 M4 4 L4 40 M4 4 L40 4 M16 16 L16 34 M16 16 L34 16 M28 28 L28 44 M28 28 L44 28 M40 40 L40 54 M40 40 L54 40 M10 22 L22 10 M22 34 L34 22 M34 46 L46 34"/>
+    </svg>
+    <p class="kicker rv">Departures &amp; enquiry</p>
+    <h2 id="book-h" class="rv d1">Claim a <em>window.</em></h2>
+    <p class="lede rv d2">We publish exact departure dates each August. Deposits are refundable until sixty days out — the Arctic teaches flexibility, so we practise it.</p>
+
+    <div class="book-grid">
+      <div class="rv d2">
+        <div class="departures" role="list">
+          <div class="dep" role="listitem"><span class="d">12 &mdash; 17 DEC 2026</span><span class="s">KILPISJÄRVI</span><span class="st">6 PLACES</span></div>
+          <div class="dep" role="listitem"><span class="d">03 &mdash; 08 JAN 2027</span><span class="s">KILPISJÄRVI</span><span class="st few">2 PLACES</span></div>
+          <div class="dep" role="listitem"><span class="d">14 &mdash; 22 FEB 2027</span><span class="s">SAREK</span><span class="st">5 PLACES</span></div>
+          <div class="dep" role="listitem"><span class="d">07 &mdash; 15 MAR 2027</span><span class="s">SAREK</span><span class="st">8 PLACES</span></div>
+          <div class="dep" role="listitem"><span class="d">24 &mdash; 28 OCT 2027</span><span class="s">VARANGER</span><span class="st">8 PLACES</span></div>
+        </div>
+        <p class="book-note">Solo travellers welcome — roughly half of every group arrives alone and leaves otherwise.</p>
+      </div>
+
+      <form class="rv d3" onsubmit="event.preventDefault();var b=this.querySelector('button');b.textContent='RECEIVED — WE ANSWER SLOWLY';b.disabled=true;b.style.opacity='.75';b.style.cursor='default';">
+        <div class="two">
+          <div class="field">
+            <label for="f-name">Name</label>
+            <input id="f-name" type="text" name="name" autocomplete="name" required>
+          </div>
+          <div class="field">
+            <label for="f-mail">Email</label>
+            <input id="f-mail" type="email" name="email" autocomplete="email" required>
+          </div>
+        </div>
+        <div class="field sel">
+          <label for="f-exp">Expedition</label>
+          <select id="f-exp" name="expedition">
+            <option>Kilpisjärvi Stillness — 6 days</option>
+            <option>Sarek Traverse — 9 days</option>
+            <option>Varanger Shore — 5 days</option>
+            <option>Not sure yet — advise me</option>
+          </select>
+        </div>
+        <div class="field">
+          <label for="f-msg">Anything we should know</label>
+          <textarea id="f-msg" name="message" placeholder="Experience on skis, dietary needs, fear of the dark — all useful."></textarea>
+        </div>
+        <button class="cta" type="submit">Request a place</button>
+        <p class="book-note">We reply within two days. Slowly, like everything else we do.</p>
+      </form>
+    </div>
+  </div>
+</section>
+</main>
+
+<!-- =============== FOOTER =============== -->
+<footer class="site">
+  <div class="foot-grid">
+    <div>
+      <p class="foot-mark">BORE<span>AL</span></p>
+      <p style="font-family:var(--mono);font-size:11px;letter-spacing:.14em;color:var(--ink-faint);margin-top:10px">SLOW EXPEDITIONS &middot; EST. 66.5&deg;N</p>
+    </div>
+    <div class="foot-meta">
+      <p>FJÄLLVÄGEN 3 &middot; KIRUNA &middot; SWEDEN</p>
+      <p><a href="mailto:north@boreal.example">NORTH@BOREAL.EXAMPLE</a></p>
+      <p>&copy; 2026 BOREAL EXPEDITIONS &middot; <a href="#top">BACK TO THE SKY ↑</a></p>
+    </div>
+  </div>
+</footer>
+
+<script>
+(function(){
+"use strict";
+const reduced = matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+/* ================= AURORA CANVAS ================= */
+const cv = document.getElementById("aurora");
+const cx = cv.getContext("2d");
+let W = 0, H = 0, dpr = 1, stars = [], t = Math.random() * 500;
+let heroVisible = true, rafId = null;
+
+const RIBBONS = [
+  {base:.30, a1:46, a2:20, f1:1.0, f2:2.6, s1:.21, s2:.34, len:210, hp:0.0, drift:.05},
+  {base:.42, a1:60, a2:26, f1:0.7, f2:2.1, s1:.16, s2:.27, len:260, hp:2.1, drift:-.04},
+  {base:.24, a1:34, a2:16, f1:1.3, f2:3.2, s1:.26, s2:.41, len:150, hp:4.2, drift:.07},
+  {base:.52, a1:52, a2:30, f1:0.9, f2:1.7, s1:.12, s2:.22, len:190, hp:1.1, drift:-.06}
+];
+
+function resize(){
+  dpr = Math.min(window.devicePixelRatio || 1, 2);
+  W = cv.clientWidth; H = cv.clientHeight;
+  cv.width = Math.round(W * dpr); cv.height = Math.round(H * dpr);
+  cx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  makeStars();
+  if (reduced) drawFrame(137.5); // static painted frame
+}
+
+function makeStars(){
+  const n = W < 640 ? 90 : 170;
+  stars = [];
+  for (let i = 0; i < n; i++){
+    stars.push({
+      x: Math.random() * W,
+      y: Math.random() * H * .82,
+      r: Math.random() * 1.1 + .3,
+      p: Math.random() * Math.PI * 2,
+      s: .4 + Math.random() * 1.2
+    });
+  }
+}
+
+function ribbonY(r, x, tt){
+  return H * r.base
+    + Math.sin(x * .0016 * r.f1 + tt * r.s1 + r.hp) * r.a1
+    + Math.sin(x * .0042 * r.f2 - tt * r.s2) * r.a2
+    + Math.sin(x * .0007 + tt * .09) * 24;
+}
+
+function drawRibbon(r, tt, soft){
+  const step = W < 640 ? 14 : 9;
+  const hueMix = (Math.sin(tt * .13 + r.hp) + 1) / 2;      // 0 = green, 1 = violet
+  const hue = 150 + hueMix * 112;                           // 150 → 262
+  const hue2 = 150 + (1 - hueMix) * 112;
+  const lenMod = r.len * (soft ? 1.7 : 1);
+  let minY = 1e9, maxY = -1e9;
+  cx.beginPath();
+  for (let x = -20; x <= W + 20; x += step){
+    const y = ribbonY(r, x + tt * r.drift * 400, tt);
+    if (x === -20) cx.moveTo(x, y); else cx.lineTo(x, y);
+    if (y < minY) minY = y;
+  }
+  for (let x = W + 20; x >= -20; x -= step){
+    const y = ribbonY(r, x + tt * r.drift * 400, tt) + lenMod * (0.72 + 0.28 * Math.sin(x * .003 + tt * .3));
+    cx.lineTo(x, y);
+    if (y > maxY) maxY = y;
+  }
+  cx.closePath();
+  const g = cx.createLinearGradient(0, minY, 0, maxY);
+  const aBot = soft ? .10 : .30;
+  g.addColorStop(0, "hsla(" + hue2 + ",95%,66%,0)");
+  g.addColorStop(.45, "hsla(" + hue2 + ",92%,62%," + (aBot * .35) + ")");
+  g.addColorStop(.82, "hsla(" + hue + ",100%,66%," + (aBot * .85) + ")");
+  g.addColorStop(1, "hsla(" + hue + ",100%,74%," + aBot + ")");
+  cx.fillStyle = g;
+  cx.fill();
+}
+
+function drawFrame(tt){
+  cx.clearRect(0, 0, W, H);
+  // starfield
+  cx.globalCompositeOperation = "source-over";
+  for (const s of stars){
+    const tw = reduced ? .8 : .55 + .45 * Math.sin(tt * s.s + s.p);
+    cx.globalAlpha = .18 + .6 * tw;
+    cx.fillStyle = "#EAF2F6";
+    cx.fillRect(s.x, s.y, s.r, s.r);
+  }
+  cx.globalAlpha = 1;
+  // curtains, additive
+  cx.globalCompositeOperation = "lighter";
+  const softPass = W >= 640; // skip the wide glow pass on small screens: halves fill cost
+  for (const r of RIBBONS){ if (softPass) drawRibbon(r, tt, true); drawRibbon(r, tt, false); }
+  cx.globalCompositeOperation = "source-over";
+}
+
+function loop(){
+  t += .016;
+  drawFrame(t);
+  rafId = heroVisible && !document.hidden ? requestAnimationFrame(loop) : null;
+}
+function ensureLoop(){
+  if (reduced) return;
+  if (rafId === null && heroVisible && !document.hidden) rafId = requestAnimationFrame(loop);
+}
+
+new IntersectionObserver(function(e){
+  heroVisible = e[0].isIntersecting;
+  ensureLoop();
+}, {threshold: 0}).observe(cv);
+document.addEventListener("visibilitychange", ensureLoop);
+// debounce canvas rebuild: full re-alloc on every resize event causes jank while dragging
+let rsT = null;
+window.addEventListener("resize", function(){
+  clearTimeout(rsT); rsT = setTimeout(resize, 150);
+});
+resize();
+ensureLoop();
+
+/* ================= SCROLL: parallax + scenes + timeline ================= */
+const mtns = Array.prototype.slice.call(document.querySelectorAll(".mtn"));
+const scBlue = document.getElementById("scBlue");
+const scEmber = document.getElementById("scEmber");
+const secExp = document.getElementById("expeditions");
+const secCabin = document.getElementById("cabin");
+const secBook = document.getElementById("booking");
+const itin = document.getElementById("itin");
+const railBase = document.getElementById("railBase");
+const railDraw = document.getElementById("railDraw");
+let railLen = 0, offExp = 0, offCabin = 0, offBook = 0, vh = innerHeight, ticking = false;
+
+function buildRail(){
+  const h = itin.offsetHeight;
+  const x = innerWidth <= 900 ? 12 : 32;
+  let d = "M " + x + " 8";
+  const segs = 6;
+  for (let i = 1; i <= segs; i++){
+    const y = (h - 16) * i / segs + 8;
+    const wob = (i % 2 ? 10 : -10);
+    d += " C " + (x + wob) + " " + (y - (h / segs) * .66) + ", " + (x + wob) + " " + (y - (h / segs) * .33) + ", " + x + " " + y;
+  }
+  railBase.setAttribute("d", d);
+  railDraw.setAttribute("d", d);
+  railLen = railDraw.getTotalLength();
+  railDraw.style.strokeDasharray = railLen;
+  railDraw.style.strokeDashoffset = reduced ? 0 : railLen;
+}
+
+function measure(){
+  vh = innerHeight;
+  offExp = secExp.offsetTop; offCabin = secCabin.offsetTop; offBook = secBook.offsetTop;
+  buildRail();
+}
+
+function clamp01(v){ return v < 0 ? 0 : v > 1 ? 1 : v; }
+function ease(v){ return v * v * (3 - 2 * v); }
+
+function onScroll(){
+  ticking = false;
+  const sy = scrollY;
+  // parallax mountains (only while hero on screen)
+  if (sy < vh * 1.2 && !reduced){
+    for (const m of mtns){
+      m.style.transform = "translate3d(0," + (sy * parseFloat(m.dataset.p)).toFixed(1) + "px,0)";
+    }
+  }
+  // scene interpolation: night → blue hour → ember
+  const mid = sy + vh * .5;
+  scBlue.style.opacity = ease(clamp01((mid - (offExp - vh * .3)) / (vh * .9))).toFixed(3);
+  scEmber.style.opacity = ease(clamp01((mid - (offCabin - vh * .25)) / (vh * .8))).toFixed(3);
+  // timeline self-draw
+  if (railLen && !reduced){
+    const r = itin.getBoundingClientRect();
+    const p = ease(clamp01((vh * .78 - r.top) / (r.height * .95)));
+    railDraw.style.strokeDashoffset = (railLen * (1 - p)).toFixed(1);
+  }
+}
+function reqTick(){ if (!ticking){ ticking = true; requestAnimationFrame(onScroll); } }
+addEventListener("scroll", reqTick, {passive: true});
+addEventListener("resize", function(){ measure(); reqTick(); });
+measure(); onScroll();
+// web fonts change layout height → re-measure rail + section offsets once loaded
+if (document.fonts && document.fonts.ready) document.fonts.ready.then(function(){ measure(); reqTick(); });
+
+/* ================= REVEALS ================= */
+const io = new IntersectionObserver(function(entries){
+  for (const en of entries){
+    if (en.isIntersecting){ en.target.classList.add("in"); io.unobserve(en.target); }
+  }
+}, {threshold: .15, rootMargin: "0px 0px -8% 0px"});
+document.querySelectorAll(".rv,.day").forEach(function(el){
+  if (reduced) el.classList.add("in"); else io.observe(el);
+});
+})();
+</script>
+</body>
+</html>

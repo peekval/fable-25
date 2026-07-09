@@ -1,0 +1,1104 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SUMI 墨 — Ink Painting Studio, Kyoto</title>
+<meta name="description" content="SUMI 墨 — a sumi-e ink painting studio in Kyoto. One breath, one stroke.">
+<meta name="theme-color" content="#F5F0E6">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Shippori+Mincho:wght@400;500;700;800&family=Zen+Kaku+Gothic+New:wght@300;400;500;700&display=swap" rel="stylesheet">
+<!--
+  PASS 1: full re-read. Fixed (1) resize handler rebuilding scroll strokes with a hardcoded
+    seed 100 instead of each stroke's own seed, so every stroke changed shape after resize —
+    seed now stored per record; (2) possible double-boot (duplicate listeners + doubled
+    stroke arrays) when fonts.ready resolved after the 2.5s safety timeout — added booted
+    guard; (3) invalid out-of-order color stops in the .inkwash sun radial-gradient
+    (74% after 78%); (4) mobile URL-bar height-only resize events forced a full canvas
+    rebuild — now skipped when width is unchanged; (5) added role="img" to all canvases
+    that carry an aria-label.
+  PASS 2: full re-read. Fixed (1) prefers-reduced-motion users still saw the 1s .rise
+    transition and the hanko stamp animation fire at boot — media query now forces final
+    state and disables the keyframes; (2) the wide sweep stroke ended blunt at ~35% width —
+    added a dry exit taper (brush lifting off the paper) shared with the card flicks;
+    (3) no keyboard focus styles on the back link and CTA — added :focus-visible outlines;
+    (4) scroll-hint pulsed forever — fades out once the visitor has scrolled 60px.
+  PASS 3: full re-read. Fixed (1) unbounded catch-up drawing: a fast scroll to the bottom
+    could demand thousands of alpha dabs in one frame — now capped at 450 stations per
+    stroke per frame, remainder spread across following rAFs (no jank, ink still lands);
+    (2) landscape fog-lift reveal waited for 35% visibility, feeling late on tall mobile
+    canvases — threshold lowered with an early rootMargin; (3) added theme-color meta for
+    mobile browser chrome; (4) added lang="ja" to visible Japanese text (headings, quote,
+    hero glyph, session labels) for correct screen-reader pronunciation.
+-->
+<style>
+  :root{
+    --washi:#F5F0E6;
+    --washi-deep:#EDE6D6;
+    --ink:#1A1815;
+    --ink-60:rgba(26,24,21,.6);
+    --ink-40:rgba(26,24,21,.4);
+    --ink-15:rgba(26,24,21,.15);
+    --ink-08:rgba(26,24,21,.08);
+    --seal:#C73E2E;
+    --disp:'Shippori Mincho', serif;
+    --body:'Zen Kaku Gothic New', sans-serif;
+    --max:1240px;
+  }
+  *{margin:0;padding:0;box-sizing:border-box}
+  html{scroll-behavior:smooth}
+  @media (prefers-reduced-motion: reduce){ html{scroll-behavior:auto} }
+  body{
+    background:var(--washi);
+    color:var(--ink);
+    font-family:var(--body);
+    font-weight:400;
+    line-height:1.9;
+    overflow-x:hidden;
+    -webkit-font-smoothing:antialiased;
+  }
+  /* paper grain — pure SVG turbulence, no image asset */
+  body::before{
+    content:"";
+    position:fixed; inset:0; z-index:0; pointer-events:none;
+    opacity:.5; mix-blend-mode:multiply;
+    background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='240' height='240'%3E%3Cfilter id='p'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' seed='7'/%3E%3CfeColorMatrix values='0 0 0 0 0.55 0 0 0 0 0.53 0 0 0 0 0.48 0 0 0 0.05 0'/%3E%3C/filter%3E%3Crect width='240' height='240' filter='url(%23p)'/%3E%3C/svg%3E");
+  }
+  ::selection{background:var(--seal);color:var(--washi)}
+
+  /* ---------- fixed chrome ---------- */
+  .back{
+    position:fixed; top:1.4rem; left:1.4rem; z-index:60;
+    font-family:var(--body); font-size:.8rem; letter-spacing:.18em;
+    color:var(--ink-60); text-decoration:none;
+    padding:.45rem .8rem; border:1px solid var(--ink-15);
+    background:rgba(245,240,230,.82); backdrop-filter:blur(4px);
+    transition:color .3s, border-color .3s;
+  }
+  .back:hover{color:var(--seal); border-color:var(--seal)}
+  .back:focus-visible, .cta:focus-visible{outline:2px solid var(--seal); outline-offset:3px}
+  .mark{
+    position:fixed; top:1.15rem; right:1.4rem; z-index:60;
+    font-family:var(--disp); font-weight:700; font-size:1.35rem;
+    color:var(--ink); line-height:1; user-select:none;
+    writing-mode:vertical-rl; letter-spacing:.35em;
+  }
+  .mark small{font-size:.55rem; font-family:var(--body); letter-spacing:.4em; color:var(--ink-40); font-weight:400}
+
+  /* ---------- shared ---------- */
+  section{position:relative; z-index:1}
+  .wrap{max-width:var(--max); margin:0 auto; padding:0 clamp(1.25rem,5vw,4rem)}
+  .vhead{
+    display:flex; align-items:flex-start; gap:1.1rem;
+    writing-mode:vertical-rl; text-orientation:mixed;
+    height:clamp(200px,32vh,340px);
+  }
+  .vhead .kanji{
+    font-family:var(--disp); font-weight:700;
+    font-size:clamp(2.2rem,4vw,3.4rem); letter-spacing:.32em; line-height:1;
+  }
+  .vhead .en{
+    font-family:var(--body); font-weight:400; font-size:.72rem;
+    letter-spacing:.55em; text-transform:uppercase; color:var(--ink-60);
+    padding-top:.5rem;
+  }
+  .vhead::after{
+    content:""; width:1px; height:70%; background:var(--ink-15); margin-top:auto;
+  }
+  .kicker{
+    font-size:.7rem; letter-spacing:.5em; text-transform:uppercase;
+    color:var(--seal); font-weight:500; margin-bottom:1.2rem;
+  }
+  .lede{
+    font-family:var(--disp); font-weight:500;
+    font-size:clamp(1.45rem,2.6vw,2.15rem); line-height:1.75;
+  }
+  p.copy{max-width:34em; color:var(--ink-60); font-size:.95rem; font-weight:400}
+  p.copy strong{color:var(--ink); font-weight:500}
+  .rise{opacity:0; transform:translateY(26px); transition:opacity 1s cubic-bezier(.22,1,.36,1), transform 1s cubic-bezier(.22,1,.36,1)}
+  .rise.in{opacity:1; transform:none}
+
+  /* hanko seal */
+  .hanko{width:64px; height:64px; display:block; opacity:0; transform:scale(2.3) rotate(10deg)}
+  .hanko.stamped{animation:stamp .55s cubic-bezier(.25,1.35,.35,1) forwards}
+  @keyframes stamp{
+    0%{opacity:0; transform:scale(2.3) rotate(10deg)}
+    55%{opacity:1; transform:scale(.93) rotate(-4deg)}
+    100%{opacity:.92; transform:scale(1) rotate(-3deg)}
+  }
+  @media (prefers-reduced-motion: reduce){
+    .rise{opacity:1; transform:none; transition:none}
+    .hanko{opacity:.92; transform:rotate(-3deg)}
+    .hanko.stamped{animation:none}
+  }
+
+  /* stroke canvases */
+  canvas{display:block}
+  .stroke-line{width:100%; height:110px}
+
+  /* ---------- hero ---------- */
+  .hero{
+    min-height:100svh;
+    display:grid; place-items:center;
+    position:relative; overflow:hidden;
+  }
+  .hero-ghost{
+    position:absolute; inset:0; display:grid; place-items:center;
+    font-family:var(--disp); font-weight:800;
+    font-size:min(88vw,58rem); line-height:1; color:var(--ink);
+    opacity:.026; user-select:none; pointer-events:none;
+    transform:translateY(-2%);
+  }
+  .hero-stage{position:relative; display:grid; place-items:center; width:min(78vmin,600px); aspect-ratio:1}
+  #enso{position:absolute; inset:0; width:100%; height:100%}
+  .hero-core{position:relative; text-align:center; z-index:2}
+  .hero-core .jp{
+    font-family:var(--disp); font-weight:800;
+    font-size:clamp(4.2rem,13vmin,7.5rem); line-height:1; letter-spacing:.04em;
+  }
+  .hero-core .rom{
+    font-family:var(--body); font-weight:300; letter-spacing:.85em;
+    font-size:clamp(.85rem,2vmin,1.1rem); text-transform:uppercase;
+    margin-top:1.1rem; margin-left:.85em; color:var(--ink-60);
+  }
+  .hero-side{
+    position:absolute; right:clamp(1.2rem,6vw,6rem); top:50%;
+    transform:translateY(-50%);
+    writing-mode:vertical-rl; text-orientation:mixed;
+    font-family:var(--disp); font-size:.95rem; letter-spacing:.42em;
+    color:var(--ink-60); z-index:2;
+  }
+  .hero-meta{
+    position:absolute; left:clamp(1.2rem,6vw,6rem); bottom:clamp(4.5rem,9vh,6rem);
+    font-size:.7rem; letter-spacing:.35em; text-transform:uppercase;
+    color:var(--ink-40); z-index:2; line-height:2.4;
+  }
+  .hero-meta b{color:var(--seal); font-weight:500}
+  .scroll-hint{
+    position:absolute; bottom:2rem; left:50%; transform:translateX(-50%);
+    font-size:.62rem; letter-spacing:.5em; text-transform:uppercase; color:var(--ink-40);
+    z-index:2; text-align:center;
+    transition:opacity .8s;
+  }
+  body.scrolled .scroll-hint{opacity:0}
+  .scroll-hint::after{
+    content:""; display:block; width:1px; height:44px; margin:.8rem auto 0;
+    background:linear-gradient(var(--ink-40),transparent);
+    animation:drip 2.4s ease-in-out infinite;
+    transform-origin:top;
+  }
+  @keyframes drip{0%,100%{transform:scaleY(.35)} 50%{transform:scaleY(1)}}
+  @media (prefers-reduced-motion: reduce){ .scroll-hint::after{animation:none} }
+
+  /* ---------- philosophy ---------- */
+  .philosophy{padding:clamp(7rem,15vh,12rem) 0 clamp(5rem,10vh,8rem)}
+  .philosophy .grid{
+    display:grid; grid-template-columns:auto 1fr; gap:clamp(2.5rem,7vw,7rem);
+    align-items:start;
+  }
+  .philosophy .body{max-width:44rem; padding-top:1rem}
+  .philosophy .lede{margin-bottom:2.6rem}
+  .philosophy .lede em{font-style:normal; color:var(--seal)}
+  .ph-cols{display:grid; grid-template-columns:1fr 1fr; gap:2.5rem; margin-top:3rem}
+  .ph-cols .copy{font-size:.9rem}
+  .ph-seal{display:flex; justify-content:flex-end; margin-top:3.5rem; padding-right:8%}
+  .stroke-wide{width:100%; height:150px; margin-top:clamp(3rem,8vh,5rem)}
+
+  /* ---------- treasures ---------- */
+  .treasures{padding:clamp(5rem,11vh,9rem) 0}
+  .treasures .head-row{
+    display:flex; justify-content:space-between; align-items:flex-end;
+    gap:2rem; margin-bottom:clamp(3rem,7vh,5rem);
+  }
+  .treasures .intro{max-width:26rem; padding-bottom:.6rem}
+  .t-grid{
+    display:grid; grid-template-columns:repeat(4,1fr);
+    border-top:1px solid var(--ink-15);
+  }
+  .t-card{
+    padding:2.6rem 1.6rem 2.8rem;
+    border-right:1px solid var(--ink-15);
+    position:relative; overflow:hidden;
+    transition:background .5s;
+  }
+  .t-card:last-child{border-right:none}
+  .t-card:hover{background:rgba(26,24,21,.03)}
+  .t-card .num{
+    font-family:var(--disp); font-size:.75rem; color:var(--ink-40); letter-spacing:.3em;
+  }
+  .t-card .glyph{
+    font-family:var(--disp); font-weight:700;
+    font-size:clamp(3.6rem,5.5vw,5rem); line-height:1.25;
+    margin:1.4rem 0 .4rem;
+    transition:transform .6s cubic-bezier(.22,1,.36,1);
+  }
+  .t-card:hover .glyph{transform:translateY(-6px)}
+  .t-card .name{
+    font-family:var(--disp); font-weight:600; font-size:1.05rem; letter-spacing:.12em;
+  }
+  .t-card .name span{color:var(--ink-40); font-family:var(--body); font-weight:400; font-size:.72rem; letter-spacing:.28em; text-transform:uppercase; margin-left:.6em}
+  .t-card p{font-size:.82rem; color:var(--ink-60); margin-top:1rem; line-height:1.95}
+  .t-card canvas{width:100%; height:26px; margin-top:1.6rem}
+
+  /* ---------- ink wash interlude ---------- */
+  .inkwash{
+    min-height:88svh;
+    position:relative;
+    display:grid; place-items:center;
+    overflow:hidden;
+    background:
+      /* near ridge */
+      radial-gradient(130% 90% at 8% 118%, rgba(26,24,21,.42) 0%, rgba(26,24,21,.22) 34%, transparent 62%),
+      radial-gradient(120% 75% at 88% 122%, rgba(26,24,21,.34) 0%, rgba(26,24,21,.16) 36%, transparent 60%),
+      /* mid ridge */
+      radial-gradient(95% 55% at 30% 106%, rgba(26,24,21,.18) 0%, transparent 58%),
+      radial-gradient(85% 48% at 68% 104%, rgba(26,24,21,.13) 0%, transparent 55%),
+      /* far ridge dissolving in fog */
+      radial-gradient(70% 34% at 50% 96%, rgba(26,24,21,.08) 0%, transparent 60%),
+      linear-gradient(180deg, var(--washi) 0%, var(--washi-deep) 55%, #E4DBC6 100%);
+  }
+  .inkwash::before{ /* fog band */
+    content:""; position:absolute; left:0; right:0; bottom:14%;
+    height:34%;
+    background:linear-gradient(180deg, transparent, rgba(245,240,230,.85) 45%, rgba(245,240,230,.15));
+    pointer-events:none;
+  }
+  .inkwash::after{ /* vermillion sun sinking in mist */
+    content:""; position:absolute; top:16%; right:18%;
+    width:clamp(52px,7vw,88px); aspect-ratio:1; border-radius:50%;
+    background:radial-gradient(circle, rgba(199,62,46,.85) 0 62%, rgba(199,62,46,.25) 74%, transparent 88%);
+    filter:blur(.5px);
+  }
+  .inkwash .quote{
+    position:relative; z-index:2;
+    writing-mode:vertical-rl; text-orientation:mixed;
+    font-family:var(--disp); font-weight:500;
+    font-size:clamp(1.25rem,2.4vw,1.8rem); letter-spacing:.34em; line-height:2.4;
+    height:min(58vh,460px);
+    color:var(--ink);
+  }
+  .inkwash .quote small{
+    display:block; font-family:var(--body); font-size:.62rem; letter-spacing:.5em;
+    text-transform:uppercase; color:var(--ink-60); margin-top:4.5rem;
+  }
+
+  /* ---------- gallery ---------- */
+  .gallery{padding:clamp(6rem,13vh,10rem) 0}
+  .gallery .head-row{display:flex; align-items:flex-end; justify-content:space-between; gap:2rem; margin-bottom:clamp(3rem,7vh,5rem)}
+  .g-grid{
+    display:grid;
+    grid-template-columns:1.45fr 1fr;
+    grid-template-rows:auto auto;
+    gap:clamp(1.5rem,3.5vw,3rem);
+  }
+  .g-item{position:relative}
+  .g-item:nth-child(1){grid-row:1 / span 2; align-self:center}
+  .g-item figure{margin:0; border:1px solid var(--ink-15); background:var(--washi); padding:clamp(.8rem,1.6vw,1.4rem)}
+  .g-item canvas{width:100%; aspect-ratio:4/3; background:transparent}
+  .g-item:nth-child(1) canvas{aspect-ratio:3/4}
+  .g-cap{
+    display:flex; justify-content:space-between; align-items:baseline;
+    margin-top:1.1rem; gap:1rem;
+  }
+  .g-cap .t{font-family:var(--disp); font-weight:600; font-size:1rem; letter-spacing:.1em}
+  .g-cap .t span{display:block; font-family:var(--body); font-weight:400; font-size:.68rem; color:var(--ink-60); letter-spacing:.3em; text-transform:uppercase; margin-top:.25rem}
+  .g-cap .n{font-family:var(--disp); color:var(--seal); font-size:1.05rem}
+
+  /* ---------- workshop ---------- */
+  .workshop{padding:clamp(6rem,13vh,10rem) 0 clamp(5rem,10vh,8rem)}
+  .workshop .grid{display:grid; grid-template-columns:auto 1fr auto; gap:clamp(2.5rem,6vw,6rem); align-items:start}
+  .workshop .body{max-width:40rem}
+  .workshop .lede{margin-bottom:2.2rem}
+  .w-list{list-style:none; margin:2.8rem 0 3rem; border-top:1px solid var(--ink-15)}
+  .w-list li{
+    display:grid; grid-template-columns:9rem 1fr; gap:1.5rem;
+    padding:1.15rem 0; border-bottom:1px solid var(--ink-15);
+    font-size:.9rem;
+  }
+  .w-list .k{font-family:var(--disp); font-weight:600; letter-spacing:.1em}
+  .w-list .k i{font-style:normal; color:var(--ink-40); font-family:var(--body); font-size:.68rem; letter-spacing:.25em; text-transform:uppercase; display:block}
+  .w-list .v{color:var(--ink-60)}
+  .cta{
+    display:inline-block; text-decoration:none;
+    font-family:var(--body); font-weight:500; font-size:.8rem;
+    letter-spacing:.35em; text-transform:uppercase;
+    color:var(--washi); background:var(--ink);
+    padding:1.15rem 2.6rem 1.1rem;
+    position:relative; overflow:hidden;
+    transition:color .35s;
+  }
+  .cta::before{
+    content:""; position:absolute; inset:0; background:var(--seal);
+    transform:translateX(-101%); transition:transform .45s cubic-bezier(.22,1,.36,1);
+  }
+  .cta:hover::before{transform:none}
+  .cta span{position:relative; z-index:1}
+  .w-seal{align-self:end; padding-bottom:.5rem}
+
+  /* ---------- footer ---------- */
+  footer{
+    border-top:1px solid var(--ink-15);
+    padding:3.2rem 0 3.6rem;
+    position:relative; z-index:1;
+  }
+  footer .row{
+    display:flex; flex-wrap:wrap; gap:2rem; justify-content:space-between; align-items:baseline;
+  }
+  footer .sig{font-family:var(--disp); font-weight:700; font-size:1.3rem; letter-spacing:.2em}
+  footer .sig small{font-family:var(--body); font-weight:400; font-size:.65rem; color:var(--ink-40); letter-spacing:.35em; text-transform:uppercase; margin-left:1em}
+  footer p{font-size:.72rem; color:var(--ink-40); letter-spacing:.12em; line-height:2.2}
+  footer .jp-addr{writing-mode:vertical-rl; font-family:var(--disp); font-size:.72rem; letter-spacing:.3em; color:var(--ink-60); height:110px}
+
+  /* ---------- responsive ---------- */
+  @media (max-width:1023px){
+    .g-grid{grid-template-columns:1fr}
+    .g-item:nth-child(1){grid-row:auto}
+    .g-item:nth-child(1) canvas{aspect-ratio:4/3}
+    .workshop .grid{grid-template-columns:auto 1fr}
+    .w-seal{grid-column:2; justify-self:end}
+  }
+  @media (max-width:680px){
+    .mark{display:none}
+    .hero-side{display:none}
+    .hero-meta{left:1.25rem; bottom:5.4rem}
+    .vhead{
+      writing-mode:horizontal-tb; height:auto; align-items:baseline; gap:.9rem;
+      margin-bottom:2.2rem;
+    }
+    .vhead::after{display:none}
+    .vhead .en{padding-top:0}
+    .philosophy .grid, .workshop .grid{grid-template-columns:1fr}
+    .ph-cols{grid-template-columns:1fr; gap:1.6rem}
+    .treasures .head-row, .gallery .head-row{flex-direction:column; align-items:flex-start}
+    .t-grid{grid-template-columns:1fr; border-left:none}
+    .t-card{border-right:none; border-bottom:1px solid var(--ink-15); padding:2.2rem .2rem}
+    .inkwash .quote{height:min(62vh,420px); font-size:1.15rem}
+    .w-list li{grid-template-columns:1fr; gap:.2rem}
+    .w-seal{justify-self:start}
+    footer .jp-addr{display:none}
+  }
+</style>
+</head>
+<body>
+
+<a class="back" href="/">←&nbsp;25</a>
+<div class="mark" aria-hidden="true">墨<small>SUMI</small></div>
+
+<!-- ═══════════ HERO ═══════════ -->
+<header class="hero">
+  <div class="hero-ghost" aria-hidden="true">墨</div>
+  <div class="hero-stage">
+    <canvas id="enso" role="img" aria-label="Hand-drawn ensō circle"></canvas>
+    <div class="hero-core">
+      <div class="jp" lang="ja">墨</div>
+      <div class="rom">Sumi</div>
+    </div>
+  </div>
+  <div class="hero-side" aria-hidden="true">一筆入魂 — ink painting studio</div>
+  <div class="hero-meta">
+    Kyoto · Higashiyama<br>
+    Est. <b>1962</b> · Third generation
+  </div>
+  <div class="scroll-hint">Scroll</div>
+</header>
+
+<!-- ═══════════ PHILOSOPHY ═══════════ -->
+<section class="philosophy" id="philosophy">
+  <div class="wrap">
+    <div class="grid">
+      <h2 class="vhead rise"><span class="kanji" lang="ja">余白</span><span class="en">Philosophy</span></h2>
+      <div class="body">
+        <div class="kicker rise">The space between — 間</div>
+        <p class="lede rise">A painting is not the ink.<br>It is the breath the ink <em>leaves behind</em> on the paper.</p>
+        <p class="copy rise">In sumi-e there is no correcting stroke. The brush touches washi once, and the moment is recorded forever — hesitation, confidence, the tremor of the wrist after morning tea. We do not call this imperfection. We call it <strong>evidence of a life</strong>.</p>
+        <div class="ph-cols">
+          <p class="copy rise">Our studio keeps the discipline of the old Kanō method: a year of straight lines before the first bamboo leaf, a year of bamboo before the first mountain. Students grind their own ink each morning; the sound of stone on stone is the metronome of the room.</p>
+          <p class="copy rise">What remains unpainted matters most. Emptiness in the composition — <strong>yohaku, the left-white</strong> — is not absence but held breath. Fog, water, distance, silence: all of it lives in the untouched cream of the paper.</p>
+        </div>
+        <div class="ph-seal">
+          <svg class="hanko" viewBox="0 0 64 64" role="img" aria-label="Red seal reading ink heart">
+            <g filter="url(#roughen)">
+              <rect x="3" y="3" width="58" height="58" rx="7" fill="#C73E2E"/>
+              <text x="32" y="27" text-anchor="middle" font-family="'Shippori Mincho',serif" font-weight="700" font-size="21" fill="#F5F0E6">墨</text>
+              <text x="32" y="52" text-anchor="middle" font-family="'Shippori Mincho',serif" font-weight="700" font-size="21" fill="#F5F0E6">心</text>
+            </g>
+            <defs>
+              <filter id="roughen" x="-10%" y="-10%" width="120%" height="120%">
+                <feTurbulence type="fractalNoise" baseFrequency=".55" numOctaves="2" seed="4" result="n"/>
+                <feDisplacementMap in="SourceGraphic" in2="n" scale="2.6"/>
+              </filter>
+            </defs>
+          </svg>
+        </div>
+      </div>
+    </div>
+  </div>
+  <canvas class="stroke-wide" data-stroke="sweep" aria-hidden="true"></canvas>
+</section>
+
+<!-- ═══════════ FOUR TREASURES ═══════════ -->
+<section class="treasures" id="treasures">
+  <div class="wrap">
+    <div class="head-row">
+      <h2 class="vhead rise"><span class="kanji" lang="ja">文房四宝</span><span class="en">Four Treasures</span></h2>
+      <p class="copy intro rise">Every tool in this room is older than its user. The four treasures of the study — brush, ink, paper, stone — are chosen once and kept for a lifetime.</p>
+    </div>
+    <div class="t-grid">
+      <article class="t-card rise">
+        <div class="num">〇一</div>
+        <div class="glyph">筆</div>
+        <div class="name">Fude<span>Brush</span></div>
+        <p>Winter weasel hair from Nara, bound by the Tanaka family since the Meiji era. A new brush is broken in with plain water for a week before it may touch ink.</p>
+        <canvas data-stroke="flick" aria-hidden="true"></canvas>
+      </article>
+      <article class="t-card rise">
+        <div class="num">〇二</div>
+        <div class="glyph">墨</div>
+        <div class="name">Sumi<span>Ink stick</span></div>
+        <p>Pine-soot ink aged thirty years in a cedar drawer. Old ink grinds bluer and quieter; fresh ink shouts. We prefer the ink that has learned patience.</p>
+        <canvas data-stroke="flick" aria-hidden="true"></canvas>
+      </article>
+      <article class="t-card rise">
+        <div class="num">〇三</div>
+        <div class="glyph">紙</div>
+        <div class="name">Washi<span>Paper</span></div>
+        <p>Kōzo-fibre paper from Echizen, unsized, thirsty. It drinks the stroke the instant it lands — there is no negotiating with good washi.</p>
+        <canvas data-stroke="flick" aria-hidden="true"></canvas>
+      </article>
+      <article class="t-card rise">
+        <div class="num">〇四</div>
+        <div class="glyph">硯</div>
+        <div class="name">Suzuri<span>Inkstone</span></div>
+        <p>A grey Amehata stone, its grinding basin worn to a soft hollow by three generations of the same circular motion, every morning, before speech.</p>
+        <canvas data-stroke="flick" aria-hidden="true"></canvas>
+      </article>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════ INK-WASH INTERLUDE ═══════════ -->
+<section class="inkwash" aria-label="Ink-wash mountains in fog">
+  <div class="quote rise"><span lang="ja">山は霧に消えて、なお在る</span><small>The mountain dissolves in fog — and remains</small></div>
+</section>
+
+<!-- ═══════════ GALLERY ═══════════ -->
+<section class="gallery" id="works">
+  <div class="wrap">
+    <div class="head-row">
+      <h2 class="vhead rise"><span class="kanji" lang="ja">作品</span><span class="en">Selected Works</span></h2>
+      <p class="copy intro rise" style="max-width:24rem">Three studies from the studio wall. Each is drawn here, in front of you, by the same algorithmic hand — no photograph, no scan, only code and patience.</p>
+    </div>
+    <div class="g-grid">
+      <div class="g-item rise">
+        <figure><canvas data-land="0" role="img" aria-label="Ink painting: mist over Arashiyama"></canvas></figure>
+        <div class="g-cap"><div class="t">遠霧 — Mist over Arashiyama<span>Ink on washi · 2024</span></div><div class="n">一</div></div>
+      </div>
+      <div class="g-item rise">
+        <figure><canvas data-land="1" role="img" aria-label="Ink painting: lone pine on a ridge"></canvas></figure>
+        <div class="g-cap"><div class="t">孤松 — The Lone Pine<span>Ink on washi · 2025</span></div><div class="n">二</div></div>
+      </div>
+      <div class="g-item rise">
+        <figure><canvas data-land="2" role="img" aria-label="Ink painting: river at dusk with fishing boat"></canvas></figure>
+        <div class="g-cap"><div class="t">暮川 — River at Dusk<span>Ink on washi · 2026</span></div><div class="n">三</div></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════ WORKSHOP ═══════════ -->
+<section class="workshop" id="workshop">
+  <canvas class="stroke-line" data-stroke="under" aria-hidden="true"></canvas>
+  <div class="wrap" style="margin-top:clamp(2.5rem,6vh,4rem)">
+    <div class="grid">
+      <h2 class="vhead rise"><span class="kanji" lang="ja">稽古</span><span class="en">Workshop</span></h2>
+      <div class="body">
+        <div class="kicker rise">Keiko — practice, repeated</div>
+        <p class="lede rise">Sit with us one morning.<br>Grind ink until the room smells of pine smoke.</p>
+        <p class="copy rise">The beginners' seat is a cushion by the east window. You will paint the same bamboo leaf perhaps two hundred times, and around the hundred-and-fiftieth, something in your shoulder will let go. That is the whole lesson; everything after is refinement.</p>
+        <ul class="w-list rise">
+          <li><span class="k">朝の部 <i>Morning session</i></span><span class="v">Tuesday &amp; Saturday, 7:00 — 10:00. Six seats. Silence until the first break.</span></li>
+          <li><span class="k">持ち物 <i>What to bring</i></span><span class="v">Nothing. Brush, stone, ink and paper wait at your place. Wear sleeves you can roll.</span></li>
+          <li><span class="k">月謝 <i>Monthly fee</i></span><span class="v">¥12,000 — includes tools, tea, and as much washi as you can fill.</span></li>
+          <li><span class="k">場所 <i>Place</i></span><span class="v">A machiya workshop two lanes east of Kenninji temple, Higashiyama, Kyoto.</span></li>
+        </ul>
+        <a class="cta rise" href="mailto:keiko@sumi-studio.jp"><span>Request a seat</span></a>
+      </div>
+      <div class="w-seal">
+        <svg class="hanko" viewBox="0 0 64 64" role="img" aria-label="Red seal reading practice">
+          <g filter="url(#roughen2)">
+            <rect x="3" y="3" width="58" height="58" rx="7" fill="#C73E2E"/>
+            <text x="32" y="27" text-anchor="middle" font-family="'Shippori Mincho',serif" font-weight="700" font-size="21" fill="#F5F0E6">稽</text>
+            <text x="32" y="52" text-anchor="middle" font-family="'Shippori Mincho',serif" font-weight="700" font-size="21" fill="#F5F0E6">古</text>
+          </g>
+          <defs>
+            <filter id="roughen2" x="-10%" y="-10%" width="120%" height="120%">
+              <feTurbulence type="fractalNoise" baseFrequency=".5" numOctaves="2" seed="11" result="n"/>
+              <feDisplacementMap in="SourceGraphic" in2="n" scale="2.6"/>
+            </filter>
+          </defs>
+        </svg>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════ FOOTER ═══════════ -->
+<footer>
+  <div class="wrap">
+    <div class="row">
+      <div>
+        <div class="sig">墨 SUMI<small>Ink painting studio</small></div>
+        <p>Higashiyama, Kyoto — two lanes east of Kenninji.<br>Visits by appointment · keiko@sumi-studio.jp</p>
+      </div>
+      <div class="jp-addr" aria-hidden="true">京都・東山 一筆入魂</div>
+      <p>© 2026 SUMI studio.<br>Every mark on this page is drawn in the browser — canvas, SVG and CSS only.</p>
+    </div>
+  </div>
+</footer>
+
+<script>
+'use strict';
+(function(){
+  const DPR = Math.min(2, window.devicePixelRatio || 1);
+  const REDUCED = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  const INK = '26,24,21';
+
+  /* seeded PRNG so every "hand" stroke is deterministic across resizes */
+  function mulberry32(a){
+    return function(){
+      a |= 0; a = a + 0x6D2B79F5 | 0;
+      let t = Math.imul(a ^ a >>> 15, 1 | a);
+      t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t;
+      return ((t ^ t >>> 14) >>> 0) / 4294967296;
+    };
+  }
+
+  function fit(cv){
+    const r = cv.getBoundingClientRect();
+    const w = Math.max(1, Math.round(r.width)), h = Math.max(1, Math.round(r.height));
+    cv.width = Math.round(w * DPR); cv.height = Math.round(h * DPR);
+    const ctx = cv.getContext('2d');
+    ctx.setTransform(DPR, 0, 0, DPR, 0, 0);
+    return { ctx, w, h };
+  }
+
+  /* ============================================================
+     THE BRUSH — quadratic path sampled into "stations",
+     each station laid down as an overlapping cluster of
+     translucent dabs: core blob + dry-hair streaks along the
+     normal + occasional low-alpha bleed halo. Alpha build-up
+     is what makes it read as real ink on thirsty paper.
+     ============================================================ */
+  function q(p0, p1, p2, t){
+    const a = 1 - t;
+    return { x: a*a*p0.x + 2*a*t*p1.x + t*t*p2.x,
+             y: a*a*p0.y + 2*a*t*p1.y + t*t*p2.y };
+  }
+  function segLen(s){
+    let L = 0, prev = s.p0;
+    for (let i = 1; i <= 12; i++){
+      const p = q(s.p0, s.p1, s.p2, i/12);
+      L += Math.hypot(p.x - prev.x, p.y - prev.y); prev = p;
+    }
+    return L;
+  }
+
+  /* segs: [{p0,p1,p2}] px · widthFn(g 0..1) -> px · returns station list */
+  function buildStations(segs, widthFn, seed, spacing){
+    spacing = spacing || 2.4;
+    const rnd = mulberry32(seed);
+    let total = 0;
+    segs.forEach(s => { s.len = segLen(s); total += s.len; });
+    const st = [];
+    let acc = 0;
+    for (const s of segs){
+      const n = Math.max(3, Math.round(s.len / spacing));
+      for (let i = 0; i < n; i++){
+        const t = i / n;
+        const g = (acc + s.len * t) / total;
+        const p = q(s.p0, s.p1, s.p2, t);
+        const p2 = q(s.p0, s.p1, s.p2, Math.min(1, t + .02));
+        let dx = p2.x - p.x, dy = p2.y - p.y;
+        const d = Math.hypot(dx, dy) || 1; dx /= d; dy /= d;
+        st.push({
+          x: p.x + (rnd() - .5) * 1.1,
+          y: p.y + (rnd() - .5) * 1.1,
+          nx: -dy, ny: dx,
+          w: Math.max(.7, widthFn(g) * (.82 + .4 * rnd())),
+          r: [rnd(), rnd(), rnd(), rnd(), rnd(), rnd()]
+        });
+      }
+      acc += s.len;
+    }
+    return st;
+  }
+
+  function dab(ctx, x, y, r){
+    ctx.beginPath(); ctx.arc(x, y, r, 0, 6.2832); ctx.fill();
+  }
+
+  /* draw stations [from, to) — incremental, never cleared: ink doesn't retreat */
+  function drawStations(ctx, st, from, to, alpha){
+    alpha = alpha || 1;
+    const end = Math.min(to, st.length);
+    for (let i = Math.max(0, from); i < end; i++){
+      const s = st[i], hw = s.w / 2, r = s.r;
+      ctx.fillStyle = 'rgba(' + INK + ',' + (.22 * alpha) + ')';
+      dab(ctx, s.x, s.y, hw * .95);
+      /* dry-hair streaks across the width */
+      for (let k = 0; k < 3; k++){
+        const off = (r[k] - .5) * s.w * .95;
+        ctx.fillStyle = 'rgba(' + INK + ',' + ((.12 + .13 * r[(k+1)%6]) * alpha) + ')';
+        dab(ctx, s.x + s.nx * off, s.y + s.ny * off, hw * .38);
+      }
+      /* occasional bleed halo into the paper */
+      if (r[4] < .055){
+        ctx.fillStyle = 'rgba(' + INK + ',' + (.05 * alpha) + ')';
+        dab(ctx, s.x + (r[5] - .5) * s.w * 1.6, s.y + (r[2] - .5) * s.w * 1.6, hw * (1.5 + r[3]));
+      }
+    }
+    return end;
+  }
+
+  /* ============================================================
+     ENSŌ — one breath, one circle, drawn on load
+     ============================================================ */
+  const ensoCv = document.getElementById('enso');
+  const enso = { st: [], drawn: 0 };
+
+  function buildEnso(){
+    const { ctx, w, h } = fit(ensoCv);
+    enso.ctx = ctx;
+    const R = Math.min(w, h) * .42, cx = w / 2, cy = h / 2;
+    const rnd = mulberry32(42);
+    const st = [];
+    const start = -Math.PI * .58, sweep = Math.PI * 1.94; /* open circle */
+    const n = Math.round((6.2832 * R) / 2.4);
+    let wob = 0;
+    for (let i = 0; i < n; i++){
+      const g = i / n, a = start + sweep * g;
+      wob = wob * .93 + (rnd() - .5) * 1.5;
+      const rr = R + wob + Math.sin(g * 14 + 2) * 1.6;
+      const x = cx + Math.cos(a) * rr, y = cy + Math.sin(a) * rr;
+      /* width: firm entry → breathing middle → dry tapered exit */
+      let wdt = R * .13 * (.72 + .38 * Math.sin(g * 7 + 1.2)) * (1.12 - .55 * g);
+      if (g < .05) wdt *= .45 + .55 * (g / .05);
+      if (g > .9)  wdt *= Math.max(.06, (1 - g) / .1);
+      st.push({
+        x: x + (rnd() - .5) * 1.4, y: y + (rnd() - .5) * 1.4,
+        nx: Math.cos(a), ny: Math.sin(a),
+        w: Math.max(.8, wdt * (.85 + .35 * rnd())),
+        r: [rnd(), rnd(), rnd(), rnd(), rnd(), rnd()]
+      });
+    }
+    enso.st = st;
+    enso.drawn = 0;
+    ctx.clearRect(0, 0, w, h);
+  }
+
+  function animateEnso(){
+    buildEnso();
+    if (REDUCED){
+      enso.drawn = drawStations(enso.ctx, enso.st, 0, enso.st.length);
+      return;
+    }
+    const T = 2100, t0 = performance.now();
+    (function frame(now){
+      const p = Math.min(1, (now - t0) / T);
+      const e = 1 - Math.pow(1 - p, 2.6); /* fast attack, slow drying tail */
+      enso.drawn = drawStations(enso.ctx, enso.st, enso.drawn, Math.floor(e * enso.st.length) + 1);
+      if (p < 1) requestAnimationFrame(frame);
+    })(t0);
+  }
+
+  /* ============================================================
+     SCROLL STROKES — paint themselves as the page moves.
+     Monotonic: ink never un-paints when scrolling back up.
+     ============================================================ */
+  const strokes = [];
+
+  function strokeSegs(kind, w, h){
+    if (kind === 'sweep') return [
+      { p0:{x:-w*.02, y:h*.62}, p1:{x:w*.22, y:h*.05}, p2:{x:w*.47, y:h*.5} },
+      { p0:{x:w*.47, y:h*.5},  p1:{x:w*.7,  y:h*.9},  p2:{x:w*1.02, y:h*.3} }
+    ];
+    if (kind === 'under') return [
+      { p0:{x:w*.03, y:h*.6}, p1:{x:w*.5, y:h*.25}, p2:{x:w*.97, y:h*.55} }
+    ];
+    /* flick — short confident tick under each treasure card */
+    return [
+      { p0:{x:w*.06, y:h*.7}, p1:{x:w*.4, y:h*.05}, p2:{x:w*.82, y:h*.5} }
+    ];
+  }
+  function strokeWidth(kind, w, h){
+    /* every stroke ends in a dry taper — a brush lifting off the paper */
+    const taper = g => g > .82 ? Math.max(.08, (1 - g) / .18) : 1;
+    if (kind === 'sweep') return g => h * .3 * (1.05 - .55*g) * (.7 + .3*Math.sin(g*9)) * taper(g);
+    if (kind === 'under') return g => h * .34 * Math.sin(Math.min(1,g*1.15) * Math.PI) + 1.2;
+    return g => h * .5 * (1 - g*.55) * taper(g);
+  }
+
+  function buildScrollStrokes(){
+    document.querySelectorAll('canvas[data-stroke]').forEach((cv, idx) => {
+      const kind = cv.dataset.stroke;
+      const { ctx, w, h } = fit(cv);
+      const seed = 100 + idx * 37;
+      const st = buildStations(strokeSegs(kind, w, h), strokeWidth(kind, w, h), seed, kind === 'flick' ? 1.6 : 2.6);
+      const rec = { cv, ctx, st, seed, drawn: 0, target: 0 };
+      if (REDUCED){ rec.drawn = drawStations(ctx, st, 0, st.length); rec.target = st.length; }
+      strokes.push(rec);
+    });
+  }
+
+  let scrollQueued = false;
+  function onScroll(){
+    if (scrollQueued) return;
+    scrollQueued = true;
+    requestAnimationFrame(() => {
+      scrollQueued = false;
+      if (window.scrollY > 60) document.body.classList.add('scrolled');
+      const vh = window.innerHeight;
+      let more = false;
+      for (const s of strokes){
+        const r = s.cv.getBoundingClientRect();
+        /* progress: element enters at 92% of viewport, fully painted by 45% */
+        const p = Math.min(1, Math.max(0, (vh * .92 - r.top) / (vh * .47)));
+        s.target = Math.max(s.target, Math.floor(p * s.st.length));
+        if (s.drawn < s.target){
+          /* cap work per frame — a fast scroll never stalls a frame */
+          s.drawn = drawStations(s.ctx, s.st, s.drawn, Math.min(s.target, s.drawn + 450));
+          if (s.drawn < s.target) more = true;
+        }
+      }
+      if (more) onScroll();
+    });
+  }
+
+  /* ============================================================
+     LANDSCAPES — three code-drawn sumi-e scenes.
+     Rendered once offscreen, revealed like fog lifting.
+     ============================================================ */
+  function ridge(ctx, W, y0, amp, phase, alpha, rnd){
+    /* mountain silhouette from layered sines, filled + faded downward */
+    const g = ctx.createLinearGradient(0, y0 - amp, 0, y0 + amp * 3.2);
+    g.addColorStop(0, 'rgba(' + INK + ',' + alpha + ')');
+    g.addColorStop(1, 'rgba(' + INK + ',0)');
+    ctx.fillStyle = g;
+    ctx.beginPath();
+    ctx.moveTo(-4, y0 + amp * 4);
+    const f1 = 1.7 + rnd()*1.1, f2 = 4 + rnd()*3, f3 = 9 + rnd()*5;
+    for (let x = -4; x <= W + 4; x += 3){
+      const u = x / W;
+      const y = y0
+        - Math.sin(u * f1 * Math.PI + phase) * amp
+        - Math.sin(u * f2 * Math.PI + phase * 2.3) * amp * .35
+        - Math.sin(u * f3 * Math.PI + phase * 4.1) * amp * .12;
+      ctx.lineTo(x, y);
+    }
+    ctx.lineTo(W + 4, y0 + amp * 4);
+    ctx.closePath();
+    ctx.fill();
+  }
+
+  function mist(ctx, W, y, h){
+    const g = ctx.createLinearGradient(0, y, 0, y + h);
+    g.addColorStop(0, 'rgba(245,240,230,0)');
+    g.addColorStop(.5, 'rgba(245,240,230,.9)');
+    g.addColorStop(1, 'rgba(245,240,230,0)');
+    ctx.fillStyle = g;
+    ctx.fillRect(0, y, W, h);
+  }
+
+  function brushLine(ctx, segs, widthFn, seed, spacing){
+    const st = buildStations(segs, widthFn, seed, spacing || 1.8);
+    drawStations(ctx, st, 0, st.length);
+  }
+
+  function pine(ctx, x, y, s, seed){
+    const rnd = mulberry32(seed);
+    /* trunk: leaning, thick to thin */
+    brushLine(ctx,
+      [{ p0:{x:x, y:y}, p1:{x:x + s*.12, y:y - s*.55}, p2:{x:x - s*.08, y:y - s*1} }],
+      g => s * .07 * (1.1 - .75*g), seed);
+    /* branches with needle clusters */
+    for (let b = 0; b < 4; b++){
+      const bt = .45 + b * .17;
+      const bx = x + s*.12*(1-bt) - s*.08*bt + (rnd()-.5)*s*.06;
+      const by = y - s * bt;
+      const dir = (b % 2 ? 1 : -1);
+      const ex = bx + dir * s * (.3 + rnd()*.22), ey = by - s * (.05 + rnd()*.1);
+      brushLine(ctx,
+        [{ p0:{x:bx, y:by}, p1:{x:(bx+ex)/2, y:by - s*.08}, p2:{x:ex, y:ey} }],
+        g => s * .028 * (1 - g*.6), seed + b + 1);
+      /* needles: short radiating flicks */
+      for (let k = 0; k < 7; k++){
+        const a = -Math.PI*.5 + (k/6 - .5) * 2.4;
+        const nl = s * (.1 + rnd()*.08);
+        brushLine(ctx,
+          [{ p0:{x:ex, y:ey}, p1:{x:ex + Math.cos(a)*nl*.5, y:ey + Math.sin(a)*nl*.5},
+             p2:{x:ex + Math.cos(a)*nl, y:ey + Math.sin(a)*nl} }],
+          g => s*.014*(1-g), seed*3 + b*10 + k, 1.2);
+      }
+    }
+  }
+
+  function sealStamp(ctx, x, y, s, glyph){
+    ctx.save();
+    ctx.translate(x, y); ctx.rotate(-.06);
+    ctx.fillStyle = 'rgba(199,62,46,.9)';
+    ctx.beginPath();
+    /* slightly irregular square — hand-carved edge */
+    ctx.moveTo(-s*.5, -s*.47); ctx.lineTo(s*.47, -s*.5);
+    ctx.lineTo(s*.5, s*.48); ctx.lineTo(-s*.46, s*.5);
+    ctx.closePath(); ctx.fill();
+    ctx.fillStyle = '#F5F0E6';
+    ctx.font = '700 ' + (s*.62) + 'px "Shippori Mincho", serif';
+    ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+    ctx.fillText(glyph, 0, s*.05);
+    ctx.restore();
+  }
+
+  function paintLandscape(ctx, W, H, kind){
+    const rnd = mulberry32(500 + kind * 131);
+    ctx.clearRect(0, 0, W, H);
+
+    if (kind === 0){ /* 遠霧 — Mist over Arashiyama (tall) */
+      ridge(ctx, W, H*.30, H*.045, rnd()*6, .07, rnd);
+      ridge(ctx, W, H*.40, H*.07,  rnd()*6, .12, rnd);
+      mist (ctx, W, H*.34, H*.18);
+      ridge(ctx, W, H*.56, H*.10,  rnd()*6, .2,  rnd);
+      mist (ctx, W, H*.52, H*.2);
+      ridge(ctx, W, H*.78, H*.13,  rnd()*6, .34, rnd);
+      /* pagoda on the mid ridge, half swallowed by fog */
+      const px = W*.68, py = H*.545;
+      ctx.fillStyle = 'rgba(' + INK + ',.4)';
+      for (let f = 0; f < 3; f++){
+        const fw = W*.085*(1 - f*.22), fy = py - f*H*.035;
+        ctx.fillRect(px - fw/2, fy - H*.008, fw, H*.008);
+        ctx.fillRect(px - fw*.28, fy - H*.032, fw*.56, H*.026);
+      }
+      ctx.fillRect(px - W*.004, py - H*.115, W*.008, H*.02);
+      mist(ctx, W, H*.6, H*.16);
+      /* foreground reeds */
+      for (let k = 0; k < 5; k++){
+        const rx = W*(.08 + rnd()*.2), ry = H*(.97 - rnd()*.02);
+        brushLine(ctx,
+          [{ p0:{x:rx, y:ry}, p1:{x:rx + W*.02, y:ry - H*.07}, p2:{x:rx + W*(.03+rnd()*.03), y:ry - H*(.11+rnd()*.05)} }],
+          g => 2.4*(1-g*.7), 900 + kind*50 + k, 1.4);
+      }
+      sealStamp(ctx, W*.87, H*.9, Math.min(W,H)*.075, '墨');
+    }
+
+    if (kind === 1){ /* 孤松 — Lone pine on a ridge */
+      ridge(ctx, W, H*.42, H*.05, rnd()*6, .08, rnd);
+      mist (ctx, W, H*.4,  H*.22);
+      /* cliff shoulder the pine stands on */
+      const g = ctx.createLinearGradient(0, H*.62, 0, H);
+      g.addColorStop(0, 'rgba(' + INK + ',.3)');
+      g.addColorStop(1, 'rgba(' + INK + ',.04)');
+      ctx.fillStyle = g;
+      ctx.beginPath();
+      ctx.moveTo(-4, H*.78);
+      ctx.quadraticCurveTo(W*.22, H*.6, W*.44, H*.7);
+      ctx.quadraticCurveTo(W*.6, H*.78, W*.55, H+4);
+      ctx.lineTo(-4, H+4); ctx.closePath(); ctx.fill();
+      /* cliff edge stroke */
+      brushLine(ctx,
+        [{ p0:{x:0, y:H*.78}, p1:{x:W*.22, y:H*.6}, p2:{x:W*.44, y:H*.7} }],
+        gg => 5*(1 - gg*.5), 777);
+      pine(ctx, W*.3, H*.7, Math.min(W,H)*.42, 321);
+      /* two birds — single-flick calligraphy */
+      for (let b = 0; b < 2; b++){
+        const bx = W*(.66 + b*.12), by = H*(.24 + b*.05);
+        brushLine(ctx, [{ p0:{x:bx-W*.03, y:by}, p1:{x:bx, y:by-H*.025}, p2:{x:bx+W*.03, y:by} }],
+          gg => 1.8*Math.sin(gg*Math.PI)+.4, 600+b, 1.3);
+      }
+      sealStamp(ctx, W*.88, H*.16, Math.min(W,H)*.09, '松');
+    }
+
+    if (kind === 2){ /* 暮川 — River at dusk */
+      ridge(ctx, W, H*.3, H*.08, rnd()*6, .1, rnd);
+      ridge(ctx, W, H*.42, H*.1, rnd()*6, .18, rnd);
+      mist (ctx, W, H*.38, H*.2);
+      /* dusk sun */
+      ctx.fillStyle = 'rgba(199,62,46,.75)';
+      ctx.beginPath(); ctx.arc(W*.26, H*.2, Math.min(W,H)*.055, 0, 6.2832); ctx.fill();
+      ctx.fillStyle = 'rgba(199,62,46,.15)';
+      ctx.beginPath(); ctx.arc(W*.26, H*.2, Math.min(W,H)*.075, 0, 6.2832); ctx.fill();
+      /* water: long horizontal dry strokes */
+      for (let k = 0; k < 6; k++){
+        const wy = H*(.6 + k*.062), ww = W*(.55 - k*.04);
+        const wx = W*(.12 + (k%2)*.25);
+        brushLine(ctx,
+          [{ p0:{x:wx, y:wy}, p1:{x:wx+ww*.5, y:wy - 2}, p2:{x:wx+ww, y:wy+1} }],
+          g => 2.6*Math.sin(Math.min(1,g*1.1)*Math.PI)+.3, 800+k, 2.2);
+      }
+      /* boat + fisherman */
+      const bx = W*.58, by = H*.66;
+      brushLine(ctx,
+        [{ p0:{x:bx-W*.085, y:by-H*.012}, p1:{x:bx, y:by+H*.02}, p2:{x:bx+W*.085, y:by-H*.012} }],
+        g => 5.5*Math.sin(g*Math.PI)+.6, 901);
+      ctx.fillStyle = 'rgba(' + INK + ',.62)';
+      ctx.beginPath(); ctx.arc(bx - W*.015, by - H*.035, Math.min(W,H)*.014, 0, 6.2832); ctx.fill(); /* head */
+      ctx.beginPath(); /* body */
+      ctx.moveTo(bx - W*.032, by); ctx.quadraticCurveTo(bx - W*.02, by - H*.045, bx + W*.005, by - H*.02);
+      ctx.lineTo(bx + W*.01, by); ctx.closePath(); ctx.fill();
+      brushLine(ctx, /* rod */
+        [{ p0:{x:bx, y:by-H*.03}, p1:{x:bx+W*.06, y:by-H*.06}, p2:{x:bx+W*.12, y:by-H*.045} }],
+        g => 1.1, 902, 1.5);
+      sealStamp(ctx, W*.09, H*.88, Math.min(W,H)*.075, '川');
+    }
+  }
+
+  const lands = [];
+  function buildLandscapes(){
+    document.querySelectorAll('canvas[data-land]').forEach(cv => {
+      const kind = +cv.dataset.land;
+      const { ctx, w, h } = fit(cv);
+      const off = document.createElement('canvas');
+      off.width = cv.width; off.height = cv.height;
+      const octx = off.getContext('2d');
+      octx.setTransform(DPR, 0, 0, DPR, 0, 0);
+      paintLandscape(octx, w, h, kind);
+      const rec = { cv, ctx, off, w, h, kind, p: 0, playing: false, done: false };
+      lands.push(rec);
+      if (REDUCED){ rec.p = 1; rec.done = true; renderLand(rec); }
+    });
+  }
+
+  function renderLand(l){
+    const { ctx, w, h } = l;
+    ctx.clearRect(0, 0, w, h);
+    ctx.save();
+    ctx.globalAlpha = Math.min(1, l.p * 1.4);
+    ctx.drawImage(l.off, 0, 0, w, h);
+    ctx.restore();
+    if (l.p < 1){
+      /* fog sheet slides up + thins as the painting appears */
+      const lift = (1 - l.p) * h * .9;
+      const g = ctx.createLinearGradient(0, h - lift - h*.4, 0, h);
+      g.addColorStop(0, 'rgba(245,240,230,0)');
+      g.addColorStop(.45, 'rgba(245,240,230,' + (.95 * (1 - l.p)) + ')');
+      g.addColorStop(1, 'rgba(245,240,230,' + (.85 * (1 - l.p)) + ')');
+      ctx.fillStyle = g;
+      ctx.fillRect(0, 0, w, h);
+    }
+  }
+
+  function playLand(l){
+    if (l.playing || l.done) return;
+    l.playing = true;
+    const T = 2000, t0 = performance.now();
+    (function frame(now){
+      const p = Math.min(1, (now - t0) / T);
+      l.p = 1 - Math.pow(1 - p, 3);
+      renderLand(l);
+      if (p < 1) requestAnimationFrame(frame);
+      else { l.done = true; l.playing = false; }
+    })(t0);
+  }
+
+  /* ============================================================
+     OBSERVERS — text reveals, hanko stamps, landscape triggers
+     ============================================================ */
+  function observers(){
+    if (REDUCED){
+      document.querySelectorAll('.rise').forEach(el => el.classList.add('in'));
+      document.querySelectorAll('.hanko').forEach(el => el.classList.add('stamped'));
+      return;
+    }
+    const io = new IntersectionObserver(entries => {
+      entries.forEach(e => {
+        if (!e.isIntersecting) return;
+        e.target.classList.add('in');
+        io.unobserve(e.target);
+      });
+    }, { threshold: .12, rootMargin: '0px 0px -6% 0px' });
+    document.querySelectorAll('.rise').forEach(el => io.observe(el));
+
+    const ioSeal = new IntersectionObserver(entries => {
+      entries.forEach(e => {
+        if (!e.isIntersecting) return;
+        e.target.classList.add('stamped');
+        ioSeal.unobserve(e.target);
+      });
+    }, { threshold: .7 });
+    document.querySelectorAll('.hanko').forEach(el => ioSeal.observe(el));
+
+    const ioLand = new IntersectionObserver(entries => {
+      entries.forEach(e => {
+        if (!e.isIntersecting) return;
+        const rec = lands.find(l => l.cv === e.target);
+        if (rec) playLand(rec);
+        ioLand.unobserve(e.target);
+      });
+    }, { threshold: .18, rootMargin: '0px 0px -8% 0px' });
+    lands.forEach(l => ioLand.observe(l.cv));
+  }
+
+  /* ============================================================
+     RESIZE — rebuild geometry, repaint to preserved progress
+     ============================================================ */
+  let rz, lastW = window.innerWidth;
+  function onResize(){
+    clearTimeout(rz);
+    rz = setTimeout(() => {
+      /* mobile URL-bar shows/hides fire resize with height-only change — ignore */
+      if (window.innerWidth === lastW) return;
+      lastW = window.innerWidth;
+      /* ensō: redraw fully at new size (load animation is over) */
+      buildEnso();
+      enso.drawn = drawStations(enso.ctx, enso.st, 0, enso.st.length);
+      /* scroll strokes: keep painted fraction */
+      strokes.forEach(s => {
+        const frac = s.st.length ? s.drawn / s.st.length : 0;
+        const { ctx, w, h } = fit(s.cv);
+        s.ctx = ctx;
+        s.st = buildStations(strokeSegs(s.cv.dataset.stroke, w, h),
+                             strokeWidth(s.cv.dataset.stroke, w, h),
+                             s.seed, s.cv.dataset.stroke === 'flick' ? 1.6 : 2.6);
+        s.drawn = 0;
+        s.target = Math.floor(frac * s.st.length);
+        if (s.target) s.drawn = drawStations(ctx, s.st, 0, s.target);
+      });
+      /* landscapes: re-render offscreen + present at current p */
+      lands.forEach(l => {
+        const { ctx, w, h } = fit(l.cv);
+        l.ctx = ctx; l.w = w; l.h = h;
+        l.off.width = l.cv.width; l.off.height = l.cv.height;
+        const octx = l.off.getContext('2d');
+        octx.setTransform(DPR, 0, 0, DPR, 0, 0);
+        paintLandscape(octx, w, h, l.kind);
+        renderLand(l);
+      });
+      onScroll();
+    }, 180);
+  }
+
+  /* ============================================================
+     BOOT — wait for fonts so canvas seals use Shippori Mincho
+     ============================================================ */
+  let booted = false;
+  function boot(){
+    if (booted) return;
+    booted = true;
+    buildScrollStrokes();
+    buildLandscapes();
+    observers();
+    animateEnso();
+    window.addEventListener('scroll', onScroll, { passive: true });
+    window.addEventListener('resize', onResize);
+    onScroll();
+  }
+  if (document.fonts && document.fonts.ready){
+    document.fonts.ready.then(boot);
+    /* fonts API hiccup safety net */
+    setTimeout(boot, 2500);
+  } else {
+    window.addEventListener('load', boot);
+  }
+})();
+</script>
+</body>
+</html>

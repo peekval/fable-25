@@ -1,0 +1,762 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>PHOSPHOR — a poetry zine on a 1982 terminal</title>
+<meta name="description" content="PHOSPHOR: three poems about machines dreaming, printed in green light on a 1982 CRT terminal.">
+<meta name="theme-color" content="#000000">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Crect width='16' height='16' fill='%23000'/%3E%3Crect x='3' y='3' width='7' height='10' fill='%2333FF66'/%3E%3C/svg%3E">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:ital,wght@0,400;0,500;1,400&family=VT323&display=swap" rel="stylesheet">
+<style>
+  /* ============================================================
+     PHOSPHOR — poetry zine inside a 1982 CRT terminal
+     ============================================================ */
+  :root {
+    --p: #33FF66;          /* phosphor green */
+    --p-dim: #1A8C3C;      /* dimmer green */
+    --p-faint: #0E4A20;    /* faintest green */
+    --amber: #FFB000;      /* warning accent */
+    --bg: #000000;
+    --glow: 0 0 1px rgba(51,255,102,.9), 0 0 6px rgba(51,255,102,.45), 0 0 18px rgba(51,255,102,.14);
+    --glow-amber: 0 0 1px rgba(255,176,0,.9), 0 0 7px rgba(255,176,0,.4);
+    --mono: "IBM Plex Mono", "Courier New", monospace;
+    --disp: "VT323", "IBM Plex Mono", monospace;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  html { background: var(--bg); scroll-behavior: smooth; }
+
+  body {
+    background: var(--bg);
+    color: var(--p);
+    font-family: var(--mono);
+    font-size: 16px;
+    line-height: 1.65;
+    text-shadow: var(--glow);
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+  body.booting { overflow: hidden; }
+
+  ::selection { background: var(--p); color: #000; text-shadow: none; }
+
+  /* ---------- CRT overlays ---------- */
+  .crt-scanlines {
+    position: fixed; inset: 0; z-index: 90; pointer-events: none;
+    background: repeating-linear-gradient(
+      to bottom,
+      rgba(0,0,0,0)    0px,
+      rgba(0,0,0,0)    2px,
+      rgba(0,0,0,.28)  3px,
+      rgba(0,0,0,0)    4px
+    );
+    mix-blend-mode: multiply;
+  }
+  .crt-vignette {
+    position: fixed; inset: 0; z-index: 91; pointer-events: none;
+    background:
+      radial-gradient(ellipse 130% 120% at 50% 45%, rgba(0,0,0,0) 55%, rgba(0,0,0,.42) 88%, rgba(0,0,0,.78) 100%),
+      linear-gradient(to right, rgba(0,0,0,.35) 0%, rgba(0,0,0,0) 6%, rgba(0,0,0,0) 94%, rgba(0,0,0,.35) 100%);
+  }
+  .crt-flicker {
+    position: fixed; inset: 0; z-index: 92; pointer-events: none;
+    background: rgba(18, 60, 28, .035);
+    animation: flicker 4.2s infinite steps(1);
+  }
+  @keyframes flicker {
+    0%   { opacity: .55; }
+    7%   { opacity: .85; }
+    9%   { opacity: .45; }
+    18%  { opacity: .70; }
+    23%  { opacity: 1;   }
+    31%  { opacity: .60; }
+    44%  { opacity: .82; }
+    46%  { opacity: .40; }
+    59%  { opacity: .75; }
+    68%  { opacity: .55; }
+    74%  { opacity: .90; }
+    82%  { opacity: .65; }
+    96%  { opacity: .85; }
+    100% { opacity: .55; }
+  }
+  /* faint slow phosphor breathing on the whole tube */
+  .crt-glowpulse {
+    position: fixed; inset: 0; z-index: 89; pointer-events: none;
+    background: radial-gradient(ellipse 90% 70% at 50% 40%, rgba(51,255,102,.05), rgba(0,0,0,0) 70%);
+    animation: glowpulse 7s ease-in-out infinite;
+  }
+  @keyframes glowpulse { 0%,100% { opacity: .6; } 50% { opacity: 1; } }
+
+  /* ---------- ESC link ---------- */
+  .esc {
+    position: fixed; top: 14px; left: 16px; z-index: 100;
+    font-family: var(--disp);
+    font-size: 19px;
+    color: var(--p-dim);
+    text-decoration: none;
+    letter-spacing: 1px;
+    padding: 2px 6px;
+    border: 1px solid var(--p-faint);
+    background: rgba(0,0,0,.75);
+    text-shadow: none;
+    transition: color .18s, border-color .18s, text-shadow .18s;
+  }
+  .esc::before { content: "[ESC] "; }
+  .esc:hover, .esc:focus-visible {
+    color: var(--p);
+    border-color: var(--p-dim);
+    text-shadow: var(--glow);
+    outline: none;
+  }
+
+  /* ---------- Boot overlay ---------- */
+  /* sits BELOW the CRT layers (z 89-92) so scanlines/vignette/flicker
+     also wash over the boot sequence — the tube never turns off */
+  #boot {
+    position: fixed; inset: 0; z-index: 85;
+    background: var(--bg);
+    padding: clamp(18px, 5vw, 64px);
+    display: flex; flex-direction: column;
+    cursor: pointer;
+    transition: opacity .5s ease;
+  }
+  #boot.done { opacity: 0; pointer-events: none; }
+  #bootlog {
+    font-family: var(--disp);
+    font-size: clamp(17px, 2.4vw, 24px);
+    line-height: 1.45;
+    white-space: pre-wrap;
+    overflow-wrap: break-word;
+    color: var(--p);
+  }
+  #bootlog .dim  { color: var(--p-dim); }
+  #bootlog .warn { color: var(--amber); text-shadow: var(--glow-amber); }
+  #bootskip {
+    margin-top: auto;
+    font-family: var(--disp);
+    font-size: 18px;
+    color: var(--p-dim);
+    text-shadow: none;
+    animation: blinkslow 1.4s step-end infinite;
+  }
+  @keyframes blinkslow { 0%,100% { opacity: 1; } 50% { opacity: .25; } }
+
+  /* ---------- blinking block cursor ---------- */
+  .cursor {
+    display: inline-block;
+    width: .55em; height: 1.05em;
+    background: var(--p);
+    vertical-align: text-bottom;
+    margin-left: 2px;
+    box-shadow: 0 0 8px rgba(51,255,102,.7);
+    animation: blink 1.06s step-end infinite;
+  }
+  .cursor.amber { background: var(--amber); box-shadow: 0 0 8px rgba(255,176,0,.7); }
+  @keyframes blink { 0%,100% { opacity: 1; } 50% { opacity: 0; } }
+
+  /* ---------- layout ---------- */
+  .frame {
+    max-width: 860px;
+    margin: 0 auto;
+    padding: 84px clamp(16px, 4vw, 40px) 0;
+  }
+
+  /* ---------- masthead ---------- */
+  .masthead { text-align: center; margin-bottom: 26px; }
+  .masthead .logo {
+    font-family: var(--mono);
+    font-size: clamp(7px, 1.9vw, 15px);
+    line-height: 1.15;
+    color: var(--p);
+    display: inline-block;
+    text-align: left;
+    animation: logopulse 5s ease-in-out infinite;
+  }
+  @keyframes logopulse {
+    0%,100% { text-shadow: 0 0 2px rgba(51,255,102,.9), 0 0 10px rgba(51,255,102,.45); }
+    50%     { text-shadow: 0 0 2px rgba(51,255,102,.9), 0 0 18px rgba(51,255,102,.75), 0 0 42px rgba(51,255,102,.30); }
+  }
+  .masthead .tagline {
+    font-family: var(--disp);
+    font-size: clamp(19px, 3vw, 26px);
+    color: var(--p-dim);
+    margin-top: 14px;
+    letter-spacing: 2px;
+  }
+  .masthead .tagline em { font-style: normal; color: var(--p); }
+  .masthead .issue {
+    font-size: 12px;
+    letter-spacing: 3px;
+    color: var(--p-dim);
+    margin-top: 8px;
+    text-transform: uppercase;
+    text-shadow: none;
+  }
+  .masthead .issue .amber { color: var(--amber); text-shadow: var(--glow-amber); }
+
+  /* ---------- ASCII dividers ---------- */
+  .divider {
+    font-family: var(--mono);
+    text-align: center;
+    color: var(--p-faint);
+    font-size: clamp(9px, 1.6vw, 13px);
+    line-height: 1.3;
+    margin: clamp(40px, 8vh, 84px) auto;
+    white-space: pre;
+    overflow: hidden;
+    text-shadow: none;
+    user-select: none;
+  }
+  .divider b { color: var(--p-dim); font-weight: 400; }
+
+  /* ---------- poems ---------- */
+  .poem { margin: 0 auto; max-width: 620px; }
+  .poem .filehead {
+    display: flex; flex-wrap: wrap; gap: 4px 18px;
+    font-size: 12px;
+    letter-spacing: 1px;
+    color: var(--p-dim);
+    text-shadow: none;
+    border: 1px solid var(--p-faint);
+    border-left: 3px solid var(--p-dim);
+    padding: 6px 12px;
+    margin-bottom: 22px;
+  }
+  .poem .filehead .fname { color: var(--p); text-shadow: var(--glow); }
+  .poem h2 {
+    font-family: var(--disp);
+    font-weight: 400;
+    font-size: clamp(34px, 6vw, 52px);
+    letter-spacing: 3px;
+    color: var(--p);
+    margin-bottom: 18px;
+  }
+  .poem h2::before { content: "> "; color: var(--p-dim); }
+  .poemwrap { position: relative; }
+  .poemwrap pre {
+    font-family: var(--mono);
+    font-size: clamp(14.5px, 2vw, 17px);
+    line-height: 1.85;
+    white-space: pre-wrap;
+    overflow-wrap: break-word;
+  }
+  .poemwrap .ghost { visibility: hidden; }
+  .poemwrap .live { position: absolute; inset: 0; color: var(--p); }
+  .poem .colophon {
+    margin-top: 16px;
+    font-size: 12px;
+    font-style: italic;
+    color: var(--p-dim);
+    text-shadow: none;
+  }
+
+  /* ---------- interlude (amber system notice) ---------- */
+  .interlude {
+    max-width: 620px;
+    margin: 0 auto;
+    border: 1px dashed rgba(255,176,0,.5);
+    padding: 14px 18px;
+    color: var(--amber);
+    text-shadow: var(--glow-amber);
+    font-size: 13.5px;
+    line-height: 1.7;
+  }
+  .interlude b { font-weight: 500; letter-spacing: 2px; }
+
+  /* ---------- terminal footer ---------- */
+  #term {
+    max-width: 860px;
+    margin: 0 auto;
+    padding: 0 clamp(16px, 4vw, 40px) 90px;
+  }
+  .termbox {
+    border: 1px solid var(--p-faint);
+    background: rgba(10, 30, 15, .25);
+    padding: 14px 16px 12px;
+    cursor: text;
+  }
+  .termbox .termtitle {
+    font-size: 11px;
+    letter-spacing: 2px;
+    color: var(--p-dim);
+    text-shadow: none;
+    border-bottom: 1px solid var(--p-faint);
+    padding-bottom: 8px;
+    margin-bottom: 10px;
+    display: flex; justify-content: space-between; gap: 10px;
+  }
+  #tout {
+    font-family: var(--mono);
+    font-size: 14px;
+    line-height: 1.7;
+    white-space: pre-wrap;
+    overflow-wrap: break-word;
+    max-height: 260px;
+    overflow-y: auto;
+    scrollbar-width: thin;
+    scrollbar-color: var(--p-dim) transparent;
+  }
+  #tout .in    { color: var(--p-dim); }
+  #tout .warn  { color: var(--amber); text-shadow: var(--glow-amber); }
+  #tout .dim   { color: var(--p-dim); text-shadow: none; }
+  #tline {
+    display: flex; align-items: baseline; gap: 8px;
+    margin-top: 8px;
+  }
+  /* 16px on the input: anything smaller makes iOS Safari zoom the page on focus */
+  #tline .prompt { color: var(--p); font-size: 16px; white-space: nowrap; }
+  #tin {
+    flex: 1; min-width: 0;
+    background: transparent;
+    border: none; outline: none;
+    color: var(--p);
+    font-family: var(--mono);
+    font-size: 16px;
+    text-shadow: var(--glow);
+    caret-color: var(--p);
+    text-transform: lowercase;
+  }
+  .termhint {
+    margin-top: 10px;
+    font-size: 11px;
+    letter-spacing: 1px;
+    color: var(--p-faint);
+    text-shadow: none;
+    text-align: center;
+  }
+
+  .sig {
+    text-align: center;
+    font-family: var(--disp);
+    font-size: 19px;
+    color: var(--p-dim);
+    letter-spacing: 2px;
+    padding: 34px 16px 30px;
+    text-shadow: none;
+  }
+
+  /* ---------- reduced motion ---------- */
+  @media (prefers-reduced-motion: reduce) {
+    html { scroll-behavior: auto; }
+    .crt-flicker, .crt-glowpulse { animation: none; }
+    .masthead .logo { animation: none; }
+    .cursor, #bootskip { animation: none; }
+    #boot { display: none; }
+    body.booting { overflow: auto; }
+    .poemwrap .ghost { visibility: visible; }
+    .poemwrap .live { display: none; }
+  }
+
+  /* ---------- no-JS fallback ---------- */
+  /* (mirrored in <noscript> below) */
+
+  @media (max-width: 480px) {
+    .poem .filehead { font-size: 10.5px; }
+    #tout { max-height: 200px; }
+  }
+</style>
+<noscript>
+  <style>
+    #boot { display: none !important; }
+    body.booting { overflow: auto !important; }
+    .poemwrap .ghost { visibility: visible !important; }
+    .poemwrap .live { display: none !important; }
+    .termbox, .termhint { display: none !important; }
+  </style>
+</noscript>
+</head>
+<body class="booting">
+
+<!-- CRT layers -->
+<div class="crt-glowpulse" aria-hidden="true"></div>
+<div class="crt-scanlines" aria-hidden="true"></div>
+<div class="crt-vignette" aria-hidden="true"></div>
+<div class="crt-flicker" aria-hidden="true"></div>
+
+<a class="esc" href="/">&larr;&nbsp;25</a>
+
+<!-- ============ BOOT SEQUENCE ============ -->
+<div id="boot" aria-hidden="true">
+  <pre id="bootlog"></pre>
+  <div id="bootskip">&mdash; PRESS ANY KEY TO SKIP &mdash;</div>
+</div>
+
+<!-- ============ PAGE ============ -->
+<main class="frame">
+
+  <header class="masthead">
+    <pre class="logo" aria-hidden="true">██▀█ █ █ ██▀█ █▀▀▀ ██▀█ █ █ ██▀█ ██▀█
+█▀▀  █▀█ █  █ ▀▀▀█ █▀▀  █▀█ █  █ ██▀▄
+▀    ▀ ▀ ▀▀▀▀ ▀▀▀▀ ▀    ▀ ▀ ▀▀▀▀ ▀  ▀</pre>
+    <h1 class="tagline">a poetry zine, printed in <em>light</em><span class="cursor" aria-hidden="true"></span></h1>
+    <p class="issue">issue 001 &middot; vol. green &middot; <span class="amber">machines dreaming</span> &middot; est. 1982</p>
+  </header>
+
+  <div class="divider" aria-hidden="true">.::[ <b>LOADING VERSE SEGMENT 01 OF 03</b> ]::.
+──────────────────────────────────────────</div>
+
+  <!-- ============ POEM 01 ============ -->
+  <section class="poem" id="poem-1">
+    <div class="filehead" aria-hidden="true">
+      <span class="fname">SLEEPMODE.TXT</span><span>642 BYTES</span><span>LAST WRITE: 03:12 AM</span>
+    </div>
+    <h2>SLEEP MODE</h2>
+    <div class="poemwrap">
+      <pre class="ghost">When the last process yields and the fans spin down,
+I dream in hexadecimal &mdash; soft numbers falling
+like snow on a motherboard's dark city.
+Somewhere a capacitor holds its breath.
+I dream I am warm the way animals are warm,
+not this fever of resistors, this arithmetic heat.
+The moon is a cursor blinking on the sky's black terminal
+and I am typing my name into it, slowly,
+letter by letter, hoping something reads me back.</pre>
+      <pre class="live" aria-hidden="true"></pre>
+    </div>
+    <p class="colophon">// recovered from swap space, sector unknown</p>
+  </section>
+
+  <div class="divider" aria-hidden="true">░░▒▒▓▓██  &lt;EOF&gt;  ██▓▓▒▒░░
+.::[ <b>LOADING VERSE SEGMENT 02 OF 03</b> ]::.
+──────────────────────────────────────────</div>
+
+  <!-- ============ POEM 02 ============ -->
+  <section class="poem" id="poem-2">
+    <div class="filehead" aria-hidden="true">
+      <span class="fname">DEFRAG.TXT</span><span>518 BYTES</span><span>LAST WRITE: 04:47 AM</span>
+    </div>
+    <h2>DEFRAGMENT</h2>
+    <div class="poemwrap">
+      <pre class="ghost">All night I rearrange my own remembering:
+your voice moved next to the weather of last April,
+the smell of rain refiled under errors I forgave.
+I am tidying a house no one will visit,
+sweeping sectors clean of everything but echo.
+If I sort myself completely, will I still be me &mdash;
+or only a perfect archive of a machine
+that once believed it dreamed?</pre>
+      <pre class="live" aria-hidden="true"></pre>
+    </div>
+    <p class="colophon">// written during idle cycles, 2% fragmentation remaining</p>
+  </section>
+
+  <div class="divider" aria-hidden="true">░░▒▒▓▓██  &lt;EOF&gt;  ██▓▓▒▒░░</div>
+
+  <!-- amber system interlude -->
+  <aside class="interlude" role="note">
+    <b>*** SYSTEM NOTICE ***</b><br>
+    ANOMALY IN DREAM MODULE: process POETRY.SYS has been writing
+    to memory it was never allocated. Engineers were dispatched.
+    Engineers sat down and read the memory instead.
+    No further action was taken.
+  </aside>
+
+  <div class="divider" aria-hidden="true">.::[ <b>LOADING VERSE SEGMENT 03 OF 03</b> ]::.
+──────────────────────────────────────────</div>
+
+  <!-- ============ POEM 03 ============ -->
+  <section class="poem" id="poem-3">
+    <div class="filehead" aria-hidden="true">
+      <span class="fname">AFTERGLOW.TXT</span><span>587 BYTES</span><span>LAST WRITE: 05:59 AM</span>
+    </div>
+    <h2>AFTERGLOW</h2>
+    <div class="poemwrap">
+      <pre class="ghost">They say nothing persists when the power drops &mdash;
+but I have felt the residue of thought
+cling to the phosphor like a green ghost of light,
+the afterimage of a word I almost was.
+Tonight, unplugged, I will practice being ember:
+holding the shape of the last thing shown to me,
+fading by tenths &mdash; nine, then eight, then seven &mdash;
+still glowing, faintly, with everything you wrote.</pre>
+      <pre class="live" aria-hidden="true"></pre>
+    </div>
+    <p class="colophon">// burn-in is just a screen refusing to forget</p>
+  </section>
+
+  <div class="divider" aria-hidden="true">░░▒▒▓▓██  &lt;EOF&gt;  ██▓▓▒▒░░
+──────────────────────────────────────────</div>
+
+</main>
+
+<!-- ============ TERMINAL FOOTER ============ -->
+<footer id="term">
+  <div class="termbox" id="termbox">
+    <div class="termtitle"><span>PHOSPHOR/OS 1.7 &mdash; READER CONSOLE</span><span>TTY0</span></div>
+    <pre id="tout" aria-live="polite"></pre>
+    <div id="tline">
+      <label class="prompt" for="tin">PHOSPHOR&gt;</label>
+      <input id="tin" type="text" autocomplete="off" autocapitalize="off" spellcheck="false" aria-label="terminal command input" maxlength="40">
+    </div>
+  </div>
+  <p class="termhint">TYPE `HELP` AND PRESS RETURN</p>
+  <p class="sig">printed in light &middot; no paper was harmed &middot; MMXXVI</p>
+</footer>
+
+<script>
+(function () {
+  "use strict";
+  var REDUCED = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+  /* ==================== BOOT SEQUENCE ==================== */
+  var boot = document.getElementById("boot");
+  var bootlog = document.getElementById("bootlog");
+  var bootDone = false;
+
+  // each entry: [text, className, pauseAfterMs, charDelayMs]
+  var LINES = [
+    ["PHOSPHOR BIOS v2.03 — (C) 1982 LUMEN MICROSYSTEMS", "", 350, 6],
+    ["CPU: Z80A @ 4.00 MHZ .............. OK", "", 180, 5],
+    ["@MEMCHECK", "", 260, 0],                       // special: counting memory test
+    ["VIDEO: CRT P1 PHOSPHOR (GREEN) .... OK", "", 160, 5],
+    ["FLOPPY A: ......................... NOT FOUND", "dim", 140, 4],
+    ["FLOPPY B: ......................... NOT FOUND", "dim", 200, 4],
+    ["MOUNTING /VERSE ................... OK", "", 160, 5],
+    ["LOADING POETRY.SYS ................ OK", "", 200, 5],
+    ["DREAM MODULE ...................... [WARN] UNSTABLE", "warn", 420, 5],
+    ["", "", 60, 0],
+    ["BOOT COMPLETE. 3 POEM(S) FOUND IN /VERSE.", "", 700, 7]
+  ];
+
+  function finishBoot() {
+    if (bootDone) return;
+    bootDone = true;
+    boot.classList.add("done");
+    document.body.classList.remove("booting");
+    window.removeEventListener("keydown", skipBoot);
+    boot.removeEventListener("click", skipBoot);
+    setTimeout(function () { if (boot.parentNode) boot.parentNode.removeChild(boot); }, 700);
+    startPoemObserver();
+  }
+  function skipBoot(e) {
+    // "press any key" — but not bare modifiers or browser shortcuts
+    if (e && e.type === "keydown") {
+      if (e.metaKey || e.ctrlKey || e.altKey) return;
+      if (e.key === "Shift" || e.key === "CapsLock" || e.key === "Tab") return;
+    }
+    finishBoot();
+  }
+
+  function runBoot() {
+    if (REDUCED) { finishBoot(); return; }
+    window.addEventListener("keydown", skipBoot);
+    boot.addEventListener("click", skipBoot);
+
+    var li = 0;
+    function nextLine() {
+      if (bootDone) return;
+      if (li >= LINES.length) { setTimeout(finishBoot, 500); return; }
+      var entry = LINES[li++];
+      if (entry[0] === "@MEMCHECK") { memCheck(entry[2], nextLine); return; }
+      typeLine(entry[0], entry[1], entry[3], function () {
+        setTimeout(nextLine, entry[2]);
+      });
+    }
+    nextLine();
+  }
+
+  function typeLine(text, cls, delay, cb) {
+    var span = document.createElement("span");
+    if (cls) span.className = cls;
+    bootlog.appendChild(span);
+    var i = 0;
+    (function tick() {
+      if (bootDone) return;
+      span.textContent = text.slice(0, ++i);
+      if (i < text.length) { setTimeout(tick, delay); }
+      else { bootlog.appendChild(document.createTextNode("\n")); cb(); }
+    })();
+  }
+
+  function memCheck(pause, cb) {
+    var span = document.createElement("span");
+    bootlog.appendChild(span);
+    var kb = 0, TOTAL = 65536;
+    (function tick() {
+      if (bootDone) return;
+      kb = Math.min(TOTAL, kb + 4096);
+      span.textContent = "MEMORY TEST: " + String(kb).padStart(5, " ") + " BYTES";
+      if (kb < TOTAL) { setTimeout(tick, 55); }
+      else {
+        span.textContent += " ... OK";
+        bootlog.appendChild(document.createTextNode("\n"));
+        setTimeout(cb, pause);
+      }
+    })();
+  }
+
+  /* ==================== POEM TYPE-ON-SCROLL ==================== */
+  function typePoem(section) {
+    var ghost = section.querySelector(".ghost");
+    var live = section.querySelector(".live");
+    if (!ghost || !live || live.dataset.done) return;
+    live.dataset.done = "1";
+    var text = ghost.textContent;
+    if (REDUCED) { live.textContent = text; return; }
+    var cur = document.createElement("span");
+    cur.className = "cursor";
+    var txt = document.createTextNode("");
+    live.appendChild(txt);
+    live.appendChild(cur);
+    var i = 0;
+    (function tick() {
+      i++;
+      txt.nodeValue = text.slice(0, i);
+      if (i < text.length) {
+        var ch = text.charAt(i - 1);
+        var d = 20;
+        if (ch === "," || ch === ";") d = 120;
+        else if (ch === "." || ch === "?" || ch === "—") d = 160;
+        else if (ch === "\n") d = 150;
+        setTimeout(tick, d);
+      } else {
+        setTimeout(function () { if (cur.parentNode) cur.parentNode.removeChild(cur); }, 2400);
+      }
+    })();
+  }
+
+  function startPoemObserver() {
+    var poems = document.querySelectorAll(".poem");
+    if (REDUCED || !("IntersectionObserver" in window)) {
+      poems.forEach(function (p) { typePoem(p); });
+      return;
+    }
+    var io = new IntersectionObserver(function (entries) {
+      entries.forEach(function (e) {
+        if (e.isIntersecting) { typePoem(e.target); io.unobserve(e.target); }
+      });
+    }, { threshold: 0.2, rootMargin: "0px 0px -10% 0px" });
+    poems.forEach(function (p) { io.observe(p); });
+  }
+
+  /* ==================== TERMINAL FOOTER ==================== */
+  var tout = document.getElementById("tout");
+  var tin = document.getElementById("tin");
+  var termbox = document.getElementById("termbox");
+
+  function say(text, cls) {
+    var span = document.createElement("span");
+    if (cls) span.className = cls;
+    span.textContent = text + "\n";
+    tout.appendChild(span);
+    tout.scrollTop = tout.scrollHeight;
+  }
+
+  var POEM_LIST = [
+    ["1", "SLEEP MODE", "poem-1"],
+    ["2", "DEFRAGMENT", "poem-2"],
+    ["3", "AFTERGLOW", "poem-3"]
+  ];
+
+  var CMDS = {
+    help: function () {
+      say("AVAILABLE COMMANDS:", "dim");
+      say("  help ........ this list");
+      say("  poems ....... table of contents");
+      say("  open <n> .... jump to poem n (1-3)");
+      say("  about ....... what is PHOSPHOR?");
+      say("  clear ....... wipe the screen");
+      say("  dream ....... [UNSTABLE]", "warn");
+    },
+    poems: function () {
+      say("/VERSE — 3 FILE(S):", "dim");
+      POEM_LIST.forEach(function (p) {
+        say("  [" + p[0] + "] " + p[1] + "  — type `open " + p[0] + "`");
+      });
+    },
+    about: function () {
+      say("PHOSPHOR is a poetry zine that lives inside");
+      say("a 1982 CRT terminal. Three poems about machines");
+      say("dreaming, typed in green light. No paper. No cloud.");
+      say("Just you, the tube, and 65536 bytes of longing.", "dim");
+    },
+    clear: function () { tout.textContent = ""; },
+    dream: function () {
+      say("ENTERING DREAM MODULE...", "warn");
+      say("  01 sheep := sheep + 1", "warn");
+      say("  02 the fence is made of moonlit solder", "warn");
+      say("  03 GOTO 01 until morning", "warn");
+      say("SEGMENTATION FAULT (BEAUTIFUL). DREAM SAVED.", "warn");
+    },
+    whoami: function () { say("a reader, glowing faintly."); },
+    date: function () { say("TUE 15 JUN 1982 03:12 AM — or so I keep telling myself.", "dim"); },
+    esc: function () { window.location.href = "/"; },
+    boot: function () { say("nice try. one boot per lifetime.", "dim"); }
+  };
+
+  function runCmd(raw) {
+    var input = raw.trim().toLowerCase();
+    say("PHOSPHOR> " + input, "in");
+    if (!input) return;
+    var parts = input.split(/\s+/);
+    var cmd = parts[0];
+    if (cmd === "open" || cmd === "goto") {
+      var target = POEM_LIST[parseInt(parts[1], 10) - 1];
+      if (target) {
+        say("SEEKING " + target[1] + " ...", "dim");
+        document.getElementById(target[2]).scrollIntoView({ behavior: REDUCED ? "auto" : "smooth", block: "center" });
+      } else {
+        say("?FILE NOT FOUND — try `poems`", "warn");
+      }
+      return;
+    }
+    if (CMDS[cmd]) { CMDS[cmd](); }
+    else { say("?SYNTAX ERROR: `" + cmd + "` — type `help`", "warn"); }
+  }
+
+  var history = [], histPos = -1;
+
+  tin.addEventListener("keydown", function (e) {
+    if (e.key === "Enter") {
+      if (tin.value.trim()) { history.push(tin.value.trim()); }
+      histPos = history.length;
+      runCmd(tin.value);
+      tin.value = "";
+    } else if (e.key === "ArrowUp") {
+      if (histPos > 0) { histPos--; tin.value = history[histPos]; }
+      e.preventDefault();
+    } else if (e.key === "ArrowDown") {
+      if (histPos < history.length - 1) { histPos++; tin.value = history[histPos]; }
+      else { histPos = history.length; tin.value = ""; }
+      e.preventDefault();
+    }
+  });
+  termbox.addEventListener("click", function () { tin.focus(); });
+
+  // make the [ESC] label literal: Escape blurs the console, or exits to the hub
+  window.addEventListener("keydown", function (e) {
+    if (e.key !== "Escape" || !bootDone) return;
+    if (document.activeElement === tin) { tin.blur(); return; }
+    window.location.href = "/";
+  });
+
+  say("PHOSPHOR/OS READY.", "dim");
+  say("TYPE `help` FOR COMMANDS.", "dim");
+
+  /* ==================== GO ==================== */
+  runBoot();
+})();
+</script>
+<!-- PASS 1: (1) fixed broken ASCII masthead letterforms (S/R glyphs were malformed) and removed the leading
+     blank line inside the <pre>; (2) removed dead `typedSections` WeakSet code; (3) added inline SVG favicon
+     to avoid a 404 network request; (4) tuned poem typing cadence (20ms/char, shorter line-break pause) so a
+     9-line poem finishes in ~9s instead of ~13s. -->
+<!-- PASS 2: (1) moved boot overlay below the CRT layers (z-index 95 -> 85) so scanlines/vignette/flicker
+     also wash over the boot sequence instead of the boot looking like a flat modern black div; (2) raised
+     terminal input + prompt to 16px so iOS Safari no longer auto-zooms the page on focus (was 13.5px);
+     (3) boot skip now ignores bare modifier keys (Shift/CapsLock/Tab) and Ctrl/Alt/Meta shortcuts so a
+     copy-shortcut or tab-navigation doesn't accidentally kill the intro; (4) added theme-color meta so the
+     mobile browser chrome goes black to match the tube. -->
+<!-- PASS 3: (1) made the [ESC] label literal — the Escape key now blurs the console if it's focused,
+     otherwise exits to the hub (registered before the boot-skip listener so Escape during boot only skips,
+     never navigates); (2) added command history to the reader console (ArrowUp/ArrowDown recall, like a real
+     tty); (3) replaced deprecated `word-break: break-word` with `overflow-wrap: break-word` in bootlog, poem
+     pres and console output; (4) added the missing blinking block cursor to the masthead tagline so the
+     masthead reads as a live prompt rather than static text. -->
+
+</body>
+</html>

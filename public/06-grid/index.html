@@ -1,0 +1,535 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>GRID° — №07 · A Journal of Systematic Design</title>
+<meta name="description" content="GRID° issue №07 — six studies in systematic design: Müller-Brockmann, Frutiger, Aicher, Vignelli, Ruder, Gerstner.">
+<meta name="theme-color" content="#FAFAF8">
+<!--
+  PASS 1: capped hero headline clamp (9.5vw/152px → 8.2vw/132px) so offset lines can't overflow
+          their grid tracks at ~1024–1440px; added isolation:isolate to .card so the z-index:-1
+          invert layer can't slip behind ancestor backgrounds; removed dead .card:hover .tag rule
+          and phantom cursor:pointer; added :focus-visible outlines for button/links.
+  PASS 2: manifesto marquee now duplicates via cloneNode with aria-hidden="true" so screen
+          readers hear each line once; IntersectionObserver assigns a 70ms per-item stagger to
+          entries revealed in the same batch (cleared on transitionend so hover states stay snappy);
+          card titles became real anchors (#a01–#a06) so the focus-within invert is reachable
+          by keyboard; tabular-nums on index numerals.
+  PASS 3: card invert bar made true full-bleed with inset:0 calc(50% - 50vw) (was tied to the
+          shell padding, leaving gaps on >1440px viewports); decorative → arrows and the ● dot
+          hidden from AT with aria-hidden; theme-color meta added; reduced-motion manifesto
+          strip gets shell-aligned padding + momentum scrolling instead of a flush marquee.
+-->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter+Tight:wght@500;700;800;900&family=Space+Grotesk:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --paper:#FAFAF8;
+  --ink:#111111;
+  --red:#E63329;
+  --hair:rgba(17,17,17,.18);
+  --gut:24px;
+  --mx:clamp(20px,4vw,72px);
+  --ease:cubic-bezier(0.22,1,0.36,1);
+}
+*,*::before,*::after{margin:0;padding:0;box-sizing:border-box}
+html{scroll-behavior:smooth}
+@media (prefers-reduced-motion:reduce){html{scroll-behavior:auto}}
+body{
+  background:var(--paper);
+  color:var(--ink);
+  font-family:'Space Grotesk',ui-sans-serif,system-ui,sans-serif;
+  font-size:16px;line-height:1.5;
+  -webkit-font-smoothing:antialiased;
+  overflow-x:hidden;
+}
+::selection{background:var(--red);color:var(--paper)}
+h1,h2,h3,.tt{font-family:'Inter Tight','Space Grotesk',sans-serif}
+a{color:inherit;text-decoration:none}
+
+/* ---------- 12-col shell ---------- */
+.shell{max-width:1440px;margin:0 auto;padding-left:var(--mx);padding-right:var(--mx)}
+.g12{display:grid;grid-template-columns:repeat(12,1fr);column-gap:var(--gut)}
+
+/* ---------- back link ---------- */
+.back{
+  position:fixed;top:18px;left:18px;z-index:60;
+  font-size:12px;letter-spacing:.08em;
+  padding:6px 10px;border:1px solid var(--hair);
+  background:var(--paper);
+  transition:background .2s var(--ease),color .2s var(--ease),border-color .2s var(--ease);
+}
+.back:hover{background:var(--ink);color:var(--paper);border-color:var(--ink)}
+
+/* ---------- grid overlay ---------- */
+.gridlines{
+  position:fixed;inset:0;z-index:50;pointer-events:none;
+  opacity:0;transition:opacity .3s var(--ease);
+}
+body.show-grid .gridlines{opacity:1}
+.gridlines .shell,.gridlines .g12{height:100%}
+.gridlines .col{
+  height:100%;
+  background:rgba(230,51,41,.055);
+  border-left:1px solid rgba(230,51,41,.4);
+  border-right:1px solid rgba(230,51,41,.4);
+}
+.gridbtn{
+  position:fixed;top:18px;right:18px;z-index:60;
+  font:500 11px/1 'Space Grotesk',sans-serif;letter-spacing:.14em;text-transform:uppercase;
+  display:flex;align-items:center;gap:8px;
+  padding:7px 12px;border:1px solid var(--hair);cursor:pointer;
+  background:var(--paper);color:var(--ink);
+  transition:background .2s var(--ease),color .2s var(--ease),border-color .2s var(--ease);
+}
+.gridbtn svg{display:block}
+.gridbtn:hover{border-color:var(--ink)}
+body.show-grid .gridbtn{background:var(--red);border-color:var(--red);color:var(--paper)}
+body.show-grid .gridbtn rect{stroke:var(--paper)}
+
+/* ---------- reveal ---------- */
+.rv{opacity:0;transform:translateY(26px);transition:opacity .45s var(--ease),transform .45s var(--ease)}
+.rv.in{opacity:1;transform:none}
+@media (prefers-reduced-motion:reduce){
+  .rv{opacity:1;transform:none;transition:none}
+  *,*::before,*::after{animation-duration:.001s!important;animation-iteration-count:1!important;transition-duration:.001s!important}
+}
+
+/* ---------- masthead ---------- */
+header{padding-top:84px}
+.mast{border-bottom:2px solid var(--ink);padding-bottom:14px;align-items:end}
+.mast .logo{
+  grid-column:1/8;
+  font-weight:900;letter-spacing:-.04em;line-height:.82;
+  font-size:clamp(64px,10vw,150px);
+}
+.logo sup{font-size:.32em;color:var(--red);vertical-align:.9em;letter-spacing:0}
+.mast .meta{
+  grid-column:8/13;
+  display:grid;grid-template-columns:1fr 1fr;gap:var(--gut);
+  font-size:12px;letter-spacing:.04em;line-height:1.6;
+  align-self:end;padding-bottom:6px;
+}
+.meta b{display:block;font-weight:700;text-transform:uppercase;letter-spacing:.12em;font-size:10px;color:var(--red);margin-bottom:2px}
+.mastline{display:flex;justify-content:space-between;font-size:11px;letter-spacing:.16em;text-transform:uppercase;padding:10px 0;border-bottom:1px solid var(--hair)}
+.mastline span:nth-child(2){color:var(--red)}
+
+/* ---------- hero ---------- */
+.hero{padding:clamp(56px,9vh,120px) 0 clamp(48px,8vh,96px)}
+.hero .g12{row-gap:0}
+.hl{
+  font-weight:900;text-transform:uppercase;
+  letter-spacing:-.035em;line-height:.9;
+  font-size:clamp(48px,8.2vw,132px);
+  white-space:nowrap;
+}
+.hl-1{grid-column:1/13}
+.hl-2{grid-column:3/13}
+.hl-3{grid-column:2/13}
+.hl .deg{color:var(--red)}
+.hl .outline{
+  color:transparent;
+  -webkit-text-stroke:2px var(--ink);
+}
+.hero-side{
+  grid-column:9/13;margin-top:clamp(28px,5vh,64px);
+  font-size:14px;line-height:1.65;
+}
+.hero-side p+p{margin-top:1em}
+.hero-rule{grid-column:1/8;margin-top:clamp(28px,5vh,64px);align-self:start}
+.hero-rule .bar{height:2px;background:var(--ink)}
+.hero-rule .tick{display:flex;justify-content:space-between;font-size:10px;letter-spacing:.18em;text-transform:uppercase;padding-top:8px}
+.hero-rule .tick em{font-style:normal;color:var(--red)}
+.hero-svg{grid-column:1/13;margin-top:clamp(36px,6vh,72px)}
+.hero-svg svg{width:100%;height:auto;display:block}
+
+/* ---------- section titles ---------- */
+.sec-head{align-items:baseline;border-bottom:2px solid var(--ink);padding-bottom:12px;margin-bottom:0}
+.sec-head .no{grid-column:1/3;font-size:12px;letter-spacing:.2em;color:var(--red)}
+.sec-head h2{grid-column:3/10;font-size:clamp(26px,3.4vw,44px);font-weight:800;letter-spacing:-.02em;text-transform:uppercase}
+.sec-head .cnt{grid-column:10/13;text-align:right;font-size:12px;letter-spacing:.14em;text-transform:uppercase}
+
+/* ---------- article index ---------- */
+.index{padding:clamp(64px,10vh,128px) 0 0}
+.card{
+  border-bottom:1px solid var(--hair);
+  padding:clamp(24px,3.5vw,40px) 0;
+  row-gap:14px;position:relative;isolation:isolate;
+  transition:color .25s var(--ease);
+}
+.card::before{
+  content:"";position:absolute;inset:0 calc(50% - 50vw);
+  background:var(--ink);transform:scaleY(0);transform-origin:top;
+  transition:transform .3s var(--ease);z-index:-1;
+}
+.card:hover{color:var(--paper)}
+.card:hover::before{transform:scaleY(1)}
+@media (prefers-reduced-motion:reduce){.card::before{transition:none}}
+.card .num{
+  grid-column:1/3;
+  font:700 clamp(28px,3vw,40px)/1 'Space Grotesk',monospace;
+  letter-spacing:-.02em;font-variant-numeric:tabular-nums;
+}
+.card:hover .num,.card:focus-within .num{color:var(--red)}
+.card:focus-within{color:var(--paper)}
+.card:focus-within::before{transform:scaleY(1)}
+.card .body{grid-column:3/9}
+.card h3{
+  font-size:clamp(22px,2.6vw,34px);font-weight:800;
+  letter-spacing:-.02em;line-height:1.05;text-transform:uppercase;
+  margin-bottom:10px;
+}
+.card h3 a:focus-visible{outline-offset:5px}
+.card p{font-size:14px;line-height:1.6;max-width:56ch}
+.card .side{
+  grid-column:10/13;
+  font-size:11px;letter-spacing:.1em;text-transform:uppercase;line-height:2;
+  display:flex;flex-direction:column;justify-content:space-between;
+}
+.card .tag{color:var(--red);font-weight:700;letter-spacing:.18em}
+a:focus-visible,button:focus-visible{outline:2px solid var(--red);outline-offset:3px}
+.card .arr{
+  align-self:flex-end;font-size:20px;letter-spacing:0;
+  transition:transform .3s var(--ease);
+}
+.card:hover .arr{transform:translateX(8px)}
+
+/* ---------- manifesto strip ---------- */
+.manifesto{
+  margin-top:clamp(72px,12vh,140px);
+  background:var(--ink);color:var(--paper);
+  border-top:6px solid var(--red);
+  overflow:hidden;padding:clamp(28px,4vh,44px) 0;
+}
+.strip{display:flex;width:max-content;animation:slide 42s linear infinite}
+.manifesto:hover .strip{animation-play-state:paused}
+.strip span{
+  font:800 clamp(26px,3.6vw,52px)/1 'Inter Tight',sans-serif;
+  text-transform:uppercase;letter-spacing:-.02em;white-space:nowrap;
+  padding:0 .6em;display:flex;align-items:center;gap:1.2em;
+}
+.strip i{font-style:normal;color:var(--red);font-family:'Space Grotesk',sans-serif;font-weight:400;font-size:.6em}
+@keyframes slide{from{transform:translateX(0)}to{transform:translateX(-50%)}}
+@media (prefers-reduced-motion:reduce){
+  .manifesto{overflow-x:auto;-webkit-overflow-scrolling:touch}
+  .strip{animation:none;width:max-content;padding:0 var(--mx)}
+}
+
+/* ---------- colophon ---------- */
+footer{background:var(--ink);color:var(--paper);padding:clamp(64px,10vh,120px) 0 40px;margin-top:-1px}
+footer .shell>.g12{row-gap:48px}
+.colo-title{
+  grid-column:1/13;
+  font-size:clamp(48px,8vw,120px);font-weight:900;
+  letter-spacing:-.04em;line-height:.9;text-transform:uppercase;
+}
+.colo-title em{font-style:normal;color:var(--red)}
+.colo-col{font-size:12px;line-height:1.8;letter-spacing:.03em}
+.colo-col b{display:block;font-size:10px;letter-spacing:.18em;text-transform:uppercase;color:var(--red);margin-bottom:10px;font-weight:700}
+.colo-col:nth-of-type(1){grid-column:1/4}
+.colo-col:nth-of-type(2){grid-column:4/7}
+.colo-col:nth-of-type(3){grid-column:7/10}
+.colo-col:nth-of-type(4){grid-column:10/13}
+.colo-col a{border-bottom:1px solid rgba(250,250,248,.3);transition:border-color .2s,color .2s}
+.colo-col a:hover{color:var(--red);border-color:var(--red)}
+.baseline{
+  grid-column:1/13;display:flex;justify-content:space-between;flex-wrap:wrap;gap:12px;
+  border-top:1px solid rgba(250,250,248,.2);padding-top:18px;
+  font-size:10px;letter-spacing:.2em;text-transform:uppercase;
+}
+.baseline .r{color:var(--red)}
+
+/* ---------- responsive: collapse to 4 cols ---------- */
+@media (max-width:900px){
+  :root{--gut:16px}
+  .g12{grid-template-columns:repeat(4,1fr)}
+  .gridlines .col:nth-child(n+5){display:none}
+  header{padding-top:76px}
+  .mast .logo{grid-column:1/5}
+  .mast .meta{grid-column:1/5;grid-template-columns:1fr 1fr;margin-top:18px}
+  .hl{white-space:normal;font-size:clamp(44px,13vw,80px)}
+  .hl-1,.hl-2,.hl-3{grid-column:1/5}
+  .hl-2{padding-left:12vw}
+  .hero-side{grid-column:1/5}
+  .hero-rule{grid-column:1/5}
+  .sec-head .no{grid-column:1/5}
+  .sec-head h2{grid-column:1/4;font-size:28px}
+  .sec-head .cnt{grid-column:4/5}
+  .card .num{grid-column:1/2}
+  .card .body{grid-column:1/5;order:2}
+  .card .side{grid-column:2/5;flex-direction:row;align-items:baseline;gap:16px}
+  .card .arr{display:none}
+  .colo-title{grid-column:1/5}
+  .colo-col:nth-of-type(1),.colo-col:nth-of-type(3){grid-column:1/3}
+  .colo-col:nth-of-type(2),.colo-col:nth-of-type(4){grid-column:3/5}
+  .baseline{grid-column:1/5}
+}
+</style>
+</head>
+<body>
+
+<a class="back" href="/">←&nbsp;25</a>
+
+<button class="gridbtn" id="gridToggle" aria-pressed="false" aria-label="Toggle grid overlay">
+  <svg width="12" height="12" viewBox="0 0 12 12" fill="none" aria-hidden="true">
+    <rect x="0.5" y="0.5" width="11" height="11" stroke="#111"/>
+    <rect x="4" y="0.5" width="0.001" height="11" stroke="#111"/>
+    <rect x="8" y="0.5" width="0.001" height="11" stroke="#111"/>
+  </svg>
+  Grid
+</button>
+
+<div class="gridlines" aria-hidden="true">
+  <div class="shell"><div class="g12">
+    <div class="col"></div><div class="col"></div><div class="col"></div><div class="col"></div>
+    <div class="col"></div><div class="col"></div><div class="col"></div><div class="col"></div>
+    <div class="col"></div><div class="col"></div><div class="col"></div><div class="col"></div>
+  </div></div>
+</div>
+
+<!-- ============ MASTHEAD ============ -->
+<header class="shell">
+  <div class="g12 mast">
+    <h1 class="logo rv">GRID<sup>°</sup></h1>
+    <div class="meta rv" style="transition-delay:.08s">
+      <div><b>Journal</b>A quarterly on systematic design, typography &amp; the international style.</div>
+      <div><b>Issue</b>№07 — Summer 2026<br>Zürich / Basel / Ulm<br>CHF 24 · €22</div>
+    </div>
+  </div>
+  <div class="mastline rv" style="transition-delay:.14s">
+    <span>Est. 2019</span><span aria-hidden="true">●</span><span>Printed on the grid, for the grid</span>
+  </div>
+</header>
+
+<!-- ============ HERO ============ -->
+<section class="hero shell" aria-label="Issue theme">
+  <div class="g12">
+    <div class="hl hl-1 rv">Order is</div>
+    <div class="hl hl-2 rv" style="transition-delay:.07s">not a <span class="outline">cage</span><span class="deg">.</span></div>
+    <div class="hl hl-3 rv" style="transition-delay:.14s">It is a <span class="deg">choice</span></div>
+
+    <div class="hero-rule rv" style="transition-delay:.2s">
+      <div class="bar"></div>
+      <div class="tick"><span>Theme</span><em>Constraint as freedom</em><span>1951 → 2026</span></div>
+    </div>
+
+    <div class="hero-side rv" style="transition-delay:.26s">
+      <p>Müller-Brockmann called the grid “an aid, not a guarantee.” Issue №07 tests that claim across six lives spent inside columns: from the Tonhalle posters of Zürich to the tiled mosaics of the New York subway.</p>
+      <p>Six essays. Twelve columns. One argument — that the strictest systems produce the freest work.</p>
+    </div>
+
+    <div class="hero-svg rv" style="transition-delay:.32s">
+      <svg viewBox="0 0 1200 160" fill="none" role="img" aria-label="Geometric composition of grid modules">
+        <rect x="1" y="1" width="1198" height="158" stroke="#111" stroke-width="2"/>
+        <line x1="300" y1="1" x2="300" y2="159" stroke="#111" stroke-width="1"/>
+        <line x1="600" y1="1" x2="600" y2="159" stroke="#111" stroke-width="1"/>
+        <line x1="900" y1="1" x2="900" y2="159" stroke="#111" stroke-width="1"/>
+        <rect x="300" y="1" width="150" height="79" fill="#111"/>
+        <rect x="750" y="80" width="150" height="79" fill="#E63329"/>
+        <circle cx="150" cy="80" r="52" stroke="#111" stroke-width="2"/>
+        <circle cx="150" cy="80" r="26" fill="#111"/>
+        <line x1="900" y1="159" x2="1060" y2="1" stroke="#E63329" stroke-width="2"/>
+        <line x1="940" y1="159" x2="1100" y2="1" stroke="#111" stroke-width="1"/>
+        <line x1="980" y1="159" x2="1140" y2="1" stroke="#111" stroke-width="1"/>
+        <rect x="480" y="100" width="60" height="59" fill="#111"/>
+      </svg>
+    </div>
+  </div>
+</section>
+
+<!-- ============ ARTICLE INDEX ============ -->
+<main class="index shell" aria-label="Article index">
+  <div class="g12 sec-head rv">
+    <span class="no">SEC. A</span>
+    <h2>In this issue</h2>
+    <span class="cnt">6 essays / 96 pp.</span>
+  </div>
+
+  <article class="card g12 rv" id="a01">
+    <div class="num">01</div>
+    <div class="body">
+      <h3><a href="#a01">The Zurich Axiom</a></h3>
+      <p>Josef Müller-Brockmann’s concert posters for the Tonhalle — beginning with the 1955 “beethoven,” its concentric arcs sized in strict geometric progression — argued that music could be notated visually. His 1981 manual “Grid Systems in Graphic Design” turned that instinct into law, still the discipline’s most-quoted rulebook.</p>
+    </div>
+    <div class="side">
+      <div><span class="tag">Systems</span><br>Zürich, 1955–1981<br>12 min read</div>
+      <span class="arr" aria-hidden="true">→</span>
+    </div>
+  </article>
+
+  <article class="card g12 rv" id="a02">
+    <div class="num">02</div>
+    <div class="body">
+      <h3><a href="#a02">Twenty-One Univers</a></h3>
+      <p>In 1957 Adrian Frutiger released Univers with Deberny &amp; Peignot — not a typeface but a planned family of 21 weights and widths, mapped on a numeric matrix (45, 55, 65…) instead of vague names like “bold.” It was type design as engineering, decades before variable fonts made the idea native.</p>
+    </div>
+    <div class="side">
+      <div><span class="tag">Typography</span><br>Paris, 1957<br>9 min read</div>
+      <span class="arr" aria-hidden="true">→</span>
+    </div>
+  </article>
+
+  <article class="card g12 rv" id="a03">
+    <div class="num">03</div>
+    <div class="body">
+      <h3><a href="#a03">The Athlete, Reduced</a></h3>
+      <p>For Munich 1972, Otl Aicher drew athletes as pure geometry — limbs snapped to a grid of horizontals, verticals and 45° diagonals — and chose a palette of light blue and green that pointedly refused the colours of 1936. His pictograms became the world’s de-facto wayfinding language.</p>
+    </div>
+    <div class="side">
+      <div><span class="tag">Identity</span><br>Munich, 1972<br>11 min read</div>
+      <span class="arr" aria-hidden="true">→</span>
+    </div>
+  </article>
+
+  <article class="card g12 rv" id="a04">
+    <div class="num">04</div>
+    <div class="body">
+      <h3><a href="#a04">Subway to Standard</a></h3>
+      <p>Massimo Vignelli’s 1972 New York subway diagram allowed only 45° and 90° angles, one dot per station, and geography be damned — beloved by designers, contested by riders, retired in 1979. His Unigrid system for the U.S. National Park Service (1977) proved the same rigour could quietly run for decades.</p>
+    </div>
+    <div class="side">
+      <div><span class="tag">Information</span><br>New York, 1972<br>10 min read</div>
+      <span class="arr" aria-hidden="true">→</span>
+    </div>
+  </article>
+
+  <article class="card g12 rv" id="a05">
+    <div class="num">05</div>
+    <div class="body">
+      <h3><a href="#a05">The Counterform Case</a></h3>
+      <p>At the Basel school, Emil Ruder taught that white space is not leftover but load-bearing: the unprinted counterform gives the printed form its meaning. His 1967 “Typographie” — trilingual, exhaustively systematic — remains the quiet counterweight to Zürich’s louder dogma.</p>
+    </div>
+    <div class="side">
+      <div><span class="tag">Pedagogy</span><br>Basel, 1967<br>8 min read</div>
+      <span class="arr" aria-hidden="true">→</span>
+    </div>
+  </article>
+
+  <article class="card g12 rv" id="a06">
+    <div class="num">06</div>
+    <div class="body">
+      <h3><a href="#a06">Programmes, Not Solutions</a></h3>
+      <p>Karl Gerstner’s “Designing Programmes” (1964) proposed that a designer’s real product is not the artefact but the rule-set that generates it — morphological boxes, parameter grids, combinatorial logic. Read today, it is a manifesto for computational design written before the computer arrived on the desk.</p>
+    </div>
+    <div class="side">
+      <div><span class="tag">Method</span><br>Basel, 1964<br>13 min read</div>
+      <span class="arr" aria-hidden="true">→</span>
+    </div>
+  </article>
+</main>
+
+<!-- ============ MANIFESTO STRIP ============ -->
+<section class="manifesto" aria-label="Manifesto">
+  <div class="strip" id="strip">
+    <span>The grid is an attitude, not a template <i>°01</i></span>
+    <span>Whitespace is load-bearing <i>°02</i></span>
+    <span>Objectivity over ornament <i>°03</i></span>
+    <span>Red is a scalpel, not a paintbrush <i>°04</i></span>
+    <span>Reduce until it breaks, then restore one step <i>°05</i></span>
+    <span>Typography is what language looks like <i>°06</i></span>
+  </div>
+</section>
+
+<!-- ============ COLOPHON ============ -->
+<footer>
+  <div class="shell">
+    <div class="g12">
+      <div class="colo-title rv">Colo<em>—</em>phon</div>
+
+      <div class="colo-col rv">
+        <b>Typefaces</b>
+        Inter Tight, 500–900<br>
+        Space Grotesk, 400–700<br>
+        Set on a 12-column grid,<br>
+        24&nbsp;px gutter, 1440&nbsp;px measure.
+      </div>
+
+      <div class="colo-col rv" style="transition-delay:.06s">
+        <b>Ink</b>
+        Paper — #FAFAF8<br>
+        Ink — #111111<br>
+        Accent — #E63329,<br>
+        applied surgically.
+      </div>
+
+      <div class="colo-col rv" style="transition-delay:.12s">
+        <b>Index of names</b>
+        Müller-Brockmann, J. — 01<br>
+        Frutiger, A. — 02<br>
+        Aicher, O. — 03<br>
+        Vignelli, M. — 04<br>
+        Ruder, E. — 05 · Gerstner, K. — 06
+      </div>
+
+      <div class="colo-col rv" style="transition-delay:.18s">
+        <b>Journal</b>
+        GRID° appears quarterly.<br>
+        Edited between Zürich and Basel.<br>
+        <a href="/">← Back to the index of 25</a>
+      </div>
+
+      <div class="baseline rv">
+        <span>GRID° №07</span>
+        <span class="r">Summer 2026</span>
+        <span>Press G to toggle the grid</span>
+        <span>Printed in 12 columns</span>
+      </div>
+    </div>
+  </div>
+</footer>
+
+<script>
+(function(){
+  var reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+  /* grid overlay toggle */
+  var btn = document.getElementById('gridToggle');
+  function toggleGrid(){
+    var on = document.body.classList.toggle('show-grid');
+    btn.setAttribute('aria-pressed', on ? 'true' : 'false');
+  }
+  btn.addEventListener('click', toggleGrid);
+  document.addEventListener('keydown', function(e){
+    if((e.key==='g'||e.key==='G') && !e.metaKey && !e.ctrlKey && !e.altKey){
+      var t=e.target.tagName; if(t!=='INPUT'&&t!=='TEXTAREA') toggleGrid();
+    }
+  });
+
+  /* duplicate manifesto strip for a seamless loop; clones hidden from AT */
+  var strip = document.getElementById('strip');
+  if(!reduce){
+    Array.prototype.slice.call(strip.children).forEach(function(node){
+      var c = node.cloneNode(true);
+      c.setAttribute('aria-hidden','true');
+      strip.appendChild(c);
+    });
+  }
+
+  /* scroll reveals — entries arriving in the same frame get a stagger */
+  var els = document.querySelectorAll('.rv');
+  if(reduce || !('IntersectionObserver' in window)){
+    els.forEach(function(el){ el.classList.add('in'); });
+    return;
+  }
+  var io = new IntersectionObserver(function(entries){
+    var batch = 0;
+    entries.forEach(function(en){
+      if(!en.isIntersecting) return;
+      var el = en.target;
+      if(!el.style.transitionDelay){ el.style.transitionDelay = (batch * 70) + 'ms'; }
+      batch++;
+      el.classList.add('in');
+      io.unobserve(el);
+      el.addEventListener('transitionend', function h(){
+        el.style.transitionDelay = '';
+        el.removeEventListener('transitionend', h);
+      });
+    });
+  }, {threshold:0.12, rootMargin:'0px 0px -6% 0px'});
+  els.forEach(function(el){ io.observe(el); });
+})();
+</script>
+</body>
+</html>

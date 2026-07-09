@@ -1,0 +1,598 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SILHOUETTE — ABSENCE — Autumn/Winter 2026</title>
+<!--
+  PASS 1: replaced stray soft-hyphen in hero title with proper en-dash line break;
+          prevented text-selection jank during runway drag (user-select:none + preventDefault
+          on pointermove); fixed reduced-motion marquee overflowing the viewport (track width
+          100%, duplicate span hidden so it reads once, statically).
+  PASS 2: capped look numerals at min(20vw,300px) so ultra-wide screens don't blow the panels;
+          even-numbered looks now set their numeral in italic on the RIGHT edge for editorial
+          rhythm; hairline rule added under the hero masthead; fractal-noise grain overlay
+          (pointer-events:none) laid over the carbon runway for cloth texture.
+  PASS 3: moved even-look silhouettes to the left so they no longer collide with the
+          right-aligned numerals; @supports fallback tints numerals where -webkit-text-stroke
+          is unsupported (they were transparent+stroke only); html background set to carbon +
+          theme-color meta for clean overscroll; mobile hero retuned to clamp(64px,22vw,120px)
+          and look bodies widened to full width at 390px.
+-->
+<meta name="description" content="SILHOUETTE presents ABSENCE, Autumn/Winter 2026. A lookbook without photographs — eight looks cut from typography and negative space.">
+<meta name="theme-color" content="#161616">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Archivo+Narrow:wght@400;500;600&family=Bodoni+Moda:ital,opsz,wght@0,6..96,400;0,6..96,600;1,6..96,400;1,6..96,500;1,6..96,700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bone:#EDEAE4;
+  --carbon:#161616;
+  --rust:#B04A2F;
+  --hair-d:rgba(22,22,22,.22);
+  --hair-l:rgba(237,234,228,.22);
+  --serif:"Bodoni Moda",Didot,"Bodoni MT",serif;
+  --sans:"Archivo Narrow",Arial,sans-serif;
+  --noise:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='140' height='140'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='2' stitchTiles='stitch'/></filter><rect width='140' height='140' filter='url(%23n)' opacity='0.55'/></svg>");
+}
+*{margin:0;padding:0;box-sizing:border-box}
+html{scroll-behavior:smooth;background:var(--carbon)}
+body{
+  background:var(--bone);
+  color:var(--carbon);
+  font-family:var(--sans);
+  overflow-x:hidden;
+  -webkit-font-smoothing:antialiased;
+}
+::selection{background:var(--rust);color:var(--bone)}
+a{color:inherit;text-decoration:none}
+a:focus-visible,button:focus-visible,[tabindex]:focus-visible{outline:2px solid var(--rust);outline-offset:4px}
+
+/* ---------- utility type ---------- */
+.label{
+  font-family:var(--sans);
+  font-size:11px;
+  letter-spacing:.22em;
+  text-transform:uppercase;
+  font-weight:500;
+}
+.rule{border:none;border-top:1px solid var(--hair-d)}
+
+/* ---------- back link ---------- */
+.back{
+  position:fixed;top:20px;left:22px;z-index:60;
+  font-family:var(--sans);font-size:12px;letter-spacing:.18em;
+  mix-blend-mode:difference;color:var(--bone);
+  padding:6px 2px;
+}
+.back:hover{color:var(--rust);mix-blend-mode:normal}
+
+/* ---------- curtain ---------- */
+.curtain{position:fixed;inset:0;z-index:80;display:flex;pointer-events:none;
+  animation:curtain-gone 0s linear 2.7s forwards}
+.curtain .panel{flex:1 1 50%;background:var(--carbon)}
+.curtain .panel.left{border-right:1px solid var(--rust);
+  animation:part-left 1.15s cubic-bezier(.83,0,.17,1) 1.45s forwards}
+.curtain .panel.right{border-left:1px solid var(--rust);
+  animation:part-right 1.15s cubic-bezier(.83,0,.17,1) 1.45s forwards}
+.curtain .wordmark{
+  position:absolute;inset:0;display:grid;place-items:center;
+  color:var(--bone);font-family:var(--serif);font-style:italic;font-weight:500;
+  font-size:clamp(22px,3.2vw,44px);letter-spacing:.34em;text-indent:.34em;
+  animation:mark-out .5s ease .95s forwards, mark-in .9s cubic-bezier(.22,1,.36,1) both;
+}
+@keyframes mark-in{from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:none}}
+@keyframes mark-out{to{opacity:0;letter-spacing:.6em}}
+@keyframes part-left{to{transform:translateX(-101%)}}
+@keyframes part-right{to{transform:translateX(101%)}}
+@keyframes curtain-gone{to{visibility:hidden}}
+
+/* ---------- hero ---------- */
+.hero{
+  min-height:100svh;position:relative;
+  display:flex;flex-direction:column;justify-content:space-between;
+  padding:clamp(18px,3vw,44px);
+  overflow:hidden;
+}
+.hero-top{display:flex;justify-content:space-between;align-items:baseline;gap:16px;
+  border-bottom:1px solid var(--hair-d);padding-bottom:16px}
+.hero-top .house{font-family:var(--serif);font-weight:600;font-size:15px;letter-spacing:.42em;text-indent:.42em}
+.hero-title{
+  position:relative;z-index:2;
+  font-family:var(--serif);font-style:italic;font-weight:500;
+  font-size:clamp(72px,17.5vw,268px);
+  line-height:.86;letter-spacing:-.02em;
+  margin-left:-.04em;
+}
+.hero-title .tight{display:block}
+.hero-title em{font-style:italic;color:var(--rust)}
+.hero-sub{
+  display:flex;justify-content:space-between;align-items:flex-end;gap:24px;flex-wrap:wrap;
+  position:relative;z-index:2;
+}
+.hero-sub p{max-width:34ch;font-size:13.5px;line-height:1.65;letter-spacing:.02em}
+.hero-sil{
+  position:absolute;right:4vw;top:8vh;width:min(34vw,430px);height:auto;z-index:1;opacity:.9;
+}
+.season-tag{writing-mode:vertical-rl;position:absolute;left:clamp(18px,3vw,44px);top:50%;transform:translateY(-50%);
+  font-size:10px;letter-spacing:.3em;text-transform:uppercase;color:rgba(22,22,22,.55)}
+.scroll-cue{display:flex;align-items:center;gap:10px;font-size:10px;letter-spacing:.28em;text-transform:uppercase}
+.scroll-cue::after{content:"";display:block;width:64px;height:1px;background:var(--carbon)}
+
+/* silhouettes sway */
+.sway{transform-origin:50% 96%;animation:sway 8.5s ease-in-out infinite alternate}
+.sway.slow{animation-duration:11s}
+.sway.late{animation-delay:-4s}
+@keyframes sway{
+  from{transform:rotate(-1.6deg)}
+  to{transform:rotate(1.8deg)}
+}
+
+/* ---------- marquee ---------- */
+.marquee{
+  background:var(--carbon);color:var(--bone);
+  overflow:hidden;border-top:1px solid var(--carbon);border-bottom:1px solid var(--carbon);
+  padding:14px 0;
+}
+.marquee-track{display:flex;width:max-content;animation:glide 46s linear infinite}
+.marquee-track span{
+  font-family:var(--serif);font-style:italic;font-size:clamp(18px,2.4vw,30px);
+  white-space:nowrap;padding-right:3.2rem;font-weight:400;
+}
+.marquee-track span i{font-style:normal;font-family:var(--sans);font-size:.5em;vertical-align:.45em;letter-spacing:.3em;color:var(--rust)}
+@keyframes glide{to{transform:translateX(-50%)}}
+
+/* ---------- runway ---------- */
+.runway-wrap{background:var(--carbon);color:var(--bone);position:relative}
+.runway-wrap::after{content:"";position:absolute;inset:0;background-image:var(--noise);
+  opacity:.045;pointer-events:none;z-index:5}
+.runway-head{
+  display:flex;justify-content:space-between;align-items:baseline;
+  padding:clamp(20px,3vw,40px) clamp(18px,3vw,44px) 0;
+}
+.runway-head .label{color:rgba(237,234,228,.6)}
+.runway-count{font-family:var(--serif);font-style:italic;font-size:20px;min-width:74px;text-align:right}
+.runway-count b{font-weight:500;color:var(--rust)}
+.runway{
+  display:flex;
+  overflow-x:auto;overflow-y:hidden;
+  scroll-snap-type:x proximity;
+  scrollbar-width:none;
+  cursor:grab;
+}
+.runway::-webkit-scrollbar{display:none}
+.runway.dragging{cursor:grabbing;scroll-snap-type:none;user-select:none}
+.look{
+  flex:0 0 auto;
+  width:min(78vw,1060px);
+  min-height:88svh;
+  scroll-snap-align:center;
+  position:relative;
+  border-right:1px solid var(--hair-l);
+  padding:clamp(20px,4vh,56px) clamp(20px,3.5vw,56px);
+  display:flex;flex-direction:column;justify-content:flex-end;
+  overflow:hidden;
+}
+.look:first-child{border-left:1px solid var(--hair-l)}
+.look-num{
+  position:absolute;top:0;left:.02em;
+  font-family:var(--serif);font-weight:400;
+  font-size:min(20vw,300px);line-height:.82;
+  color:transparent;
+  -webkit-text-stroke:1px rgba(237,234,228,.5);
+  transition:transform .7s cubic-bezier(.22,1,.36,1),color .7s ease,-webkit-text-stroke-color .7s ease;
+  pointer-events:none;
+  user-select:none;
+}
+.look:nth-child(even) .look-num{color:rgba(237,234,228,.12);-webkit-text-stroke-color:transparent;font-style:italic;left:auto;right:.04em}
+.look:hover .look-num,.look:focus-within .look-num{
+  transform:skew(-11deg,1.5deg) scale(1.02,1.16);
+  color:var(--rust);
+  -webkit-text-stroke-color:var(--rust);
+}
+.look.accent:hover .look-num{color:var(--bone);-webkit-text-stroke-color:var(--bone)}
+.look-sil{
+  position:absolute;right:6%;bottom:0;width:clamp(160px,22vw,300px);z-index:1;
+}
+.look:nth-child(even) .look-sil{right:auto;left:6%}
+@supports not (-webkit-text-stroke:1px #000){
+  .look-num{color:rgba(237,234,228,.14)}
+}
+.look-body{position:relative;z-index:2;max-width:44ch}
+.look-kicker{font-size:10px;letter-spacing:.3em;text-transform:uppercase;color:rgba(237,234,228,.55);margin-bottom:14px}
+.look-kicker b{color:var(--rust);font-weight:500}
+.look-title{
+  font-family:var(--serif);font-style:italic;font-weight:500;
+  font-size:clamp(30px,3.6vw,54px);line-height:1.02;margin-bottom:16px;
+  transition:transform .7s cubic-bezier(.22,1,.36,1);
+}
+.look:hover .look-title{transform:skewX(-6deg) translateX(6px)}
+.look-desc{font-size:13.5px;line-height:1.7;color:rgba(237,234,228,.82);max-width:38ch}
+.swatch-row{display:flex;align-items:center;gap:14px;margin-top:26px}
+.swatch{
+  width:52px;height:64px;flex:0 0 auto;
+  border:1px solid var(--hair-l);
+  background-image:var(--noise),var(--sw,linear-gradient(160deg,#2a2a2a,#101010));
+  background-blend-mode:overlay,normal;
+  box-shadow:inset 0 0 0 1px rgba(0,0,0,.2);
+}
+.swatch-meta{font-size:10px;letter-spacing:.24em;text-transform:uppercase;color:rgba(237,234,228,.6);line-height:1.9}
+.swatch-meta b{display:block;color:var(--bone);font-weight:500}
+.look.accent{background:var(--rust);color:var(--bone)}
+.look.accent .look-num{-webkit-text-stroke-color:rgba(237,234,228,.65);color:transparent}
+.look.accent .look-desc,.look.accent .look-kicker,.look.accent .swatch-meta{color:rgba(237,234,228,.85)}
+.look.accent .look-kicker b{color:var(--carbon)}
+.runway-foot{
+  display:flex;justify-content:space-between;align-items:center;
+  padding:0 clamp(18px,3vw,44px) clamp(20px,3vw,36px);
+  color:rgba(237,234,228,.5);font-size:10px;letter-spacing:.26em;text-transform:uppercase;
+}
+
+/* ---------- atelier note ---------- */
+.atelier{
+  padding:clamp(72px,14vh,150px) clamp(18px,3vw,44px);
+  display:grid;grid-template-columns:minmax(0,1fr) minmax(0,2fr);gap:clamp(24px,5vw,90px);
+  border-bottom:1px solid var(--hair-d);
+  position:relative;overflow:hidden;
+}
+.atelier .label{color:rgba(22,22,22,.55)}
+.atelier-text{
+  font-family:var(--serif);font-size:clamp(22px,2.6vw,38px);line-height:1.34;font-weight:400;
+  max-width:26em;
+}
+.atelier-text em{font-style:italic;color:var(--rust)}
+.atelier-sign{margin-top:34px;font-family:var(--sans);font-size:11px;letter-spacing:.24em;text-transform:uppercase;color:rgba(22,22,22,.6)}
+
+/* ---------- footer ---------- */
+.credits{background:var(--carbon);color:var(--bone);padding:clamp(48px,8vh,90px) clamp(18px,3vw,44px) 28px}
+.credits-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:28px;margin-bottom:64px}
+.credits-grid h3{font-size:10px;letter-spacing:.28em;text-transform:uppercase;color:rgba(237,234,228,.5);margin-bottom:14px;font-weight:500}
+.credits-grid p{font-size:13px;line-height:2;color:rgba(237,234,228,.85)}
+.credits-mark{
+  font-family:var(--serif);font-style:italic;font-weight:500;
+  font-size:clamp(56px,11vw,168px);line-height:.9;letter-spacing:-.01em;
+  border-top:1px solid var(--hair-l);padding-top:34px;
+}
+.credits-base{display:flex;justify-content:space-between;gap:16px;flex-wrap:wrap;margin-top:26px;
+  font-size:10px;letter-spacing:.24em;text-transform:uppercase;color:rgba(237,234,228,.45)}
+
+/* ---------- reveal ---------- */
+@media (prefers-reduced-motion:no-preference){
+  .reveal{opacity:0;transform:translateY(26px);transition:opacity .9s ease,transform .9s cubic-bezier(.22,1,.36,1)}
+  .reveal.in{opacity:1;transform:none}
+}
+
+/* ---------- responsive ---------- */
+@media (max-width:820px){
+  .hero-sil{right:-6vw;top:auto;bottom:14vh;width:52vw;opacity:.55}
+  .season-tag{display:none}
+  .runway{flex-direction:column;overflow-x:visible;overflow-y:visible;scroll-snap-type:none;cursor:auto}
+  .look{width:100%;min-height:78svh;border-right:none;border-bottom:1px solid var(--hair-l)}
+  .look:first-child{border-left:none;border-top:1px solid var(--hair-l)}
+  .look-num{font-size:38vw}
+  .look-sil{width:38vw;opacity:.8}
+  .look:nth-child(even) .look-num{right:.06em}
+  .look-body{max-width:100%}
+  .hero-title{font-size:clamp(64px,22vw,120px)}
+  .atelier{grid-template-columns:1fr}
+  .credits-grid{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .runway-count{display:none}
+}
+
+/* ---------- reduced motion ---------- */
+@media (prefers-reduced-motion:reduce){
+  html{scroll-behavior:auto}
+  .curtain{display:none}
+  .sway{animation:none}
+  .marquee-track{animation:none;width:100%;overflow:hidden}
+  .marquee-track span:nth-child(2){display:none}
+  .look-num,.look-title{transition:none}
+  .look:hover .look-num,.look:hover .look-title{transform:none}
+}
+</style>
+</head>
+<body>
+
+<!-- back to index -->
+<a class="back" href="/">&larr;&nbsp;25</a>
+
+<!-- curtain intro -->
+<div class="curtain" aria-hidden="true">
+  <div class="panel left"></div>
+  <div class="panel right"></div>
+  <div class="wordmark">SILHOUETTE</div>
+</div>
+
+<!-- ============ HERO ============ -->
+<header class="hero">
+  <div class="hero-top">
+    <div class="house">SILHOUETTE</div>
+    <div class="label">Paris &mdash; Collection N&deg;14</div>
+  </div>
+
+  <span class="season-tag">Autumn &mdash; Winter 2026 &mdash; Pr&ecirc;t-&agrave;-Disparaître</span>
+
+  <svg class="hero-sil sway slow" viewBox="0 0 200 320" fill="none" aria-hidden="true">
+    <path d="M100 8 C118 44 92 78 112 128 C132 190 168 236 118 300 C104 316 96 316 82 300 C32 236 68 190 88 128 C108 78 82 44 100 8 Z"
+      fill="rgba(22,22,22,.07)" stroke="rgba(22,22,22,.5)" stroke-width="1"/>
+    <path d="M100 30 C110 58 96 84 108 128 C120 176 144 224 112 278" stroke="var(--rust)" stroke-width="1" opacity=".7"/>
+  </svg>
+
+  <h1 class="hero-title">
+    <span class="tight">AB&#8211;</span>
+    <span class="tight"><em>SENCE</em></span>
+  </h1>
+
+  <div class="hero-sub">
+    <p>Eight looks, no photographs. This season the house presents garments as they exist before and after the body &mdash; pattern, fall, and shadow. What you cannot see is tailored precisely.</p>
+    <div class="scroll-cue">The runway begins below</div>
+  </div>
+</header>
+
+<!-- ============ MARQUEE ============ -->
+<div class="marquee" aria-hidden="true">
+  <div class="marquee-track">
+    <span>Absence <i>AW26</i> Silhouette <i>Paris</i> Absence <i>AW26</i> Silhouette <i>Paris</i> Absence <i>AW26</i> Silhouette <i>Paris</i>&nbsp;</span>
+    <span>Absence <i>AW26</i> Silhouette <i>Paris</i> Absence <i>AW26</i> Silhouette <i>Paris</i> Absence <i>AW26</i> Silhouette <i>Paris</i>&nbsp;</span>
+  </div>
+</div>
+
+<!-- ============ RUNWAY ============ -->
+<section class="runway-wrap" aria-label="The runway — eight looks">
+  <div class="runway-head">
+    <span class="label">The Runway &mdash; scroll sideways</span>
+    <span class="runway-count" aria-live="polite"><b id="lookNow">01</b> / 08</span>
+  </div>
+
+  <div class="runway" id="runway" tabindex="0" aria-label="Horizontally scrolling looks. Use arrow keys or scroll.">
+
+    <!-- LOOK 01 -->
+    <article class="look">
+      <div class="look-num" aria-hidden="true">01</div>
+      <svg class="look-sil sway" viewBox="0 0 200 320" fill="none" aria-hidden="true">
+        <path d="M60 40 C80 24 120 24 140 40 C150 48 146 90 152 150 C158 220 150 280 140 306 L60 306 C50 280 42 220 48 150 C54 90 50 48 60 40 Z"
+          fill="rgba(237,234,228,.06)" stroke="rgba(237,234,228,.45)" stroke-width="1"/>
+        <path d="M100 40 L100 306" stroke="rgba(237,234,228,.3)" stroke-width="1" stroke-dasharray="1 6"/>
+      </svg>
+      <div class="look-body">
+        <p class="look-kicker">Look <b>01</b> &mdash; Opening exit</p>
+        <h2 class="look-title">Coat, Removed</h2>
+        <p class="look-desc">A double-breasted greatcoat, drafted at full scale and never sewn. The shoulder line is drawn by whatever refuses to fill it; the lapel breaks over air.</p>
+        <div class="swatch-row">
+          <span class="swatch" style="--sw:linear-gradient(165deg,#333230,#141414 70%)"></span>
+          <span class="swatch-meta"><b>Bonded wool gazar</b>Carbon &mdash; 640&nbsp;g/m&sup2;</span>
+        </div>
+      </div>
+    </article>
+
+    <!-- LOOK 02 -->
+    <article class="look">
+      <div class="look-num" aria-hidden="true">02</div>
+      <svg class="look-sil sway late" viewBox="0 0 200 320" fill="none" aria-hidden="true">
+        <path d="M100 8 C118 44 92 78 112 128 C132 190 168 236 118 300 C104 316 96 316 82 300 C32 236 68 190 88 128 C108 78 82 44 100 8 Z"
+          fill="rgba(237,234,228,.06)" stroke="rgba(237,234,228,.45)" stroke-width="1" transform="rotate(4 100 160)"/>
+      </svg>
+      <div class="look-body">
+        <p class="look-kicker">Look <b>02</b> &mdash; Eveningwear</p>
+        <h2 class="look-title">The Bias Argument</h2>
+        <p class="look-desc">Charmeuse cut on the true bias falls at forty-five degrees or not at all. Here the drape is the thesis and the body a footnote, politely declined.</p>
+        <div class="swatch-row">
+          <span class="swatch" style="--sw:linear-gradient(150deg,#f2efe8,#d8d3c8 55%,#efece5)"></span>
+          <span class="swatch-meta"><b>Silk charmeuse</b>Bone &mdash; cut on the bias</span>
+        </div>
+      </div>
+    </article>
+
+    <!-- LOOK 03 -->
+    <article class="look">
+      <div class="look-num" aria-hidden="true">03</div>
+      <svg class="look-sil sway slow" viewBox="0 0 200 320" fill="none" aria-hidden="true" style="transform:scaleX(-1)">
+        <path d="M70 20 C110 10 140 30 138 70 C136 120 120 200 104 290 C100 308 78 310 72 292 C60 240 52 160 54 100 C55 60 50 30 70 20 Z"
+          fill="rgba(237,234,228,.06)" stroke="rgba(237,234,228,.45)" stroke-width="1"/>
+      </svg>
+      <div class="look-body">
+        <p class="look-kicker">Look <b>03</b> &mdash; Study</p>
+        <h2 class="look-title">Sleeve for No Arm</h2>
+        <p class="look-desc">A single two-piece sleeve, set into nothing and pressed flat like a pinned specimen. The elbow ease remains, in memory of bending.</p>
+        <div class="swatch-row">
+          <span class="swatch" style="--sw:linear-gradient(170deg,#eae6dd,#dcd7cb)"></span>
+          <span class="swatch-meta"><b>Washed silk habotai</b>Chalk &mdash; 8&nbsp;momme</span>
+        </div>
+      </div>
+    </article>
+
+    <!-- LOOK 04 — the accent look -->
+    <article class="look accent">
+      <div class="look-num" aria-hidden="true">04</div>
+      <svg class="look-sil sway" viewBox="0 0 200 320" fill="none" aria-hidden="true">
+        <path d="M100 8 C118 44 92 78 112 128 C132 190 168 236 118 300 C104 316 96 316 82 300 C32 236 68 190 88 128 C108 78 82 44 100 8 Z"
+          fill="rgba(22,22,22,.28)" stroke="rgba(22,22,22,.6)" stroke-width="1"/>
+      </svg>
+      <div class="look-body">
+        <p class="look-kicker">Look <b>04</b> &mdash; The colour</p>
+        <h2 class="look-title">Rust Study</h2>
+        <p class="look-desc">The season&rsquo;s only colour, applied once and entirely, like a stain the atelier decided to keep. Oxide as ornament; corrosion as couture.</p>
+        <div class="swatch-row">
+          <span class="swatch" style="--sw:linear-gradient(160deg,#c05a3c,#8f3a22 60%,#a34428)"></span>
+          <span class="swatch-meta"><b>Oxidised silk organza</b>Rust &mdash; piece-dyed</span>
+        </div>
+      </div>
+    </article>
+
+    <!-- LOOK 05 -->
+    <article class="look">
+      <div class="look-num" aria-hidden="true">05</div>
+      <svg class="look-sil sway late" viewBox="0 0 200 320" fill="none" aria-hidden="true">
+        <path d="M10 300 C55 140 145 140 190 300 L164 300 C128 190 72 190 36 300 Z"
+          fill="rgba(237,234,228,.06)" stroke="rgba(237,234,228,.45)" stroke-width="1"/>
+      </svg>
+      <div class="look-body">
+        <p class="look-kicker">Look <b>05</b> &mdash; Outerwear</p>
+        <h2 class="look-title">Collar as Horizon</h2>
+        <p class="look-desc">A stand collar scaled until it stops being a collar and becomes a landscape line. Everything below it is weather.</p>
+        <div class="swatch-row">
+          <span class="swatch" style="--sw:linear-gradient(165deg,#b7b0a3,#8f887b)"></span>
+          <span class="swatch-meta"><b>Double-faced cashmere</b>Greige &mdash; hand-split seam</span>
+        </div>
+      </div>
+    </article>
+
+    <!-- LOOK 06 -->
+    <article class="look">
+      <div class="look-num" aria-hidden="true">06</div>
+      <svg class="look-sil sway slow late" viewBox="0 0 200 320" fill="none" aria-hidden="true">
+        <path d="M100 8 C112 40 96 70 106 120 C118 176 140 230 106 296 C102 306 98 306 94 296 C60 230 82 176 94 120 C104 70 88 40 100 8 Z"
+          fill="rgba(237,234,228,.06)" stroke="rgba(237,234,228,.45)" stroke-width="1"/>
+        <path d="M74 120 L126 120" stroke="rgba(237,234,228,.3)" stroke-width="1" stroke-dasharray="1 5"/>
+      </svg>
+      <div class="look-body">
+        <p class="look-kicker">Look <b>06</b> &mdash; Lingerie dress</p>
+        <h2 class="look-title">N&eacute;glig&eacute; for Daylight</h2>
+        <p class="look-desc">Underpinnings promoted to outerwear. A slip dress with couture seam allowances, keeping its secrets in plain view.</p>
+        <div class="swatch-row">
+          <span class="swatch" style="--sw:linear-gradient(155deg,#f4f1ea,#e2ddd2 65%,#eeeae1)"></span>
+          <span class="swatch-meta"><b>Cr&ecirc;pe de chine</b>Ivory &mdash; French seams</span>
+        </div>
+      </div>
+    </article>
+
+    <!-- LOOK 07 -->
+    <article class="look">
+      <div class="look-num" aria-hidden="true">07</div>
+      <svg class="look-sil sway" viewBox="0 0 200 320" fill="none" aria-hidden="true">
+        <path d="M96 10 C108 50 92 90 104 150 C114 200 190 260 196 312 L4 312 C10 268 76 210 88 150 C98 96 86 50 96 10 Z"
+          fill="rgba(237,234,228,.06)" stroke="rgba(237,234,228,.45)" stroke-width="1"/>
+        <path d="M40 300 C80 250 90 210 96 170 M160 300 C124 254 110 214 104 170" stroke="rgba(237,234,228,.3)" stroke-width="1"/>
+      </svg>
+      <div class="look-body">
+        <p class="look-kicker">Look <b>07</b> &mdash; The train</p>
+        <h2 class="look-title">The Hem Continues</h2>
+        <p class="look-desc">A train that leaves the garment and keeps going, sunray-pleated well past the point of usefulness. It exits the frame before the model would.</p>
+        <div class="swatch-row">
+          <span class="swatch" style="--sw:repeating-linear-gradient(105deg,#efece5 0 5px,#cfc9bc 5px 7px)"></span>
+          <span class="swatch-meta"><b>Sunray-pleated gazar</b>Bone &mdash; heat-set</span>
+        </div>
+      </div>
+    </article>
+
+    <!-- LOOK 08 -->
+    <article class="look">
+      <div class="look-num" aria-hidden="true">08</div>
+      <svg class="look-sil sway slow" viewBox="0 0 200 320" fill="none" aria-hidden="true" style="transform:scaleX(-1)">
+        <path d="M60 40 C80 24 120 24 140 40 C150 48 146 90 152 150 C158 220 150 280 140 306 L60 306 C50 280 42 220 48 150 C54 90 50 48 60 40 Z"
+          fill="rgba(237,234,228,.06)" stroke="rgba(237,234,228,.45)" stroke-width="1"/>
+      </svg>
+      <div class="look-body">
+        <p class="look-kicker">Look <b>08</b> &mdash; Finale</p>
+        <h2 class="look-title">Exit, Unaccompanied</h2>
+        <p class="look-desc">The final walk, taken without a body to make it. Duchesse satin cut for the closing of a door; the applause is implied.</p>
+        <div class="swatch-row">
+          <span class="swatch" style="--sw:linear-gradient(170deg,#2c2b29,#0f0f0f 55%,#242422)"></span>
+          <span class="swatch-meta"><b>Duchesse satin</b>Carbon &mdash; 40&nbsp;momme</span>
+        </div>
+      </div>
+    </article>
+
+  </div>
+
+  <div class="runway-foot">
+    <span>Salon d&rsquo;Hiver, Paris &mdash; 6 March 2026, 20:00</span>
+    <span>Seating by absence only</span>
+  </div>
+</section>
+
+<!-- ============ ATELIER NOTE ============ -->
+<section class="atelier">
+  <div>
+    <span class="label">Note from the atelier</span>
+  </div>
+  <div class="reveal">
+    <p class="atelier-text">We removed the photographs the way one removes a lining &mdash; to see what the seam was doing all along. A garment is mostly <em>air held in place</em>; the cloth is only there to persuade the air to stay. This season we kept the persuasion and released the cloth.</p>
+    <p class="atelier-sign">&mdash; The cutting room, Rue de Braque, Paris III&#7497;</p>
+  </div>
+</section>
+
+<!-- ============ CREDITS ============ -->
+<footer class="credits">
+  <div class="credits-grid">
+    <div><h3>Creative direction</h3><p>Studio Silhouette<br>Direction of absence: la maison</p></div>
+    <div><h3>Pattern cutting</h3><p>Drafted flat, never assembled<br>Toiles archived unsewn</p></div>
+    <div><h3>Typography</h3><p>Bodoni Moda, cut on the bias<br>Archivo Narrow, for the labels</p></div>
+    <div><h3>Cloth</h3><p>Gazar, charmeuse, habotai,<br>organza, cashmere, satin</p></div>
+  </div>
+  <div class="credits-mark">Silhouette</div>
+  <div class="credits-base">
+    <span>&copy; MMXXVI Maison Silhouette</span>
+    <span>Absence &mdash; Collection N&deg;14</span>
+    <span>No garments were photographed</span>
+  </div>
+</footer>
+
+<script>
+(function(){
+  var reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
+  var mobile = function(){ return matchMedia('(max-width: 820px)').matches; };
+  var runway = document.getElementById('runway');
+  var counter = document.getElementById('lookNow');
+  var looks = runway.querySelectorAll('.look');
+
+  /* wheel: vertical scroll glides the runway sideways on desktop */
+  runway.addEventListener('wheel', function(e){
+    if (mobile()) return;
+    if (Math.abs(e.deltaX) > Math.abs(e.deltaY)) return;
+    var max = runway.scrollWidth - runway.clientWidth;
+    var atStart = runway.scrollLeft <= 0;
+    var atEnd = runway.scrollLeft >= max - 1;
+    if ((e.deltaY > 0 && !atEnd) || (e.deltaY < 0 && !atStart)) {
+      e.preventDefault();
+      runway.scrollLeft += e.deltaY;
+    }
+  }, {passive:false});
+
+  /* drag to scroll */
+  var down = false, startX = 0, startL = 0;
+  runway.addEventListener('pointerdown', function(e){
+    if (mobile()) return;
+    down = true; startX = e.clientX; startL = runway.scrollLeft;
+    runway.classList.add('dragging');
+  });
+  addEventListener('pointermove', function(e){
+    if (!down) return;
+    e.preventDefault();
+    runway.scrollLeft = startL - (e.clientX - startX);
+  });
+  addEventListener('pointerup', function(){
+    down = false; runway.classList.remove('dragging');
+  });
+
+  /* counter */
+  function tick(){
+    var i;
+    if (mobile()) { i = 0; }
+    else {
+      var mid = runway.scrollLeft + runway.clientWidth / 2;
+      i = 0; var acc = 0;
+      for (var k = 0; k < looks.length; k++) {
+        acc += looks[k].offsetWidth;
+        if (mid < acc) { i = k; break; }
+        i = k;
+      }
+    }
+    counter.textContent = String(i + 1).padStart(2, '0');
+  }
+  runway.addEventListener('scroll', function(){ requestAnimationFrame(tick); }, {passive:true});
+  tick();
+
+  /* reveals */
+  if (!reduce && 'IntersectionObserver' in window) {
+    var io = new IntersectionObserver(function(es){
+      es.forEach(function(en){ if (en.isIntersecting) { en.target.classList.add('in'); io.unobserve(en.target); } });
+    }, {threshold:.25});
+    document.querySelectorAll('.reveal').forEach(function(el){ io.observe(el); });
+  } else {
+    document.querySelectorAll('.reveal').forEach(function(el){ el.classList.add('in'); });
+  }
+})();
+</script>
+</body>
+</html>

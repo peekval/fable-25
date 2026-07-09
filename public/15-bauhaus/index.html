@@ -1,0 +1,822 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>FORM FOLGT — 100 Jahre Bauhausgebäude Dessau · Jubiläumsausstellung 2026</title>
+<meta name="description" content="FORM FOLGT — die Jubiläumsausstellung zum hundertsten Jahrestag des Bauhausgebäudes Dessau. 4. Dezember 2026 bis 4. April 2027, Gropiusallee 38.">
+<!--
+  FORM FOLGT · Jubiläumsausstellung Dessau 1926–2026
+  PASS 1: initial build — choreographed hero (rules draw, circle glides, square rotates+locks, triangle
+          drops with overshoot; replay on scroll re-entry), ticker, diagonally clipped manifesto, workshop
+          rows that flood + slide on hover, kinetic gravity stage (rAF physics), tickets, lowercase footer.
+  PASS 2 (robustness): (1) .rv scroll-reveals gated behind an .js root class — no-JS visitors previously
+          saw permanently invisible sections; (2) the stage still-life is now the plain-CSS default and
+          physics opts in via .kin, so no-JS AND prefers-reduced-motion get the pre-composed scene for
+          free, and the replay button only renders when physics actually runs; (3) hero headline offsets
+          moved out of base styles into from{} keyframes, so reduced-motion never sees translated type;
+          (4) min-height:100vh fallback added before 100svh for older engines.
+  PASS 3 (motion + polish): (1) choreography actors were peeking on stage during their stagger delays —
+          computed the from-state geometry (red circle sliver at the left edge, square corner at bottom-
+          right, the triangle sat fully visible at the top) and pushed every start offset outside the
+          viewBox; (2) square lock-in retimed to .78s with a sharper overshoot bezier so its rotation
+          "clicks" home before the triangle lands; (3) settling stage bodies now rotation-snap onto the
+          90° grid (the black bar to 180°, since at 90° it would stand half-sunk through the floor) and
+          the rAF loop exits once every body has locked — no idle CPU burn; (4) German orthography fixed
+          for a Dessau venue (große, Ermäßigt, einschließlich, Dessau-Roßlau), dead .mani-facts selector
+          and redundant ticker border removed.
+-->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wght@500;700;900&family=Work+Sans:ital,wght@0,400;0,500;0,600;1,400&display=swap" rel="stylesheet">
+<style>
+:root{
+  --paper:#F4F1EA;
+  --ink:#141414;
+  --red:#D02E26;
+  --blue:#1F4CA0;
+  --yellow:#F2B705;
+  --rule:4px;
+  --gutter:clamp(1.25rem,5vw,5.5rem);
+  --spring:cubic-bezier(.3,1.42,.42,1);
+  --snap:cubic-bezier(.76,0,.2,1);
+}
+*{margin:0;padding:0;box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{
+  background:var(--paper);
+  color:var(--ink);
+  font-family:"Work Sans",sans-serif;
+  font-size:1.0625rem;
+  line-height:1.6;
+  -webkit-font-smoothing:antialiased;
+  overflow-x:hidden;
+}
+::selection{background:var(--yellow);color:var(--ink)}
+h1,h2,h3,.arch{font-family:"Archivo",sans-serif;text-transform:uppercase;letter-spacing:-.02em}
+a{color:inherit}
+img{display:none}
+
+/* ---------- fixed back link ---------- */
+.back{
+  position:fixed;top:1.1rem;left:1.1rem;z-index:120;
+  font-family:"Archivo",sans-serif;font-weight:700;font-size:.8rem;letter-spacing:.08em;
+  text-decoration:none;color:#fff;mix-blend-mode:difference;
+  padding:.35rem .6rem;border:2px solid #fff;
+  transition:transform .25s var(--snap);
+}
+.back:hover{transform:translateX(-3px)}
+.back:focus-visible{outline:3px solid var(--yellow);outline-offset:2px}
+
+/* ---------- top nav ---------- */
+.nav{
+  position:fixed;top:1.1rem;right:1.4rem;z-index:120;display:flex;gap:1.4rem;
+  mix-blend-mode:difference;
+}
+.nav a{
+  font-family:"Archivo",sans-serif;font-weight:700;font-size:.72rem;letter-spacing:.14em;
+  text-transform:uppercase;text-decoration:none;color:#fff;position:relative;padding-bottom:.2rem;
+}
+.nav a::after{content:"";position:absolute;left:0;bottom:0;width:100%;height:3px;background:#fff;transform:scaleX(0);transform-origin:left;transition:transform .3s var(--snap)}
+.nav a:hover::after,.nav a:focus-visible::after{transform:scaleX(1)}
+.nav a:focus-visible{outline:none}
+@media(max-width:820px){.nav{display:none}}
+
+/* ---------- reveal utility (gated behind .js so no-JS visitors see everything) ---------- */
+.js .rv{opacity:0;transform:translateY(38px);transition:opacity .7s var(--snap),transform .7s var(--snap)}
+.js .rv.in{opacity:1;transform:none}
+.js .rv.d1{transition-delay:.08s}.js .rv.d2{transition-delay:.16s}.js .rv.d3{transition-delay:.24s}
+
+/* ================= HERO ================= */
+.hero{
+  min-height:100vh;
+  min-height:100svh;
+  display:flex;flex-direction:column;justify-content:center;
+  padding:clamp(5rem,10vh,7rem) var(--gutter) clamp(2.5rem,6vh,4rem);
+  position:relative;
+}
+.hero-grid{
+  display:grid;grid-template-columns:minmax(0,7fr) minmax(0,5fr);
+  gap:clamp(2rem,5vw,6rem);align-items:center;flex:1;
+}
+.hero-kicker{
+  font-family:"Archivo",sans-serif;font-weight:700;font-size:clamp(.7rem,1vw,.82rem);
+  letter-spacing:.22em;text-transform:uppercase;
+  display:inline-flex;align-items:center;gap:.8rem;margin-bottom:clamp(1.2rem,3vh,2.2rem);
+}
+.hero-kicker::before{content:"";width:2.2rem;height:var(--rule);background:var(--red)}
+.hero-title{
+  font-weight:900;font-size:clamp(4rem,13.5vw,11.5rem);
+  line-height:.84;letter-spacing:-.045em;
+  margin-left:-.05em;
+}
+.hero-title .line{display:block;overflow:hidden;padding-bottom:.06em;margin-bottom:-.06em}
+/* base state = final state, offsets live in the from{} keyframe: PRM & no-JS always show composed type */
+.hero-title .line>span{display:inline-block;animation:rise .9s var(--spring) both}
+.hero-title .line:nth-child(2)>span{animation-delay:.12s}
+.hero-title .dot{color:var(--red)}
+@keyframes rise{from{transform:translateY(112%)}}
+.hero-sub{
+  max-width:34rem;margin-top:clamp(1.4rem,3.5vh,2.4rem);
+  font-size:clamp(1rem,1.3vw,1.2rem);line-height:1.55;
+  animation:fadeup .8s var(--snap) .5s both;
+}
+@keyframes fadeup{from{opacity:0;transform:translateY(26px)}}
+.hero-meta{
+  display:flex;gap:clamp(1.2rem,3vw,3rem);flex-wrap:wrap;
+  margin-top:clamp(1.8rem,4.5vh,3rem);
+  animation:fadeup .8s var(--snap) .7s both;
+}
+.hero-meta div{border-top:var(--rule) solid var(--ink);padding-top:.6rem;min-width:8.5rem}
+.hero-meta span{display:block;font-size:.72rem;letter-spacing:.18em;text-transform:uppercase;font-weight:600;color:var(--red)}
+.hero-meta strong{font-family:"Archivo",sans-serif;font-weight:900;font-size:clamp(1.1rem,1.6vw,1.45rem);text-transform:uppercase;letter-spacing:-.01em}
+.hero-vert{
+  position:absolute;right:1.15rem;top:50%;transform:translateY(-50%);
+  writing-mode:vertical-rl;
+  font-family:"Archivo",sans-serif;font-weight:700;font-size:.7rem;letter-spacing:.42em;text-transform:uppercase;
+  display:flex;align-items:center;gap:1rem;
+}
+.hero-vert::before{content:"";width:var(--rule);height:5rem;background:var(--ink)}
+@media(max-width:820px){.hero-vert{display:none}}
+.hero-scroll{
+  position:absolute;bottom:2rem;left:var(--gutter);
+  font-family:"Archivo",sans-serif;font-weight:700;font-size:.7rem;letter-spacing:.3em;text-transform:uppercase;
+  display:flex;align-items:center;gap:.7rem;
+}
+.hero-scroll::after{content:"";width:var(--rule);height:2.4rem;background:var(--red);animation:drop-hint 1.8s var(--snap) infinite}
+@keyframes drop-hint{0%{transform:scaleY(0);transform-origin:top}45%{transform:scaleY(1);transform-origin:top}55%{transform:scaleY(1);transform-origin:bottom}100%{transform:scaleY(0);transform-origin:bottom}}
+@media(max-width:820px){.hero-scroll{display:none}}
+
+/* --- choreography --- */
+.choreo-wrap{position:relative;width:100%;max-width:36rem;margin-left:auto}
+#choreo{display:block;width:100%;height:auto}
+#choreo .cs{transform-box:fill-box;transform-origin:center}
+/* hidden until first .play to avoid final-state flash (JS adds .play immediately; no-JS/PRM fallback shows composed) */
+.js #choreo:not(.play) .cs{visibility:hidden}
+#choreo.play .cs-vr{animation:ruleV .55s var(--snap) .05s both}
+#choreo.play .cs-hr{animation:ruleH .55s var(--snap) .18s both}
+#choreo.play .cs-c{animation:circIn .9s var(--spring) .42s both}
+#choreo.play .cs-q{animation:sqIn .78s cubic-bezier(.3,1.52,.44,1) .6s both}
+#choreo.play .cs-t{animation:triIn .9s var(--spring) .88s both}
+#choreo.play .cs-dot{animation:popIn .5s var(--spring) 1.42s both}
+#choreo.play .cs-tick{animation:tickIn .45s var(--snap) 1.52s both}
+.cs-vr{transform-origin:50% 0!important}
+.cs-hr{transform-origin:0 50%!important}
+.cs-tick{transform-origin:100% 50%!important}
+@keyframes ruleV{from{transform:scaleY(0)}}
+@keyframes ruleH{from{transform:scaleX(0)}}
+/* from-states sit fully outside the viewBox — no actor peeks on stage during its delay */
+@keyframes circIn{from{transform:translate(-620px,-40px)}}
+@keyframes sqIn{from{transform:translate(340px,360px) rotate(66deg)}}
+@keyframes triIn{from{transform:translate(-30px,-620px) rotate(-152deg)}}
+@keyframes popIn{from{transform:scale(0)}}
+@keyframes tickIn{from{transform:scaleX(0)}}
+@media(max-width:820px){
+  .hero-grid{grid-template-columns:1fr;gap:2.2rem}
+  .choreo-wrap{max-width:19rem;margin:0 auto}
+}
+
+/* ================= TICKER ================= */
+.ticker{
+  background:var(--ink);color:var(--paper);
+  overflow:hidden;white-space:nowrap;
+  padding:.85rem 0;
+}
+.ticker-track{display:inline-flex;animation:tick 26s linear infinite}
+.ticker-seq{display:inline-flex;align-items:center}
+.ticker-seq span{
+  font-family:"Archivo",sans-serif;font-weight:700;font-size:.95rem;letter-spacing:.22em;text-transform:uppercase;
+  padding:0 1.6rem;
+}
+.tk-c,.tk-q,.tk-t{display:inline-block;flex:none}
+.tk-c{width:.9rem;height:.9rem;border-radius:50%;background:var(--red)}
+.tk-q{width:.9rem;height:.9rem;background:var(--blue)}
+.tk-t{width:0;height:0;border-left:.55rem solid transparent;border-right:.55rem solid transparent;border-bottom:.95rem solid var(--yellow)}
+@keyframes tick{to{transform:translateX(-50%)}}
+
+/* ================= SECTION HEADS ================= */
+.sec-head{display:flex;align-items:center;gap:1.2rem;margin-bottom:clamp(2.2rem,6vh,4rem)}
+.sec-num{
+  font-family:"Archivo",sans-serif;font-weight:900;font-size:1rem;
+  width:2.9rem;height:2.9rem;display:grid;place-items:center;flex:none;
+}
+.sec-head h2{font-weight:900;font-size:clamp(2.2rem,5.5vw,4.6rem);letter-spacing:-.03em;line-height:.95}
+.sec-head .h-rule{flex:1;height:var(--rule);min-width:2rem}
+
+/* ================= MANIFESTO ================= */
+.manifest{
+  background:var(--ink);color:var(--paper);
+  clip-path:polygon(0 0,100% 4.5vw,100% 100%,0 calc(100% - 4.5vw));
+  padding:calc(4.5vw + clamp(4rem,10vh,7rem)) var(--gutter) calc(4.5vw + clamp(4rem,10vh,7rem));
+  position:relative;
+}
+.manifest .sec-num{background:var(--red);color:var(--paper)}
+.manifest .h-rule{background:var(--paper)}
+.mani-grid{display:grid;grid-template-columns:minmax(0,7fr) minmax(0,4fr);gap:clamp(2.5rem,6vw,7rem)}
+.mani-quote{
+  font-family:"Archivo",sans-serif;font-weight:900;text-transform:uppercase;
+  font-size:clamp(1.9rem,4.6vw,4.1rem);line-height:1.02;letter-spacing:-.03em;
+}
+.mani-quote em{font-style:normal;color:var(--yellow)}
+.mani-quote .u-red{box-shadow:inset 0 -.28em 0 var(--red)}
+.mani-quote .u-blue{box-shadow:inset 0 -.28em 0 var(--blue)}
+.mani-cite{
+  display:block;margin-top:1.6rem;
+  font-family:"Work Sans",sans-serif;font-weight:500;font-size:.9rem;letter-spacing:.12em;text-transform:uppercase;
+}
+.mani-cite::before{content:"";display:inline-block;width:2.4rem;height:3px;background:var(--red);vertical-align:middle;margin-right:.8rem}
+.mani-copy p{margin-bottom:1.3rem;color:#d8d4ca}
+.mani-copy p strong{color:var(--paper);font-weight:600}
+.mani-facts{margin-top:2.2rem;border-top:var(--rule) solid var(--paper);display:grid;grid-template-columns:1fr 1fr;gap:0}
+.mani-facts div{padding:1rem 0;border-bottom:2px solid #3a3a3a}
+.mani-facts strong{font-family:"Archivo",sans-serif;font-weight:900;font-size:clamp(1.6rem,2.4vw,2.3rem);display:block;line-height:1}
+.mani-facts div:nth-child(1) strong{color:var(--yellow)}
+.mani-facts div:nth-child(2) strong{color:var(--red)}
+.mani-facts div:nth-child(3) strong{color:var(--blue)}
+.mani-facts div:nth-child(4) strong{color:var(--paper)}
+.mani-facts span{font-size:.78rem;letter-spacing:.14em;text-transform:uppercase;color:#9c988e}
+.vert-label{
+  position:absolute;writing-mode:vertical-rl;
+  font-family:"Archivo",sans-serif;font-weight:700;font-size:.68rem;letter-spacing:.42em;text-transform:uppercase;
+}
+.manifest .vert-label{right:1.2rem;top:9vw;color:#8b877d}
+@media(max-width:820px){
+  .mani-grid{grid-template-columns:1fr}
+  .manifest .vert-label{display:none}
+}
+
+/* ================= PROGRAM / WERKSTÄTTEN ================= */
+.program{padding:clamp(4.5rem,11vh,8rem) var(--gutter);position:relative}
+.program .sec-num{background:var(--blue);color:var(--paper)}
+.program .h-rule{background:var(--ink)}
+.program-intro{max-width:42rem;margin:-1.5rem 0 clamp(2.5rem,6vh,4rem);color:#4b4842}
+.rows{list-style:none;border-bottom:var(--rule) solid var(--ink)}
+.row{border-top:var(--rule) solid var(--ink);position:relative;overflow:hidden}
+.row::before{
+  content:"";position:absolute;inset:0;background:var(--c);
+  transform:scaleX(0);transform-origin:left;transition:transform .42s var(--snap);
+}
+.row a{
+  position:relative;display:grid;
+  grid-template-columns:4.5rem minmax(0,1.2fr) minmax(0,1fr) 3rem;
+  align-items:baseline;gap:1.2rem;
+  padding:clamp(1.1rem,2.6vh,1.7rem) .4rem;
+  text-decoration:none;
+  transition:transform .42s var(--snap);
+}
+.row:hover::before,.row:focus-within::before{transform:scaleX(1)}
+.row:hover a,.row:focus-within a{transform:translateX(clamp(.8rem,2.5vw,2.6rem))}
+.row a:focus-visible{outline:3px solid var(--ink);outline-offset:-3px}
+.row-num{font-family:"Archivo",sans-serif;font-weight:900;font-size:clamp(1rem,1.6vw,1.4rem);color:var(--c);transition:color .3s}
+.row-name{
+  font-family:"Archivo",sans-serif;font-weight:900;text-transform:uppercase;
+  font-size:clamp(1.7rem,4.2vw,3.6rem);line-height:1;letter-spacing:-.03em;
+  transition:color .3s;
+}
+.row-meta{font-size:clamp(.8rem,1vw,.95rem);color:#5a564e;transition:color .3s;justify-self:start}
+.row-arrow{
+  font-family:"Archivo",sans-serif;font-weight:900;font-size:clamp(1.4rem,2.4vw,2.2rem);
+  justify-self:end;align-self:center;
+  transition:transform .42s var(--snap),color .3s;
+}
+.row:hover .row-arrow,.row:focus-within .row-arrow{transform:translateX(.5rem)}
+.row:hover .row-num,.row:hover .row-name,.row:hover .row-meta,.row:hover .row-arrow,
+.row:focus-within .row-num,.row:focus-within .row-name,.row:focus-within .row-meta,.row:focus-within .row-arrow{color:var(--fg)}
+.program .vert-label{left:1.2rem;bottom:8rem;color:#b3afa3}
+@media(max-width:820px){
+  .row a{grid-template-columns:2.6rem minmax(0,1fr) 2rem;row-gap:.15rem}
+  .row-meta{grid-column:2/3;grid-row:2}
+  .row-arrow{grid-row:1}
+  .program .vert-label{display:none}
+}
+
+/* ================= STAGE ================= */
+.stage{
+  background:var(--ink);color:var(--paper);
+  clip-path:polygon(0 4.5vw,100% 0,100% calc(100% - 4.5vw),0 100%);
+  padding:calc(4.5vw + clamp(4rem,10vh,7rem)) var(--gutter) calc(4.5vw + clamp(4.5rem,11vh,8rem));
+  position:relative;
+}
+.stage .sec-num{background:var(--yellow);color:var(--ink)}
+.stage .h-rule{background:var(--paper)}
+.stage-grid{display:grid;grid-template-columns:minmax(0,2fr) minmax(0,3fr);gap:clamp(2.5rem,5vw,5rem);align-items:start}
+.stage-copy p{margin-bottom:1.3rem;color:#d8d4ca}
+.stage-copy p strong{color:var(--paper);font-weight:600}
+.stage-quote{
+  font-family:"Archivo",sans-serif;font-weight:900;text-transform:uppercase;
+  font-size:clamp(1.3rem,2.2vw,1.85rem);line-height:1.1;letter-spacing:-.02em;
+  color:var(--yellow);margin:1.8rem 0 .6rem;
+}
+.stage-quote-cite{font-size:.8rem;letter-spacing:.14em;text-transform:uppercase;color:#9c988e}
+.stage-board{position:relative}
+.stage-area{
+  position:relative;overflow:hidden;
+  background:var(--paper);
+  border:var(--rule) solid var(--paper);
+  height:clamp(300px,52vw,460px);
+}
+.stage-area::after{ /* the stage floor */
+  content:"";position:absolute;left:0;right:0;bottom:0;height:10px;background:var(--ink);
+}
+/* default = pre-composed still life (reduced motion & no-JS both get this for free) */
+.body{position:absolute;will-change:transform}
+.b-circle{width:clamp(74px,16%,120px);aspect-ratio:1;border-radius:50%;background:var(--red);left:9%;bottom:10px}
+.b-square{width:clamp(66px,14%,104px);aspect-ratio:1;background:var(--blue);left:34%;bottom:10px}
+.b-tri{
+  width:clamp(84px,18%,136px);aspect-ratio:1.12;
+  background:var(--yellow);
+  clip-path:polygon(50% 0,100% 100%,0 100%);
+  left:56%;bottom:10px;
+}
+.b-bar{width:clamp(90px,20%,150px);height:16px;background:var(--ink);left:24%;bottom:10px;transform:rotate(-14deg);transform-origin:left bottom}
+/* physics mode: JS opts in, parks bodies above the proscenium until the first drop */
+.kin .body{left:0;top:0;bottom:auto;transform:translateY(-620px);transform-origin:50% 50%}
+.stage-replay{display:none}
+.kin .stage-replay{display:inline-block}
+.stage-ctl{display:flex;align-items:center;justify-content:space-between;gap:1rem;margin-top:1.1rem;flex-wrap:wrap}
+.stage-caption{font-size:.8rem;letter-spacing:.14em;text-transform:uppercase;color:#9c988e}
+.stage-replay{
+  font-family:"Archivo",sans-serif;font-weight:700;font-size:.75rem;letter-spacing:.2em;text-transform:uppercase;
+  background:none;color:var(--paper);border:3px solid var(--paper);
+  padding:.7rem 1.3rem;cursor:pointer;
+  transition:background .25s var(--snap),color .25s var(--snap),transform .25s var(--snap);
+}
+.stage-replay:hover{background:var(--yellow);border-color:var(--yellow);color:var(--ink);transform:translate(-2px,-2px)}
+.stage-replay:focus-visible{outline:3px solid var(--yellow);outline-offset:3px}
+.stage .vert-label{right:1.2rem;bottom:calc(4.5vw + 4rem);color:#8b877d}
+@media(max-width:820px){
+  .stage-grid{grid-template-columns:1fr}
+  .stage .vert-label{display:none}
+  .stage-area{height:clamp(280px,80vw,400px)}
+}
+
+/* ================= TICKETS ================= */
+.tickets{padding:clamp(4.5rem,11vh,8rem) var(--gutter) clamp(5rem,12vh,9rem);position:relative;overflow:hidden}
+.tickets::before{ /* diagonal yellow slab behind cards */
+  content:"";position:absolute;left:-6%;right:-6%;top:52%;height:46%;
+  background:var(--yellow);
+  transform:rotate(-3.5deg);
+  z-index:0;
+}
+.tickets>*{position:relative;z-index:1}
+.tickets .sec-num{background:var(--red);color:var(--paper)}
+.tickets .h-rule{background:var(--ink)}
+.tickets-intro{max-width:40rem;margin:-1.5rem 0 clamp(2.6rem,6vh,4.2rem);color:#4b4842}
+.ticket-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:clamp(1.2rem,2.5vw,2.2rem)}
+.ticket{
+  background:var(--paper);border:var(--rule) solid var(--ink);
+  padding:clamp(1.4rem,2.4vw,2.2rem);
+  display:flex;flex-direction:column;gap:.9rem;
+  box-shadow:8px 8px 0 var(--ink);
+  transition:transform .3s var(--snap),box-shadow .3s var(--snap);
+}
+.ticket:hover{transform:translate(-5px,-5px);box-shadow:14px 14px 0 var(--ink)}
+.ticket h3{font-weight:900;font-size:clamp(1.15rem,1.7vw,1.5rem);letter-spacing:-.01em;display:flex;align-items:center;gap:.7rem}
+.ticket h3 i{flex:none;display:inline-block}
+.ticket.t-day h3 i{width:.95rem;height:.95rem;border-radius:50%;background:var(--red)}
+.ticket.t-red h3 i{width:.95rem;height:.95rem;background:var(--blue)}
+.ticket.t-pass h3 i{width:0;height:0;border-left:.6rem solid transparent;border-right:.6rem solid transparent;border-bottom:1rem solid var(--yellow)}
+.ticket .price{font-family:"Archivo",sans-serif;font-weight:900;font-size:clamp(3rem,5.5vw,4.6rem);line-height:.9;letter-spacing:-.04em}
+.ticket .price sup{font-size:.35em;vertical-align:.9em;letter-spacing:0}
+.ticket p{font-size:.95rem;color:#4b4842;flex:1}
+.ticket .btn{
+  font-family:"Archivo",sans-serif;font-weight:700;font-size:.78rem;letter-spacing:.18em;text-transform:uppercase;
+  background:var(--ink);color:var(--paper);text-align:center;text-decoration:none;
+  padding:.95rem 1rem;border:3px solid var(--ink);
+  transition:background .25s var(--snap),color .25s var(--snap);
+}
+.ticket .btn:hover{background:var(--paper);color:var(--ink)}
+.ticket .btn:focus-visible{outline:3px solid var(--blue);outline-offset:3px}
+.tickets-note{margin-top:clamp(2rem,5vh,3rem);font-size:.85rem;color:#4b4842;max-width:44rem}
+.tickets .vert-label{left:1.2rem;top:10rem;color:#b3afa3}
+@media(max-width:900px){
+  .ticket-grid{grid-template-columns:1fr;max-width:30rem}
+  .tickets::before{top:30%;height:55%}
+  .tickets .vert-label{display:none}
+}
+
+/* ================= FOOTER ================= */
+.footer{
+  background:var(--ink);color:var(--paper);
+  padding:clamp(4rem,9vh,6.5rem) var(--gutter) 2.2rem;
+  text-transform:lowercase;
+}
+.footer-word{
+  font-family:"Archivo",sans-serif;font-weight:900;
+  font-size:clamp(3.4rem,11vw,9.5rem);line-height:.85;letter-spacing:-.045em;
+  margin-bottom:clamp(2.5rem,6vh,4rem);
+}
+.footer-word .dot{color:var(--yellow)}
+.footer-rule{height:var(--rule);background:var(--paper);margin-bottom:2.4rem;position:relative}
+.footer-rule::before{content:"";position:absolute;right:0;top:0;height:100%;width:18%;background:var(--red)}
+.footer-cols{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:2rem;font-size:.92rem;color:#c9c5bb}
+.footer-cols h4{
+  font-family:"Archivo",sans-serif;font-weight:700;font-size:.72rem;letter-spacing:.24em;
+  color:var(--paper);margin-bottom:.9rem;
+}
+.footer-cols h4::before{content:"— "}
+.footer-cols a{text-decoration:none;box-shadow:inset 0 -2px 0 #4a463c;transition:box-shadow .2s}
+.footer-cols a:hover{box-shadow:inset 0 -2px 0 var(--yellow)}
+.footer-base{
+  display:flex;justify-content:space-between;gap:1.5rem;flex-wrap:wrap;
+  margin-top:3rem;padding-top:1.2rem;border-top:2px solid #3a3a3a;
+  font-size:.75rem;letter-spacing:.1em;color:#8b877d;
+}
+.footer-base .shapes{display:inline-flex;gap:.5rem;align-items:center}
+.footer-base .shapes b{display:inline-block}
+.footer-base .shapes b:nth-child(1){width:.7rem;height:.7rem;border-radius:50%;background:var(--red)}
+.footer-base .shapes b:nth-child(2){width:.7rem;height:.7rem;background:var(--blue)}
+.footer-base .shapes b:nth-child(3){width:0;height:0;border-left:.45rem solid transparent;border-right:.45rem solid transparent;border-bottom:.75rem solid var(--yellow)}
+@media(max-width:820px){.footer-cols{grid-template-columns:1fr;gap:1.6rem}}
+
+/* ================= REDUCED MOTION ================= */
+@media (prefers-reduced-motion: reduce){
+  html{scroll-behavior:auto}
+  *,*::before,*::after{animation:none!important;transition:none!important}
+  .js .rv{opacity:1;transform:none}
+  .js #choreo:not(.play) .cs{visibility:visible} /* choreography shapes sit pre-composed */
+}
+</style>
+</head>
+<body>
+
+<a class="back" href="/">&#8592;&nbsp;25</a>
+
+<nav class="nav" aria-label="Bereiche">
+  <a href="#manifest">Manifest</a>
+  <a href="#werkstaetten">Werkstätten</a>
+  <a href="#buehne">Bühne</a>
+  <a href="#eintritt">Eintritt</a>
+</nav>
+
+<!-- ============ HERO ============ -->
+<header class="hero" id="top">
+  <div class="hero-grid">
+    <div class="hero-left">
+      <p class="hero-kicker">Jubiläumsausstellung &middot; Bauhausgebäude Dessau</p>
+      <h1 class="hero-title">
+        <span class="line"><span>Form</span></span>
+        <span class="line"><span>Folgt<span class="dot">.</span></span></span>
+      </h1>
+      <p class="hero-sub">Hundert Jahre nach der Eröffnung des Dessauer Baus fragt eine Ausstellung, was der Form wirklich folgt: die Funktion, das Material &mdash; oder die Bühne.</p>
+      <div class="hero-meta">
+        <div><span>Eröffnung</span><strong>04.12.2026</strong></div>
+        <div><span>Laufzeit</span><strong>bis 04.04.27</strong></div>
+        <div><span>Ort</span><strong>Gropiusallee 38</strong></div>
+      </div>
+    </div>
+    <div class="hero-right">
+      <div class="choreo-wrap">
+        <svg id="choreo" viewBox="0 0 640 640" role="img" aria-label="Choreografierte Komposition: roter Kreis, blaues Quadrat und gelbes Dreieck gleiten ein und rasten in eine Bauhaus-Komposition ein.">
+          <rect class="cs cs-vr" x="88" y="46" width="16" height="526" fill="#141414"/>
+          <rect class="cs cs-hr" x="46" y="556" width="548" height="16" fill="#141414"/>
+          <circle class="cs cs-c" cx="392" cy="248" r="168" fill="#D02E26"/>
+          <rect class="cs cs-q" x="150" y="336" width="220" height="220" fill="#1F4CA0"/>
+          <polygon class="cs cs-t" points="452,556 612,556 532,414" fill="#F2B705"/>
+          <circle class="cs cs-dot" cx="150" cy="118" r="26" fill="#141414"/>
+          <rect class="cs cs-tick" x="548" y="98" width="52" height="16" fill="#F2B705"/>
+        </svg>
+      </div>
+    </div>
+  </div>
+  <p class="hero-vert">Dessau &middot; 1926&ndash;2026</p>
+  <p class="hero-scroll">Weiter</p>
+</header>
+
+<!-- ============ TICKER ============ -->
+<div class="ticker" aria-hidden="true">
+  <div class="ticker-track">
+    <div class="ticker-seq">
+      <span>Form folgt</span><i class="tk-c"></i>
+      <span>100 Jahre Bauhausgebäude</span><i class="tk-q"></i>
+      <span>Dessau 1926&ndash;2026</span><i class="tk-t"></i>
+      <span>Vorkurs &middot; Werkstatt &middot; Bühne</span><i class="tk-c"></i>
+      <span>Kunst und Technik &mdash; eine neue Einheit</span><i class="tk-q"></i>
+    </div>
+    <div class="ticker-seq" aria-hidden="true">
+      <span>Form folgt</span><i class="tk-c"></i>
+      <span>100 Jahre Bauhausgebäude</span><i class="tk-q"></i>
+      <span>Dessau 1926&ndash;2026</span><i class="tk-t"></i>
+      <span>Vorkurs &middot; Werkstatt &middot; Bühne</span><i class="tk-c"></i>
+      <span>Kunst und Technik &mdash; eine neue Einheit</span><i class="tk-q"></i>
+    </div>
+  </div>
+</div>
+
+<!-- ============ MANIFESTO ============ -->
+<section class="manifest" id="manifest">
+  <p class="vert-label">Manifest &middot; Weimar 1919</p>
+  <div class="sec-head rv">
+    <span class="sec-num" aria-hidden="true">01</span>
+    <h2>Das Manifest</h2>
+    <span class="h-rule" aria-hidden="true"></span>
+  </div>
+  <div class="mani-grid">
+    <blockquote class="mani-quote rv d1">
+      &bdquo;Das <span class="u-red">Endziel</span> aller bildnerischen Tätigkeit ist <em>der Bau</em>!&ldquo;
+      <span class="mani-cite">Walter Gropius, Bauhaus-Manifest, Weimar 1919</span>
+    </blockquote>
+    <div class="mani-copy rv d2">
+      <p>1919 in Weimar gegründet, 1925 nach Dessau gezogen: Am <strong>4. Dezember 1926</strong> eröffnet Gropius den neuen Bau &mdash; Stahlbeton, Glasvorhangfassade, ein Schriftzug senkrecht an der Fassade. Das Gebäude selbst ist das erste Ausstellungsstück.</p>
+      <p>Im Vorkurs verlangt <strong>Josef Albers</strong> maximale Wirkung bei minimalem Aufwand: ein Blatt Papier, gefaltet statt geklebt, trägt plötzlich Last. <strong>Kandinskys Fragebogen</strong> von 1923 ordnet zu: Dreieck gelb, Quadrat rot, Kreis blau. Diese Ausstellung widerspricht ihm mit Absicht &mdash; sehen Sie oben.</p>
+      <div class="mani-facts">
+        <div><strong>1919</strong><span>Gründung Weimar</span></div>
+        <div><strong>1926</strong><span>Eröffnung Dessau</span></div>
+        <div><strong>7</strong><span>Werkstätten im Bau</span></div>
+        <div><strong>100</strong><span>Jahre später</span></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ PROGRAM ============ -->
+<section class="program" id="werkstaetten">
+  <p class="vert-label">Rundgang &middot; Sechs Räume</p>
+  <div class="sec-head rv">
+    <span class="sec-num" aria-hidden="true">02</span>
+    <h2>Werkstätten</h2>
+    <span class="h-rule" aria-hidden="true"></span>
+  </div>
+  <p class="program-intro rv d1">Sechs Räume, sechs Werkstätten, sechs Antworten auf dieselbe Frage. Jeder Raum zeigt ein Schlüsselobjekt im Original &mdash; und die Übung, aus der es entstand.</p>
+  <ol class="rows rv d2">
+    <li class="row" style="--c:var(--red);--fg:var(--paper)">
+      <a href="#eintritt">
+        <span class="row-num">01</span>
+        <span class="row-name">Vorkurs</span>
+        <span class="row-meta">Josef Albers &middot; Papierübungen: Material vor Absicht &middot; ab 1923</span>
+        <span class="row-arrow" aria-hidden="true">&rarr;</span>
+      </a>
+    </li>
+    <li class="row" style="--c:var(--blue);--fg:var(--paper)">
+      <a href="#eintritt">
+        <span class="row-num">02</span>
+        <span class="row-name">Tischlerei</span>
+        <span class="row-meta">Marcel Breuer &middot; Stahlrohrsessel B3, dem Fahrradlenker abgeschaut &middot; 1925</span>
+        <span class="row-arrow" aria-hidden="true">&rarr;</span>
+      </a>
+    </li>
+    <li class="row" style="--c:var(--yellow);--fg:var(--ink)">
+      <a href="#eintritt">
+        <span class="row-num">03</span>
+        <span class="row-name">Metall</span>
+        <span class="row-meta">Marianne Brandt &middot; Teekanne MT 49: Halbkugel, Kreuz, Kreis &middot; 1924</span>
+        <span class="row-arrow" aria-hidden="true">&rarr;</span>
+      </a>
+    </li>
+    <li class="row" style="--c:var(--ink);--fg:var(--paper)">
+      <a href="#eintritt">
+        <span class="row-num">04</span>
+        <span class="row-name">Weberei</span>
+        <span class="row-meta">Gunta Stölzl &middot; die einzige Meisterin des Bauhauses &middot; Jungmeisterin 1927</span>
+        <span class="row-arrow" aria-hidden="true">&rarr;</span>
+      </a>
+    </li>
+    <li class="row" style="--c:var(--red);--fg:var(--paper)">
+      <a href="#eintritt">
+        <span class="row-num">05</span>
+        <span class="row-name">Typografie</span>
+        <span class="row-meta">Herbert Bayer &middot; Universal-Alphabet: warum große Buchstaben? &middot; 1925</span>
+        <span class="row-arrow" aria-hidden="true">&rarr;</span>
+      </a>
+    </li>
+    <li class="row" style="--c:var(--blue);--fg:var(--paper)">
+      <a href="#eintritt">
+        <span class="row-num">06</span>
+        <span class="row-name">Bühne</span>
+        <span class="row-meta">Oskar Schlemmer &middot; Triadisches Ballett, uraufgeführt Stuttgart &middot; 1922</span>
+        <span class="row-arrow" aria-hidden="true">&rarr;</span>
+      </a>
+    </li>
+  </ol>
+</section>
+
+<!-- ============ STAGE ============ -->
+<section class="stage" id="buehne">
+  <p class="vert-label">Schlemmer &middot; Bühnenwerkstatt</p>
+  <div class="sec-head rv">
+    <span class="sec-num" aria-hidden="true">03</span>
+    <h2>Die Bühne</h2>
+    <span class="h-rule" aria-hidden="true"></span>
+  </div>
+  <div class="stage-grid">
+    <div class="stage-copy rv d1">
+      <p>Ab 1923 leitet <strong>Oskar Schlemmer</strong> die Bühnenwerkstatt. Sein Tänzer ist keine Person, sondern Geometrie in Bewegung: Der Arm wird zur Keule, der Rumpf zum Kegel, der Kopf zur Kugel. Im <strong>Triadischen Ballett</strong> tanzen drei Figurinen durch Gelb, Rosa und Schwarz.</p>
+      <p>Dieser Raum gehorcht denselben Regeln wie Schlemmers Bühne: <strong>Schwerkraft, Fläche, Takt</strong>. Lassen Sie die Körper fallen &mdash; sie finden ihre Komposition selbst.</p>
+      <p class="stage-quote">&bdquo;Der Mensch, die Kunstfigur.&ldquo;</p>
+      <p class="stage-quote-cite">Oskar Schlemmer, Bauhausbuch Nr. 4 &bdquo;Die Bühne im Bauhaus&ldquo;, 1925</p>
+    </div>
+    <div class="stage-board rv d2">
+      <div class="stage-area" id="stageArea" role="img" aria-label="Kinetische Bühne: Kreis, Quadrat, Dreieck und Balken fallen mit Schwerkraft und kommen auf dem Bühnenboden zur Ruhe.">
+        <div class="body b-bar"></div>
+        <div class="body b-circle"></div>
+        <div class="body b-square"></div>
+        <div class="body b-tri"></div>
+      </div>
+      <div class="stage-ctl">
+        <p class="stage-caption">Vier Körper, ein Gesetz: Schwerkraft.</p>
+        <button class="stage-replay" id="dropBtn" type="button">Fallen lassen &#8635;</button>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ TICKETS ============ -->
+<section class="tickets" id="eintritt">
+  <p class="vert-label">Karten &middot; Kasse Gropiusallee</p>
+  <div class="sec-head rv">
+    <span class="sec-num" aria-hidden="true">04</span>
+    <h2>Eintritt</h2>
+    <span class="h-rule" aria-hidden="true"></span>
+  </div>
+  <p class="tickets-intro rv d1">Die Karte gilt für Ausstellung und Gebäude &mdash; einschließlich Werkstattflügel, Festebene und der berühmten Glasvorhangfassade von innen.</p>
+  <div class="ticket-grid rv d2">
+    <article class="ticket t-day">
+      <h3><i aria-hidden="true"></i>Tageskarte</h3>
+      <p class="price">14<sup>&euro;</sup></p>
+      <p>Ausstellung, Bauhausgebäude und das Bühnenprogramm des Tages. Ein Tag, ein Haus, hundert Jahre.</p>
+      <a class="btn" href="#eintritt">Karte wählen</a>
+    </article>
+    <article class="ticket t-red">
+      <h3><i aria-hidden="true"></i>Ermäßigt</h3>
+      <p class="price">8<sup>&euro;</sup></p>
+      <p>Für Schüler:innen, Studierende und Auszubildende &mdash; das Bauhaus war eine Schule, ihr habt Vorrang.</p>
+      <a class="btn" href="#eintritt">Karte wählen</a>
+    </article>
+    <article class="ticket t-pass">
+      <h3><i aria-hidden="true"></i>Hundert-Tage-Pass</h3>
+      <p class="price">100<sup>&euro;</sup></p>
+      <p>Freier Eintritt während der gesamten Laufzeit, inklusive der Reprise des Triadischen Balletts auf der Festebene.</p>
+      <a class="btn" href="#eintritt">Pass wählen</a>
+    </article>
+  </div>
+  <p class="tickets-note rv d3">Geöffnet Dienstag bis Sonntag, 10&ndash;18 Uhr. Montags bleibt das Haus den Werkstätten vorbehalten &mdash; so hielt es schon der Lehrplan von 1926.</p>
+</section>
+
+<!-- ============ FOOTER ============ -->
+<footer class="footer">
+  <p class="footer-word">form folgt<span class="dot">.</span></p>
+  <div class="footer-rule" aria-hidden="true"></div>
+  <div class="footer-cols">
+    <div>
+      <h4>ort</h4>
+      <p>bauhausgebäude dessau<br>gropiusallee 38<br>06846 dessau-roßlau</p>
+    </div>
+    <div>
+      <h4>besuch</h4>
+      <p>di&ndash;so 10&ndash;18 uhr<br>eröffnung 04.12.2026<br>laufzeit bis 04.04.2027</p>
+    </div>
+    <div>
+      <h4>kolophon</h4>
+      <p>gesetzt in archivo &amp; work sans &mdash; kleingeschrieben nach herbert bayers universal, 1925: &bdquo;warum zwei alfabete, wenn eines dasselbe leistet?&ldquo;</p>
+    </div>
+  </div>
+  <div class="footer-base">
+    <span>&copy; mmxxvi &middot; form folgt &middot; eine hommage, kein museum</span>
+    <span class="shapes" aria-hidden="true"><b></b><b></b><b></b></span>
+    <span><a href="#top" style="color:inherit">nach oben &uarr;</a></span>
+  </div>
+</footer>
+
+<script>
+(function(){
+  "use strict";
+  document.documentElement.classList.add('js');
+  var prm = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+  /* ---------- scroll reveals ---------- */
+  var rvs = document.querySelectorAll('.rv');
+  if (prm || !('IntersectionObserver' in window)) {
+    rvs.forEach(function(el){ el.classList.add('in'); });
+  } else {
+    var io = new IntersectionObserver(function(entries){
+      entries.forEach(function(en){
+        if (en.isIntersecting) { en.target.classList.add('in'); io.unobserve(en.target); }
+      });
+    }, { threshold: 0.18 });
+    rvs.forEach(function(el){ io.observe(el); });
+  }
+
+  /* ---------- hero choreography: play now, replay on re-entry ---------- */
+  var choreo = document.getElementById('choreo');
+  var hero = document.querySelector('.hero');
+  if (prm) {
+    choreo.classList.add('play'); /* animations are disabled -> shapes sit pre-composed */
+  } else {
+    choreo.classList.add('play');
+    if ('IntersectionObserver' in window) {
+      var wasOut = false;
+      new IntersectionObserver(function(entries){
+        entries.forEach(function(en){
+          if (!en.isIntersecting) { wasOut = true; }
+          else if (wasOut) {
+            wasOut = false;
+            choreo.classList.remove('play');
+            void choreo.getBoundingClientRect(); /* force reflow so animations restart */
+            requestAnimationFrame(function(){ choreo.classList.add('play'); });
+          }
+        });
+      }, { threshold: 0.35 }).observe(hero);
+    }
+  }
+
+  /* ---------- kinetic stage: gravity + restitution ---------- */
+  var area = document.getElementById('stageArea');
+  var dropBtn = document.getElementById('dropBtn');
+  var FLOOR = 10; /* height of the painted floor rule */
+
+  if (!prm && area) {
+    document.documentElement.classList.add('kin');
+    var els = Array.prototype.slice.call(area.querySelectorAll('.body'));
+    var bodies = els.map(function(el, i){
+      return { el: el, w: 0, h: 0, x: 0, y: -700, vx: 0, vy: 0, r: 0, vr: 0,
+               rest: 0.42 + i * 0.07,
+               /* the bar snaps flat (180°) — at 90° it would stand half-sunk in the floor */
+               snap: el.classList.contains('b-bar') ? 180 : 90 };
+    });
+    var raf = null, last = 0;
+
+    function measure(){
+      bodies.forEach(function(b){ b.w = b.el.offsetWidth; b.h = b.el.offsetHeight; });
+    }
+
+    function drop(){
+      measure();
+      var W = area.clientWidth;
+      var n = bodies.length;
+      bodies.forEach(function(b, i){
+        b.x = (W / (n + 1)) * (i + 1) - b.w / 2 + (Math.random() * 44 - 22);
+        b.x = Math.max(0, Math.min(W - b.w, b.x));
+        b.y = -b.h - i * 150 - Math.random() * 90;
+        b.vx = Math.random() * 140 - 70;
+        b.vy = 0;
+        b.r = Math.random() * 44 - 22;
+        b.vr = Math.random() * 160 - 80;
+      });
+      if (raf === null) { last = performance.now(); raf = requestAnimationFrame(step); }
+    }
+
+    function step(t){
+      var dt = Math.min((t - last) / 1000, 0.033);
+      last = t;
+      var W = area.clientWidth, H = area.clientHeight - FLOOR;
+      var active = false;
+      bodies.forEach(function(b){
+        b.vy += 2600 * dt;
+        b.x += b.vx * dt;
+        b.y += b.vy * dt;
+        b.r += b.vr * dt;
+        if (b.y + b.h > H) {
+          b.y = H - b.h;
+          if (Math.abs(b.vy) > 60) { b.vy = -b.vy * b.rest; b.vr *= 0.72; }
+          else { b.vy = 0; }
+          b.vx *= 0.9;
+        }
+        if (b.x < 0) { b.x = 0; b.vx = -b.vx * 0.65; }
+        if (b.x + b.w > W) { b.x = W - b.w; b.vx = -b.vx * 0.65; }
+        var grounded = (b.y + b.h >= H - 0.5);
+        var settled = false;
+        if (grounded && Math.abs(b.vy) < 6 && Math.abs(b.vx) < 6) {
+          b.vx = 0; b.vy = 0;
+          b.vr *= 0.82;
+          if (Math.abs(b.vr) < 30) {
+            /* lock rotation onto the grid — shapes come to rest precisely, like the hero */
+            b.vr = 0;
+            var target = Math.round(b.r / b.snap) * b.snap;
+            b.r += (target - b.r) * Math.min(1, dt * 9);
+            if (Math.abs(target - b.r) < 0.2) { b.r = target; settled = true; }
+          }
+        }
+        if (!(grounded && b.vx === 0 && b.vy === 0 && b.vr === 0 && settled)) { active = true; }
+        b.el.style.transform = 'translate(' + b.x.toFixed(2) + 'px,' + b.y.toFixed(2) + 'px) rotate(' + b.r.toFixed(2) + 'deg)';
+      });
+      raf = active ? requestAnimationFrame(step) : null;
+    }
+
+    /* drop on entry, re-drop on each re-entry */
+    if ('IntersectionObserver' in window) {
+      var stageOut = true;
+      new IntersectionObserver(function(entries){
+        entries.forEach(function(en){
+          if (en.isIntersecting && stageOut) { stageOut = false; drop(); }
+          else if (!en.isIntersecting) { stageOut = true; }
+        });
+      }, { threshold: 0.45 }).observe(area);
+    } else {
+      drop();
+    }
+    dropBtn.addEventListener('click', drop);
+
+    window.addEventListener('resize', function(){
+      measure();
+      var W = area.clientWidth, H = area.clientHeight - FLOOR;
+      bodies.forEach(function(b){
+        if (b.y + b.h > H) b.y = H - b.h;
+        if (b.x + b.w > W) b.x = W - b.w;
+        b.el.style.transform = 'translate(' + b.x + 'px,' + b.y + 'px) rotate(' + b.r + 'deg)';
+      });
+    });
+  }
+})();
+</script>
+</body>
+</html>

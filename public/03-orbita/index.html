@@ -1,0 +1,709 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ORBITA — Instruments of Time</title>
+<meta name="description" content="ORBITA. Precision mechanical watchmaking. Calibre ORB-01, a gyroscopic tourbillon movement, finished by hand.">
+<meta name="theme-color" content="#0A0E1A">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Marcellus&family=IBM+Plex+Mono:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --navy:#0A0E1A;
+    --navy-2:#0D1222;
+    --silver:#C8CDD6;
+    --silver-dim:#8A93A5;
+    --gold:#B8934A;
+    --gold-30:rgba(184,147,74,.3);
+    --gold-15:rgba(184,147,74,.15);
+    --display:'Marcellus',serif;
+    --mono:'IBM Plex Mono',monospace;
+  }
+  *{margin:0;padding:0;box-sizing:border-box}
+  html{scroll-behavior:smooth}
+  @media (prefers-reduced-motion: reduce){ html{scroll-behavior:auto} }
+  body{
+    background:var(--navy);
+    color:var(--silver);
+    font-family:var(--display);
+    -webkit-font-smoothing:antialiased;
+    overflow-x:hidden;
+    line-height:1.6;
+  }
+  ::selection{background:var(--gold);color:var(--navy)}
+
+  /* ---------- fixed back link ---------- */
+  .back-link{
+    position:fixed;top:22px;left:24px;z-index:100;
+    font-family:var(--mono);font-size:12px;letter-spacing:.12em;
+    color:var(--silver-dim);text-decoration:none;
+    padding:6px 10px;border:1px solid transparent;border-radius:2px;
+    transition:color .3s,border-color .3s,background .3s;
+    background:rgba(10,14,26,.4);-webkit-backdrop-filter:blur(4px);backdrop-filter:blur(4px);
+  }
+  .back-link:hover{color:var(--gold);border-color:var(--gold-30)}
+
+  /* ---------- shared ---------- */
+  .wrap{max-width:1120px;margin:0 auto;padding:0 32px}
+  section{padding:140px 0;position:relative}
+  .hairline{height:1px;background:var(--gold-30);border:none}
+  .kicker{
+    font-family:var(--mono);font-size:11px;font-weight:400;
+    letter-spacing:.32em;text-transform:uppercase;color:var(--gold);
+    display:flex;align-items:center;gap:16px;margin-bottom:28px;
+  }
+  .kicker::before{content:"";display:block;width:40px;height:1px;background:var(--gold-30)}
+  h1,h2,h3{font-weight:400;color:#E6E9EF}
+  h2{font-size:clamp(30px,4.2vw,52px);line-height:1.15;letter-spacing:.01em;margin-bottom:24px}
+  p.lede{font-size:clamp(16px,1.6vw,19px);color:var(--silver);max-width:56ch}
+  p.body{font-size:15.5px;color:var(--silver-dim);max-width:60ch;margin-top:18px}
+  .num{font-family:var(--mono);font-variant-numeric:tabular-nums;font-feature-settings:"tnum"}
+
+  /* ---------- reveals ---------- */
+  .reveal{opacity:0;transform:translateY(28px);transition:opacity .9s cubic-bezier(.22,1,.36,1),transform .9s cubic-bezier(.22,1,.36,1)}
+  .reveal.in{opacity:1;transform:none}
+  .reveal.d1{transition-delay:.08s}
+  .reveal.d2{transition-delay:.16s}
+  .reveal.d3{transition-delay:.24s}
+  @media (prefers-reduced-motion: reduce){
+    .reveal{opacity:1;transform:none;transition:none}
+  }
+
+  /* ---------- hero ---------- */
+  .hero{
+    min-height:100vh;min-height:100svh;padding:0;
+    display:flex;align-items:center;justify-content:center;
+    position:relative;overflow:hidden;
+  }
+  #gl{
+    position:absolute;inset:0;width:100%;height:100%;display:block;
+    z-index:0;
+  }
+  .hero-fallback{
+    position:absolute;inset:0;z-index:0;display:none;
+    align-items:center;justify-content:center;
+  }
+  .hero-fallback svg{width:min(72vmin,640px);height:auto;opacity:.85}
+  .hero::after{ /* vignette so type stays legible over chrome */
+    content:"";position:absolute;inset:0;z-index:1;pointer-events:none;
+    background:radial-gradient(ellipse at center,rgba(10,14,26,0) 30%,rgba(10,14,26,.72) 100%);
+  }
+  .hero-content{
+    position:relative;z-index:2;text-align:center;padding:0 24px;
+  }
+  .hero-eyebrow{
+    font-family:var(--mono);font-size:11px;letter-spacing:.42em;
+    text-transform:uppercase;color:var(--gold);margin-bottom:26px;
+  }
+  .hero h1{
+    font-size:clamp(56px,11vw,148px);
+    letter-spacing:.14em;line-height:1;
+    color:#EDEFF4;
+    text-shadow:0 0 60px rgba(200,205,214,.12);
+  }
+  .hero-sub{
+    margin-top:26px;font-family:var(--mono);font-size:12.5px;
+    letter-spacing:.18em;color:var(--silver-dim);
+  }
+  .hero-sub em{font-style:normal;color:var(--silver)}
+  .scroll-cue{
+    position:absolute;bottom:34px;left:50%;transform:translateX(-50%);
+    z-index:2;font-family:var(--mono);font-size:10px;letter-spacing:.3em;
+    text-transform:uppercase;color:var(--silver-dim);
+    display:flex;flex-direction:column;align-items:center;gap:12px;
+  }
+  .scroll-cue::after{
+    content:"";width:1px;height:44px;background:linear-gradient(var(--gold),transparent);
+    animation:cueDrop 2.6s cubic-bezier(.4,0,.2,1) infinite;
+    transform-origin:top;
+  }
+  @keyframes cueDrop{0%{transform:scaleY(0)}45%{transform:scaleY(1)}100%{transform:scaleY(1);opacity:0}}
+  @media (prefers-reduced-motion: reduce){ .scroll-cue::after{animation:none} }
+
+  /* ---------- philosophy ---------- */
+  .phil-grid{display:grid;grid-template-columns:1.1fr .9fr;gap:72px;align-items:start}
+  .phil-stats{display:grid;grid-template-columns:1fr 1fr;gap:0;border:1px solid var(--gold-30)}
+  .phil-stat{
+    padding:28px 26px;border-bottom:1px solid var(--gold-15);
+  }
+  .phil-stat:nth-child(odd){border-right:1px solid var(--gold-15)}
+  .phil-stat:nth-last-child(-n+2){border-bottom:none}
+  .phil-stat .v{font-family:var(--mono);font-variant-numeric:tabular-nums;font-size:clamp(22px,2.4vw,30px);color:#E6E9EF}
+  .phil-stat .v sup{font-size:.5em;color:var(--gold)}
+  .phil-stat .l{font-family:var(--mono);font-size:10px;letter-spacing:.24em;text-transform:uppercase;color:var(--silver-dim);margin-top:8px}
+  blockquote{
+    margin-top:56px;padding-left:28px;border-left:1px solid var(--gold-30);
+    font-size:clamp(19px,2.2vw,26px);line-height:1.5;color:var(--silver);max-width:34ch;
+  }
+  blockquote footer{font-family:var(--mono);font-size:11px;letter-spacing:.2em;text-transform:uppercase;color:var(--gold);margin-top:18px}
+
+  /* ---------- movement ---------- */
+  .movement{background:linear-gradient(var(--navy),var(--navy-2) 30%,var(--navy-2) 70%,var(--navy))}
+  .mov-grid{display:grid;grid-template-columns:.9fr 1.1fr;gap:64px;align-items:center}
+  .mov-figure{position:relative}
+  .mov-figure svg{width:100%;height:auto;display:block}
+  .gear{fill:none;stroke:var(--silver-dim);stroke-width:1.1}
+  .gear.gold{stroke:var(--gold)}
+  .gear-hub{fill:var(--navy);stroke:inherit}
+  /* pivots are set per-group via inline style (transform-box:view-box),
+     so each wheel turns about its own arbor, not its bounding box */
+  .spin-a{animation:spinCW 18s linear infinite}
+  .spin-b{animation:spinCCW 11.25s linear infinite}
+  .spin-c{animation:spinCW 7.5s linear infinite}
+  .balance-osc{animation:balance 1.2s cubic-bezier(.45,0,.55,1) infinite alternate}
+  .pallet-osc{animation:pallet 1.2s cubic-bezier(.45,0,.55,1) infinite alternate}
+  @keyframes spinCW{to{transform:rotate(360deg)}}
+  @keyframes spinCCW{to{transform:rotate(-360deg)}}
+  @keyframes balance{from{transform:rotate(-24deg)}to{transform:rotate(24deg)}}
+  @keyframes pallet{from{transform:rotate(-6deg)}to{transform:rotate(6deg)}}
+  @media (prefers-reduced-motion: reduce){
+    .spin-a,.spin-b,.spin-c,.balance-osc,.pallet-osc{animation:none}
+  }
+  .mov-caption{font-family:var(--mono);font-size:10px;letter-spacing:.22em;text-transform:uppercase;color:var(--silver-dim);margin-top:18px;display:flex;justify-content:space-between}
+  .mov-caption span:last-child{color:var(--gold)}
+  .mov-list{list-style:none;margin-top:36px}
+  .mov-list li{
+    display:grid;grid-template-columns:64px 1fr;gap:20px;
+    padding:22px 0;border-top:1px solid var(--gold-15);
+  }
+  .mov-list li:last-child{border-bottom:1px solid var(--gold-15)}
+  .mov-list .idx{font-family:var(--mono);font-variant-numeric:tabular-nums;font-size:12px;color:var(--gold);letter-spacing:.1em;padding-top:3px}
+  .mov-list h3{font-size:18px;margin-bottom:6px}
+  .mov-list p{font-size:14px;color:var(--silver-dim);max-width:52ch}
+
+  /* ---------- specifications ---------- */
+  .spec-panel{
+    border:1px solid var(--gold-30);
+    background:linear-gradient(180deg,rgba(200,205,214,.025),rgba(200,205,214,0));
+    margin-top:56px;
+  }
+  .spec-head{
+    display:flex;justify-content:space-between;align-items:center;
+    padding:18px 28px;border-bottom:1px solid var(--gold-30);
+    font-family:var(--mono);font-size:10.5px;letter-spacing:.26em;text-transform:uppercase;
+  }
+  .spec-head .lamp{display:inline-flex;align-items:center;gap:8px;color:var(--silver-dim)}
+  .spec-head .lamp::before{
+    content:"";width:6px;height:6px;border-radius:50%;background:var(--gold);
+    box-shadow:0 0 8px var(--gold);
+    animation:lamp 3s ease-in-out infinite;
+  }
+  @keyframes lamp{0%,100%{opacity:1}50%{opacity:.35}}
+  @media (prefers-reduced-motion: reduce){ .spec-head .lamp::before{animation:none} }
+  .spec-table{width:100%;border-collapse:collapse}
+  .spec-table tr{border-bottom:1px solid var(--gold-15)}
+  .spec-table tr:last-child{border-bottom:none}
+  .spec-table th{
+    text-align:left;font-weight:400;font-family:var(--mono);
+    font-size:10.5px;letter-spacing:.24em;text-transform:uppercase;color:var(--silver-dim);
+    padding:19px 28px;width:38%;vertical-align:top;
+  }
+  .spec-table td{
+    font-family:var(--mono);font-variant-numeric:tabular-nums;
+    font-size:13.5px;color:#DDE1E8;padding:19px 28px 19px 0;
+  }
+  .spec-table td small{color:var(--gold);font-size:11px;letter-spacing:.08em}
+
+  /* ---------- limited edition ---------- */
+  .edition{text-align:center}
+  .edition .count{
+    font-family:var(--mono);font-variant-numeric:tabular-nums;
+    font-size:clamp(64px,12vw,150px);line-height:1;color:#EDEFF4;
+    letter-spacing:.04em;
+  }
+  .edition .count span{color:var(--gold)}
+  .edition .of{font-family:var(--mono);font-size:12px;letter-spacing:.4em;text-transform:uppercase;color:var(--silver-dim);margin-top:18px}
+  .edition p.lede{margin:36px auto 0}
+  .edition-cta{
+    display:inline-block;margin-top:52px;
+    font-family:var(--mono);font-size:12px;letter-spacing:.28em;text-transform:uppercase;
+    color:var(--gold);text-decoration:none;
+    padding:18px 44px;border:1px solid var(--gold-30);
+    transition:background .35s,color .35s,border-color .35s;
+  }
+  .edition-cta:hover{background:var(--gold);color:var(--navy);border-color:var(--gold)}
+  .edition-meta{
+    display:flex;justify-content:center;gap:56px;margin-top:64px;flex-wrap:wrap;
+  }
+  .edition-meta div{font-family:var(--mono);font-size:11px;letter-spacing:.2em;text-transform:uppercase;color:var(--silver-dim)}
+  .edition-meta div b{display:block;font-weight:500;font-variant-numeric:tabular-nums;font-size:15px;color:var(--silver);margin-bottom:6px;letter-spacing:.1em}
+
+  /* ---------- footer ---------- */
+  footer.site{
+    border-top:1px solid var(--gold-30);
+    padding:56px 0 44px;
+  }
+  .foot-grid{display:flex;justify-content:space-between;align-items:flex-end;gap:32px;flex-wrap:wrap}
+  .foot-mark{font-size:22px;letter-spacing:.3em;color:#E6E9EF}
+  .foot-mark small{display:block;font-family:var(--mono);font-size:10px;letter-spacing:.3em;color:var(--silver-dim);margin-top:10px}
+  .foot-nav{display:flex;gap:28px;font-family:var(--mono);font-size:11px;letter-spacing:.18em;text-transform:uppercase}
+  .foot-nav a{color:var(--silver-dim);text-decoration:none;transition:color .3s}
+  .foot-nav a:hover{color:var(--gold)}
+  .foot-legal{font-family:var(--mono);font-size:10px;letter-spacing:.14em;color:var(--silver-dim);margin-top:36px;opacity:.7}
+
+  /* ---------- responsive ---------- */
+  @media (max-width:900px){
+    section{padding:96px 0}
+    .phil-grid,.mov-grid{grid-template-columns:1fr;gap:48px}
+    .mov-figure{max-width:440px;margin:0 auto}
+    .spec-table th{width:44%;padding:16px 18px}
+    .spec-table td{padding:16px 18px 16px 0}
+    .spec-head{padding:14px 18px}
+    .wrap{padding:0 22px}
+    .edition-meta{gap:32px}
+  }
+</style>
+</head>
+<body>
+
+<a class="back-link" href="/">&larr;&nbsp;25</a>
+
+<!-- ============ HERO ============ -->
+<header class="hero" id="top">
+  <canvas id="gl" aria-hidden="true"></canvas>
+
+  <!-- static fallback if WebGL is unavailable -->
+  <div class="hero-fallback" id="fallback" aria-hidden="true">
+    <svg viewBox="0 0 400 400" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <ellipse cx="200" cy="200" rx="170" ry="170" stroke="#B8934A" stroke-opacity=".5" stroke-width="1.2"/>
+      <ellipse cx="200" cy="200" rx="170" ry="64" stroke="#C8CDD6" stroke-opacity=".55" stroke-width="1" transform="rotate(-18 200 200)"/>
+      <ellipse cx="200" cy="200" rx="132" ry="132" stroke="#C8CDD6" stroke-opacity=".35" stroke-width="1"/>
+      <ellipse cx="200" cy="200" rx="132" ry="46" stroke="#B8934A" stroke-opacity=".5" stroke-width="1" transform="rotate(32 200 200)"/>
+      <ellipse cx="200" cy="200" rx="94" ry="94" stroke="#C8CDD6" stroke-opacity=".3" stroke-width="1"/>
+      <ellipse cx="200" cy="200" rx="94" ry="30" stroke="#C8CDD6" stroke-opacity=".5" stroke-width="1" transform="rotate(-52 200 200)"/>
+      <circle cx="200" cy="200" r="7" fill="#B8934A"/>
+      <line x1="200" y1="18" x2="200" y2="46" stroke="#B8934A" stroke-opacity=".6"/>
+      <line x1="200" y1="354" x2="200" y2="382" stroke="#B8934A" stroke-opacity=".6"/>
+    </svg>
+  </div>
+
+  <div class="hero-content">
+    <p class="hero-eyebrow">Manufacture d'Horlogerie</p>
+    <h1>ORBITA</h1>
+    <p class="hero-sub">Calibre ORB&#8209;01 &nbsp;&middot;&nbsp; <em>Gyroscopic Tourbillon</em> &nbsp;&middot;&nbsp; Est. 1987</p>
+  </div>
+
+  <div class="scroll-cue">Descend</div>
+</header>
+
+<!-- ============ PHILOSOPHY ============ -->
+<section id="philosophy">
+  <div class="wrap">
+    <div class="phil-grid">
+      <div>
+        <p class="kicker reveal">01 &mdash; Craft Philosophy</p>
+        <h2 class="reveal d1">Time is not kept.<br>It is earned.</h2>
+        <p class="lede reveal d2">Every ORBITA movement begins as raw German silver and ends, eleven months later, under the loupe of a single finisher. No component leaves the bench until its anglage catches light along the full length of every edge.</p>
+        <p class="body reveal d3">We build forty-nine movements a year. Not because demand stops there &mdash; because the hand does. Chamfering one bridge takes a full day. The gyroscopic carriage alone carries 89 components, each bevelled, black-polished and inspected at thirty-fold magnification before assembly is permitted to begin.</p>
+        <blockquote class="reveal d3">
+          &ldquo;A watch that merely tells the time is a calculator. A watch that holds it is an instrument.&rdquo;
+          <footer>E. Voss &mdash; Master Watchmaker, Atelier No. 1</footer>
+        </blockquote>
+      </div>
+      <div class="phil-stats reveal d2">
+        <div class="phil-stat"><div class="v num">312</div><div class="l">Components</div></div>
+        <div class="phil-stat"><div class="v num">89</div><div class="l">In carriage alone</div></div>
+        <div class="phil-stat"><div class="v num">1,340<sup>h</sup></div><div class="l">Hand-finishing</div></div>
+        <div class="phil-stat"><div class="v num">49</div><div class="l">Movements / year</div></div>
+        <div class="phil-stat"><div class="v num">&plusmn;0.8<sup>s/d</sup></div><div class="l">Observed rate</div></div>
+        <div class="phil-stat"><div class="v num">11<sup>mo</sup></div><div class="l">Bench to case</div></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ THE MOVEMENT ============ -->
+<section class="movement" id="movement">
+  <div class="wrap">
+    <div class="mov-grid">
+      <figure class="mov-figure reveal">
+        <!-- animated escapement drawing; gear teeth generated inline by JS -->
+        <svg id="gearSvg" viewBox="0 0 440 440" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Technical drawing of the ORB-01 gear train and escapement">
+          <defs>
+            <radialGradient id="hubGlow" cx="50%" cy="50%" r="50%">
+              <stop offset="0%" stop-color="#B8934A" stop-opacity=".16"/>
+              <stop offset="100%" stop-color="#B8934A" stop-opacity="0"/>
+            </radialGradient>
+          </defs>
+          <rect x="1" y="1" width="438" height="438" fill="none" stroke="#B8934A" stroke-opacity=".25"/>
+          <circle cx="220" cy="220" r="205" fill="url(#hubGlow)"/>
+          <!-- construction guides -->
+          <line x1="220" y1="10" x2="220" y2="430" stroke="#C8CDD6" stroke-opacity=".08"/>
+          <line x1="10" y1="220" x2="430" y2="220" stroke="#C8CDD6" stroke-opacity=".08"/>
+          <circle cx="220" cy="220" r="150" fill="none" stroke="#C8CDD6" stroke-opacity=".08" stroke-dasharray="2 6"/>
+          <!-- great wheel : 24t, meshes with second wheel (centres 112px apart, tip radii 72+46) -->
+          <g class="spin-a" id="gearA" style="transform-box:view-box;transform-origin:150px 220px"></g>
+          <!-- second wheel : 15t -->
+          <g class="spin-b" id="gearB" style="transform-box:view-box;transform-origin:245px 280px"></g>
+          <!-- escape wheel : 10t -->
+          <g class="spin-c" id="gearC" style="transform-box:view-box;transform-origin:302px 328px"></g>
+          <!-- pallet fork : pivots between escape rim and balance roller -->
+          <g class="pallet-osc" style="transform-box:view-box;transform-origin:235px 318px">
+            <line x1="235" y1="318" x2="272" y2="322" stroke="#B8934A" stroke-width="1.4"/>
+            <line x1="235" y1="318" x2="203" y2="336" stroke="#B8934A" stroke-width="1.4"/>
+            <path d="M270 316 l10 3 -3 10 -10 -3 z" fill="none" stroke="#B8934A" stroke-width="1.2"/>
+            <path d="M206 330 l-8 6 6 8" fill="none" stroke="#B8934A" stroke-width="1.2"/>
+            <circle cx="235" cy="318" r="4" fill="#0A0E1A" stroke="#B8934A" stroke-width="1.2"/>
+          </g>
+          <!-- balance wheel : roller sits against the pallet fork tail -->
+          <g class="balance-osc" style="transform-box:view-box;transform-origin:165px 350px">
+            <circle cx="165" cy="350" r="42" fill="none" stroke="#C8CDD6" stroke-opacity=".8" stroke-width="1.4"/>
+            <line x1="123" y1="350" x2="207" y2="350" stroke="#C8CDD6" stroke-opacity=".6" stroke-width="1.2"/>
+            <line x1="165" y1="308" x2="165" y2="392" stroke="#C8CDD6" stroke-opacity=".35" stroke-width="1"/>
+            <circle cx="165" cy="350" r="5" fill="#0A0E1A" stroke="#B8934A" stroke-width="1.4"/>
+            <path d="M165 350 m0 -14 a14 14 0 1 1 -10 24 a10 10 0 1 0 16 -18" fill="none" stroke="#B8934A" stroke-opacity=".7" stroke-width="1"/>
+          </g>
+          <!-- labels -->
+          <g font-family="IBM Plex Mono, monospace" font-size="9" letter-spacing="2" fill="#8A93A5">
+            <text x="96" y="134">GREAT WHEEL</text>
+            <text x="302" y="248">SECOND WHEEL</text>
+            <text x="290" y="392">ESCAPE WHEEL</text>
+            <text x="82" y="416">BALANCE &#183; 3.5 HZ</text>
+          </g>
+          <g font-family="IBM Plex Mono, monospace" font-size="9" letter-spacing="2" fill="#B8934A">
+            <text x="14" y="26">FIG. 04</text>
+            <text x="356" y="428">ORB&#8209;01</text>
+          </g>
+        </svg>
+        <figcaption class="mov-caption"><span>Gear train &amp; lever escapement &#183; 1/8 speed</span><span>Scale 4:1</span></figcaption>
+      </figure>
+      <div>
+        <p class="kicker reveal">02 &mdash; The Movement</p>
+        <h2 class="reveal d1">Calibre ORB&#8209;01</h2>
+        <p class="lede reveal d2">A movement conceived around a single obsession: cancelling gravity. The regulating organ rides inside a bi-axial gyroscopic carriage, completing one full rotation every sixty seconds on the first axis and every four minutes on the second.</p>
+        <ol class="mov-list">
+          <li class="reveal"><span class="idx num">04.1</span><div><h3>Bi-axial carriage</h3><p>Grade-5 titanium cage, 0.41 g complete. Averages positional error across all orientations of the wrist, in constant motion.</p></div></li>
+          <li class="reveal d1"><span class="idx num">04.2</span><div><h3>Free-sprung balance</h3><p>Beating at 25,200 vibrations per hour with inertia blocks in place of an index &mdash; regulation by mass, not by friction.</p></div></li>
+          <li class="reveal d2"><span class="idx num">04.3</span><div><h3>Twin mainspring barrels</h3><p>Wound in series for a flat torque curve across all 96 hours of reserve. The final hour keeps rate as faithfully as the first.</p></div></li>
+          <li class="reveal d3"><span class="idx num">04.4</span><div><h3>Hand-applied finishing</h3><p>Black polish on the carriage bridge, Geneva stripes at 45 degrees, and 227 interior angles &mdash; each one impossible by machine.</p></div></li>
+        </ol>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ SPECIFICATIONS ============ -->
+<section id="specifications">
+  <div class="wrap">
+    <p class="kicker reveal">03 &mdash; Specifications</p>
+    <h2 class="reveal d1">The instrument panel</h2>
+    <p class="lede reveal d2">Read the movement the way its makers do &mdash; as a set of tolerances, each one a promise.</p>
+
+    <div class="spec-panel reveal d2">
+      <div class="spec-head">
+        <span>ORB&#8209;01 &mdash; Technical Record</span>
+        <span class="lamp">Certified</span>
+      </div>
+      <table class="spec-table">
+        <tbody>
+          <tr><th scope="row">Calibre</th><td>ORB&#8209;01, manual winding <small>/ in&#8209;house</small></td></tr>
+          <tr><th scope="row">Dimensions</th><td class="num">38.60 &times; 10.20 mm</td></tr>
+          <tr><th scope="row">Frequency</th><td class="num">3.5 Hz &middot; 25,200 vph</td></tr>
+          <tr><th scope="row">Power reserve</th><td class="num">96 h <small>/ twin barrels in series</small></td></tr>
+          <tr><th scope="row">Carriage rotation</th><td class="num">60 s &middot; 240 s <small>/ axis I &middot; axis II</small></td></tr>
+          <tr><th scope="row">Components</th><td class="num">312 &middot; 43 jewels</td></tr>
+          <tr><th scope="row">Observed rate</th><td class="num">&plusmn;0.8 s/day <small>/ 21&#8209;day observatory trial</small></td></tr>
+          <tr><th scope="row">Case</th><td class="num">40.5 mm <small>/ 904L steel or 5N gold</small></td></tr>
+          <tr><th scope="row">Water resistance</th><td class="num">50 m &middot; 5 bar</td></tr>
+          <tr><th scope="row">Crystal</th><td>Domed sapphire, AR both faces</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</section>
+
+<!-- ============ LIMITED EDITION ============ -->
+<section class="edition" id="edition">
+  <div class="wrap">
+    <p class="kicker reveal" style="justify-content:center">04 &mdash; Limited Edition</p>
+    <div class="count num reveal d1">49<span>/49</span></div>
+    <p class="of reveal d1">Pieces &middot; worldwide &middot; ever</p>
+    <p class="lede reveal d2">The first series of the ORB&#8209;01 is limited to forty-nine pieces &mdash; one for each movement the atelier can finish in a year. Each caseback is hand-engraved with its number, the finisher's initials, and the observatory rate it recorded on its final day of trial.</p>
+    <a class="edition-cta reveal d3" href="mailto:atelier@orbita.watch?subject=ORB-01%20Allocation%20Enquiry">Request an audience</a>
+    <div class="edition-meta reveal d3">
+      <div><b class="num">No. 01&ndash;49</b>Individually engraved</div>
+      <div><b class="num">2027 Q2</b>First deliveries</div>
+      <div><b>On application</b>Price &amp; allocation</div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ FOOTER ============ -->
+<footer class="site">
+  <div class="wrap">
+    <div class="foot-grid">
+      <div class="foot-mark">ORBITA<small>Manufacture d'Horlogerie &middot; Est. 1987</small></div>
+      <nav class="foot-nav">
+        <a href="#philosophy">Craft</a>
+        <a href="#movement">Movement</a>
+        <a href="#specifications">Specifications</a>
+        <a href="#edition">Edition</a>
+      </nav>
+    </div>
+    <hr class="hairline" style="margin:36px 0 0">
+    <p class="foot-legal num">&copy; 2026 Orbita Manufacture d'Horlogerie. Calibre ORB&#8209;01 &middot; CH&#8209;2301. All rights reserved.</p>
+  </div>
+</footer>
+
+<script src="https://unpkg.com/three@0.152.2/build/three.min.js"></script>
+<script>
+(function(){
+  "use strict";
+  var reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+  /* ---------- scroll reveals ---------- */
+  var revealEls = document.querySelectorAll(".reveal");
+  if ("IntersectionObserver" in window && !reduceMotion) {
+    var io = new IntersectionObserver(function(entries){
+      entries.forEach(function(e){
+        if (e.isIntersecting) { e.target.classList.add("in"); io.unobserve(e.target); }
+      });
+    }, { threshold: 0.15, rootMargin: "0px 0px -40px 0px" });
+    revealEls.forEach(function(el){ io.observe(el); });
+  } else {
+    revealEls.forEach(function(el){ el.classList.add("in"); });
+  }
+
+  /* ---------- SVG gear generation ---------- */
+  function gearPath(cx, cy, teeth, rOuter, rInner) {
+    // involute-ish silhouette: alternating arcs between tip and root radius
+    var d = "", steps = teeth * 4, half = Math.PI / steps;
+    for (var i = 0; i < steps; i++) {
+      var r = (i % 4 < 2) ? rOuter : rInner;
+      var a = i * 2 * half - Math.PI / 2;
+      var x = cx + r * Math.cos(a), y = cy + r * Math.sin(a);
+      d += (i === 0 ? "M" : "L") + x.toFixed(2) + " " + y.toFixed(2) + " ";
+    }
+    return d + "Z";
+  }
+  function buildGear(groupId, cx, cy, teeth, rOuter, rInner, spokes, gold) {
+    var g = document.getElementById(groupId);
+    if (!g) return;
+    var NS = "http://www.w3.org/2000/svg";
+    var p = document.createElementNS(NS, "path");
+    p.setAttribute("d", gearPath(cx, cy, teeth, rOuter, rInner));
+    p.setAttribute("class", "gear" + (gold ? " gold" : ""));
+    g.appendChild(p);
+    var rim = document.createElementNS(NS, "circle");
+    rim.setAttribute("cx", cx); rim.setAttribute("cy", cy);
+    rim.setAttribute("r", rInner * 0.82);
+    rim.setAttribute("class", "gear" + (gold ? " gold" : ""));
+    g.appendChild(rim);
+    for (var s = 0; s < spokes; s++) {
+      var a = (s / spokes) * Math.PI * 2;
+      var ln = document.createElementNS(NS, "line");
+      ln.setAttribute("x1", cx + Math.cos(a) * rInner * 0.18);
+      ln.setAttribute("y1", cy + Math.sin(a) * rInner * 0.18);
+      ln.setAttribute("x2", cx + Math.cos(a) * rInner * 0.8);
+      ln.setAttribute("y2", cy + Math.sin(a) * rInner * 0.8);
+      ln.setAttribute("class", "gear" + (gold ? " gold" : ""));
+      g.appendChild(ln);
+    }
+    var hub = document.createElementNS(NS, "circle");
+    hub.setAttribute("cx", cx); hub.setAttribute("cy", cy);
+    hub.setAttribute("r", 5);
+    hub.setAttribute("class", "gear gear-hub" + (gold ? " gold" : ""));
+    g.appendChild(hub);
+  }
+  buildGear("gearA", 150, 220, 24, 72, 62, 6, false);
+  buildGear("gearB", 245, 280, 15, 46, 38, 5, false);
+  buildGear("gearC", 302, 328, 10, 32, 25, 4, true);
+
+  /* ---------- three.js hero ---------- */
+  var canvas = document.getElementById("gl");
+  var fallback = document.getElementById("fallback");
+  function useFallback() {
+    canvas.style.display = "none";
+    fallback.style.display = "flex";
+  }
+  if (typeof THREE === "undefined") { useFallback(); return; }
+
+  var renderer;
+  try {
+    renderer = new THREE.WebGLRenderer({ canvas: canvas, antialias: true, alpha: false, powerPreference: "high-performance" });
+  } catch (err) { useFallback(); return; }
+  if (!renderer.getContext()) { useFallback(); return; }
+
+  function capDPR() { return Math.min(window.devicePixelRatio || 1, 2); }
+  renderer.setPixelRatio(capDPR());
+  renderer.setClearColor(0x0A0E1A, 1);
+  renderer.useLegacyLights = false;            // physical falloff; intensities below are tuned for this
+  renderer.toneMapping = THREE.ACESFilmicToneMapping;
+  renderer.toneMappingExposure = 1.1;
+
+  var scene = new THREE.Scene();
+  scene.fog = new THREE.Fog(0x0A0E1A, 8, 22);
+  var camera = new THREE.PerspectiveCamera(38, 1, 0.1, 60);
+  camera.position.set(0, 0.4, 9);
+
+  // procedural studio environment (no external images): a dark room with
+  // three softbox planes, baked through PMREM so the chrome has real reflections
+  var pmrem = new THREE.PMREMGenerator(renderer);
+  var envScene = new THREE.Scene();
+  envScene.background = new THREE.Color(0x0A0E1A);
+  function softbox(color, intensity, w, h, x, y, z, ry, rx) {
+    var m = new THREE.Mesh(
+      new THREE.PlaneGeometry(w, h),
+      new THREE.MeshBasicMaterial({ color: new THREE.Color(color).multiplyScalar(intensity), side: THREE.DoubleSide })
+    );
+    m.position.set(x, y, z);
+    m.rotation.set(rx || 0, ry || 0, 0);
+    envScene.add(m);
+  }
+  softbox(0xFFF3DC, 6, 8, 3, -6, 4, -4, Math.PI / 3);          // warm key strip
+  softbox(0x9FB4E8, 3.5, 6, 6, 7, -1, -3, -Math.PI / 2.6);     // cool fill
+  softbox(0xFFFFFF, 8, 3, 0.6, 0, 7, 0, 0, Math.PI / 2);       // hard top slit
+  var envTex = pmrem.fromScene(envScene, 0.04).texture;
+  scene.environment = envTex;
+  pmrem.dispose();
+
+  var chrome = new THREE.MeshStandardMaterial({
+    color: 0xC8CDD6, metalness: 0.98, roughness: 0.12,
+    envMapIntensity: 1.15
+  });
+  var goldMat = new THREE.MeshStandardMaterial({
+    color: 0xB8934A, metalness: 0.95, roughness: 0.22,
+    envMapIntensity: 1.0
+  });
+
+  var rig = new THREE.Group();
+  scene.add(rig);
+
+  // gyroscope: three nested torus rings + chrome torus-knot core
+  var ringOuter = new THREE.Mesh(new THREE.TorusGeometry(3.1, 0.055, 24, 160), chrome);
+  var ringMid   = new THREE.Mesh(new THREE.TorusGeometry(2.45, 0.05, 24, 150), goldMat);
+  var ringInner = new THREE.Mesh(new THREE.TorusGeometry(1.85, 0.045, 24, 140), chrome);
+  ringMid.rotation.x = Math.PI / 2;   // mid ring on the horizontal gimbal plane
+  ringInner.rotation.y = Math.PI / 2; // inner ring starts perpendicular to the outer, true gyroscope stance
+  rig.add(ringOuter, ringMid, ringInner);
+
+  var core = new THREE.Mesh(new THREE.TorusKnotGeometry(0.72, 0.21, 220, 36, 2, 3), chrome);
+  rig.add(core);
+
+  // axial pivots (tiny gold caps top/bottom, like a gimbal)
+  var capGeo = new THREE.SphereGeometry(0.09, 16, 16);
+  var capTop = new THREE.Mesh(capGeo, goldMat); capTop.position.y = 3.1;
+  var capBot = new THREE.Mesh(capGeo, goldMat); capBot.position.y = -3.1;
+  rig.add(capTop, capBot);
+
+  // lights: key gold, fill cool silver-blue, rim
+  scene.add(new THREE.AmbientLight(0x1A2238, 1.4));
+  var lGold = new THREE.PointLight(0xB8934A, 60, 40); lGold.position.set(5, 3, 4);
+  var lCool = new THREE.PointLight(0x6C7A9C, 45, 40); lCool.position.set(-6, -2, 3);
+  var lRim  = new THREE.PointLight(0xEDEFF4, 30, 40); lRim.position.set(0, 5, -6);
+  scene.add(lGold, lCool, lRim);
+
+  /* ---------- sizing ---------- */
+  function resize() {
+    var w = canvas.clientWidth, h = canvas.clientHeight;
+    if (!w || !h) return;
+    renderer.setPixelRatio(capDPR()); // re-cap: window may have moved to another display
+    renderer.setSize(w, h, false);
+    camera.aspect = w / h;
+    camera.updateProjectionMatrix();
+  }
+  resize();
+  window.addEventListener("resize", resize);
+
+  /* ---------- scroll-driven camera dolly ---------- */
+  var scrollT = 0, scrollCur = 0;
+  function onScroll() {
+    var h = window.innerHeight || 1;
+    scrollT = Math.min(window.scrollY / h, 1); // 0..1 across first viewport
+  }
+  window.addEventListener("scroll", onScroll, { passive: true });
+  onScroll();
+
+  /* ---------- render loop ---------- */
+  var hidden = false, offscreen = false, rafId = 0, t0 = performance.now();
+  function paused() { return hidden || offscreen; }
+  function frame(now) {
+    rafId = 0;
+    var t = (now - t0) / 1000;
+
+    // ease scroll value (snap when we only render single frames)
+    if (reduceMotion) scrollCur = scrollT;
+    else scrollCur += (scrollT - scrollCur) * 0.06;
+
+    ringOuter.rotation.x = t * 0.18;
+    ringOuter.rotation.y = t * 0.05;
+    ringMid.rotation.y = t * 0.26;
+    ringMid.rotation.z = t * 0.07;
+    ringInner.rotation.x = -t * 0.3;
+    ringInner.rotation.z = t * 0.12;
+    core.rotation.y = t * 0.22;
+    core.rotation.x = Math.sin(t * 0.15) * 0.25;
+
+    // dolly out + slight orbit as the user scrolls past the hero
+    camera.position.z = 9 + scrollCur * 4.5;
+    camera.position.x = Math.sin(scrollCur * 0.9) * 1.6;
+    camera.position.y = 0.4 + scrollCur * 1.2;
+    camera.lookAt(0, 0, 0);
+    rig.rotation.y = scrollCur * 0.7;
+
+    renderer.render(scene, camera);
+    if (!paused() && !reduceMotion) rafId = requestAnimationFrame(frame);
+  }
+
+  function start() {
+    if (!rafId && !paused() && !reduceMotion) rafId = requestAnimationFrame(frame);
+  }
+  function stop() {
+    if (rafId) { cancelAnimationFrame(rafId); rafId = 0; }
+  }
+
+  // pause when the tab is hidden…
+  document.addEventListener("visibilitychange", function(){
+    hidden = document.hidden;
+    hidden ? stop() : start();
+  });
+  // …and when the hero itself is scrolled out of view (no GPU spend while reading)
+  if ("IntersectionObserver" in window) {
+    new IntersectionObserver(function(entries){
+      offscreen = !entries[0].isIntersecting;
+      offscreen ? stop() : start();
+    }, { threshold: 0 }).observe(canvas.parentElement);
+  }
+
+  if (reduceMotion) {
+    // render a single composed frame, plus re-render on resize only
+    frame(performance.now());
+    window.addEventListener("resize", function(){ resize(); renderer.render(scene, camera); });
+  } else {
+    start();
+  }
+})();
+</script>
+
+<!-- PASS 1: (1) r152 defaults to legacy lighting, so physically-tuned PointLight intensities would
+     have blown out the frame — set useLegacyLights=false + ACES tone mapping. (2) High-metalness
+     materials had no environment to reflect and would render near-black — added a procedural PMREM
+     studio env (softbox planes, no external images). (3) SVG oscillator CSS used
+     transform-origin:center/fill-box, overriding per-group pivots — pallet fork would swing around
+     its bbox, not its arbor; moved pivots to inline transform-box:view-box origins. (4) Added 100vh
+     fallback before 100svh. (5) Replaced mix-blend-mode:difference on the back link (unpredictable
+     over gold hover) with a blurred scrim. -->
+<!-- PASS 2: (1) The gear train did not mesh — wheel centres were 152px/139px apart with tip radii
+     summing to 118/78, so the "technical drawing" showed three floating gears; re-laid the train
+     (A 150,220 r72 / B 245,280 r46 / C 302,328 r32 → centre distances 112/75) and moved the pallet
+     fork so its entry stone rides the escape rim and its tail meets the balance roller; labels
+     repositioned to match. (2) Softbox planes were single-sided — a normal facing away would drop a
+     light from the PMREM env; now DoubleSide. (3) Reduced-motion single frame eased scrollCur only
+     6% toward the real scroll offset, rendering a wrong camera on mid-page load — now snaps.
+     (4) Inner/outer rings started coplanar; inner ring now begins perpendicular (true gimbal
+     stance). (5) Added -webkit-backdrop-filter and theme-color meta; caption now admits the
+     escapement runs at 1/8 speed. -->
+<!-- PASS 3: (1) The render loop ran for the whole page life even with the hero scrolled away —
+     added an IntersectionObserver on the hero that stops/starts rAF, alongside the hidden-tab
+     pause (paused state unified into hidden||offscreen). (2) Canvas was created with alpha:true
+     but cleared opaque — switched to alpha:false to drop pointless alpha compositing.
+     (3) devicePixelRatio was captured once; now re-capped (max 2) on every resize so moving the
+     window between displays keeps the right density. (4) Horological copy consistency: US
+     "Caliber" mixed with UK spellings — standardised on the trade's "Calibre" in meta, hero,
+     headings, spec table and footer. (5) "Request an audience" CTA pointed at #top (a dead end)
+     — now a mailto with a pre-filled allocation-enquiry subject. -->
+
+</body>
+</html>

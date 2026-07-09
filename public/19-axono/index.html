@@ -1,0 +1,695 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AXONO — Architecture &amp; Urban Design, Zürich</title>
+<meta name="description" content="AXONO is a studio for architecture and urban design in Zürich. We draw cities before they exist — massing, junctions, and the ground they stand on.">
+<meta name="theme-color" content="#F6F5F1">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@200;400;500;700;800&family=JetBrains+Mono:ital,wght@0,400;0,500;0,700;1,400&display=swap" rel="stylesheet">
+<!--
+  AXONO — single-file showcase. Isometric city generated as SVG geometry at runtime. No images.
+
+  PASS 1: (1) fixed morph geometry bug — the extrusion lift was subtracted twice in the matrix
+          f-term, pushing the top face above the viewBox at p=1; the base plane now anchors at
+          CTR and the plan rises exactly once; (2) hero city viewBox tightened from 760x520 to
+          588x452 — removed ~90 units of dead sky, city renders ~28% larger at 1440px;
+          (3) dimension arrowheads were visible before their lines finished drawing (SVG markers
+          ignore dash animation) — the whole .dim group now fades in first, then strokes draw;
+          (4) morph screen anchor moved to y=320 so plan phase and volume phase both centre.
+  PASS 2: (1) morph sheet dimensions realigned to the true extruded geometry (footprint spans
+          x122–638, height edge y200–350 at the right corner) and extension ticks added;
+          (2) sheet dimensions now fade with extrusion progress (opacity = ext) instead of
+          sitting mismatched over the flat plan; (3) base-footprint polygon is created once and
+          re-pointed per frame — removed per-scroll-frame innerHTML churn; (4) kept the two
+          scrub phases overlapping (tilt 0–.62 smoothstep, extrude .5–1) so the volume grows
+          out of the still-tilting plan rather than waiting for it.
+  PASS 3: (1) a11y — city svg role img→group (role=img would flatten its 14 focusable children
+          for assistive tech); each building keeps tabindex + aria-label and shows its
+          leader-line label on focus as well as hover; (2) 390px audit — hero svg height cap
+          removed on small screens, spec labels split into .lt1/.lt2 classes and enlarged
+          (15/11) so callouts stay legible at narrow scale with hierarchy preserved;
+          (3) added theme-color meta for mobile browser chrome tinting; (4) spec-label second
+          line nudged +1 unit for cleaner mono baseline spacing.
+-->
+<style>
+:root{
+  --paper:#F6F5F1;
+  --ink:#23252B;
+  --blue:#2E5EAA;
+  --coral:#FF6A5C;
+  --paper-hi:#FDFDFB;
+  --face-l:#E9ECF3;
+  --face-r:#D6DDEB;
+  --mono:'JetBrains Mono',ui-monospace,monospace;
+  --sans:'Manrope',sans-serif;
+  --spring:cubic-bezier(.22,1.35,.32,1);
+  --easeout:cubic-bezier(.16,1,.3,1);
+  --line:rgba(46,94,170,.28);
+}
+*{margin:0;padding:0;box-sizing:border-box}
+html{scroll-behavior:smooth}
+@media (prefers-reduced-motion:reduce){html{scroll-behavior:auto}}
+body{
+  font-family:var(--sans);
+  background-color:var(--paper);
+  color:var(--ink);
+  -webkit-font-smoothing:antialiased;
+  overflow-x:hidden;
+  background-image:
+    url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="112" height="112"><path d="M56 50v12M50 56h12" stroke="%232E5EAA" stroke-opacity=".13" stroke-width="1"/></svg>'),
+    linear-gradient(rgba(46,94,170,.045) 1px,transparent 1px),
+    linear-gradient(90deg,rgba(46,94,170,.045) 1px,transparent 1px);
+  background-size:112px 112px,112px 112px,112px 112px;
+}
+::selection{background:var(--blue);color:var(--paper)}
+a{color:inherit;text-decoration:none}
+a:focus-visible,[tabindex]:focus-visible{outline:2px solid var(--coral);outline-offset:3px}
+
+/* ---------- fixed chrome ---------- */
+.back25{
+  position:fixed;top:18px;left:18px;z-index:60;
+  font-family:var(--mono);font-size:12px;letter-spacing:.08em;
+  color:var(--blue);padding:7px 12px;border:1px solid var(--line);
+  background:rgba(246,245,241,.82);backdrop-filter:blur(6px);
+  transition:color .25s,border-color .25s;
+}
+.back25:hover{color:var(--coral);border-color:var(--coral)}
+.wordmark{
+  position:fixed;top:18px;right:18px;z-index:60;display:flex;align-items:center;gap:10px;
+  font-weight:800;letter-spacing:.32em;font-size:13px;padding:7px 4px 7px 14px;
+}
+.wordmark i{width:9px;height:9px;background:var(--coral);display:inline-block;transform:rotate(45deg)}
+
+/* ---------- typographic system ---------- */
+.mono{font-family:var(--mono)}
+.eyebrow{
+  font-family:var(--mono);font-size:11px;letter-spacing:.22em;text-transform:uppercase;
+  color:var(--blue);display:flex;align-items:center;gap:12px;
+}
+.eyebrow::before{content:"";width:34px;height:1px;background:var(--blue);flex:none}
+h1,h2{font-weight:800;letter-spacing:-.035em;line-height:.98}
+h1{font-size:clamp(44px,8.2vw,118px)}
+h2{font-size:clamp(34px,5.4vw,72px)}
+.wrap{max-width:1320px;margin:0 auto;padding:0 clamp(20px,4vw,64px)}
+section{position:relative}
+
+/* scroll reveal */
+.rv{opacity:0;transform:translateY(26px);transition:opacity .7s ease,transform .9s var(--easeout)}
+.rv.in{opacity:1;transform:none}
+.rv2{transition-delay:.12s}.rv3{transition-delay:.24s}.rv4{transition-delay:.36s}
+
+/* ---------- hero ---------- */
+.hero{min-height:100svh;display:flex;flex-direction:column;justify-content:flex-start;padding-top:clamp(84px,12vh,140px);padding-bottom:40px}
+.hero-head{display:grid;grid-template-columns:minmax(0,1.15fr) minmax(0,.85fr);gap:32px;align-items:end}
+.hero h1{margin:18px 0 0}
+.hero h1 em{font-style:normal;color:var(--blue)}
+.hero-side{font-size:15px;line-height:1.7;max-width:34ch;color:#41434b;padding-bottom:10px}
+.hero-side .mono{display:block;font-size:11px;letter-spacing:.14em;color:var(--blue);margin-top:18px}
+.city-stage{margin-top:clamp(8px,3vh,36px)}
+.city-stage svg{display:block;width:100%;height:auto;max-height:74vh}
+
+/* --- generated city --- */
+.city .gline{stroke:var(--line);stroke-width:1;opacity:0;transition:opacity 1.2s ease .3s}
+.city.on .gline{opacity:1}
+.city .bldg{cursor:pointer;opacity:0;transform:translateY(-84px)}
+.city.on .bldg{
+  opacity:1;transform:translateY(0);
+  transition:transform 1s var(--spring),opacity .45s ease;
+  transition-delay:var(--dl);
+}
+.city .bldg .face{transition:fill .3s ease,stroke .3s ease}
+.city .bldg:hover .face,.city .bldg:focus-visible .face,.city .bldg.hl .face{stroke:var(--coral)}
+.city .bldg:hover .ftop,.city .bldg:focus-visible .ftop,.city .bldg.hl .ftop{fill:#FFE9E6}
+.city .bldg:focus-visible{outline:none}
+.city .lbl{opacity:0;pointer-events:none;transition:opacity .3s ease}
+.city .lbl .lead{stroke-dasharray:130;stroke-dashoffset:130;transition:stroke-dashoffset .55s var(--easeout) .05s}
+.city .lbl.onl{opacity:1}
+.city .lbl.onl .lead{stroke-dashoffset:0}
+.city .dim{opacity:0;transition:opacity .7s ease 1.1s}
+.city.on .dim{opacity:1}
+.city .dim line{stroke-dasharray:520;stroke-dashoffset:520;transition:stroke-dashoffset 1.4s ease 1.1s}
+.city.on .dim line{stroke-dashoffset:0}
+.city .dim text{opacity:0;transition:opacity .6s ease 1.9s}
+.city.on .dim text{opacity:1}
+
+/* ---------- approach ---------- */
+.approach{padding:clamp(90px,14vh,180px) 0}
+.approach-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:1px;background:var(--line);border:1px solid var(--line);margin-top:56px}
+.ap{background:var(--paper);padding:34px 28px 44px;position:relative;transition:background .35s ease}
+.ap:hover{background:var(--paper-hi)}
+.ap .n{font-family:var(--mono);font-size:11px;color:var(--blue);letter-spacing:.18em}
+.ap h3{font-size:19px;font-weight:800;letter-spacing:-.02em;margin:52px 0 12px}
+.ap p{font-size:14px;line-height:1.65;color:#4a4c54}
+.ap::after{content:"";position:absolute;left:28px;top:64px;width:22px;height:22px;border:1px solid var(--line);transform:rotate(45deg);transition:border-color .3s,transform .5s var(--spring)}
+.ap:hover::after{border-color:var(--coral);transform:rotate(135deg)}
+
+/* ---------- projects index ---------- */
+.projects{padding:clamp(70px,10vh,140px) 0 clamp(90px,14vh,170px)}
+.proj-head{display:flex;justify-content:space-between;align-items:end;gap:24px;flex-wrap:wrap}
+.proj-list{margin-top:48px;border-top:1px solid var(--line)}
+.proj{
+  display:grid;grid-template-columns:120px minmax(0,1.3fr) minmax(0,1fr) 150px 120px;
+  align-items:baseline;gap:20px;padding:30px 8px;border-bottom:1px solid var(--line);
+  position:relative;overflow:hidden;
+}
+.proj::before{content:"";position:absolute;inset:0;background:var(--ink);transform:scaleY(0);transform-origin:bottom;transition:transform .45s var(--easeout);z-index:0}
+.proj:hover::before,.proj:focus-within::before{transform:scaleY(1)}
+.proj>*{position:relative;z-index:1;transition:color .35s ease}
+.proj:hover>*,.proj:focus-within>*{color:var(--paper)}
+.proj:hover .pmeta,.proj:focus-within .pmeta{color:#B9C6DE}
+.proj:hover .pstat b,.proj:focus-within .pstat b{color:var(--coral)}
+.proj .pnum{font-family:var(--mono);font-size:clamp(22px,2.6vw,30px);font-weight:700;color:var(--blue)}
+.proj:hover .pnum,.proj:focus-within .pnum{color:var(--coral)}
+.proj .pname{font-size:clamp(22px,3vw,38px);font-weight:800;letter-spacing:-.03em}
+.proj .pmeta{font-family:var(--mono);font-size:11.5px;letter-spacing:.06em;color:#5a5d66;line-height:1.7}
+.proj .pstat{font-family:var(--mono);font-size:12px;color:#5a5d66}
+.proj .pstat b{display:block;font-size:clamp(18px,2vw,24px);color:var(--ink);font-weight:700;letter-spacing:-.01em}
+.proj .ptag{font-family:var(--mono);font-size:10px;letter-spacing:.16em;border:1px solid var(--line);padding:6px 10px;justify-self:end;white-space:nowrap}
+.proj:hover .ptag,.proj:focus-within .ptag{border-color:var(--coral);color:var(--coral)}
+
+/* digit roller */
+.nix{display:inline-flex;overflow:hidden;height:1em;line-height:1;vertical-align:baseline}
+.nix .dcol{display:inline-block;transform:translateY(0)}
+.nix .dcol span{display:block;height:1em;line-height:1}
+.nix.go .dcol{transition:transform 1.2s var(--spring);transition-delay:var(--cd,0s)}
+
+/* ---------- morph ---------- */
+.morphsec{background:var(--ink);color:var(--paper)}
+.morph-pin{height:280vh;position:relative}
+.morph-sticky{position:sticky;top:0;height:100svh;display:grid;grid-template-columns:minmax(0,.9fr) minmax(0,1.4fr);gap:24px;align-items:center;overflow:hidden}
+.morph-copy{padding-left:clamp(20px,4vw,64px)}
+.morph-copy .eyebrow{color:#8FA9D6}
+.morph-copy .eyebrow::before{background:#8FA9D6}
+.morph-copy h2{margin:20px 0 18px;color:var(--paper)}
+.morph-copy h2 em{font-style:normal;color:var(--coral)}
+.morph-copy p{font-size:15px;line-height:1.7;color:#B9BDC7;max-width:40ch}
+.morph-read{font-family:var(--mono);font-size:12px;letter-spacing:.1em;color:#8FA9D6;margin-top:34px;display:flex;gap:26px}
+.morph-read b{color:var(--coral);font-weight:500}
+.morph-stage{padding:0 clamp(12px,3vw,56px)}
+.morph-stage svg{display:block;width:100%;height:auto;max-height:86vh}
+.msvg .wall{fill:#2B2E36;stroke:#8FA9D6;stroke-width:1.2}
+.msvg .planln{stroke:#DFE3EC;fill:none}
+.msvg .anno{stroke:#5F7FB6;fill:none}
+.msvg text{fill:#8FA9D6}
+.msvg .base{stroke:#4a5262;stroke-dasharray:5 5;fill:none}
+
+/* ---------- contact ---------- */
+.contact{padding:clamp(100px,16vh,200px) 0 60px}
+.contact-grid{display:grid;grid-template-columns:minmax(0,1.4fr) minmax(0,1fr);gap:48px;align-items:start;margin-top:52px}
+.bigmail{
+  display:inline-block;font-weight:800;letter-spacing:-.03em;
+  font-size:clamp(26px,4.6vw,60px);border-bottom:3px solid var(--blue);
+  padding-bottom:8px;transition:color .3s,border-color .3s;
+}
+.bigmail:hover{color:var(--coral);border-color:var(--coral)}
+.cblock{font-family:var(--mono);font-size:12.5px;line-height:2;color:#4a4c54}
+.cblock b{color:var(--blue);font-weight:500;letter-spacing:.14em;display:block;margin-bottom:4px}
+.cblock+.cblock{margin-top:28px}
+
+footer{border-top:1px solid var(--line);padding:26px 0 34px;margin-top:70px}
+.foot{display:flex;justify-content:space-between;gap:16px;flex-wrap:wrap;font-family:var(--mono);font-size:11px;letter-spacing:.08em;color:#6a6d76}
+.foot a:hover{text-decoration:underline;color:var(--blue)}
+
+/* ---------- responsive ---------- */
+@media (max-width:960px){
+  .approach-grid{grid-template-columns:repeat(2,1fr)}
+  .proj{grid-template-columns:70px minmax(0,1fr) 110px;grid-template-rows:auto auto}
+  .proj .pmeta{grid-column:2/4;grid-row:2}
+  .proj .ptag{display:none}
+  .morph-sticky{grid-template-columns:1fr;grid-template-rows:auto minmax(0,1fr);align-items:start;padding-top:76px}
+  .morph-copy{padding:0 20px}
+  .morph-copy p{max-width:none}
+  .contact-grid{grid-template-columns:1fr}
+}
+@media (max-width:640px){
+  .hero-head{grid-template-columns:1fr}
+  .hero-side{padding-bottom:0}
+  .city-stage svg{max-height:none}
+  .city .lbl .lt1{font-size:15px}
+  .city .lbl .lt2{font-size:11px}
+  .approach-grid{grid-template-columns:1fr}
+  .ap h3{margin-top:44px}
+  .proj{gap:12px;padding:24px 4px}
+  .proj .pstat{display:none}
+  .proj{grid-template-columns:56px minmax(0,1fr)}
+  .proj .pmeta{grid-column:2}
+  .morph-read{flex-wrap:wrap;gap:12px}
+}
+
+/* ---------- reduced motion ---------- */
+@media (prefers-reduced-motion:reduce){
+  .rv{opacity:1;transform:none;transition:none}
+  .city .bldg{opacity:1;transform:none;transition:none}
+  .city .gline{opacity:1;transition:none}
+  .city .dim line,.city .dim path{stroke-dashoffset:0;transition:none}
+  .city .dim text,.city .dim .ah{opacity:1;transition:none}
+  .city .lbl .lead{stroke-dashoffset:0;transition:none}
+  .nix.go .dcol{transition:none}
+  .proj::before,.ap::after,.proj>*{transition:none}
+  .morph-pin{height:auto}
+  .morph-sticky{position:static;height:auto;padding:90px 0}
+}
+</style>
+</head>
+<body>
+
+<a class="back25" href="/">←&nbsp;25</a>
+<div class="wordmark" aria-hidden="true">AXONO<i></i></div>
+
+<!-- ============ HERO ============ -->
+<header class="hero wrap" id="top">
+  <div class="hero-head">
+    <div>
+      <p class="eyebrow rv">Studio for architecture &amp; urban design</p>
+      <h1 class="rv rv2">We draw cities<br>before they <em>exist.</em></h1>
+    </div>
+    <div class="hero-side rv rv3">
+      <p>AXONO works from the block outward: massing first, facade last. Every volume below is a built or commissioned project — hover a building to read its section.</p>
+      <span class="mono">47.3769° N · 8.5417° E — ZÜRICH<br>EST. 2011 · SIA / BSA</span>
+    </div>
+  </div>
+  <div class="city-stage rv rv4">
+    <svg id="citysvg" class="city" viewBox="-262 -122 588 452" role="group" aria-label="Isometric drawing of fourteen AXONO buildings assembling into a city block. Each building is focusable and announces its name and section.">
+      <defs>
+        <marker id="ah" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+          <path d="M0 0L10 5L0 10z" fill="#2E5EAA"/>
+        </marker>
+      </defs>
+      <g id="cityroot" transform="translate(0,10)"></g>
+    </svg>
+  </div>
+</header>
+
+<!-- ============ APPROACH ============ -->
+<section class="approach wrap" id="approach" aria-labelledby="ah2">
+  <p class="eyebrow rv">Approach</p>
+  <h2 id="ah2" class="rv rv2">Four passes,<br>one drawing.</h2>
+  <div class="approach-grid">
+    <article class="ap rv">
+      <span class="n">01 / SURVEY</span>
+      <h3>Read the ground</h3>
+      <p>Before a single line: sun path, noise contours, pedestrian desire lines, the datum of every neighbouring eave. The site sets the rules; we transcribe them.</p>
+    </article>
+    <article class="ap rv rv2">
+      <span class="n">02 / MASSING</span>
+      <h3>Volume before facade</h3>
+      <p>We test the block at 1:500 until the shadows behave — stepping heights to keep courtyards lit past 15:00 in December, holding street walls at 21 metres.</p>
+    </article>
+    <article class="ap rv rv3">
+      <span class="n">03 / JUNCTION</span>
+      <h3>Draw every junction</h3>
+      <p>Parapet to soffit, sill to slab edge: each junction is detailed at 1:5 before tender. A building fails at its joints, never at its renders.</p>
+    </article>
+    <article class="ap rv rv4">
+      <span class="n">04 / SITE</span>
+      <h3>Build what was drawn</h3>
+      <p>We stay on site weekly through the shell. Tolerances are agreed in millimetres, deviations logged against the model — the drawing remains the contract.</p>
+    </article>
+  </div>
+</section>
+
+<!-- ============ PROJECTS ============ -->
+<section class="projects wrap" id="work" aria-labelledby="ph2">
+  <div class="proj-head">
+    <div>
+      <p class="eyebrow rv">Selected work</p>
+      <h2 id="ph2" class="rv rv2">Project index</h2>
+    </div>
+    <p class="mono rv rv3" style="font-size:11px;letter-spacing:.16em;color:#5a5d66">2019 — 2027 · DACH REGION</p>
+  </div>
+  <div class="proj-list">
+    <a class="proj rv" href="#contact">
+      <span class="pnum"><span class="nix" data-n="001">001</span></span>
+      <span class="pname">Axis Tower</span>
+      <span class="pmeta">ZÜRICH HARDBRÜCKE · MIXED-USE HIGH-RISE<br>COMPETITION 1ST PRIZE 2021 · ON SITE</span>
+      <span class="pstat"><b><span class="nix" data-n="48200">48200</span></b>m² GFA</span>
+      <span class="ptag">2021–2027</span>
+    </a>
+    <a class="proj rv" href="#contact">
+      <span class="pnum"><span class="nix" data-n="002">002</span></span>
+      <span class="pname">Spindle House</span>
+      <span class="pmeta">BASEL DREISPITZ · TIMBER-HYBRID RESIDENTIAL<br>27 STOREYS · STRUCTURE TOPPED OUT</span>
+      <span class="pstat"><b><span class="nix" data-n="84">84</span></b>m TIMBER</span>
+      <span class="ptag">2022–2026</span>
+    </a>
+    <a class="proj rv" href="#contact">
+      <span class="pnum"><span class="nix" data-n="003">003</span></span>
+      <span class="pname">Limmat Terraces</span>
+      <span class="pmeta">ZÜRICH HÖNGG · STEPPED RIVERFRONT HOUSING<br>COOPERATIVE CLIENT · COMPLETED</span>
+      <span class="pstat"><b><span class="nix" data-n="214">214</span></b>UNITS</span>
+      <span class="ptag">2019–2025</span>
+    </a>
+  </div>
+</section>
+
+<!-- ============ PLAN → VOLUME ============ -->
+<section class="morphsec" id="method" aria-labelledby="mh2">
+  <div class="morph-pin" id="morphpin">
+    <div class="morph-sticky">
+      <div class="morph-copy">
+        <p class="eyebrow">Plan → volume</p>
+        <h2 id="mh2">The plan<br>stands <em>up.</em></h2>
+        <p>Scroll. The 1:100 floor plan tilts into axonometry and extrudes to its permitted height — the same drawing, promoted to a volume. Nothing is rendered; everything is drawn.</p>
+        <div class="morph-read">
+          <span>ELEV <b id="elevread">+00.00 m</b></span>
+          <span>PHASE <b id="phaseread">PLAN</b></span>
+        </div>
+      </div>
+      <div class="morph-stage">
+        <svg id="morphsvg" class="msvg" viewBox="0 0 760 620" role="img" aria-label="A floor plan tilting into an isometric view and extruding into a building volume">
+          <defs>
+            <marker id="ah2m" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+              <path d="M0 0L10 5L0 10z" fill="#5F7FB6"/>
+            </marker>
+          </defs>
+          <!-- ground reference (fixed) -->
+          <g id="mbase"></g>
+          <!-- extruded walls (drawn behind the plan/top) -->
+          <polygon id="wallR" class="wall" points=""></polygon>
+          <polygon id="wallF" class="wall" points=""></polygon>
+          <!-- the plan itself -->
+          <g id="planG">
+            <rect x="0" y="0" width="360" height="240" fill="#23252B" stroke="#DFE3EC" stroke-width="2.4"/>
+            <!-- interior walls with door gaps -->
+            <path class="planln" stroke-width="1.4" d="M140 0V52M140 84V140M0 140H96M128 140H220M220 140V240M220 60H360"/>
+            <!-- door swings -->
+            <path class="planln" stroke-width=".8" d="M140 52a32 32 0 0 0-32 32M96 140a32 32 0 0 1 32 32"/>
+            <!-- stair core -->
+            <g class="planln" stroke-width="1">
+              <rect x="288" y="8" width="64" height="94" fill="none" stroke="#FF6A5C"/>
+              <path d="M288 22h64M288 36h64M288 50h64M288 64h64M288 78h64M288 92h64" stroke="#FF6A5C" stroke-opacity=".65"/>
+              <path d="M296 98l48-84" stroke="#FF6A5C"/>
+            </g>
+            <!-- column grid crosses -->
+            <path class="anno" stroke-width="1" d="M70 66v12M64 72h12M70 186v12M64 192h12M290 186v12M284 192h12"/>
+            <text x="10" y="26" font-family="JetBrains Mono" font-size="11" letter-spacing="1">LEVEL 00 · 1:100</text>
+          </g>
+          <!-- static dimensions around the stage -->
+          <g id="mdims" font-family="JetBrains Mono" font-size="11" opacity="0">
+            <line class="anno" x1="122" y1="586" x2="638" y2="586" marker-start="url(#ah2m)" marker-end="url(#ah2m)"/>
+            <line class="anno" x1="122" y1="470" x2="122" y2="592" stroke-opacity=".4"/>
+            <line class="anno" x1="638" y1="470" x2="638" y2="592" stroke-opacity=".4"/>
+            <text x="380" y="578" text-anchor="middle" letter-spacing="1">24.00 m</text>
+            <line class="anno" x1="672" y1="200" x2="672" y2="350" marker-start="url(#ah2m)" marker-end="url(#ah2m)"/>
+            <text x="682" y="268" letter-spacing="1" transform="rotate(90 682 268)">12.40 m</text>
+          </g>
+        </svg>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ CONTACT ============ -->
+<section class="contact wrap" id="contact" aria-labelledby="ch2">
+  <p class="eyebrow rv">Commission</p>
+  <h2 id="ch2" class="rv rv2">Bring us a site.<br>We’ll bring the block.</h2>
+  <div class="contact-grid">
+    <div class="rv rv2">
+      <a class="bigmail" href="mailto:studio@axono.ch">studio@axono.ch</a>
+      <p style="margin-top:26px;font-size:14.5px;line-height:1.7;color:#4a4c54;max-width:46ch">
+        Competitions, direct commissions and study mandates from 5,000 m² GFA.
+        First massing study within three weeks of survey handover.
+      </p>
+    </div>
+    <div class="rv rv3">
+      <div class="cblock">
+        <b>STUDIO</b>
+        AXONO GmbH<br>
+        Hardturmstrasse 161<br>
+        8005 Zürich, Schweiz
+      </div>
+      <div class="cblock">
+        <b>OFFICE</b>
+        +41 44 271 08 15<br>
+        MON–FRI 08:30–18:00 CET
+      </div>
+      <div class="cblock">
+        <b>PROCUREMENT</b>
+        SIA 142/143 COMPETITIONS<br>
+        WTO / SIMAP LISTED
+      </div>
+    </div>
+  </div>
+  <footer>
+    <div class="wrap foot" style="padding:0">
+      <span>© 2026 AXONO GMBH, ZÜRICH</span>
+      <span>DRAWN, NOT RENDERED.</span>
+      <a href="#top">BACK TO SHEET ↑</a>
+    </div>
+  </footer>
+</section>
+
+<script>
+(function(){
+"use strict";
+var RM = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+/* ============================================================
+   1 · ISOMETRIC CITY — generated SVG geometry
+   ============================================================ */
+var S=26, CO=0.8660254;
+function P(x,y,h){h=h||0;return [(x-y)*CO*S,(x+y)*0.5*S-h];}
+function pts(a){return a.map(function(p){return p[0].toFixed(1)+','+p[1].toFixed(1);}).join(' ');}
+
+var BLD=[
+ {x:0,  y:0,  w:2,  d:2,  h:60, n:'HALDEN COURT', s:'15 FL · RESIDENTIAL'},
+ {x:3,  y:0,  w:2,  d:2,  h:96, n:'MERIDIAN ONE', s:'24 FL · OFFICE'},
+ {x:6,  y:0,  w:2,  d:1,  h:40, n:'GALERIE C',    s:'10 FL · CULTURE'},
+ {x:8.5,y:0,  w:1.5,d:1.5,h:130,n:'AXIS TOWER',   s:'33 FL · MIXED-USE'},
+ {x:0,  y:3,  w:1.5,d:1.5,h:44, n:'KIOSK NORD',   s:'11 FL · RETAIL'},
+ {x:2.5,y:3,  w:2,  d:2,  h:84, n:'AXONO HQ',     s:'21 FL · STUDIO', hq:true},
+ {x:5.5,y:2.5,w:1.5,d:2,  h:58, n:'PASSAGE 7',    s:'14 FL · HOTEL'},
+ {x:8,  y:3,  w:2,  d:2,  h:72, n:'STEINWERK',    s:'18 FL · OFFICE'},
+ {x:0,  y:6,  w:2,  d:1.5,h:34, n:'BAD ALLMEND',  s:'8 FL · CIVIC'},
+ {x:3,  y:6,  w:1.5,d:1.5,h:108,n:'SPINDLE',      s:'27 FL · RESIDENTIAL'},
+ {x:5.5,y:5.5,w:2,  d:2,  h:50, n:'HOF K',        s:'12 FL · HOUSING'},
+ {x:8,  y:6,  w:2,  d:1.5,h:88, n:'LIMMATBLOCK',  s:'22 FL · MIXED-USE'},
+ {x:1,  y:8.5,w:2.5,d:1.5,h:28, n:'PAVILLON M',   s:'7 FL · MARKET'},
+ {x:5,  y:8.5,w:2,  d:1.5,h:64, n:'TURBINE',      s:'16 FL · ENERGY'}
+];
+
+var NS='http://www.w3.org/2000/svg';
+function el(t,at){var e=document.createElementNS(NS,t);for(var k in at)e.setAttribute(k,at[k]);return e;}
+var root=document.getElementById('cityroot');
+var svg=document.getElementById('citysvg');
+
+/* ground grid (single pass — PASS 3 removed duplicate loop) */
+var grid=el('g',{});
+for(var i=0;i<=10;i++){
+  var a=P(i,0),b=P(i,10),c=P(0,i),d=P(10,i);
+  grid.appendChild(el('line',{class:'gline',x1:a[0],y1:a[1],x2:b[0],y2:b[1]}));
+  grid.appendChild(el('line',{class:'gline',x1:c[0],y1:c[1],x2:d[0],y2:d[1]}));
+}
+root.appendChild(grid);
+
+/* buildings — painter sort by footprint centre depth (PASS 1) */
+var order=BLD.slice().sort(function(a,b){return (a.x+a.w/2+a.y+a.d/2)-(b.x+b.w/2+b.y+b.d/2);});
+var lblLayer=el('g',{});
+
+order.forEach(function(b,idx){
+  var x=b.x,y=b.y,w=b.w,d=b.d,h=b.h;
+  var g=el('g',{class:'bldg',tabindex:'0',role:'img'});
+  g.setAttribute('aria-label',b.n+' — '+b.s);
+  g.style.setProperty('--dl',(idx*80)+'ms');
+
+  var tf=b.hq?'#FFD9D4':'#FDFDFB', lf=b.hq?'#FFB4AB':'#E9ECF3', rf=b.hq?'#F58B80':'#D6DDEB';
+  var st=b.hq?'#D14638':'#2E5EAA';
+
+  /* faces */
+  var top=[P(x,y,h),P(x+w,y,h),P(x+w,y+d,h),P(x,y+d,h)];
+  var right=[P(x+w,y,h),P(x+w,y+d,h),P(x+w,y+d,0),P(x+w,y,0)];
+  var front=[P(x,y+d,h),P(x+w,y+d,h),P(x+w,y+d,0),P(x,y+d,0)];
+  g.appendChild(el('polygon',{class:'face',points:pts(right),fill:rf,stroke:st,'stroke-width':'1','stroke-linejoin':'round'}));
+  g.appendChild(el('polygon',{class:'face',points:pts(front),fill:lf,stroke:st,'stroke-width':'1','stroke-linejoin':'round'}));
+  g.appendChild(el('polygon',{class:'face ftop',points:pts(top),fill:tf,stroke:st,'stroke-width':'1.2','stroke-linejoin':'round'}));
+
+  /* facade floor lines — capped at 9 (PASS 1) */
+  var lines=el('g',{stroke:st,'stroke-opacity':'.28','stroke-width':'.7'});
+  var step=Math.max(12,h/9);
+  for(var k=step;k<h-4;k+=step){
+    var r1=P(x+w,y,k),r2=P(x+w,y+d,k),f1=P(x,y+d,k);
+    var pth='M'+r1[0].toFixed(1)+' '+r1[1].toFixed(1)+'L'+r2[0].toFixed(1)+' '+r2[1].toFixed(1)+'L'+f1[0].toFixed(1)+' '+f1[1].toFixed(1);
+    lines.appendChild(el('path',{d:pth,fill:'none'}));
+  }
+  g.appendChild(lines);
+
+  /* roof inset detail for larger footprints */
+  if(w>=1.5&&d>=1.5){
+    var q=0.22;
+    var ri=[P(x+q,y+q,h),P(x+w-q,y+q,h),P(x+w-q,y+d-q,h),P(x+q,y+d-q,h)];
+    g.appendChild(el('polygon',{points:pts(ri),fill:'none',stroke:st,'stroke-opacity':'.4','stroke-width':'.7'}));
+  }
+
+  root.appendChild(g);
+
+  /* spec label + leader line — flips left past ix 120 (PASS 1) */
+  var an=P(x+w/2,y+d/2,h);
+  var dir=an[0]>120?-1:1;
+  var e1=[an[0]+16*dir,an[1]-18], e2=[an[0]+(16+46)*dir,an[1]-18];
+  var lbl=el('g',{class:'lbl'});
+  lbl.appendChild(el('circle',{cx:an[0],cy:an[1],r:'2.4',fill:b.hq?'#D14638':'#2E5EAA'}));
+  lbl.appendChild(el('polyline',{class:'lead',points:pts([an,e1,e2]),fill:'none',stroke:b.hq?'#D14638':'#2E5EAA','stroke-width':'1'}));
+  var anch=dir>0?'start':'end';
+  var t1=el('text',{class:'lt1',x:e2[0]+5*dir,y:e2[1]-3,'text-anchor':anch,'font-family':'Manrope','font-size':'12','font-weight':'800',fill:'#23252B','letter-spacing':'.4'});
+  t1.textContent=b.n;
+  var t2=el('text',{class:'lt2',x:e2[0]+5*dir,y:e2[1]+11,'text-anchor':anch,'font-family':'JetBrains Mono','font-size':'8.5',fill:'#2E5EAA','letter-spacing':'.8'});
+  t2.textContent=b.s;
+  lbl.appendChild(t1);lbl.appendChild(t2);
+  lblLayer.appendChild(lbl);
+
+  function on(){lbl.classList.add('onl');}
+  function off(){lbl.classList.remove('onl');}
+  g.addEventListener('pointerenter',on);
+  g.addEventListener('pointerleave',off);
+  g.addEventListener('focus',on);
+  g.addEventListener('blur',off);
+  g.addEventListener('click',function(){lbl.classList.toggle('onl');});
+});
+
+/* dimension annotations */
+var dg=el('g',{class:'dim','font-family':'JetBrains Mono','font-size':'11',fill:'#2E5EAA'});
+var L=P(0,10),R=P(10,0),NPT=P(10,10);
+var dy=NPT[1]+46;
+dg.appendChild(el('line',{x1:L[0],y1:L[1]+10,x2:L[0],y2:dy+6,stroke:'#2E5EAA','stroke-width':'.7','stroke-opacity':'.55'}));
+dg.appendChild(el('line',{x1:R[0],y1:R[1]+10,x2:R[0],y2:dy+6,stroke:'#2E5EAA','stroke-width':'.7','stroke-opacity':'.55'}));
+dg.appendChild(el('line',{x1:L[0]+3,y1:dy,x2:R[0]-3,y2:dy,stroke:'#2E5EAA','stroke-width':'1','marker-start':'url(#ah)','marker-end':'url(#ah)'}));
+var dt=el('text',{x:'0',y:dy-8,'text-anchor':'middle','letter-spacing':'1.5'});
+dt.textContent='142.60 m';
+dg.appendChild(dt);
+/* tower height dim */
+var tw=P(10,0,130), tb=P(10,0,0);
+dg.appendChild(el('line',{x1:tw[0]+26,y1:tw[1],x2:tb[0]+26,y2:tb[1],stroke:'#2E5EAA','stroke-width':'1','marker-start':'url(#ah)','marker-end':'url(#ah)'}));
+dg.appendChild(el('line',{x1:tw[0]+6,y1:tw[1],x2:tw[0]+30,y2:tw[1],stroke:'#2E5EAA','stroke-width':'.7','stroke-opacity':'.55'}));
+var ht=el('text',{x:tw[0]+34,y:(tw[1]+tb[1])/2,'letter-spacing':'1','class':'ah'});
+ht.textContent='+104.0';
+dg.appendChild(ht);
+root.appendChild(dg);
+root.appendChild(lblLayer);
+
+/* assemble on scroll */
+function arm(){svg.classList.add('on');}
+if(RM){arm();}
+else{
+  var io=new IntersectionObserver(function(es){
+    es.forEach(function(e){if(e.isIntersecting){arm();io.disconnect();}});
+  },{threshold:0.22});
+  io.observe(svg);
+}
+
+/* ============================================================
+   2 · SCROLL REVEALS
+   ============================================================ */
+var rvs=document.querySelectorAll('.rv');
+if(RM){rvs.forEach(function(n){n.classList.add('in');});}
+else{
+  var rio=new IntersectionObserver(function(es){
+    es.forEach(function(e){if(e.isIntersecting){e.target.classList.add('in');rio.unobserve(e.target);}});
+  },{threshold:0.15,rootMargin:'0px 0px -6% 0px'});
+  rvs.forEach(function(n){rio.observe(n);});
+}
+
+/* ============================================================
+   3 · DIGIT ROLLERS — sliding number counters
+   ============================================================ */
+document.querySelectorAll('.nix').forEach(function(nx){
+  var target=nx.getAttribute('data-n');
+  nx.textContent='';
+  target.split('').forEach(function(ch,ci){
+    var col=document.createElement('span');col.className='dcol';
+    col.style.setProperty('--cd',(ci*70)+'ms'); /* PASS 2 stagger */
+    for(var d=0;d<=9;d++){var s=document.createElement('span');s.textContent=d;col.appendChild(s);}
+    col.dataset.d=ch;
+    nx.appendChild(col);
+  });
+});
+function rollNix(nx){
+  nx.classList.add('go');
+  nx.querySelectorAll('.dcol').forEach(function(c){
+    c.style.transform='translateY(-'+(+c.dataset.d)+'em)';
+  });
+}
+var nixes=document.querySelectorAll('.nix');
+if(RM){nixes.forEach(rollNix);}
+else{
+  var nio=new IntersectionObserver(function(es){
+    es.forEach(function(e){if(e.isIntersecting){rollNix(e.target);nio.unobserve(e.target);}});
+  },{threshold:0.6});
+  nixes.forEach(function(n){nio.observe(n);});
+}
+
+/* ============================================================
+   4 · PLAN → VOLUME MORPH (scroll-scrubbed)
+   ============================================================ */
+var pin=document.getElementById('morphpin'),
+    planG=document.getElementById('planG'),
+    wallR=document.getElementById('wallR'),
+    wallF=document.getElementById('wallF'),
+    mbase=document.getElementById('mbase'),
+    mdims=document.getElementById('mdims'),
+    elevR=document.getElementById('elevread'),
+    phaseR=document.getElementById('phaseread');
+
+/* base footprint polygon created once, points updated per frame */
+var basePoly=el('polygon',{class:'base',points:''});
+mbase.appendChild(basePoly);
+
+var PW=360,PH=240,EXH=150;                 /* plan size, extrusion height */
+var CTR=[380,320];                          /* screen anchor for plan centre */
+var ISO={a:0.8660254,b:0.5,c:-0.8660254,d:0.5};
+
+function smooth(t){t=Math.min(1,Math.max(0,t));return t*t*(3-2*t);}
+function lerp(a,b,t){return a+(b-a)*t;}
+function apply(m,x,y){return [m.a*x+m.c*y+m.e, m.b*x+m.d*y+m.f];}
+
+function setMorph(p){
+  var tilt=smooth(p/0.62);                  /* PASS 2: overlapping phases */
+  var ext=smooth((p-0.5)/0.5);
+  var m={a:lerp(1,ISO.a,tilt),b:lerp(0,ISO.b,tilt),c:lerp(0,ISO.c,tilt),d:lerp(1,ISO.d,tilt),e:0,f:0};
+  var lift=EXH*ext;
+  /* base plane stays anchored at CTR; the plan (= top face) rises by the full lift */
+  m.e=CTR[0]-(m.a*PW/2+m.c*PH/2);
+  m.f=(CTR[1]-lift)-(m.b*PW/2+m.d*PH/2);
+  planG.style.transform='matrix('+m.a.toFixed(4)+','+m.b.toFixed(4)+','+m.c.toFixed(4)+','+m.d.toFixed(4)+','+m.e.toFixed(1)+','+m.f.toFixed(1)+')';
+
+  /* extruded side walls hang straight down from the plan's outline */
+  var h=lift;
+  var pB=apply(m,PW,0),pC=apply(m,PW,PH),pD=apply(m,0,PH);
+  wallR.setAttribute('points',pts([pB,pC,[pC[0],pC[1]+h],[pB[0],pB[1]+h]]));
+  wallF.setAttribute('points',pts([pD,pC,[pC[0],pC[1]+h],[pD[0],pD[1]+h]]));
+  wallR.style.opacity=wallF.style.opacity=(ext>0?1:0);
+
+  /* dashed base footprint on the ground */
+  var g0=apply(m,0,0);
+  basePoly.setAttribute('points',pts([[g0[0],g0[1]+h],[pB[0],pB[1]+h],[pC[0],pC[1]+h],[pD[0],pD[1]+h]]));
+  basePoly.style.opacity=(ext>0.02?0.9:0);
+  mdims.style.opacity=ext.toFixed(3);
+  elevR.textContent='+'+(12.4*ext).toFixed(2)+' m';
+  phaseR.textContent= p<0.15?'PLAN' : p<0.62?'AXONOMETRY' : p<0.98?'EXTRUSION':'VOLUME';
+}
+
+if(RM){setMorph(1);}
+else{
+  var ticking=false;
+  function onScroll(){
+    if(ticking)return;ticking=true;
+    requestAnimationFrame(function(){
+      ticking=false;
+      var r=pin.getBoundingClientRect();
+      var vh=window.innerHeight;
+      var total=r.height-vh;
+      var p=Math.min(1,Math.max(0,-r.top/total));
+      setMorph(p);
+    });
+  }
+  window.addEventListener('scroll',onScroll,{passive:true});
+  window.addEventListener('resize',onScroll,{passive:true});
+  setMorph(0);
+  onScroll();
+}
+})();
+</script>
+</body>
+</html>

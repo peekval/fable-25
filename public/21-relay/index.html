@@ -1,0 +1,595 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>DEEP RELAY — Interstellar Probe Mission Control</title>
+<meta name="description" content="Live mission control dashboard for the DEEP RELAY interstellar probe. Telemetry, trajectory, mission log and deep-space communications.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Rajdhani:wght@500;600;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#0A0C10;
+  --amber:#FFB000;
+  --green:#3DFF8C;
+  --red:#FF3B30;
+  --grid:#2A3442;
+  --ink:#C8D2DC;
+  --dim:#5C6B7A;
+  --panel:#0D1016;
+  --mono:'Share Tech Mono',ui-monospace,monospace;
+  --disp:'Rajdhani',sans-serif;
+}
+*{margin:0;padding:0;box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{
+  background:var(--bg);
+  color:var(--ink);
+  font-family:var(--mono);
+  font-size:14px;
+  line-height:1.5;
+  overflow-x:hidden;
+  background-image:
+    linear-gradient(rgba(42,52,66,.14) 1px,transparent 1px),
+    linear-gradient(90deg,rgba(42,52,66,.14) 1px,transparent 1px);
+  background-size:48px 48px;
+}
+/* ---------- scanline + vignette overlay ---------- */
+.overlay{
+  position:fixed;inset:0;pointer-events:none;z-index:90;
+  background:
+    repeating-linear-gradient(0deg,rgba(255,255,255,.018) 0 1px,transparent 1px 3px),
+    radial-gradient(ellipse at 50% 40%,transparent 55%,rgba(0,0,0,.5) 100%);
+}
+/* ---------- boot overlay ---------- */
+#boot{
+  position:fixed;inset:0;z-index:200;background:var(--bg);
+  display:flex;flex-direction:column;justify-content:center;padding:0 8vw;
+  font-size:13px;color:var(--green);
+  animation:bootOut .5s ease 1.7s forwards;
+}
+#boot .bl{overflow:hidden;white-space:nowrap;width:0;border-right:8px solid transparent}
+#boot .bl:nth-child(1){animation:typeIn .35s steps(30) .10s forwards}
+#boot .bl:nth-child(2){animation:typeIn .35s steps(30) .50s forwards}
+#boot .bl:nth-child(3){animation:typeIn .35s steps(30) .90s forwards}
+#boot .bl:nth-child(4){animation:typeIn .35s steps(30) 1.30s forwards;color:var(--amber)}
+@keyframes typeIn{from{width:0}to{width:100%}}
+@keyframes bootOut{to{opacity:0;visibility:hidden}}
+/* ---------- top bar ---------- */
+.topbar{
+  position:fixed;top:0;left:0;right:0;z-index:100;
+  display:flex;align-items:center;gap:16px;
+  padding:10px 20px;
+  background:rgba(10,12,16,.92);
+  border-bottom:1px solid var(--grid);
+  backdrop-filter:blur(4px);
+  font-size:12px;letter-spacing:.08em;
+}
+.topbar a.rtn{
+  color:var(--dim);text-decoration:none;white-space:nowrap;
+  border:1px solid var(--grid);padding:2px 8px;
+  transition:color .2s,border-color .2s;
+}
+.topbar a.rtn:hover,.topbar a.rtn:focus-visible{color:var(--amber);border-color:var(--amber);outline:none}
+.topbar .mid{color:var(--dim);flex:1;text-align:center;text-transform:uppercase}
+.topbar .mid b{color:var(--amber);font-weight:400}
+.topbar .utc{color:var(--green);white-space:nowrap}
+/* ---------- layout ---------- */
+main{
+  max-width:1380px;margin:0 auto;
+  padding:72px 20px 20px;
+  display:grid;grid-template-columns:repeat(12,1fr);gap:14px;
+}
+/* ---------- panel chrome ---------- */
+.panel{
+  position:relative;
+  grid-column:span 12;
+  background:linear-gradient(180deg,rgba(20,26,36,.55),rgba(10,12,16,.7));
+  border:1px solid var(--grid);
+  padding:18px;
+  opacity:0;
+  animation:panelIn .55s cubic-bezier(.2,.9,.3,1) forwards;
+}
+@keyframes panelIn{
+  0%{opacity:0;clip-path:inset(0 100% 0 0);transform:translateY(6px)}
+  60%{opacity:1;clip-path:inset(0 0 0 0)}
+  100%{opacity:1;clip-path:inset(0 0 0 0);transform:none}
+}
+.panel b.crn{position:absolute;width:10px;height:10px;border:0 solid var(--amber);pointer-events:none}
+.panel b.c1{top:-1px;left:-1px;border-top-width:2px;border-left-width:2px}
+.panel b.c2{top:-1px;right:-1px;border-top-width:2px;border-right-width:2px}
+.panel b.c3{bottom:-1px;left:-1px;border-bottom-width:2px;border-left-width:2px}
+.panel b.c4{bottom:-1px;right:-1px;border-bottom-width:2px;border-right-width:2px}
+.phead{
+  display:flex;justify-content:space-between;align-items:baseline;gap:12px;
+  border-bottom:1px solid var(--grid);
+  padding-bottom:8px;margin-bottom:14px;
+  font-size:12px;letter-spacing:.18em;text-transform:uppercase;color:var(--amber);
+}
+.phead .pid{color:var(--dim);letter-spacing:.1em}
+/* ---------- hero ---------- */
+#hero{min-height:340px;display:flex;flex-direction:column;justify-content:center;overflow:hidden}
+#hero .reticle{position:absolute;right:4%;top:50%;transform:translateY(-50%);width:min(300px,40vw);opacity:.5;pointer-events:none}
+#hero .reticle .spin{transform-origin:150px 150px;animation:spin 40s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+#hero .eyebrow{color:var(--green);font-size:12px;letter-spacing:.35em;text-transform:uppercase}
+#hero h1{
+  font-family:var(--disp);font-weight:700;
+  font-size:clamp(52px,9vw,124px);
+  letter-spacing:.06em;line-height:.95;
+  color:#EDF2F6;margin:10px 0 6px;
+  text-shadow:0 0 24px rgba(255,176,0,.18);
+}
+#hero h1 span{color:var(--amber)}
+#hero .sub{color:var(--dim);max-width:560px;font-size:13px}
+.herostats{display:flex;flex-wrap:wrap;gap:28px;margin-top:26px}
+.hs{border-left:2px solid var(--grid);padding-left:12px}
+.hs .k{font-size:11px;letter-spacing:.2em;color:var(--dim);text-transform:uppercase}
+.hs .v{font-size:22px;color:var(--green);font-variant-numeric:tabular-nums}
+.hs .v.amb{color:var(--amber)}
+.statusline{margin-top:22px;font-size:12px;color:var(--dim)}
+.dot{display:inline-block;width:8px;height:8px;border-radius:50%;background:var(--green);margin-right:8px;animation:blink 2.4s ease infinite}
+@keyframes blink{0%,100%{opacity:1}50%{opacity:.25}}
+/* ---------- telemetry ---------- */
+#telemetry{grid-column:span 7}
+.tgrid{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}
+.tcell{border:1px solid var(--grid);padding:12px;background:rgba(10,12,16,.5)}
+.tcell .k{font-size:11px;color:var(--dim);letter-spacing:.16em;text-transform:uppercase}
+.tcell .v{font-size:24px;color:var(--green);font-variant-numeric:tabular-nums;margin-top:4px;white-space:nowrap}
+.tcell .u{font-size:12px;color:var(--dim)}
+.tcell.warn .v{color:var(--amber)}
+.tcell .trend{font-size:11px;color:var(--dim);margin-top:2px}
+.trend .up{color:var(--green)}.trend .dn{color:var(--red)}
+/* ---------- radar ---------- */
+#radar{grid-column:span 5}
+.scope{position:relative;width:min(300px,100%);aspect-ratio:1;margin:0 auto;border-radius:50%;border:1px solid var(--grid);overflow:hidden;background:radial-gradient(circle,rgba(61,255,140,.05),rgba(10,12,16,.9))}
+.scope .ring{position:absolute;border:1px solid rgba(42,52,66,.9);border-radius:50%}
+.scope .axis{position:absolute;background:rgba(42,52,66,.9)}
+.scope .beam{
+  position:absolute;inset:0;border-radius:50%;
+  background:conic-gradient(from 0deg,rgba(61,255,140,.35),rgba(61,255,140,.06) 42deg,transparent 70deg);
+  animation:sweep 4.8s linear infinite;
+}
+@keyframes sweep{to{transform:rotate(360deg)}}
+.blip{position:absolute;width:6px;height:6px;margin:-3px;border-radius:50%;background:var(--green);box-shadow:0 0 8px var(--green);animation:blipFade 4.8s linear infinite}
+@keyframes blipFade{0%{opacity:.95}45%{opacity:.06}100%{opacity:.06}}
+.scopemeta{display:flex;justify-content:space-between;font-size:11px;color:var(--dim);margin-top:12px;letter-spacing:.1em}
+.scopemeta b{color:var(--green);font-weight:400}
+/* ---------- trajectory ---------- */
+#traj{grid-column:span 8}
+#traj svg{width:100%;height:auto;display:block}
+.svglabel{font-family:var(--mono);font-size:9px;fill:var(--dim);letter-spacing:.1em}
+.svglabel.amb{fill:var(--amber)}
+.svglabel.grn{fill:var(--green)}
+/* ---------- comms ---------- */
+#comms{grid-column:span 4}
+#wave{width:100%;height:110px;display:block;border:1px solid var(--grid);background:rgba(10,12,16,.5)}
+.bars{display:flex;align-items:flex-end;gap:3px;height:52px;margin-top:14px}
+.bars i{flex:1;background:var(--green);opacity:.85;min-height:2px}
+.bars i.low{background:var(--amber)}
+.commsmeta{margin-top:12px;font-size:12px;color:var(--dim);display:grid;gap:4px}
+.commsmeta b{color:var(--ink);font-weight:400;float:right;font-variant-numeric:tabular-nums}
+/* ---------- log ---------- */
+#log{grid-column:span 5}
+.logbody{min-height:280px;font-size:12.5px}
+.le{margin-bottom:12px}
+.le .ts{color:var(--dim)}
+.le .tx{color:var(--ink)}
+.le.hl .tx{color:var(--amber)}
+.le .cur{display:inline-block;width:8px;height:13px;background:var(--green);vertical-align:-2px;animation:blink 1s steps(2) infinite}
+/* ---------- roster ---------- */
+#roster{grid-column:span 7}
+table{width:100%;border-collapse:collapse;font-size:12px}
+th{font-size:10px;letter-spacing:.2em;text-transform:uppercase;color:var(--dim);text-align:left;padding:6px 8px;border-bottom:1px solid var(--grid);font-weight:400}
+td{padding:7px 8px;border-bottom:1px solid rgba(42,52,66,.45);color:var(--ink)}
+td.st{white-space:nowrap}
+.on{color:var(--green)}.off{color:var(--dim)}.wr{color:var(--amber)}
+.rosterduo{display:grid;grid-template-columns:1fr;gap:18px}
+.rsub{font-size:11px;letter-spacing:.2em;color:var(--dim);text-transform:uppercase;margin:14px 0 4px}
+/* ---------- footer ---------- */
+footer.panel{grid-column:span 12;font-size:12px;color:var(--dim);display:flex;flex-wrap:wrap;gap:12px;justify-content:space-between}
+footer .sig{color:var(--amber)}
+/* ---------- glitch ---------- */
+.glitch{filter:invert(.85) hue-rotate(160deg);transform:translateX(1px)}
+/* ---------- boot sequence delays ---------- */
+#hero{animation-delay:1.75s}
+#telemetry{animation-delay:1.95s}
+#radar{animation-delay:2.10s}
+#traj{animation-delay:2.25s}
+#comms{animation-delay:2.40s}
+#log{animation-delay:2.55s}
+#roster{animation-delay:2.70s}
+footer.panel{animation-delay:2.85s}
+/* ---------- responsive ---------- */
+@media (max-width:920px){
+  #telemetry,#radar,#traj,#comms,#log,#roster{grid-column:span 12}
+  .tgrid{grid-template-columns:repeat(2,1fr)}
+  .topbar .mid{display:none}
+  .topbar{justify-content:space-between}
+  #hero .reticle{opacity:.18}
+}
+/* ---------- reduced motion ---------- */
+@media (prefers-reduced-motion:reduce){
+  *,*::before,*::after{animation:none!important;transition:none!important}
+  .panel{opacity:1}
+  #boot{display:none}
+  .scope .beam{display:none}
+  .blip{opacity:.7}
+}
+</style>
+</head>
+<body>
+<div class="overlay" aria-hidden="true"></div>
+
+<div id="boot" aria-hidden="true">
+  <div class="bl">&gt; DEEP RELAY GROUND SEGMENT v4.2.1</div>
+  <div class="bl">&gt; DSS-43 CANBERRA · X-BAND RX LOCK</div>
+  <div class="bl">&gt; FRAME SYNC OK · RS DECODE OK</div>
+  <div class="bl">&gt; SIGNAL ACQUIRED — RENDERING CONSOLE</div>
+</div>
+
+<header class="topbar">
+  <a class="rtn" href="/">[RTN]&nbsp;25</a>
+  <span class="mid">DEEP RELAY · <b>MISSION CONTROL — PUBLIC FEED</b></span>
+  <span class="utc" id="utc">--:--:-- UTC</span>
+</header>
+
+<main>
+  <!-- ================= HERO ================= -->
+  <section class="panel" id="hero" aria-label="Mission overview">
+    <svg class="reticle" viewBox="0 0 300 300" aria-hidden="true">
+      <circle cx="150" cy="150" r="140" fill="none" stroke="#2A3442" stroke-width="1"/>
+      <circle cx="150" cy="150" r="104" fill="none" stroke="#2A3442" stroke-width="1" stroke-dasharray="4 6"/>
+      <circle cx="150" cy="150" r="60" fill="none" stroke="#FFB000" stroke-width="1" opacity=".5"/>
+      <g class="spin">
+        <line x1="150" y1="4" x2="150" y2="34" stroke="#FFB000" stroke-width="1"/>
+        <line x1="150" y1="266" x2="150" y2="296" stroke="#2A3442" stroke-width="1"/>
+        <line x1="4" y1="150" x2="34" y2="150" stroke="#2A3442" stroke-width="1"/>
+        <line x1="266" y1="150" x2="296" y2="150" stroke="#2A3442" stroke-width="1"/>
+      </g>
+      <line x1="150" y1="130" x2="150" y2="170" stroke="#3DFF8C" stroke-width="1"/>
+      <line x1="130" y1="150" x2="170" y2="150" stroke="#3DFF8C" stroke-width="1"/>
+    </svg>
+    <p class="eyebrow">Interstellar Probe · Outbound 22 yr</p>
+    <h1>DEEP<span>&nbsp;RELAY</span></h1>
+    <p class="sub">The farthest operating human-made spacecraft. Launched 30 June 2004, DEEP RELAY crossed the heliopause in February 2025 and now samples the very local interstellar medium — still calling home twice a week.</p>
+    <div class="herostats">
+      <div class="hs"><div class="k">Mission Elapsed</div><div class="v" id="met">DAY 8044</div></div>
+      <div class="hs"><div class="k">Distance from Sun</div><div class="v" id="hdist">103.4217 AU</div></div>
+      <div class="hs"><div class="k">One-Way Light Time</div><div class="v amb" id="howlt">14:20:09</div></div>
+    </div>
+    <p class="statusline"><span class="dot"></span>DOWNLINK ACTIVE · DSS-43 CANBERRA 70 m · X-BAND 8.4152 GHz</p>
+  </section>
+
+  <!-- ================= TELEMETRY ================= -->
+  <section class="panel" id="telemetry" aria-label="Live telemetry">
+    <div class="phead"><span>Telemetry — Realtime Feed</span><span class="pid">PNL-01 / TLM</span></div>
+    <div class="tgrid">
+      <div class="tcell"><div class="k">Heliocentric Velocity</div><div class="v" id="v-vel">19.4327</div><div class="u">km/s</div><div class="trend"><span class="up">▲</span> escape achieved 2005</div></div>
+      <div class="tcell"><div class="k">Distance (Sun)</div><div class="v" id="v-dist">103.42171650</div><div class="u">AU</div><div class="trend"><span class="up">▲</span> +1.297e-7 AU/s</div></div>
+      <div class="tcell"><div class="k">Signal Delay (1-way)</div><div class="v" id="v-owlt">14:20:09</div><div class="u">hh:mm:ss</div><div class="trend">c-limited · fixed by geometry</div></div>
+      <div class="tcell warn"><div class="k">RTG Output</div><div class="v" id="v-rtg">341.8</div><div class="u">W (of 470 W BOL)</div><div class="trend"><span class="dn">▼</span> −4.2 W/yr decay</div></div>
+      <div class="tcell"><div class="k">Bus Temperature</div><div class="v" id="v-temp">+12.6</div><div class="u">°C internal</div><div class="trend">heaters duty 61%</div></div>
+      <div class="tcell"><div class="k">Downlink Rate</div><div class="v" id="v-rate">348</div><div class="u">bit/s · RS+conv coded</div><div class="trend">70 m aperture required</div></div>
+    </div>
+  </section>
+
+  <!-- ================= RADAR ================= -->
+  <section class="panel" id="radar" aria-label="Ground array sky search">
+    <div class="phead"><span>Ground Array — Sky Search</span><span class="pid">PNL-02 / TRK</span></div>
+    <div class="scope" id="scope">
+      <div class="ring" style="inset:12.5%"></div>
+      <div class="ring" style="inset:25%"></div>
+      <div class="ring" style="inset:37.5%"></div>
+      <div class="axis" style="left:50%;top:0;bottom:0;width:1px"></div>
+      <div class="axis" style="top:50%;left:0;right:0;height:1px"></div>
+      <div class="beam"></div>
+      <div class="blip" style="left:69.9%;top:26.3%;animation-delay:-4.27s"></div>
+      <div class="blip" style="left:67.2%;top:58.0%;animation-delay:-3.27s"></div>
+      <div class="blip" style="left:37.3%;top:84.8%;animation-delay:-2.13s"></div>
+      <div class="blip" style="left:24.9%;top:43.3%;animation-delay:-1.00s"></div>
+      <div class="blip" style="left:42.5%;top:37.0%;animation-delay:-0.40s"></div>
+    </div>
+    <div class="scopemeta">
+      <span>TARGETS <b>5</b></span>
+      <span>PRIMARY <b>DEEP RELAY</b></span>
+      <span>EL <b id="scope-el">37.4°</b></span>
+    </div>
+  </section>
+
+  <!-- ================= TRAJECTORY ================= -->
+  <section class="panel" id="traj" aria-label="Trajectory plot">
+    <div class="phead"><span>Trajectory — Ecliptic Projection</span><span class="pid">PNL-03 / NAV</span></div>
+    <svg viewBox="0 0 640 360" role="img" aria-label="Trajectory of DEEP RELAY from launch past the heliopause">
+      <defs>
+        <pattern id="gp" width="32" height="32" patternUnits="userSpaceOnUse">
+          <path d="M32 0H0V32" fill="none" stroke="rgba(42,52,66,.35)" stroke-width="1"/>
+        </pattern>
+      </defs>
+      <rect width="640" height="360" fill="url(#gp)"/>
+      <!-- orbits -->
+      <circle cx="70" cy="300" r="40" fill="none" stroke="#2A3442" stroke-width="1"/>
+      <circle cx="70" cy="300" r="72" fill="none" stroke="#2A3442" stroke-width="1"/>
+      <circle cx="70" cy="300" r="110" fill="none" stroke="#2A3442" stroke-width="1"/>
+      <circle cx="70" cy="300" r="150" fill="none" stroke="#2A3442" stroke-width="1"/>
+      <!-- heliopause -->
+      <circle cx="70" cy="300" r="300" fill="none" stroke="#FFB000" stroke-width="1" stroke-dasharray="2 8" opacity=".55"/>
+      <text class="svglabel amb" x="330" y="180">HELIOPAUSE ≈ 99 AU · CROSSED 2025-02-11</text>
+      <!-- sun -->
+      <circle cx="70" cy="300" r="5" fill="#FFB000"/>
+      <text class="svglabel amb" x="60" y="322">SOL</text>
+      <text class="svglabel" x="104" y="296">JUPITER</text>
+      <text class="svglabel" x="144" y="270">SATURN</text>
+      <text class="svglabel" x="182" y="243">URANUS</text>
+      <text class="svglabel" x="222" y="215">NEPTUNE</text>
+      <!-- flown path -->
+      <path id="flown" d="M70,300 C190,290 300,215 462,112" fill="none" stroke="#3DFF8C" stroke-width="1.5"/>
+      <!-- predicted path -->
+      <path id="pred" d="M462,112 C520,85 575,60 634,36" fill="none" stroke="#FFB000" stroke-width="1.2" stroke-dasharray="5 6"/>
+      <!-- markers -->
+      <circle cx="103" cy="293" r="3" fill="none" stroke="#3DFF8C"/>
+      <text class="svglabel grn" x="96" y="283">JGA 2005</text>
+      <circle cx="70" cy="300" r="2.5" fill="#3DFF8C"/>
+      <text class="svglabel grn" x="26" y="342">LAUNCH 2004-06-30</text>
+      <!-- probe -->
+      <g id="probe">
+        <circle cx="462" cy="112" r="4" fill="#3DFF8C"/>
+        <circle cx="462" cy="112" r="10" fill="none" stroke="#3DFF8C" opacity=".5" id="pulse"/>
+      </g>
+      <text class="svglabel grn" x="440" y="96">DEEP RELAY · NOW</text>
+      <text class="svglabel amb" x="520" y="26">→ VLISM CRUISE 2035+</text>
+      <circle id="ghost" r="2.5" fill="#FFB000"/>
+    </svg>
+  </section>
+
+  <!-- ================= COMMS ================= -->
+  <section class="panel" id="comms" aria-label="Communications">
+    <div class="phead"><span>Comms — Carrier</span><span class="pid">PNL-04 / COM</span></div>
+    <canvas id="wave" width="600" height="110" aria-label="Received carrier waveform"></canvas>
+    <div class="bars" id="bars" aria-label="Signal strength history"></div>
+    <div class="commsmeta">
+      <div>CARRIER POWER <b id="c-pwr">−158.3 dBm</b></div>
+      <div>SNR (SYMBOL) <b id="c-snr">4.7 dB</b></div>
+      <div>FRAME ERRORS (24 h) <b>0</b></div>
+      <div>NEXT PASS <b>DSS-14 GOLDSTONE 11:40 UTC</b></div>
+    </div>
+  </section>
+
+  <!-- ================= MISSION LOG ================= -->
+  <section class="panel" id="log" aria-label="Mission log">
+    <div class="phead"><span>Mission Log — Ops Notes</span><span class="pid">PNL-05 / LOG</span></div>
+    <div class="logbody" id="logbody"></div>
+  </section>
+
+  <!-- ================= ROSTER ================= -->
+  <section class="panel" id="roster" aria-label="Instruments and flight operations">
+    <div class="phead"><span>Payload &amp; Flight Ops</span><span class="pid">PNL-06 / OPS</span></div>
+    <div class="rosterduo">
+      <div>
+        <table>
+          <thead><tr><th>ID</th><th>Instrument</th><th>Function</th><th>Draw</th><th>Status</th></tr></thead>
+          <tbody>
+            <tr><td>MAG</td><td>Fluxgate Magnetometer</td><td>Interstellar B-field vector</td><td>2.2 W</td><td class="st on">● ON</td></tr>
+            <tr><td>PLS</td><td>Plasma Spectrometer</td><td>VLISM ion density / flow</td><td>4.1 W</td><td class="st on">● ON</td></tr>
+            <tr><td>CRS</td><td>Cosmic Ray Subsystem</td><td>GCR flux 3–500 MeV/nuc</td><td>5.4 W</td><td class="st on">● ON</td></tr>
+            <tr><td>IDA</td><td>Interstellar Dust Analyzer</td><td>Grain mass / composition</td><td>6.9 W</td><td class="st on">● ON</td></tr>
+            <tr><td>PWS</td><td>Plasma Wave Antenna</td><td>Electron density via emission</td><td>1.6 W</td><td class="st wr">● DUTY-CYCLED</td></tr>
+            <tr><td>UVS</td><td>UV Spectrograph</td><td>Heliospheric H Ly-α glow</td><td>—</td><td class="st off">○ OFF 2022 (power)</td></tr>
+          </tbody>
+        </table>
+        <p class="rsub">Flight operations — console shift C</p>
+        <table>
+          <thead><tr><th>Console</th><th>Position</th><th>Assignee</th><th>Loop</th></tr></thead>
+          <tbody>
+            <tr><td>FD-1</td><td>Flight Director</td><td>M. Okonkwo</td><td class="on">FLIGHT</td></tr>
+            <tr><td>ACE-2</td><td>Command &amp; Data Handling</td><td>R. Šimková</td><td class="on">ACE</td></tr>
+            <tr><td>NAV-1</td><td>Navigation / Ephemeris</td><td>D. Arrieta</td><td class="on">NAV</td></tr>
+            <tr><td>TEL-3</td><td>DSN Scheduling</td><td>K. Yamane</td><td class="on">TRACK</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </section>
+
+  <!-- ================= FOOTER ================= -->
+  <footer class="panel" aria-label="Footer">
+    <span>DEEP RELAY · DSEP-1 · a fictional deep-space mission — design study, no real telemetry</span>
+    <span>GROUND SEGMENT v4.2.1 · <span class="sig">SIGNAL IS EVERYTHING</span></span>
+    <span id="f-utc">—</span>
+  </footer>
+</main>
+
+<script>
+(function(){
+"use strict";
+var RM = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+var $ = function(id){ return document.getElementById(id); };
+
+/* corner brackets on every panel */
+document.querySelectorAll('.panel').forEach(function(p){
+  ['c1','c2','c3','c4'].forEach(function(c){
+    var b=document.createElement('b'); b.className='crn '+c; b.setAttribute('aria-hidden','true'); p.appendChild(b);
+  });
+});
+
+/* ---------- constants ---------- */
+var LAUNCH = Date.parse('2004-06-30T04:41:00Z');
+var T0 = Date.parse('2026-07-09T00:00:00Z');
+var D0 = 103.42171650;               /* AU at T0 */
+var VEL = 19.4327;                   /* km/s */
+var AU_KM = 149597870.7;
+var AU_PER_S = VEL/AU_KM;            /* ≈1.299e-7 AU/s */
+var LT_S_PER_AU = 499.00478;
+
+function pad(n){ return (n<10?'0':'')+n; }
+function hms(sec){
+  sec = Math.round(sec);
+  var h=Math.floor(sec/3600), m=Math.floor(sec%3600/60), s=sec%60;
+  return pad(h)+':'+pad(m)+':'+pad(s);
+}
+function utcStr(d){ return pad(d.getUTCHours())+':'+pad(d.getUTCMinutes())+':'+pad(d.getUTCSeconds())+' UTC'; }
+
+/* ---------- clocks ---------- */
+function tickClock(){
+  var now = new Date();
+  $('utc').textContent = utcStr(now);
+  $('f-utc').textContent = now.toISOString().slice(0,10)+' '+utcStr(now);
+  var days = Math.floor((now - LAUNCH)/86400000);
+  var rem  = Math.floor((now - LAUNCH)/1000)%86400;
+  $('met').textContent = 'DAY '+days+' · '+hms(rem);
+}
+tickClock();
+if(!RM) setInterval(tickClock,1000);
+
+/* ---------- telemetry drift ---------- */
+var vel=VEL, rtg=341.8, temp=12.6, elv=37.4, pwr=-158.3, snr=4.7;
+function walk(v,step,min,max){ v+=(Math.random()-.5)*step; return v<min?min:(v>max?max:v); }
+function updateTelemetry(){
+  var t = Date.now();
+  var dist = D0 + (t-T0)/1000*AU_PER_S;
+  vel  = walk(vel, .0008, VEL-.002, VEL+.002);
+  rtg  = walk(rtg, .06, 341.4, 342.2);
+  temp = walk(temp,.04, 12.3, 12.9);
+  elv  = walk(elv, .02, 37.2, 37.7);
+  pwr  = walk(pwr, .15, -159.4, -157.4);
+  snr  = walk(snr, .08, 4.2, 5.2);
+  $('v-vel').textContent  = vel.toFixed(4);
+  $('v-dist').textContent = dist.toFixed(8);
+  $('hdist').textContent  = dist.toFixed(4)+' AU';
+  var owlt = hms(dist*LT_S_PER_AU);
+  $('v-owlt').textContent = owlt;
+  $('howlt').textContent  = owlt;
+  $('v-rtg').textContent  = rtg.toFixed(1);
+  $('v-temp').textContent = (temp>=0?'+':'')+temp.toFixed(1);
+  $('scope-el').textContent = elv.toFixed(1)+'°';
+  $('c-pwr').textContent  = '−'+Math.abs(pwr).toFixed(1)+' dBm';
+  $('c-snr').textContent  = snr.toFixed(1)+' dB';
+}
+updateTelemetry();
+
+/* ---------- signal bars ---------- */
+var barsEl = $('bars'), barEls=[], NBARS=18;
+for(var i=0;i<NBARS;i++){ var b=document.createElement('i'); barsEl.appendChild(b); barEls.push(b); }
+var barVals = barEls.map(function(){ return 30+Math.random()*55; });
+function updateBars(){
+  barVals.push(walk(barVals[barVals.length-1],22,12,96)); barVals.shift();
+  for(var i=0;i<NBARS;i++){
+    barEls[i].style.height = barVals[i]+'%';
+    barEls[i].className = barVals[i]<30?'low':'';
+  }
+}
+updateBars();
+
+/* ---------- waveform ---------- */
+var cv = $('wave'), cx = cv.getContext('2d');
+function sizeCanvas(){
+  var r = cv.getBoundingClientRect(), dpr = window.devicePixelRatio||1;
+  cv.width = Math.round(r.width*dpr); cv.height = Math.round(110*dpr);
+  cx.setTransform(dpr,0,0,dpr,0,0);
+}
+sizeCanvas();
+window.addEventListener('resize',sizeCanvas);
+var phase=0;
+function drawWave(){
+  var w = cv.getBoundingClientRect().width, h=110, mid=h/2;
+  cx.clearRect(0,0,w,h);
+  /* midline */
+  cx.strokeStyle='rgba(42,52,66,.9)'; cx.beginPath(); cx.moveTo(0,mid); cx.lineTo(w,mid); cx.stroke();
+  /* ghost */
+  cx.strokeStyle='rgba(61,255,140,.25)'; cx.beginPath();
+  for(var x=0;x<=w;x+=2){
+    var y=mid+Math.sin(x*.05+phase*.7)*14*Math.sin(x*.008+phase*.3);
+    x===0?cx.moveTo(x,y):cx.lineTo(x,y);
+  }
+  cx.stroke();
+  /* carrier */
+  cx.strokeStyle='#FFB000'; cx.lineWidth=1.4; cx.beginPath();
+  for(x=0;x<=w;x+=2){
+    var env=Math.sin(x*.006+phase*.4)*.6+.9;
+    var yy=mid+(Math.sin(x*.09+phase)*13+(Math.random()-.5)*3)*env;
+    x===0?cx.moveTo(x,yy):cx.lineTo(x,yy);
+  }
+  cx.stroke(); cx.lineWidth=1;
+  phase+=.09;
+}
+drawWave();
+
+/* ---------- trajectory ghost dot ---------- */
+var flown=$('flown'), pred=$('pred'), ghost=$('ghost');
+var L1=flown.getTotalLength(), L2=pred.getTotalLength(), gp=0;
+function moveGhost(){
+  gp=(gp+.0016)%1;
+  var d=gp*(L1+L2), pt;
+  if(d<=L1) pt=flown.getPointAtLength(d);
+  else pt=pred.getPointAtLength(d-L1);
+  ghost.setAttribute('cx',pt.x); ghost.setAttribute('cy',pt.y);
+}
+moveGhost();
+
+/* ---------- probe pulse ---------- */
+var pulse=$('pulse'), pt0=0;
+function pulseProbe(t){
+  var k=(t/1600)%1;
+  pulse.setAttribute('r',4+k*12);
+  pulse.setAttribute('opacity',(1-k)*.55);
+}
+
+/* ---------- mission log ---------- */
+var LOG=[
+ {ts:'2026-07-09 04:12:44', tx:'DSS-43 lock acquired. Carrier −158.3 dBm, symbol SNR 4.7 dB. Telemetry frames nominal.'},
+ {ts:'2026-07-06 21:58:10', tx:'CRS weekly: galactic cosmic-ray flux +2.1% vs 30-day mean. Consistent with solar-cycle decline.'},
+ {ts:'2026-06-28 09:31:02', tx:'Thermal: TWTA-B within limits; heater duty cycle reduced 4% to bank RTG margin.'},
+ {ts:'2026-06-14 16:07:55', tx:'TCM-31 cancelled — trajectory dispersion 0.003° from reference. No propellant spent.'},
+ {ts:'2026-05-30 02:44:19', tx:'IDA event 4471: interstellar grain impact, est. mass 2.4e-14 kg, velocity 26 km/s.'},
+ {ts:'2025-02-11 11:02:36', tx:'HELIOPAUSE CROSSING CONFIRMED at 99.9 AU. Plasma density step ×28. We are interstellar.', hl:true}
+];
+var logBody=$('logbody');
+function renderLogStatic(){
+  LOG.forEach(function(e){
+    var d=document.createElement('div');
+    d.className='le'+(e.hl?' hl':'');
+    d.innerHTML='<span class="ts">['+e.ts+' UTC]</span> <span class="tx"></span>';
+    d.querySelector('.tx').textContent=e.tx;
+    logBody.appendChild(d);
+  });
+}
+function typeLog(i){
+  if(i>=LOG.length) return;
+  var e=LOG[i], d=document.createElement('div');
+  d.className='le'+(e.hl?' hl':'');
+  d.innerHTML='<span class="ts">['+e.ts+' UTC]</span> <span class="tx"></span><span class="cur"></span>';
+  logBody.appendChild(d);
+  var tx=d.querySelector('.tx'), cur=d.querySelector('.cur'), j=0;
+  (function step(){
+    if(j<=e.tx.length){ tx.textContent=e.tx.slice(0,j); j+=2; setTimeout(step,18); }
+    else { cur.remove(); setTimeout(function(){ typeLog(i+1); },260); }
+  })();
+}
+if(RM) renderLogStatic(); else setTimeout(function(){ typeLog(0); },2600);
+
+/* ---------- glitch flicker ---------- */
+function scheduleGlitch(){
+  setTimeout(function(){
+    var p=$('traj');
+    p.classList.add('glitch');
+    setTimeout(function(){ p.classList.remove('glitch'); scheduleGlitch(); },60);
+  }, 7000+Math.random()*8000);
+}
+
+/* ---------- master loop ---------- */
+var last=0;
+function loop(t){
+  if(t-last>120){ last=t; updateTelemetry(); updateBars(); drawWave(); moveGhost(); }
+  pulseProbe(t);
+  requestAnimationFrame(loop);
+}
+if(!RM){ requestAnimationFrame(loop); scheduleGlitch(); }
+})();
+</script>
+
+<!-- PASS 1: pending -->
+<!-- PASS 2: pending -->
+<!-- PASS 3: pending -->
+</body>
+</html>

@@ -1,0 +1,695 @@
+<!doctype html>
+<!--
+  FIELD NOTES - iteration log
+  PASS 1 (functionality): added no-JS fallback (html.js gating - without JS every sketch,
+    wash and annotation is fully visible instead of stuck at opacity 0); fixed cover
+    sticker text "LX->OPO" overflowing its 44px sticker rect (resized/centered, anchor
+    middle); cleaned conflicting inset+width rules on the back-link circle SVG.
+  PASS 2 (motion): stroke-draw stagger now measured per path via getTotalLength and the
+    whole choreography is compressed so no page takes longer than ~4s to finish (the
+    azulejo panel previously ran ~9s); IntersectionObserver retuned (threshold .16 +
+    rootMargin -7%) so tall mobile pages still trigger; h2 underline squiggles now draw
+    themselves in (pathLength=100 dash) instead of appearing statically; "Portugal" in
+    the cover title set in ink blue for a two-ink title.
+  PASS 3 (responsive + a11y): mobile annotations get smaller arrows and the figure gains
+    bottom margin so hanging notes stop colliding with prose/captions at 390px; washi
+    tape scaled down on small screens; prefers-reduced-motion block completed (underline
+    squiggles + beams were still animatable) - reduced motion now shows everything
+    pre-drawn with zero transitions and no pencil cursor trail.
+-->
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Field Notes — Portugal · a travel sketchbook</title>
+<meta name="description" content="Field notes from a month in Portugal — trams, tiles, lighthouses and too much coffee. An illustrated travel sketchbook.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Caveat:wght@400;600;700&family=Patrick+Hand&family=Lora:ital,wght@0,400;0,500;1,400&display=swap" rel="stylesheet">
+<meta name="theme-color" content="#ECE4D2">
+<script>document.documentElement.classList.add('js');</script>
+<style>
+:root{
+  --paper:#F8F4EA;
+  --desk:#ECE4D2;
+  --ink:#3A3733;
+  --blue:#2B4C7E;
+  --terra:#D97D54;
+  --olive:#8A9B6E;
+  --sky:#7FA8C9;
+}
+*{margin:0;padding:0;box-sizing:border-box}
+html{scroll-behavior:smooth}
+@media (prefers-reduced-motion: reduce){html{scroll-behavior:auto}}
+body{
+  background:var(--desk);
+  color:var(--ink);
+  font-family:"Lora",Georgia,serif;
+  font-size:17px;
+  line-height:1.72;
+  overflow-x:hidden;
+  cursor:default;
+}
+::selection{background:rgba(43,76,126,.22)}
+
+/* ---------- back link ---------- */
+.back{
+  position:fixed;top:18px;left:20px;z-index:60;
+  font-family:"Patrick Hand",cursive;font-size:19px;
+  color:var(--blue);text-decoration:none;
+  padding:8px 16px;display:inline-block;
+}
+.back svg{
+  position:absolute;top:-4px;left:-6px;width:calc(100% + 12px);height:calc(100% + 8px);
+  pointer-events:none;overflow:visible;
+}
+.back svg path{fill:none;stroke:var(--ink);stroke-width:1.6;stroke-linecap:round;opacity:.65;
+  transition:stroke .25s}
+.back:hover svg path{stroke:var(--terra);opacity:1}
+.back:focus-visible{outline:2px dashed var(--blue);outline-offset:3px}
+
+/* ---------- paper grain ---------- */
+.grain{position:fixed;inset:0;width:100%;height:100%;pointer-events:none;z-index:50;opacity:.5}
+
+/* ---------- pencil cursor trail ---------- */
+.pdot{
+  position:fixed;top:0;left:0;width:5px;height:5px;border-radius:50%;
+  background:rgba(58,55,51,.5);pointer-events:none;z-index:55;
+  opacity:0;transform:translate(-50%,-50%) scale(.4);
+}
+.pdot.on{animation:pfade .75s ease-out forwards}
+@keyframes pfade{
+  0%{opacity:.55;transform:translate(-50%,-50%) scale(1)}
+  100%{opacity:0;transform:translate(-50%,-50%) scale(.25)}
+}
+
+/* ---------- pages ---------- */
+.page{
+  padding:9vh 20px 10vh;
+  display:flex;justify-content:center;
+}
+.sheet{
+  position:relative;
+  width:100%;max-width:960px;
+  background:var(--paper);
+  padding:clamp(34px,6vw,70px) clamp(22px,5.5vw,72px) clamp(48px,7vw,84px);
+  box-shadow:0 2px 4px rgba(58,55,51,.10), 0 14px 34px rgba(58,55,51,.13);
+  border-radius:3px;
+  transform:rotate(-.45deg);
+}
+.page:nth-of-type(even) .sheet{transform:rotate(.55deg)}
+/* ruled notebook */
+.ruled .sheet{
+  background-image:
+    linear-gradient(90deg, transparent 52px, rgba(217,125,84,.28) 52px, rgba(217,125,84,.28) 53px, transparent 53px),
+    repeating-linear-gradient(transparent 0px, transparent 31px, rgba(43,76,126,.10) 31px, rgba(43,76,126,.10) 32px);
+}
+/* dotted notebook */
+.dotted .sheet{
+  background-image:radial-gradient(rgba(58,55,51,.13) 1.1px, transparent 1.35px);
+  background-size:26px 26px;
+  background-position:12px 14px;
+}
+/* page-corner curl shadow */
+.sheet::after{
+  content:"";position:absolute;right:0;bottom:0;width:58px;height:58px;
+  background:
+    linear-gradient(315deg,
+      var(--desk) 0%, var(--desk) 44%,
+      rgba(58,55,51,.20) 46%,
+      #efe9d7 50%, #faf7ee 66%, rgba(248,244,234,0) 78%);
+  border-radius:0 0 3px 0;
+  filter:drop-shadow(-3px -3px 4px rgba(58,55,51,.12));
+  pointer-events:none;
+}
+
+/* ---------- washi tape ---------- */
+.tape{
+  position:absolute;top:-15px;left:50%;
+  width:128px;height:34px;
+  transform:translateX(-50%) rotate(-2.5deg);
+  background:
+    repeating-linear-gradient(90deg, rgba(255,255,255,.14) 0 7px, transparent 7px 14px),
+    var(--tapec, rgba(217,125,84,.42));
+  clip-path:polygon(0% 8%, 4% 0%, 96% 3%, 100% 12%, 98% 88%, 100% 100%, 5% 96%, 0% 86%);
+  box-shadow:0 2px 4px rgba(58,55,51,.14);
+  opacity:.85;
+}
+.tape.t2{left:auto;right:8%;top:-13px;transform:rotate(3deg);width:104px}
+.tape.corner{left:-34px;top:26px;transform:rotate(-46deg);width:110px}
+
+/* ---------- typography ---------- */
+.kicker{
+  font-family:"Patrick Hand",cursive;
+  font-size:15px;letter-spacing:.22em;text-transform:uppercase;
+  color:var(--terra);
+  margin-bottom:10px;
+}
+h1{
+  font-family:"Caveat",cursive;font-weight:700;
+  font-size:clamp(56px,10vw,104px);
+  line-height:.98;color:var(--ink);
+  margin-bottom:14px;
+}
+h2{
+  font-family:"Caveat",cursive;font-weight:700;
+  font-size:clamp(38px,5.6vw,58px);
+  line-height:1.02;color:var(--ink);
+  margin-bottom:18px;
+}
+h2 .u{position:relative;white-space:nowrap}
+h2 .u svg{position:absolute;left:-2%;bottom:-10px;width:104%;height:16px;overflow:visible}
+h2 .u svg path{fill:none;stroke:var(--terra);stroke-width:2.4;stroke-linecap:round;opacity:.75}
+/* the underline squiggle draws itself in after the heading is reached */
+.js h2 .u svg path{stroke-dasharray:100;stroke-dashoffset:100;transition:stroke-dashoffset 1.1s ease .55s}
+.js .inview h2 .u svg path{stroke-dashoffset:0}
+h1 .pt{color:var(--blue)}
+.prose{max-width:60ch}
+.prose p{margin-bottom:1.15em}
+.prose p:last-child{margin-bottom:0}
+.prose em{color:var(--blue)}
+.lead{font-size:1.08em}
+.meta{
+  font-family:"Patrick Hand",cursive;font-size:16px;color:var(--blue);
+  display:flex;gap:18px;flex-wrap:wrap;margin-top:26px;opacity:.9;
+}
+.meta span::before{content:"— ";color:var(--terra)}
+
+/* ---------- figure & annotations ---------- */
+.fig{position:relative;margin:30px 0 8px}
+.fig svg.sketch{display:block;width:100%;height:auto;overflow:visible}
+.sketch .d{
+  fill:none;stroke:var(--ink);stroke-width:2.4;
+  stroke-linecap:round;stroke-linejoin:round;
+  transition-property:stroke-dashoffset;
+  transition-timing-function:cubic-bezier(.45,.05,.35,1);
+}
+/* initial hidden states only when JS is available — no-JS visitors see the finished sketchbook */
+.js .sketch .d{stroke-dasharray:1;stroke-dashoffset:1}
+.js .inview .sketch .d{stroke-dashoffset:0}
+.sketch .thin{stroke-width:1.6}
+.sketch .blueink{stroke:var(--blue)}
+.sketch .wash{transition:opacity 1.3s ease}
+.js .sketch .wash{opacity:0}
+.js .inview .sketch .wash{opacity:1}
+.sketch .beam{
+  fill:none;stroke:var(--terra);stroke-width:2;stroke-linecap:round;
+  stroke-dasharray:3 9;opacity:.8;transition:opacity 1.2s ease;
+}
+.js .sketch .beam{opacity:0}
+.js .inview .sketch .beam{opacity:.8}
+.sketch text{font-family:"Caveat",cursive;fill:var(--blue)}
+.sketch .fadein{transition:opacity 1s ease}
+.js .sketch .fadein{opacity:0}
+.js .inview .sketch .fadein{opacity:1}
+
+.anno{
+  position:absolute;
+  font-family:"Caveat",cursive;font-size:clamp(17px,2.4vw,23px);
+  font-weight:600;color:var(--blue);line-height:1.15;
+  max-width:180px;
+  transform:rotate(var(--r,-3deg));
+  transition:opacity .9s ease, transform .9s ease;
+}
+.js .anno{opacity:0;transform:rotate(var(--r,-3deg)) translateY(8px)}
+.js .inview .anno{opacity:1;transform:rotate(var(--r,-3deg)) translateY(0)}
+.anno.terra{color:var(--terra)}
+.anno .arrow{display:block;width:56px;height:34px;overflow:visible}
+.anno .arrow path{fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round}
+.caption{
+  font-family:"Patrick Hand",cursive;font-size:15.5px;color:rgba(58,55,51,.7);
+  margin-top:14px;text-align:center;
+}
+
+/* page tab */
+.tab{
+  position:absolute;top:22px;right:-13px;
+  font-family:"Patrick Hand",cursive;font-size:14.5px;
+  color:var(--paper);
+  background:var(--blue);
+  padding:5px 14px 5px 12px;border-radius:3px 3px 3px 0;
+  transform:rotate(1.5deg);
+  box-shadow:0 2px 5px rgba(58,55,51,.22);
+  letter-spacing:.05em;
+}
+.page:nth-of-type(3) .tab{background:var(--terra)}
+.page:nth-of-type(4) .tab{background:var(--olive)}
+.page:nth-of-type(5) .tab{background:var(--sky)}
+
+/* stamp on cover */
+.stamp{
+  position:absolute;top:34px;right:clamp(18px,5vw,58px);
+  width:108px;height:108px;border:2px solid rgba(217,125,84,.65);
+  border-radius:50%;
+  display:flex;align-items:center;justify-content:center;text-align:center;
+  font-family:"Patrick Hand",cursive;font-size:13px;line-height:1.25;
+  color:rgba(217,125,84,.85);text-transform:uppercase;letter-spacing:.12em;
+  transform:rotate(11deg);
+  mask-image:radial-gradient(circle at 35% 60%, black 60%, rgba(0,0,0,.55) 78%, black 92%);
+  -webkit-mask-image:radial-gradient(circle at 35% 60%, black 60%, rgba(0,0,0,.55) 78%, black 92%);
+}
+.stamp::before{content:"";position:absolute;inset:7px;border:1.5px dashed rgba(217,125,84,.55);border-radius:50%}
+
+/* cover & closing layout */
+.cover .sheet, .closing .sheet{text-align:center}
+.cover .fig, .closing .fig{max-width:520px;margin-left:auto;margin-right:auto}
+.cover .prose, .closing .prose{margin:0 auto}
+.cover .meta{justify-content:center}
+.duo{display:grid;grid-template-columns:1.15fr .9fr;gap:clamp(24px,4vw,52px);align-items:center}
+.duo.flip{grid-template-columns:.9fr 1.15fr}
+.duo.flip .fig{order:2}
+
+.sign{
+  font-family:"Caveat",cursive;font-size:30px;color:var(--ink);
+  margin-top:30px;transform:rotate(-2deg);display:inline-block;
+}
+.footnote{
+  font-family:"Patrick Hand",cursive;font-size:14px;color:rgba(58,55,51,.55);
+  text-align:center;padding:0 20px 60px;
+}
+.footnote a{color:var(--blue)}
+
+/* ---------- responsive ---------- */
+@media (max-width:760px){
+  .duo,.duo.flip{grid-template-columns:1fr}
+  .duo.flip .fig{order:0}
+  .anno{max-width:132px;font-size:16px}
+  .anno .arrow{width:40px;height:26px}
+  .fig{margin:38px 0 42px}   /* room for annotations that hang below the drawing */
+  .tab{right:auto;left:-9px;border-radius:3px 3px 0 3px;transform:rotate(-1.5deg)}
+  .stamp{width:84px;height:84px;font-size:11px;top:20px;right:14px}
+  .page{padding:6vh 12px 7vh}
+  .tape{width:104px;height:30px}
+  body{font-size:16px}
+}
+
+/* ---------- reduced motion ---------- */
+@media (prefers-reduced-motion: reduce){
+  .sketch .d{stroke-dashoffset:0 !important;transition:none !important}
+  .sketch .wash,.sketch .fadein{opacity:1 !important;transition:none !important}
+  .sketch .beam{opacity:.8 !important;transition:none !important}
+  h2 .u svg path{stroke-dashoffset:0 !important;transition:none !important}
+  .anno{opacity:1 !important;transform:rotate(var(--r,-3deg)) !important;transition:none !important}
+  .pdot{display:none !important}
+}
+</style>
+</head>
+<body>
+
+<a class="back" href="/">&#8592;&nbsp;25
+  <svg viewBox="0 0 100 44" aria-hidden="true" preserveAspectRatio="none">
+    <path d="M52,3 C82,2 96,10 95,22 C94,37 72,42 46,41 C20,40 4,33 5,20 C6,8 28,3 58,4"/>
+  </svg>
+</a>
+
+<svg class="grain" aria-hidden="true">
+  <filter id="grainf"><feTurbulence type="fractalNoise" baseFrequency="0.82" numOctaves="2" stitchTiles="stitch"/><feColorMatrix values="0 0 0 0 0.23  0 0 0 0 0.21  0 0 0 0 0.19  0 0 0 0.05 0"/></filter>
+  <rect width="100%" height="100%" filter="url(#grainf)"/>
+</svg>
+
+<!-- ================= COVER ================= -->
+<header class="page cover ruled">
+  <div class="sheet">
+    <div class="tape" style="--tapec:rgba(217,125,84,.42)"></div>
+    <div class="tape corner" style="--tapec:rgba(127,168,201,.42)"></div>
+    <div class="stamp">correio<br>aéreo<br>· 2026 ·</div>
+    <p class="kicker">a travel sketchbook</p>
+    <h1>Field Notes<br><span class="pt">&mdash;&nbsp;Portugal</span></h1>
+    <div class="fig" id="fig-cover">
+      <svg class="sketch" viewBox="0 0 460 330" role="img" aria-label="Line drawing of a battered travel suitcase with a luggage tag, under a dashed flight route">
+        <ellipse class="wash" cx="230" cy="235" rx="150" ry="62" fill="#D97D54" opacity="0"/>
+        <ellipse class="wash" cx="330" cy="120" rx="90" ry="46" fill="#7FA8C9" opacity="0"/>
+        <!-- dashed route + plane -->
+        <path class="beam" d="M28,84 C130,18 320,26 420,74"/>
+        <path class="d thin" pathLength="1" d="M408,64 l22,9 -20,7 5,-8 z"/>
+        <!-- suitcase -->
+        <path class="d" pathLength="1" d="M124,148 C122,140 128,134 138,134 L322,134 C332,134 340,140 338,148 L336,272 C336,282 328,288 318,288 L142,288 C132,288 126,282 126,272 Z"/>
+        <path class="d" pathLength="1" d="M196,134 C196,110 202,102 230,102 C258,102 264,110 264,134"/>
+        <path class="d thin" pathLength="1" d="M170,134 L168,288"/>
+        <path class="d thin" pathLength="1" d="M292,134 L294,288"/>
+        <path class="d thin" pathLength="1" d="M126,208 L336,208"/>
+        <rect class="d thin" pathLength="1" x="180" y="200" width="18" height="16" rx="3"/>
+        <rect class="d thin" pathLength="1" x="264" y="200" width="18" height="16" rx="3"/>
+        <!-- stickers -->
+        <circle class="d thin blueink" pathLength="1" cx="222" cy="176" r="19"/>
+        <path class="d thin blueink" pathLength="1" d="M210,176 C216,168 228,168 234,176 C228,184 216,184 210,176 Z"/>
+        <rect class="d thin" pathLength="1" x="236" y="230" width="44" height="30" rx="4" transform="rotate(-7 258 245)"/>
+        <!-- tag -->
+        <path class="d thin" pathLength="1" d="M262,120 C286,140 306,158 316,178"/>
+        <path class="d thin" pathLength="1" d="M310,178 L354,170 L360,192 L318,200 Z"/>
+        <circle class="d thin" pathLength="1" cx="322" cy="186" r="3.5"/>
+        <!-- ground squiggle -->
+        <path class="d thin" pathLength="1" d="M96,296 C160,290 300,302 372,294"/>
+        <text class="fadein" x="258" y="250" font-size="14" transform="rotate(-7 258 245)" text-anchor="middle">LX &#8594; OPO</text>
+      </svg>
+      <div class="anno" style="left:0;top:38%;--r:-5deg">everything I owned<br>for a month
+        <svg class="arrow" viewBox="0 0 56 34"><path d="M4,4 C18,20 30,12 46,26 M46,26 l-11,-1 M46,26 l-2,-10"/></svg>
+      </div>
+      <div class="anno terra" style="right:0;top:6%;--r:4deg">the plan, roughly
+        <svg class="arrow" viewBox="0 0 56 34" style="transform:scaleX(-1)"><path d="M4,4 C18,20 30,12 46,26 M46,26 l-11,-1 M46,26 l-2,-10"/></svg>
+      </div>
+    </div>
+    <div class="prose lead">
+      <p>Thirty-one days, one pen that leaked over Spain, and a paper habit I couldn&rsquo;t shake. What follows are the pages that survived — drawn standing up on trams, on harbour walls, on café tables I held far longer than one <em>bica</em> justifies.</p>
+    </div>
+    <div class="meta">
+      <span>April&nbsp;&ndash;&nbsp;May</span>
+      <span>Lisboa &middot; Porto &middot; the coast</span>
+      <span>ink, coffee, salt</span>
+    </div>
+  </div>
+</header>
+
+<!-- ================= PAGE 1 · TRAM ================= -->
+<section class="page dotted">
+  <div class="sheet">
+    <div class="tape" style="--tapec:rgba(138,155,110,.42)"></div>
+    <span class="tab">p.1 &middot; Lisboa</span>
+    <div class="duo">
+      <div class="fig" id="fig-tram">
+        <svg class="sketch" viewBox="0 0 440 340" role="img" aria-label="Line drawing of Lisbon tram 28 with overhead cable and rails">
+          <ellipse class="wash" cx="222" cy="210" rx="150" ry="78" fill="#D97D54" opacity="0"/>
+          <ellipse class="wash" cx="220" cy="308" rx="180" ry="18" fill="#8A9B6E" opacity="0"/>
+          <!-- cable -->
+          <path class="d thin" pathLength="1" d="M12,36 C120,46 320,28 430,40"/>
+          <!-- pantograph -->
+          <path class="d thin" pathLength="1" d="M220,116 L196,58 M220,116 L244,58 M192,58 C204,50 236,50 248,58"/>
+          <!-- destination box -->
+          <rect class="d thin" pathLength="1" x="188" y="92" width="64" height="20" rx="4"/>
+          <!-- roof + body -->
+          <path class="d" pathLength="1" d="M94,132 C130,106 310,106 346,132"/>
+          <path class="d" pathLength="1" d="M94,132 L88,252 C88,264 96,270 108,270 L332,270 C344,270 352,264 352,252 L346,132"/>
+          <path class="d thin" pathLength="1" d="M90,206 L350,206"/>
+          <!-- windows + door -->
+          <rect class="d thin" pathLength="1" x="112" y="146" width="50" height="50" rx="6"/>
+          <rect class="d thin" pathLength="1" x="178" y="146" width="50" height="50" rx="6"/>
+          <rect class="d thin" pathLength="1" x="244" y="146" width="50" height="50" rx="6"/>
+          <rect class="d thin" pathLength="1" x="308" y="146" width="30" height="118" rx="5"/>
+          <!-- skirt + wheels -->
+          <path class="d thin" pathLength="1" d="M118,270 C136,286 158,286 176,270 M262,270 C280,286 302,286 320,270"/>
+          <circle class="d thin" pathLength="1" cx="147" cy="274" r="14"/>
+          <circle class="d thin" pathLength="1" cx="291" cy="274" r="14"/>
+          <!-- rails -->
+          <path class="d thin" pathLength="1" d="M10,308 C150,300 300,314 430,306"/>
+          <path class="d thin" pathLength="1" d="M22,322 C160,316 296,326 424,318"/>
+          <text class="fadein" x="220" y="107" font-size="17" text-anchor="middle">28 &middot; Gra&ccedil;a</text>
+        </svg>
+        <div class="anno" style="right:-2%;top:-6%;--r:5deg">brakes sing in<br>E&nbsp;minor, roughly
+          <svg class="arrow" viewBox="0 0 56 34" style="transform:scaleX(-1)"><path d="M4,4 C18,20 30,12 46,26 M46,26 l-11,-1 M46,26 l-2,-10"/></svg>
+        </div>
+        <div class="anno terra" style="left:-2%;bottom:14%;--r:-4deg">wood polished by<br>sixty years of hands</div>
+      </div>
+      <div>
+        <p class="kicker">page one &middot; Lisboa</p>
+        <h2>The 28 climbs <span class="u">Gra&ccedil;a<svg viewBox="0 0 100 12" preserveAspectRatio="none"><path pathLength="100" d="M2,8 C25,3 50,10 75,5 C85,3 95,7 98,6"/></svg></span></h2>
+        <div class="prose">
+          <p>You don&rsquo;t ride the 28 so much as get adopted by it. It grinds up out of Baixa with its whole wooden body complaining, takes the corner at S&eacute; close enough to the walls that you could pass a postcard through a window, and everyone aboard leans as one congregation.</p>
+          <p>I drew this standing up, elbow hooked round a brass pole, and the line wobbles exactly where the track does. I&rsquo;ve decided that&rsquo;s not an error — that&rsquo;s <em>documentation</em>.</p>
+        </div>
+        <div class="meta"><span>Tuesday, early</span><span>ticket: 3,10&nbsp;&euro;</span></div>
+      </div>
+    </div>
+    <p class="caption">fig. 1 — electrico 28, drawn between Martim Moniz and the cemetery loop</p>
+  </div>
+</section>
+
+<!-- ================= PAGE 2 · AZULEJOS ================= -->
+<section class="page ruled">
+  <div class="sheet">
+    <div class="tape" style="--tapec:rgba(127,168,201,.45)"></div>
+    <div class="tape t2" style="--tapec:rgba(217,125,84,.4)"></div>
+    <span class="tab">p.2 &middot; Porto</span>
+    <div class="duo flip">
+      <div class="fig" id="fig-tiles">
+        <svg class="sketch" viewBox="0 0 440 340" role="img" aria-label="Line drawing of a Porto facade: a panel of patterned azulejo tiles beside an arched window with an iron balcony">
+          <ellipse class="wash" cx="150" cy="165" rx="130" ry="120" fill="#7FA8C9" opacity="0"/>
+          <ellipse class="wash" cx="356" cy="180" rx="70" ry="90" fill="#D97D54" opacity="0"/>
+          <!-- tile panel frame + grid -->
+          <rect class="d" pathLength="1" x="28" y="40" width="252" height="252"/>
+          <path class="d thin" pathLength="1" d="M112,40 L112,292 M196,40 L196,292"/>
+          <path class="d thin" pathLength="1" d="M28,124 L280,124 M28,208 L280,208"/>
+          <!-- motifs: petal / diamond / petal ... -->
+          <path class="d thin blueink" pathLength="1" d="M70,60 Q84,82 70,104 Q56,82 70,60 M48,82 Q70,96 92,82 Q70,68 48,82"/>
+          <path class="d thin blueink" pathLength="1" d="M154,62 L174,82 L154,102 L134,82 Z"/>
+          <circle class="d thin blueink" pathLength="1" cx="154" cy="82" r="4"/>
+          <path class="d thin blueink" pathLength="1" d="M238,60 Q252,82 238,104 Q224,82 238,60 M216,82 Q238,96 260,82 Q238,68 216,82"/>
+          <path class="d thin blueink" pathLength="1" d="M70,146 L90,166 L70,186 L50,166 Z"/>
+          <circle class="d thin blueink" pathLength="1" cx="154" cy="166" r="18"/>
+          <path class="d thin blueink" pathLength="1" d="M154,152 L154,180 M140,166 L168,166"/>
+          <path class="d thin blueink" pathLength="1" d="M238,146 L258,166 L238,186 L218,166 Z"/>
+          <path class="d thin blueink" pathLength="1" d="M70,228 Q84,250 70,272 Q56,250 70,228 M48,250 Q70,264 92,250 Q70,236 48,250"/>
+          <path class="d thin blueink" pathLength="1" d="M154,230 L174,250 L154,270 L134,250 Z"/>
+          <circle class="d thin blueink" pathLength="1" cx="154" cy="250" r="4"/>
+          <path class="d thin blueink" pathLength="1" d="M238,228 Q252,250 238,272 Q224,250 238,228 M216,250 Q238,264 260,250 Q238,236 216,250"/>
+          <!-- window -->
+          <path class="d" pathLength="1" d="M310,252 L310,112 C310,68 404,68 404,112 L404,252"/>
+          <path class="d thin" pathLength="1" d="M357,80 L357,252 M312,160 L402,160"/>
+          <path class="d thin" pathLength="1" d="M300,252 L414,252"/>
+          <!-- balcony -->
+          <path class="d thin" pathLength="1" d="M296,260 L418,260 M296,300 L418,300"/>
+          <path class="d thin" pathLength="1" d="M310,260 C305,274 315,286 310,300 M340,260 C335,274 345,286 340,300 M372,260 C367,274 377,286 372,300 M402,260 C397,274 407,286 402,300"/>
+        </svg>
+        <div class="anno" style="left:2%;top:-9%;--r:-4deg">no two blues agree —<br>counted eleven
+          <svg class="arrow" viewBox="0 0 56 34"><path d="M4,4 C18,20 30,12 46,26 M46,26 l-11,-1 M46,26 l-2,-10"/></svg>
+        </div>
+        <div class="anno terra" style="right:-3%;bottom:-4%;--r:3deg">iron balcony:<br>mandatory
+          <svg class="arrow" viewBox="0 0 56 34" style="transform:scale(-1)"><path d="M4,4 C18,20 30,12 46,26 M46,26 l-11,-1 M46,26 l-2,-10"/></svg>
+        </div>
+      </div>
+      <div>
+        <p class="kicker">page two &middot; Porto</p>
+        <h2>Blue <span class="u">arithmetic<svg viewBox="0 0 100 12" preserveAspectRatio="none"><path pathLength="100" d="M2,8 C25,3 50,10 75,5 C85,3 95,7 98,6"/></svg></span></h2>
+        <div class="prose">
+          <p>Porto keeps its accounting on its walls. Every fa&ccedil;ade is a ledger of squares — glazed, hand-painted, faded unevenly so the pattern shimmers like water when you walk past. I stood across from a house on Rua das Flores and tried to copy one panel honestly.</p>
+          <p>Somewhere around the ninth tile the pattern stopped repeating and started <em>breathing</em>. The tilers left small deliberate errors, an old habit. I left several accidental ones, a new habit.</p>
+        </div>
+        <div class="meta"><span>Thursday, drizzle</span><span>pen nearly out</span></div>
+      </div>
+    </div>
+    <p class="caption">fig. 2 — fa&ccedil;ade study, Rua das Flores; balcony ironwork abbreviated out of respect</p>
+  </div>
+</section>
+
+<!-- ================= PAGE 3 · LIGHTHOUSE ================= -->
+<section class="page dotted">
+  <div class="sheet">
+    <div class="tape" style="--tapec:rgba(217,125,84,.42)"></div>
+    <span class="tab">p.3 &middot; the coast</span>
+    <div class="duo">
+      <div class="fig" id="fig-light">
+        <svg class="sketch" viewBox="0 0 440 340" role="img" aria-label="Line drawing of a striped lighthouse on rocks above Atlantic waves, gulls overhead">
+          <ellipse class="wash" cx="220" cy="80" rx="190" ry="60" fill="#7FA8C9" opacity="0"/>
+          <ellipse class="wash" cx="220" cy="292" rx="190" ry="34" fill="#7FA8C9" opacity="0"/>
+          <ellipse class="wash" cx="222" cy="252" rx="110" ry="26" fill="#8A9B6E" opacity="0"/>
+          <ellipse class="wash" cx="220" cy="170" rx="46" ry="80" fill="#D97D54" opacity="0"/>
+          <!-- beams -->
+          <path class="beam" d="M258,52 L330,26 M258,64 L338,66 M182,52 L110,26 M182,64 L102,66"/>
+          <!-- lamp room + dome -->
+          <path class="d" pathLength="1" d="M198,86 L198,56 L242,56 L242,86"/>
+          <path class="d" pathLength="1" d="M194,56 C200,32 240,32 246,56"/>
+          <path class="d thin" pathLength="1" d="M220,34 L220,20 M212,26 C216,20 224,20 228,26"/>
+          <path class="d thin" pathLength="1" d="M210,56 L210,86 M230,56 L230,86"/>
+          <!-- gallery -->
+          <path class="d" pathLength="1" d="M188,86 L252,86 M192,96 L248,96 M196,86 L196,96 M220,86 L220,96 M244,86 L244,96"/>
+          <!-- tower -->
+          <path class="d" pathLength="1" d="M198,96 L176,252 M242,96 L264,252"/>
+          <path class="d thin" pathLength="1" d="M192,138 C208,144 232,144 248,138 M187,178 C209,185 231,185 253,178 M181,218 C209,226 231,226 259,218"/>
+          <!-- door -->
+          <path class="d thin" pathLength="1" d="M208,252 L208,224 C208,214 232,214 232,224 L232,252"/>
+          <!-- rocks -->
+          <path class="d" pathLength="1" d="M112,262 C136,244 168,258 190,252 C216,246 238,258 262,250 C286,244 310,258 330,252"/>
+          <path class="d thin" pathLength="1" d="M124,262 C150,284 190,270 222,282 C258,270 292,284 322,264"/>
+          <!-- waves -->
+          <path class="d thin blueink" pathLength="1" d="M18,300 Q33,288 48,300 T78,300 T108,300 M330,302 Q345,290 360,302 T390,302 T420,302"/>
+          <path class="d thin blueink" pathLength="1" d="M52,320 Q67,308 82,320 T112,320 M300,322 Q315,310 330,322 T360,322"/>
+          <!-- gulls -->
+          <path class="d thin" pathLength="1" d="M84,72 q9,-11 18,0 q9,-11 18,0 M330,96 q8,-10 16,0 q8,-10 16,0"/>
+        </svg>
+        <div class="anno" style="left:-2%;top:16%;--r:-4deg">wind: rude
+          <svg class="arrow" viewBox="0 0 56 34"><path d="M4,4 C18,20 30,12 46,26 M46,26 l-11,-1 M46,26 l-2,-10"/></svg>
+        </div>
+        <div class="anno terra" style="right:-2%;bottom:6%;--r:4deg">keeper&rsquo;s cat<br>declined to pose</div>
+      </div>
+      <div>
+        <p class="kicker">page three &middot; the coast</p>
+        <h2>Where the land <span class="u">runs out<svg viewBox="0 0 100 12" preserveAspectRatio="none"><path pathLength="100" d="M2,8 C25,3 50,10 75,5 C85,3 95,7 98,6"/></svg></span></h2>
+        <div class="prose">
+          <p>Past Cascais the road narrows, the pines lean inland like commuters, and then the continent simply stops. The lighthouse stands there doing the one job Europe still needs done by hand at this address: telling the Atlantic where the furniture is.</p>
+          <p>I anchored the sketchbook with a rock and my left knee. Every page after this one carries a faint salt crust, which I recommend as a fixative — cheap, atmospheric, slightly corrosive, like the coast itself.</p>
+        </div>
+        <div class="meta"><span>Saturday, gale</span><span>hat: lost at sea</span></div>
+      </div>
+    </div>
+    <p class="caption">fig. 3 — farol above the rocks; gulls rendered at actual attitude</p>
+  </div>
+</section>
+
+<!-- ================= PAGE 4 · CAFÉ ================= -->
+<section class="page ruled">
+  <div class="sheet">
+    <div class="tape" style="--tapec:rgba(138,155,110,.45)"></div>
+    <div class="tape t2" style="--tapec:rgba(127,168,201,.4)"></div>
+    <span class="tab">p.4 &middot; caf&eacute;</span>
+    <div class="duo flip">
+      <div class="fig" id="fig-cafe">
+        <svg class="sketch" viewBox="0 0 440 340" role="img" aria-label="Line drawing of a café table: espresso cup with steam, a pastel de nata on a plate, a sardine, and a fork">
+          <ellipse class="wash" cx="196" cy="226" rx="86" ry="46" fill="#7FA8C9" opacity="0"/>
+          <ellipse class="wash" cx="338" cy="240" rx="78" ry="34" fill="#D97D54" opacity="0"/>
+          <ellipse class="wash" cx="104" cy="150" rx="72" ry="30" fill="#8A9B6E" opacity="0"/>
+          <!-- table edge -->
+          <path class="d" pathLength="1" d="M14,304 C140,294 320,310 428,300"/>
+          <!-- cup -->
+          <path class="d" pathLength="1" d="M152,192 L158,238 C160,250 176,256 196,256 C216,256 232,250 234,238 L240,192"/>
+          <ellipse class="d thin" pathLength="1" cx="196" cy="192" rx="44" ry="10"/>
+          <path class="d" pathLength="1" d="M240,202 C264,198 264,230 236,232"/>
+          <path class="d thin" pathLength="1" d="M120,262 C150,254 242,254 272,262 C240,272 152,272 120,262"/>
+          <!-- steam -->
+          <path class="d thin" pathLength="1" d="M182,172 C174,154 192,146 184,126 M210,172 C218,154 200,146 208,126"/>
+          <!-- pastel de nata -->
+          <ellipse class="d thin" pathLength="1" cx="342" cy="252" rx="58" ry="12"/>
+          <path class="d" pathLength="1" d="M312,246 C306,224 320,208 342,208 C364,208 378,224 372,246"/>
+          <path class="d thin" pathLength="1" d="M312,246 q7,6 14,0 q7,6 15,0 q7,6 15,0 q8,6 16,0"/>
+          <path class="d thin" pathLength="1" d="M330,226 c8,-8 20,-4 18,6 c-2,9 -16,9 -18,0"/>
+          <!-- sardine on paper -->
+          <path class="d thin" pathLength="1" d="M40,168 L172,160 L176,132 L46,140 Z"/>
+          <path class="d" pathLength="1" d="M64,150 C92,132 132,132 152,148 C132,164 92,166 64,150 Z"/>
+          <path class="d thin" pathLength="1" d="M64,150 L46,138 M64,150 L48,162 M138,142 C136,150 136,152 138,158"/>
+          <circle class="d thin" pathLength="1" cx="142" cy="146" r="2.4"/>
+          <!-- fork -->
+          <path class="d thin" pathLength="1" d="M404,214 L404,286 M396,214 L396,232 M412,214 L412,232 M396,232 C396,242 412,242 412,232"/>
+        </svg>
+        <div class="anno" style="left:0;top:-10%;--r:-4deg">lunch, second breakfast,<br>or both
+          <svg class="arrow" viewBox="0 0 56 34"><path d="M4,4 C18,20 30,12 46,26 M46,26 l-11,-1 M46,26 l-2,-10"/></svg>
+        </div>
+        <div class="anno terra" style="right:-2%;top:26%;--r:4deg">flaky in 47 layers —<br>counted 9, gave up</div>
+        <div class="anno" style="right:6%;bottom:-9%;--r:-2deg">fork did nothing;<br>drawn for balance</div>
+      </div>
+      <div>
+        <p class="kicker">page four &middot; still life</p>
+        <h2>A table held <span class="u">all afternoon<svg viewBox="0 0 100 12" preserveAspectRatio="none"><path pathLength="100" d="M2,8 C25,3 50,10 75,5 C85,3 95,7 98,6"/></svg></span></h2>
+        <div class="prose">
+          <p>The waiter and I reached an understanding by the second day: I would order a <em>bica</em> every ninety minutes, and he would pretend the table was not needed. The espresso arrives already half-drunk, it&rsquo;s that small. The pastel de nata arrives already half-gone, that&rsquo;s on me.</p>
+          <p>A grilled sardine on brown paper completed the composition. It watched me draw it with the flat scepticism of a fish that has seen many tourists and outlasted none of them.</p>
+        </div>
+        <div class="meta"><span>Sunday, no plans</span><span>bicas: n&ordm; 3 of 5</span></div>
+      </div>
+    </div>
+    <p class="caption">fig. 4 — still life with espresso, nata, sardine; crumbs omitted for clarity</p>
+  </div>
+</section>
+
+<!-- ================= CLOSING ================= -->
+<footer class="page closing dotted">
+  <div class="sheet">
+    <div class="tape" style="--tapec:rgba(127,168,201,.45)"></div>
+    <span class="tab">fim</span>
+    <p class="kicker">closing page</p>
+    <h2>Sent home, <span class="u">eventually<svg viewBox="0 0 100 12" preserveAspectRatio="none"><path pathLength="100" d="M2,8 C25,3 50,10 75,5 C85,3 95,7 98,6"/></svg></span></h2>
+    <div class="fig" id="fig-close">
+      <svg class="sketch" viewBox="0 0 440 250" role="img" aria-label="Line drawing of a stamped envelope with a wavy postmark">
+        <ellipse class="wash" cx="220" cy="140" rx="130" ry="60" fill="#8A9B6E" opacity="0"/>
+        <ellipse class="wash" cx="300" cy="90" rx="60" ry="36" fill="#D97D54" opacity="0"/>
+        <rect class="d" pathLength="1" x="130" y="70" width="180" height="118" rx="4"/>
+        <path class="d thin" pathLength="1" d="M132,74 L220,148 L308,74"/>
+        <!-- stamp -->
+        <rect class="d thin" pathLength="1" x="270" y="82" width="28" height="34" rx="2"/>
+        <path class="d thin blueink" pathLength="1" d="M276,106 C280,92 290,92 292,102 M278,98 L292,96"/>
+        <!-- postmark -->
+        <circle class="d thin" pathLength="1" cx="248" cy="102" r="17"/>
+        <path class="d thin" pathLength="1" d="M204,96 q8,-6 16,0 q8,-6 14,0 M204,108 q8,-6 16,0 q8,-6 14,0"/>
+        <!-- address lines -->
+        <path class="d thin blueink" pathLength="1" d="M158,150 C186,146 214,152 240,148 M158,164 C182,160 204,166 226,162"/>
+        <text class="fadein" x="220" y="228" font-size="24" text-anchor="middle">at&eacute; j&aacute; &mdash; the sea keeps the rest</text>
+      </svg>
+      <div class="anno terra" style="left:2%;top:4%;--r:-4deg">real stamps still exist.<br>this thrilled me
+        <svg class="arrow" viewBox="0 0 56 34"><path d="M4,4 C18,20 30,12 46,26 M46,26 l-11,-1 M46,26 l-2,-10"/></svg>
+      </div>
+    </div>
+    <div class="prose">
+      <p>I posted the loose pages to myself from a yellow box near the harbour, because a sketchbook that travels home separately gets one more story than you do. They arrived two weeks after I did, smelling faintly of somewhere better.</p>
+      <p>If these notes make you buy a pen before a plane ticket, they&rsquo;ve done their job in the right order.</p>
+    </div>
+    <span class="sign">— drawn en route, mended at home</span>
+  </div>
+</footer>
+
+<p class="footnote">Field Notes &middot; page 22 of 25 &middot; every line above is hand-plotted SVG — no photographs were harmed &middot; <a href="/">back to the shelf</a></p>
+
+<script>
+(function(){
+  var reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+  /* ---- self-drawing sketches: measure paths, assign stagger ---- */
+  if(!reduce){
+    document.querySelectorAll('svg.sketch').forEach(function(svg){
+      /* measure every stroke, stagger them, then compress the whole
+         performance so no page takes longer than ~4s to draw itself */
+      var items = [], t = 0.15;
+      svg.querySelectorAll('.d').forEach(function(p){
+        var len = 120;
+        try{ len = p.getTotalLength(); }catch(e){}
+        var dur = Math.min(1.9, 0.35 + len/340);
+        items.push({el:p, dur:dur, delay:t});
+        t += dur * 0.5;
+      });
+      var scale = t > 4 ? 4/t : 1;
+      t *= scale;
+      items.forEach(function(it){
+        it.el.style.transitionDuration = (it.dur*scale).toFixed(2)+'s';
+        it.el.style.transitionDelay = (it.delay*scale).toFixed(2)+'s';
+      });
+      /* washes + beams + labels arrive after the linework */
+      svg.querySelectorAll('.wash').forEach(function(w,i){
+        w.style.transitionDelay = (t*0.55 + i*0.3).toFixed(2)+'s';
+      });
+      svg.querySelectorAll('.beam,.fadein').forEach(function(b){
+        b.style.transitionDelay = (t*0.8).toFixed(2)+'s';
+      });
+      var fig = svg.closest('.fig');
+      if(fig){
+        fig.querySelectorAll('.anno').forEach(function(a,i){
+          a.style.transitionDelay = (t*0.7 + i*0.35).toFixed(2)+'s';
+        });
+      }
+    });
+  }
+
+  /* ---- reveal on scroll ---- */
+  var io = new IntersectionObserver(function(entries){
+    entries.forEach(function(e){
+      if(e.isIntersecting){
+        e.target.classList.add('inview');
+        io.unobserve(e.target);
+      }
+    });
+  },{threshold:0.16, rootMargin:'0px 0px -7% 0px'});
+  document.querySelectorAll('.page').forEach(function(p){ io.observe(p); });
+
+  /* ---- pencil cursor trail ---- */
+  if(!reduce && window.matchMedia('(pointer: fine)').matches){
+    var POOL = 26, dots = [], idx = 0, lx = -99, ly = -99;
+    for(var i=0;i<POOL;i++){
+      var d = document.createElement('span');
+      d.className = 'pdot';
+      d.setAttribute('aria-hidden','true');
+      document.body.appendChild(d);
+      dots.push(d);
+    }
+    window.addEventListener('pointermove', function(ev){
+      var dx = ev.clientX - lx, dy = ev.clientY - ly;
+      if(dx*dx + dy*dy < 196) return;   /* 14px spacing */
+      lx = ev.clientX; ly = ev.clientY;
+      var d = dots[idx = (idx+1) % POOL];
+      var s = 3 + Math.random()*3;
+      d.style.width = d.style.height = s+'px';
+      d.style.left = (ev.clientX + (Math.random()*4-2))+'px';
+      d.style.top  = (ev.clientY + (Math.random()*4-2))+'px';
+      d.classList.remove('on');
+      void d.offsetWidth;
+      d.classList.add('on');
+    }, {passive:true});
+  }
+})();
+</script>
+</body>
+</html>

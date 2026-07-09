@@ -1,0 +1,777 @@
+<!doctype html>
+<!--
+  PASS 1 (structural): fixed reduced-motion regenerate calling renderAll twice (double render of all
+  four canvases); regenerating while a canvas was offscreen used to leave the retired seed's art on
+  the wall until re-scrolled - already-rendered pieces now redraw immediately; canvases given
+  role="img" + per-work generated aria-labels (title + medium), seed tag made aria-live; regenerate
+  busy-lock (500ms) released before the ~1.2s animated redraw finished - retimed to 620ms fade + 900ms lock.
+  PASS 2 (art quality): flow field given a 5.5% composition margin (particles spawn/respawn inside it,
+  so strokes stop cleanly before the mat instead of bleeding to the edge), steps 110->150, alpha
+  .085->.065, stroke .7->.85 for silkier density; colour-field subdivision was too coarse (20% min-size
+  guard could yield 2 washed rects) - guard 14%, depth 5, split prob .85-d*.15, layer alpha .10->.15 for
+  fuller pigment; concentric wobble amplitude raised (.006-.036 of radius) so "hand-unsteady" reads;
+  orbital softening 900->640 + tighter velocity cap for coiled knots, alpha .07->.088, steps 190;
+  spotlight cooled (.95->.72, narrower ellipse); crossfade .45s->.6s with 12px settle drift.
+  PASS 3 (polish): per-work "Acquire" microinteraction - classic gallery red sold-dot springs in beside
+  the numeral, plaque line becomes a certificate (seed + roman numeral), acquisitions dismantled on
+  regenerate; keyboard R regenerates from anywhere (with kbd hint under the button); frames lift 5px
+  with deepened shadow on hover (motion-safe); footer completed with seed + generator, anchor to
+  "About the machine"; all hover/fade motion gated behind prefers-reduced-motion.
+-->
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>SEED — A Generative Exhibition, Edition of One</title>
+<meta name="description" content="SEED is a generative-art gallery where every visit mints a unique exhibition of four algorithmic works. No two visits alike.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Libre+Caslon+Text:ital,wght@0,400;0,700;1,400&family=Space+Grotesk:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --wall:#F5F5F2;
+    --ink:#1C1C1C;
+    --ink-soft:rgba(28,28,28,.62);
+    --ink-faint:rgba(28,28,28,.34);
+    --hair:rgba(28,28,28,.14);
+    --serif:'Libre Caslon Text', Georgia, serif;
+    --grot:'Space Grotesk', 'Helvetica Neue', sans-serif;
+  }
+  *{margin:0;padding:0;box-sizing:border-box}
+  html{scroll-behavior:smooth}
+  @media (prefers-reduced-motion: reduce){ html{scroll-behavior:auto} }
+  body{
+    background:var(--wall);
+    color:var(--ink);
+    font-family:var(--serif);
+    line-height:1.6;
+    -webkit-font-smoothing:antialiased;
+    overflow-x:hidden;
+  }
+  ::selection{background:var(--ink);color:var(--wall)}
+
+  /* ---------- fixed chrome ---------- */
+  .back{
+    position:fixed;top:22px;left:24px;z-index:50;
+    font-family:var(--grot);font-size:12px;font-weight:400;
+    letter-spacing:.14em;text-decoration:none;color:var(--ink-soft);
+    padding:6px 10px;border:1px solid transparent;border-radius:2px;
+    transition:color .25s ease, border-color .25s ease, background .25s ease;
+    background:rgba(245,245,242,.7);backdrop-filter:blur(6px);
+  }
+  .back:hover{color:var(--ink);border-color:var(--hair)}
+  .seed-tag{
+    position:fixed;top:24px;right:26px;z-index:50;
+    font-family:var(--grot);font-size:11px;letter-spacing:.18em;
+    color:var(--ink-soft);text-transform:uppercase;text-align:right;
+    background:rgba(245,245,242,.7);backdrop-filter:blur(6px);
+    padding:5px 8px;border-radius:2px;
+    transition:opacity .4s ease;
+  }
+  .seed-tag b{font-weight:500;color:var(--ink)}
+
+  /* ---------- hero ---------- */
+  .hero{
+    min-height:92vh;
+    display:flex;flex-direction:column;justify-content:center;align-items:center;
+    text-align:center;padding:120px 24px 80px;position:relative;
+  }
+  .hero::after{
+    content:'';position:absolute;left:50%;bottom:34px;width:1px;height:56px;
+    background:linear-gradient(to bottom, var(--ink-faint), transparent);
+  }
+  .eyebrow{
+    font-family:var(--grot);font-size:11px;letter-spacing:.34em;
+    text-transform:uppercase;color:var(--ink-soft);margin-bottom:36px;
+  }
+  .hero h1{
+    font-weight:400;letter-spacing:.16em;
+    font-size:clamp(64px, 14vw, 176px);
+    line-height:.95;text-indent:.16em;
+  }
+  .hero .lead{
+    max-width:560px;margin-top:44px;
+    font-size:clamp(16px,1.6vw,19px);color:var(--ink-soft);
+    font-style:italic;
+  }
+  .hero .materials{
+    margin-top:30px;font-family:var(--grot);font-size:11.5px;
+    letter-spacing:.16em;text-transform:uppercase;color:var(--ink-faint);
+  }
+  .hero .materials b{color:var(--ink-soft);font-weight:500}
+
+  /* ---------- gallery ---------- */
+  .gallery{
+    max-width:1180px;margin:0 auto;padding:8vh 32px 4vh;
+    transition:opacity .6s ease, transform .6s ease;
+  }
+  .gallery.is-fading{opacity:0;transform:translateY(12px)}
+  @media (prefers-reduced-motion: reduce){
+    .gallery{transition:opacity .6s ease}
+    .gallery.is-fading{transform:none}
+  }
+  .work{
+    position:relative;
+    margin:0 0 clamp(110px, 16vh, 190px);
+  }
+  .work:nth-child(1){width:min(720px,100%)}
+  .work:nth-child(2){width:min(560px,88%);margin-left:auto}
+  .work:nth-child(3){width:min(520px,82%);margin-left:auto;margin-right:auto}
+  .work:nth-child(4){width:min(760px,100%)}
+  /* spotlight */
+  .work::before{
+    content:'';position:absolute;left:50%;top:-140px;
+    transform:translateX(-50%);
+    width:150%;height:380px;pointer-events:none;z-index:0;
+    background:radial-gradient(ellipse 40% 48% at 50% 0%, rgba(255,251,238,.72), rgba(255,251,238,0) 68%);
+  }
+  .frame{
+    position:relative;z-index:1;
+    background:#FDFDFB;
+    padding:clamp(14px,2.4vw,26px);
+    border:1px solid rgba(28,28,28,.85);
+    box-shadow:
+      0 1px 0 rgba(28,28,28,.9),
+      0 22px 44px -18px rgba(28,28,28,.28),
+      0 60px 90px -50px rgba(28,28,28,.22);
+    transition:transform .5s cubic-bezier(.22,1,.36,1), box-shadow .5s ease;
+  }
+  .work:hover .frame{
+    transform:translateY(-5px);
+    box-shadow:
+      0 1px 0 rgba(28,28,28,.9),
+      0 30px 56px -20px rgba(28,28,28,.33),
+      0 82px 112px -54px rgba(28,28,28,.26);
+  }
+  @media (prefers-reduced-motion: reduce){
+    .frame{transition:none}
+    .work:hover .frame{transform:none}
+  }
+  .frame canvas{display:block;width:100%;height:auto;background:#EFEDE6}
+  .label{
+    position:relative;z-index:1;
+    margin-top:26px;max-width:340px;
+    padding-top:14px;border-top:1px solid var(--hair);
+  }
+  .work:nth-child(2) .label{margin-left:auto;text-align:right}
+  .label .num{
+    font-family:var(--grot);font-size:10px;letter-spacing:.3em;
+    color:var(--ink-faint);text-transform:uppercase;display:block;margin-bottom:8px;
+  }
+  .label .title{font-style:italic;font-size:18px;line-height:1.35}
+  .label .title span{font-style:normal;font-size:13px;color:var(--ink-soft)}
+  .label .algo{
+    font-family:var(--grot);font-size:11px;letter-spacing:.14em;
+    text-transform:uppercase;color:var(--ink-soft);margin-top:7px;
+  }
+  .label .medium{font-size:12.5px;color:var(--ink-soft);margin-top:6px;line-height:1.55}
+  .label .dims{
+    font-family:var(--grot);font-size:10.5px;letter-spacing:.06em;
+    color:var(--ink-faint);margin-top:6px;
+  }
+  /* acquire — the red-dot ritual */
+  .label .dot{
+    display:inline-block;width:7px;height:7px;border-radius:50%;
+    background:#B33A2B;margin-left:7px;vertical-align:1px;
+    opacity:0;transform:scale(.3);
+    transition:opacity .35s ease, transform .45s cubic-bezier(.34,1.56,.64,1);
+  }
+  .work.sold .dot{opacity:1;transform:scale(1)}
+  .label .acquire{
+    margin-top:13px;display:inline-block;
+    font-family:var(--grot);font-size:10.5px;letter-spacing:.22em;
+    text-transform:uppercase;color:var(--ink-soft);
+    background:none;border:none;border-bottom:1px solid var(--hair);
+    padding:0 0 3px;cursor:pointer;
+    transition:color .25s ease, border-color .25s ease;
+  }
+  .label .acquire:hover{color:var(--ink);border-color:var(--ink)}
+  .work.sold .acquire{
+    font-family:var(--serif);font-style:italic;font-size:12.5px;
+    text-transform:none;letter-spacing:.02em;
+    color:var(--ink-soft);border-color:transparent;cursor:default;
+  }
+
+  /* ---------- about ---------- */
+  .about{
+    max-width:640px;margin:0 auto;padding:10vh 28px 6vh;
+  }
+  .about h2{
+    font-weight:400;font-size:clamp(26px,3.4vw,38px);letter-spacing:.02em;
+    margin-bottom:34px;
+  }
+  .about h2 em{font-style:italic}
+  .about p{margin-bottom:22px;color:rgba(28,28,28,.82);font-size:16.5px}
+  .about .fig{
+    margin:40px 0;padding:22px 26px;border-left:2px solid var(--ink);
+    font-family:var(--grot);font-size:13px;line-height:2;letter-spacing:.02em;
+    color:var(--ink-soft);
+  }
+  .about .fig b{color:var(--ink);font-weight:500}
+
+  /* ---------- regenerate ---------- */
+  .regen{
+    text-align:center;padding:8vh 24px 12vh;
+  }
+  .regen .warn{
+    font-family:var(--grot);font-size:11px;letter-spacing:.26em;
+    text-transform:uppercase;color:var(--ink-faint);margin-bottom:26px;
+  }
+  .regen button{
+    font-family:var(--grot);font-size:13px;font-weight:500;
+    letter-spacing:.24em;text-transform:uppercase;
+    color:var(--wall);background:var(--ink);
+    border:1px solid var(--ink);border-radius:0;
+    padding:20px 46px;cursor:pointer;
+    transition:background .3s ease, color .3s ease, letter-spacing .3s ease;
+  }
+  .regen button:hover{background:transparent;color:var(--ink);letter-spacing:.3em}
+  .regen button:active{transform:translateY(1px)}
+  .regen .aftermath{
+    margin-top:22px;font-style:italic;font-size:14px;color:var(--ink-soft);
+  }
+  .regen .hint{
+    margin-top:14px;font-family:var(--grot);font-size:10.5px;
+    letter-spacing:.18em;text-transform:uppercase;color:var(--ink-faint);
+  }
+  .regen .hint kbd{
+    font-family:inherit;border:1px solid var(--hair);border-radius:2px;
+    padding:2px 6px 1px;color:var(--ink-soft);
+  }
+
+  /* ---------- footer ---------- */
+  footer{
+    border-top:1px solid var(--hair);
+    padding:44px 32px 54px;
+    display:flex;justify-content:space-between;gap:18px;flex-wrap:wrap;
+    font-family:var(--grot);font-size:11px;letter-spacing:.14em;
+    text-transform:uppercase;color:var(--ink-faint);
+  }
+  footer a{color:var(--ink-soft);text-decoration:none}
+  footer a:hover{color:var(--ink)}
+
+  @media (max-width:640px){
+    .gallery{padding:6vh 20px 2vh}
+    .work:nth-child(2),.work:nth-child(3){width:100%}
+    .work:nth-child(2) .label{margin-left:0;text-align:left}
+    .seed-tag{top:auto;bottom:18px;right:16px}
+    .back{top:14px;left:14px}
+    .hero{min-height:86vh;padding-top:90px}
+  }
+</style>
+</head>
+<body>
+
+<a class="back" href="/">&larr;&nbsp;25</a>
+<div class="seed-tag" id="seedTag" aria-live="polite">Seed <b id="seedVal">—</b></div>
+
+<header class="hero">
+  <p class="eyebrow">A Generative Gallery &middot; Edition of One</p>
+  <h1>SEED</h1>
+  <p class="lead">Four works, composed the instant you arrived. The artist is a number. When you leave, the exhibition is dismantled — permanently.</p>
+  <p class="materials">This visit&rsquo;s materials — palette <b id="palName">…</b> &middot; seed <b id="seedInline">…</b></p>
+</header>
+
+<main class="gallery" id="gallery">
+
+  <figure class="work">
+    <div class="frame"><canvas id="cv0" style="aspect-ratio:4/5"></canvas></div>
+    <figcaption class="label">
+      <span class="num">I / IV<i class="dot" aria-hidden="true"></i></span>
+      <div class="title" id="t0">—</div>
+      <div class="algo">Flow Field Study</div>
+      <div class="medium" id="m0"></div>
+      <div class="dims" id="d0"></div>
+      <button class="acquire" type="button">Acquire</button>
+    </figcaption>
+  </figure>
+
+  <figure class="work">
+    <div class="frame"><canvas id="cv1" style="aspect-ratio:5/6"></canvas></div>
+    <figcaption class="label">
+      <span class="num">II / IV<i class="dot" aria-hidden="true"></i></span>
+      <div class="title" id="t1">—</div>
+      <div class="algo">Recursive Colour Fields</div>
+      <div class="medium" id="m1"></div>
+      <div class="dims" id="d1"></div>
+      <button class="acquire" type="button">Acquire</button>
+    </figcaption>
+  </figure>
+
+  <figure class="work">
+    <div class="frame"><canvas id="cv2" style="aspect-ratio:1/1"></canvas></div>
+    <figcaption class="label">
+      <span class="num">III / IV<i class="dot" aria-hidden="true"></i></span>
+      <div class="title" id="t2">—</div>
+      <div class="algo">Concentric Meditation</div>
+      <div class="medium" id="m2"></div>
+      <div class="dims" id="d2"></div>
+      <button class="acquire" type="button">Acquire</button>
+    </figcaption>
+  </figure>
+
+  <figure class="work">
+    <div class="frame"><canvas id="cv3" style="aspect-ratio:8/5"></canvas></div>
+    <figcaption class="label">
+      <span class="num">IV / IV<i class="dot" aria-hidden="true"></i></span>
+      <div class="title" id="t3">—</div>
+      <div class="algo">Orbital Scatter</div>
+      <div class="medium" id="m3"></div>
+      <div class="dims" id="d3"></div>
+      <button class="acquire" type="button">Acquire</button>
+    </figcaption>
+  </figure>
+
+</main>
+
+<section class="about" id="about">
+  <h2>About the <em>machine</em></h2>
+  <p>There is no artist in this building. There is a pseudo-random number generator called mulberry32 — thirty-two bits of state, a handful of multiplications — and four algorithms that spend those numbers the way a painter spends attention.</p>
+  <p>When you opened this page, the clock handed the machine a seed. Every decision that followed — the tilt of a vector field, where a colour field splits, how far a circle is allowed to wobble — was that one number, unfolded. Reload with the same seed and you would get the same four works, brushstroke for brushstroke. You won&rsquo;t get the same seed. Nobody will.</p>
+  <p>We are aware of how galleries usually talk: <em>liminal, interrogates, praxis.</em> We&rsquo;ll spare you. These works don&rsquo;t interrogate anything. They are arithmetic wearing good light, and the wall text is honest about it. Whether arithmetic in good light counts as art is your problem now, which is roughly how art has always worked.</p>
+  <div class="fig">
+    <b>Colophon.</b><br>
+    Generator — mulberry32, seeded from your arrival time<br>
+    Surface — HTML canvas, zero images, zero libraries<br>
+    Decisions spent on this exhibition — <b id="decisions">…</b><br>
+    Provenance — yours, briefly
+  </div>
+  <p>Below, you may dismantle this exhibition yourself and commission the next one. The machine holds no grudge. The machine holds nothing at all.</p>
+</section>
+
+<section class="regen">
+  <p class="warn">The current seed will be retired &middot; this cannot be undone</p>
+  <button id="regen" type="button">Regenerate Exhibition</button>
+  <p class="aftermath" id="aftermath">Every visit mints one. No two alike.</p>
+  <p class="hint">or press <kbd>R</kbd> anywhere on the wall</p>
+</section>
+
+<footer>
+  <span>SEED &middot; MMXXVI</span>
+  <span>Seed <b id="seedFoot">—</b> &middot; mulberry32</span>
+  <span>Nothing here existed a moment ago</span>
+  <a href="#about">About the machine</a>
+  <a href="/">&larr; Back to 25</a>
+</footer>
+
+<script>
+(function(){
+  'use strict';
+
+  /* ---------- seeded randomness ---------- */
+  function mulberry32(a){
+    return function(){
+      a |= 0; a = a + 0x6D2B79F5 | 0;
+      var t = Math.imul(a ^ a >>> 15, 1 | a);
+      t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t;
+      return ((t ^ t >>> 14) >>> 0) / 4294967296;
+    };
+  }
+  var decisions = 0;
+  function counted(f){ return function(){ decisions++; return f(); }; }
+
+  var SEED = (Date.now() ^ (Math.random() * 0xFFFFFFFF)) >>> 0;
+  var reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  var DPR = Math.min(window.devicePixelRatio || 1, 2);
+
+  /* ---------- curated palettes ---------- */
+  var PALETTES = [
+    { name:'Ink & Vermillion', paper:'#F2EFE7', colors:['#22211F','#C6431F','#C99A2C','#8A8578'] },
+    { name:'Dusk',             paper:'#EDEFF2', colors:['#22304A','#41639B','#7E98BF','#B4552F'] },
+    { name:'Terracotta & Teal',paper:'#F3ECDF', colors:['#B85C38','#D9A87E','#39676B','#2A2724'] },
+    { name:'Moss & Ochre',     paper:'#F0EFE4', colors:['#4A5A38','#8B9A63','#C7A345','#33312B'] },
+    { name:'Plum & Ash',       paper:'#F1EDEE', colors:['#573652','#96677F','#A9A4AC','#8C3B45'] }
+  ];
+
+  /* ---------- titles ---------- */
+  var ADJ = ['Quiet','Borrowed','Provisional','Patient','Oblique','Restless','Minor','Tender',
+             'Stubborn','Late','Slow','Feral','Second','Gentle','Distant','Formal'];
+  var NOUN = ['Arithmetic','Light','Weather','Geometry','Cartography','Frequency','Silence',
+              'Orbit','Season','Argument','Testimony','Machinery','Horizon','Vocabulary','Interval','Current'];
+
+  function shuffled(arr, R){
+    var a = arr.slice();
+    for (var i = a.length - 1; i > 0; i--){
+      var j = Math.floor(R() * (i + 1));
+      var t = a[i]; a[i] = a[j]; a[j] = t;
+    }
+    return a;
+  }
+
+  /* ---------- algorithms ----------
+     Each returns { steps, tick() } — tick advances one increment.
+     Everything derives from R (seeded); nothing from Math.random. */
+
+  function flowField(ctx, w, h, R, pal){
+    ctx.fillStyle = pal.paper; ctx.fillRect(0, 0, w, h);
+    var sc1 = (0.7 + R() * 1.9) * Math.PI * 2 / w;
+    var sc2 = (0.7 + R() * 1.9) * Math.PI * 2 / h;
+    var o1 = R() * Math.PI * 2, o2 = R() * Math.PI * 2;
+    var swirl = 1.6 + R() * 2.2, drift = R() * Math.PI * 2;
+    var cols = pal.colors;
+    var mg = Math.min(w, h) * 0.055; // clean margin — the field stops before the mat
+    var groups = cols.map(function(c){ return { c:c, pts:[] }; });
+    var N = 2000;
+    function spawn(){ return { x: mg + R() * (w - 2 * mg), y: mg + R() * (h - 2 * mg) }; }
+    for (var i = 0; i < N; i++){
+      var gi = Math.min(cols.length - 1, Math.floor(Math.pow(R(), 1.7) * cols.length));
+      groups[gi].pts.push(spawn());
+    }
+    ctx.lineWidth = 0.85; ctx.lineCap = 'round';
+    var step = 0, steps = 150, speed = 1.35;
+    function ang(x, y){
+      return Math.sin(x * sc1 + o1) * Math.cos(y * sc2 + o2) * Math.PI * swirl + drift;
+    }
+    return { steps: steps, tick: function(){
+      step++;
+      for (var g = 0; g < groups.length; g++){
+        var grp = groups[g];
+        ctx.strokeStyle = grp.c;
+        ctx.globalAlpha = 0.065;
+        ctx.beginPath();
+        for (var k = 0; k < grp.pts.length; k++){
+          var p = grp.pts[k];
+          var a = ang(p.x, p.y);
+          var nx = p.x + Math.cos(a) * speed, ny = p.y + Math.sin(a) * speed;
+          ctx.moveTo(p.x, p.y); ctx.lineTo(nx, ny);
+          p.x = nx; p.y = ny;
+          if (p.x < mg || p.x > w - mg || p.y < mg || p.y > h - mg){
+            var np = spawn(); p.x = np.x; p.y = np.y;
+          }
+        }
+        ctx.stroke();
+      }
+      ctx.globalAlpha = 1;
+    }};
+  }
+
+  function colourFields(ctx, w, h, R, pal){
+    ctx.fillStyle = pal.paper; ctx.fillRect(0, 0, w, h);
+    var m = Math.min(w, h) * 0.07;
+    var gap = Math.max(3, Math.min(w, h) * 0.012);
+    var leaves = [];
+    (function split(x, y, ww, hh, d){
+      var prob = d === 0 ? 1 : (d >= 5 ? 0 : 0.85 - d * 0.15);
+      if (R() < prob && ww > w * 0.14 && hh > h * 0.14){
+        var t = 0.34 + R() * 0.32;
+        if (ww / hh > 0.9 ? R() < 0.7 : R() < 0.3){
+          split(x, y, ww * t, hh, d + 1); split(x + ww * t, y, ww * (1 - t), hh, d + 1);
+        } else {
+          split(x, y, ww, hh * t, d + 1); split(x, y + hh * t, ww, hh * (1 - t), d + 1);
+        }
+      } else {
+        leaves.push({ x:x, y:y, w:ww, h:hh });
+      }
+    })(m, m, w - 2 * m, h - 2 * m, 0);
+    // colours: avoid immediate repeats
+    var prev = -1;
+    for (var i = 0; i < leaves.length; i++){
+      var ci = Math.floor(R() * pal.colors.length);
+      if (ci === prev) ci = (ci + 1) % pal.colors.length;
+      prev = ci;
+      leaves[i].c = pal.colors[ci];
+    }
+    var idx = 0;
+    var feather = Math.min(w, h) * 0.02;
+    return { steps: leaves.length, tick: function(){
+      if (idx >= leaves.length) return;
+      var L = leaves[idx++];
+      var passes = 14;
+      ctx.fillStyle = L.c;
+      for (var p = 0; p < passes; p++){
+        ctx.globalAlpha = 0.15;
+        var f = feather * (1 - p / passes);
+        var jx = (R() - 0.5) * f, jy = (R() - 0.5) * f;
+        ctx.fillRect(L.x + gap + jx + f * 0.5,
+                     L.y + gap + jy + f * 0.5,
+                     L.w - 2 * gap - f,
+                     L.h - 2 * gap - f);
+      }
+      ctx.globalAlpha = 1;
+    }};
+  }
+
+  function concentric(ctx, w, h, R, pal){
+    ctx.fillStyle = pal.paper; ctx.fillRect(0, 0, w, h);
+    var cx = w * (0.5 + (R() - 0.5) * 0.08);
+    var cy = h * (0.5 + (R() - 0.5) * 0.08);
+    var maxR = Math.min(w, h) * 0.44;
+    var n = 44 + Math.floor(R() * 20);
+    var rings = [];
+    for (var i = 0; i < n; i++){
+      var base = maxR * Math.pow((i + 1) / n, 0.92);
+      var harm = [];
+      for (var k = 0; k < 3; k++){
+        harm.push({
+          k: 2 + Math.floor(R() * 6),
+          A: base * (0.006 + R() * 0.03),
+          ph: R() * Math.PI * 2
+        });
+      }
+      rings.push({
+        base: base, harm: harm,
+        c: pal.colors[Math.floor(Math.pow(R(), 1.4) * pal.colors.length)],
+        wdt: 0.8 + R() * 1.5,
+        al: 0.5 + R() * 0.4
+      });
+    }
+    var idx = 0;
+    return { steps: Math.ceil(n / 2), tick: function(){
+      for (var d = 0; d < 2 && idx < rings.length; d++, idx++){
+        var r = rings[idx];
+        ctx.strokeStyle = r.c; ctx.globalAlpha = r.al; ctx.lineWidth = r.wdt;
+        ctx.beginPath();
+        var first = true;
+        for (var t = 0; t <= Math.PI * 2 + 0.02; t += 0.02){
+          var rad = r.base;
+          for (var q = 0; q < r.harm.length; q++){
+            var hh = r.harm[q];
+            rad += hh.A * Math.sin(hh.k * t + hh.ph);
+          }
+          var x = cx + Math.cos(t) * rad, y = cy + Math.sin(t) * rad;
+          if (first){ ctx.moveTo(x, y); first = false; } else ctx.lineTo(x, y);
+        }
+        ctx.stroke();
+      }
+      ctx.globalAlpha = 1;
+    }};
+  }
+
+  function orbital(ctx, w, h, R, pal){
+    ctx.fillStyle = pal.paper; ctx.fillRect(0, 0, w, h);
+    var A = 2 + Math.floor(R() * 2);
+    var ats = [];
+    for (var i = 0; i < A; i++){
+      ats.push({ x: w * (0.25 + R() * 0.5), y: h * (0.25 + R() * 0.5), g: 60 + R() * 120 });
+    }
+    var N = 300;
+    var cols = pal.colors;
+    var groups = cols.map(function(c){ return { c:c, pts:[] }; });
+    for (var j = 0; j < N; j++){
+      var x = R() * w, y = R() * h;
+      // start with tangential velocity around nearest attractor
+      var na = ats[0], nd = 1e9;
+      for (var q = 0; q < ats.length; q++){
+        var dd = (ats[q].x - x) * (ats[q].x - x) + (ats[q].y - y) * (ats[q].y - y);
+        if (dd < nd){ nd = dd; na = ats[q]; }
+      }
+      var dx = na.x - x, dy = na.y - y, dl = Math.sqrt(dx * dx + dy * dy) || 1;
+      var sp = 0.8 + R() * 1.2;
+      var gi = Math.min(cols.length - 1, Math.floor(Math.pow(R(), 1.6) * cols.length));
+      groups[gi].pts.push({ x:x, y:y, vx: -dy / dl * sp, vy: dx / dl * sp });
+    }
+    ctx.lineWidth = 0.8; ctx.lineCap = 'round';
+    var step = 0, steps = 190;
+    return { steps: steps, tick: function(){
+      step++;
+      for (var g = 0; g < groups.length; g++){
+        var grp = groups[g];
+        ctx.strokeStyle = grp.c; ctx.globalAlpha = 0.088;
+        ctx.beginPath();
+        for (var k = 0; k < grp.pts.length; k++){
+          var p = grp.pts[k];
+          var ax = 0, ay = 0;
+          for (var q2 = 0; q2 < ats.length; q2++){
+            var at = ats[q2];
+            var ddx = at.x - p.x, ddy = at.y - p.y;
+            var d2 = ddx * ddx + ddy * ddy + 640;
+            var f = at.g / d2, dl2 = Math.sqrt(d2);
+            ax += ddx / dl2 * f; ay += ddy / dl2 * f;
+          }
+          p.vx = (p.vx + ax) * 0.995; p.vy = (p.vy + ay) * 0.995;
+          var spd = Math.sqrt(p.vx * p.vx + p.vy * p.vy);
+          if (spd > 2.4){ p.vx = p.vx / spd * 2.4; p.vy = p.vy / spd * 2.4; }
+          var nx = p.x + p.vx, ny = p.y + p.vy;
+          ctx.moveTo(p.x, p.y); ctx.lineTo(nx, ny);
+          p.x = nx; p.y = ny;
+        }
+        ctx.stroke();
+      }
+      ctx.globalAlpha = 1;
+    }};
+  }
+
+  /* ---------- pieces ---------- */
+  var PIECES = [
+    { cv:'cv0', t:'t0', m:'m0', d:'d0', algo: flowField,
+      medium: function(pal){ return 'Two thousand particles tracing a seeded vector field · palette “' + pal.name + '”'; } },
+    { cv:'cv1', t:'t1', m:'m1', d:'d1', algo: colourFields,
+      medium: function(pal){ return 'Recursive subdivision, soft-edged colour · palette “' + pal.name + '”'; } },
+    { cv:'cv2', t:'t2', m:'m2', d:'d2', algo: concentric,
+      medium: function(pal){ return 'Polar wobble lines, hand-unsteady by design · palette “' + pal.name + '”'; } },
+    { cv:'cv3', t:'t3', m:'m3', d:'d3', algo: orbital,
+      medium: function(pal){ return 'Three hundred bodies orbiting hidden attractors · palette “' + pal.name + '”'; } }
+  ];
+  PIECES.forEach(function(p, i){
+    p.el = document.getElementById(p.cv);
+    p.index = i;
+    p.pending = true;
+    p.inView = false;
+    p.raf = 0;
+  });
+
+  var pal = null;
+
+  function pieceRng(i){
+    return counted(mulberry32((SEED ^ ((i + 1) * 0x9E3779B9)) >>> 0));
+  }
+
+  function sizeCanvas(p){
+    var cv = p.el;
+    var rect = cv.getBoundingClientRect();
+    var cssW = Math.max(1, Math.round(rect.width));
+    var cssH = Math.max(1, Math.round(rect.height));
+    cv.width = Math.round(cssW * DPR);
+    cv.height = Math.round(cssH * DPR);
+    var ctx = cv.getContext('2d');
+    ctx.setTransform(DPR, 0, 0, DPR, 0, 0);
+    document.getElementById(p.d).textContent =
+      cv.width + ' × ' + cv.height + ' px · dimensions variable';
+    return { ctx: ctx, w: cssW, h: cssH };
+  }
+
+  function renderPiece(p, animated){
+    if (p.raf) { cancelAnimationFrame(p.raf); p.raf = 0; }
+    p.pending = false;
+    var s = sizeCanvas(p);
+    var R = pieceRng(p.index);
+    var st = p.algo(s.ctx, s.w, s.h, R, pal);
+    if (!animated){
+      for (var i = 0; i < st.steps; i++) st.tick();
+      updateDecisions();
+      return;
+    }
+    var done = 0;
+    var perFrame = Math.max(1, Math.ceil(st.steps / 70)); // ~70 frames ≈ 1.2s
+    (function loop(){
+      for (var k = 0; k < perFrame && done < st.steps; k++, done++) st.tick();
+      if (done < st.steps){
+        p.raf = requestAnimationFrame(loop);
+      } else {
+        p.raf = 0;
+        updateDecisions();
+      }
+    })();
+  }
+
+  function updateDecisions(){
+    document.getElementById('decisions').textContent = decisions.toLocaleString('en-US');
+  }
+
+  /* ---------- exhibition assembly ---------- */
+  function assignExhibition(){
+    var R = counted(mulberry32((SEED ^ 0x85EBCA6B) >>> 0));
+    pal = PALETTES[Math.floor(R() * PALETTES.length)];
+    var adjs = shuffled(ADJ, R), nouns = shuffled(NOUN, R);
+    PIECES.forEach(function(p, i){
+      p.title = adjs[i] + ' ' + nouns[i];
+      document.getElementById(p.t).innerHTML =
+        '“' + p.title + '” <span>&mdash; 2026</span>';
+      document.getElementById(p.m).textContent = p.medium(pal);
+      p.el.setAttribute('role', 'img');
+      p.el.setAttribute('aria-label',
+        'Generated artwork “' + p.title + '” — ' + p.medium(pal));
+    });
+    var seedStr = String(SEED);
+    document.getElementById('seedVal').textContent = seedStr;
+    document.getElementById('seedInline').textContent = seedStr;
+    document.getElementById('seedFoot').textContent = seedStr;
+    document.getElementById('palName').textContent = '“' + pal.name + '”';
+  }
+
+  function renderAll(animated){
+    decisions = 0;
+    assignExhibition();
+    PIECES.forEach(function(p){
+      var wasRendered = !p.pending;
+      p.pending = true;
+      if (!animated){ renderPiece(p, false); }
+      else if (p.inView){ renderPiece(p, true); }
+      else if (wasRendered){ renderPiece(p, false); } // never leave a retired seed hanging offscreen
+      // untouched canvases: rendered by observer when first scrolled to
+    });
+  }
+
+  /* ---------- lazy start via observer ---------- */
+  var io = new IntersectionObserver(function(entries){
+    entries.forEach(function(e){
+      var p = PIECES.filter(function(x){ return x.el === e.target; })[0];
+      if (!p) return;
+      p.inView = e.isIntersecting;
+      if (p.inView && p.pending) renderPiece(p, !reduced);
+    });
+  }, { rootMargin: '120px 0px' });
+  PIECES.forEach(function(p){ io.observe(p.el); });
+
+  /* ---------- acquisitions (the red-dot ritual) ---------- */
+  var ROMAN = ['I', 'II', 'III', 'IV'];
+  var WORKS = Array.prototype.slice.call(document.querySelectorAll('.work'));
+  WORKS.forEach(function(work, i){
+    var btn = work.querySelector('.acquire');
+    btn.addEventListener('click', function(){
+      if (work.classList.contains('sold')) return;
+      work.classList.add('sold');
+      btn.textContent = 'Acquired · edition 1/1 · certificate ' + SEED + '-' + ROMAN[i] + '. Price: nothing. Duration: this visit.';
+      btn.setAttribute('aria-disabled', 'true');
+    });
+  });
+  function resetAcquisitions(){
+    WORKS.forEach(function(work){
+      work.classList.remove('sold');
+      var btn = work.querySelector('.acquire');
+      btn.textContent = 'Acquire';
+      btn.removeAttribute('aria-disabled');
+    });
+  }
+
+  /* ---------- regenerate ---------- */
+  var busy = false;
+  var gallery = document.getElementById('gallery');
+  var regenBtn = document.getElementById('regen');
+  regenBtn.addEventListener('click', function(){
+    if (busy) return;
+    busy = true;
+    gallery.classList.add('is-fading');
+    setTimeout(function(){
+      SEED = (SEED ^ (Date.now() >>> 0) ^ ((Math.random() * 0xFFFFFFFF) >>> 0)) >>> 0;
+      resetAcquisitions();
+      renderAll(!reduced);
+      gallery.classList.remove('is-fading');
+      document.getElementById('aftermath').textContent =
+        'The previous exhibition is gone. It survives nowhere, including here.';
+      setTimeout(function(){ busy = false; }, 900);
+    }, 620);
+  });
+
+  /* keyboard: R regenerates, from anywhere on the wall */
+  window.addEventListener('keydown', function(e){
+    if ((e.key === 'r' || e.key === 'R') && !e.metaKey && !e.ctrlKey && !e.altKey){
+      var t = e.target;
+      if (t && (t.tagName === 'INPUT' || t.tagName === 'TEXTAREA' || t.isContentEditable)) return;
+      regenBtn.click();
+    }
+  });
+
+  /* ---------- resize: instant re-render of what's on the wall ---------- */
+  var rw = window.innerWidth, rt = 0;
+  window.addEventListener('resize', function(){
+    clearTimeout(rt);
+    rt = setTimeout(function(){
+      if (window.innerWidth === rw) return;
+      rw = window.innerWidth;
+      DPR = Math.min(window.devicePixelRatio || 1, 2);
+      decisions = 0;
+      PIECES.forEach(function(p){ if (!p.pending) renderPiece(p, false); });
+    }, 220);
+  });
+
+  /* ---------- go ---------- */
+  assignExhibition();
+  if (reduced){
+    PIECES.forEach(function(p){ renderPiece(p, false); });
+  }
+  updateDecisions();
+})();
+</script>
+</body>
+</html>

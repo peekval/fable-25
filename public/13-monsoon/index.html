@@ -1,0 +1,693 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>MONSOON — an atmospheric journal</title>
+<!--
+  PASS 1 (performance & simulation physics):
+    - Rain rewritten from 300 individual stroke() calls to 3 depth-plane buckets,
+      each drawn as ONE batched path per frame (far/mid/near, fewer state changes).
+    - Height-only resizes (mobile URL bar collapse) now refit canvases but KEEP
+      particle state in all 3 sims — no visible weather re-shuffle mid-scroll.
+    - Barometer/background rAF loop gained an idle gate: zero DOM writes when
+      scroll position is unchanged and the needle has settled.
+    - Hero wordmark tracking switched to clamp(.14em, 2.2vw, .28em) + smaller
+      floor size so MONSOON no longer overflows at 390px.
+  PASS 2 (typography & art direction):
+    - Fog section: soft C9CFD4 text halo so drifting blobs never wash out the ink;
+      poem re-centered as a block while staying left-set for the drop cap.
+    - Drop caps: normalized upright style, tightened line-height .76 and asymmetric
+      padding so R/M/T caps sit on the poem's second baseline; text-wrap:pretty.
+    - Godrays re-blended from soft-light to screen at lower gradient alpha —
+      visible shafts on the golden field without blowing out the motes.
+    - Back-to-top link moved out of inline onclick; footer stop given its own
+      near-black sky so the colophon reads as nightfall after the clearing.
+  PASS 3 (motion accessibility & robustness):
+    - prefers-reduced-motion: all three sims paint a single composed still frame;
+      the perpetual rAF is replaced by per-scroll-event dial/background updates.
+    - Device pixel ratio re-read on every refit (browser zoom, monitor moves),
+      still capped at 2 to bound fill cost.
+    - Scroll stops rebuilt after document.fonts.ready (serif metrics shift layout);
+      guarded the crossfade math against zero-height segments.
+    - <noscript> fallback paints each section its own sky so the journal stays
+      readable with scripting disabled.
+-->
+
+<meta name="description" content="Three weathers, recorded in ink and water. Rain, fog, and the golden clearing after.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&family=Newsreader:ital,opsz,wght@0,6..72,300;0,6..72,400;0,6..72,500;1,6..72,300;1,6..72,400;1,6..72,500&display=swap" rel="stylesheet">
+<style>
+  *{margin:0;padding:0;box-sizing:border-box}
+  html{scroll-behavior:smooth}
+  body{
+    font-family:Inter,system-ui,sans-serif;
+    background:#2B3440;
+    color:#D8DEE6;
+    overflow-x:hidden;
+    -webkit-font-smoothing:antialiased;
+  }
+  ::selection{background:#E8C97D;color:#2B3440}
+
+  #bg{position:fixed;inset:0;background:#2B3440;z-index:-1;will-change:background-color}
+
+  /* ---------- fixed chrome ---------- */
+  .back{
+    position:fixed;top:20px;left:22px;z-index:60;
+    font:500 12px/1 Inter,sans-serif;letter-spacing:.16em;
+    color:#fff;mix-blend-mode:difference;
+    text-decoration:none;opacity:.75;transition:opacity .3s;
+  }
+  .back:hover{opacity:1}
+  .back:focus-visible{outline:1px solid #fff;outline-offset:4px}
+
+  .baro{
+    position:fixed;right:20px;bottom:20px;z-index:50;
+    width:94px;height:94px;border-radius:50%;
+    backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px);
+    pointer-events:none;
+  }
+  @media (max-width:640px){.baro{width:72px;height:72px;right:14px;bottom:14px}}
+  .baro svg{width:100%;height:100%;display:block}
+  .dial{fill:rgba(14,19,26,.35);stroke:rgba(255,255,255,.32);stroke-width:1}
+  #ticks line{stroke:rgba(255,255,255,.38);stroke-width:1;stroke-linecap:round}
+  .bl{fill:rgba(255,255,255,.55);font:600 6px Inter,sans-serif;letter-spacing:.08em;text-anchor:middle}
+  #baroWord{fill:rgba(255,255,255,.78);font:italic 400 9.5px Newsreader,serif;text-anchor:middle}
+  .ndl{stroke:#E8C97D;stroke-width:1.5;stroke-linecap:round}
+  .hub{fill:#E8C97D}
+  #needle{transform-box:view-box;transform-origin:50% 50%;will-change:transform}
+
+  /* ---------- hero ---------- */
+  .hero{
+    min-height:100vh;min-height:100svh;position:relative;
+    display:flex;flex-direction:column;align-items:center;justify-content:center;
+    text-align:center;padding:0 24px;
+  }
+  .kicker{
+    font:italic 400 clamp(15px,2vw,19px)/1.5 Newsreader,serif;
+    color:rgba(216,222,230,.72);
+    animation:rise 1.3s .1s cubic-bezier(.19,.71,.22,1) both;
+  }
+  h1{
+    --trk:clamp(.14em,2.2vw,.28em);
+    font:300 clamp(40px,10.5vw,126px)/1.04 Newsreader,serif;
+    letter-spacing:var(--trk);text-indent:var(--trk);
+    color:#ECF1F7;margin:20px 0 22px;
+    animation:rise 1.3s .28s cubic-bezier(.19,.71,.22,1) both;
+  }
+  .sub{
+    font:300 12px/1.6 Inter,sans-serif;letter-spacing:.26em;text-transform:uppercase;
+    color:rgba(216,222,230,.58);
+    animation:rise 1.3s .46s cubic-bezier(.19,.71,.22,1) both;
+  }
+  .cue{
+    position:absolute;bottom:32px;left:50%;width:1px;height:58px;
+    background:linear-gradient(rgba(255,255,255,0),rgba(255,255,255,.55));
+    animation:cue 2.6s cubic-bezier(.45,0,.55,1) infinite;
+  }
+  @keyframes rise{from{opacity:0;transform:translateY(20px)}to{opacity:1;transform:none}}
+  @keyframes cue{
+    0%{transform:scaleY(0);transform-origin:top}
+    46%{transform:scaleY(1);transform-origin:top}
+    54%{transform:scaleY(1);transform-origin:bottom}
+    100%{transform:scaleY(0);transform-origin:bottom}
+  }
+
+  /* ---------- weather sections ---------- */
+  .wx{
+    position:relative;min-height:100vh;overflow:hidden;
+    display:flex;align-items:center;
+    padding:16vh 24px;
+  }
+  .wx canvas{position:absolute;inset:0;width:100%;height:100%;pointer-events:none}
+  .inner{position:relative;z-index:2;max-width:600px;width:100%;margin:0 auto}
+  .label{
+    font:600 11px/1 Inter,sans-serif;letter-spacing:.34em;text-transform:uppercase;
+    opacity:.62;margin-bottom:16px;
+  }
+  h2{
+    font:italic 400 clamp(40px,6.4vw,74px)/1.08 Newsreader,serif;
+    letter-spacing:-.01em;margin-bottom:30px;
+  }
+  .poem p{
+    font:400 clamp(17px,2.1vw,21px)/1.78 Newsreader,serif;
+    letter-spacing:.002em;
+    text-wrap:pretty;
+    max-width:30em;
+  }
+  .poem p::first-letter{
+    font-family:Newsreader,serif;font-weight:500;font-style:normal;
+    font-size:3.55em;float:left;line-height:.76;
+    padding:.08em .14em .02em 0;
+  }
+  .fog .poem p{margin:0 auto}
+  .meta{
+    margin-top:28px;
+    font:italic 300 14px/1.6 Newsreader,serif;opacity:.58;
+  }
+
+  .rain{color:#EAF1F7}
+  .rain .poem p::first-letter{color:#C3D8EA}
+  @media (min-width:960px){.rain .inner{margin-left:9vw}}
+
+  .fog{color:#2B3440}
+  .fog .label,.fog h2{text-align:center}
+  .fog .meta{text-align:center}
+  .fog .poem p::first-letter{color:#5C7A99}
+  /* soft halo keeps ink legible when a fog blob drifts behind the text */
+  .fog .inner{text-shadow:0 0 26px rgba(201,207,212,.9),0 0 9px rgba(201,207,212,.65)}
+
+  .clearing{color:#3E2F12}
+  .clearing .poem p::first-letter{color:#9A6E1B}
+  @media (min-width:960px){.clearing .inner{margin-right:9vw;margin-left:auto}}
+
+  /* godrays (clearing) */
+  .rays{position:absolute;inset:0;pointer-events:none;overflow:hidden}
+  .ray{
+    position:absolute;top:-25%;height:160%;
+    background:linear-gradient(rgba(255,241,201,.34),rgba(255,241,201,0) 74%);
+    filter:blur(14px);transform-origin:top center;
+    mix-blend-mode:screen;
+  }
+  .ray:nth-child(1){left:50%;width:9%;transform:rotate(16deg);animation:raya 9s ease-in-out infinite}
+  .ray:nth-child(2){left:64%;width:15%;transform:rotate(20deg);animation:raya 13s ease-in-out -4s infinite}
+  .ray:nth-child(3){left:80%;width:7%;transform:rotate(24deg);animation:raya 11s ease-in-out -8s infinite}
+  @keyframes raya{0%,100%{opacity:.45}50%{opacity:.9}}
+
+  /* ---------- footer ---------- */
+  footer{position:relative;padding:18vh 24px 14vh;text-align:center;color:#96A0AC}
+  footer .rule{width:52px;height:1px;background:rgba(255,255,255,.22);margin:0 auto 28px}
+  footer .brand{font:italic 400 26px/1.3 Newsreader,serif;color:#C6CED8;margin-bottom:18px}
+  footer p{font:300 13px/2 Inter,sans-serif;letter-spacing:.03em;max-width:440px;margin:0 auto}
+  footer em{font:italic 400 14px Newsreader,serif}
+  .top{
+    display:inline-block;margin-top:34px;
+    font:500 11px/1 Inter,sans-serif;letter-spacing:.28em;text-transform:uppercase;
+    color:#8FA6BC;text-decoration:none;border-bottom:1px solid rgba(143,166,188,.35);
+    padding-bottom:6px;transition:color .3s,border-color .3s;
+  }
+  .top:hover{color:#C9CFD4;border-color:#C9CFD4}
+
+  /* ---------- reduced motion ---------- */
+  @media (prefers-reduced-motion: reduce){
+    html{scroll-behavior:auto}
+    .kicker,h1,.sub{animation:none}
+    .cue{animation:none;transform:scaleY(1);opacity:.5}
+    .ray{animation:none;opacity:.6}
+  }
+</style>
+<noscript>
+  <style>
+    /* no-JS fallback: sections paint their own skies, barometer rests */
+    .rain{background:#5C7A99}
+    .fog{background:#C9CFD4}
+    .clearing{background:#E8C97D}
+    footer{background:#1A1F27}
+    .cue{display:none}
+  </style>
+</noscript>
+</head>
+<body>
+
+<a class="back" href="/">←&nbsp;25</a>
+<div id="bg" aria-hidden="true"></div>
+
+<div class="baro" aria-hidden="true">
+  <svg viewBox="0 0 120 120">
+    <circle class="dial" cx="60" cy="60" r="55"/>
+    <g id="ticks"></g>
+    <text class="bl" x="24" y="56">STORM</text>
+    <text class="bl" x="44" y="29">RAIN</text>
+    <text class="bl" x="77" y="29">FOG</text>
+    <text class="bl" x="97" y="56">FAIR</text>
+    <g id="needle"><line class="ndl" x1="60" y1="21" x2="60" y2="66"/><circle class="hub" cx="60" cy="60" r="2.6"/></g>
+    <text id="baroWord" x="60" y="88">STORM</text>
+  </svg>
+</div>
+
+<header class="hero" data-stop="43,52,64" data-ang="-78" data-word="STORM">
+  <p class="kicker">an atmospheric journal, kept through one long season</p>
+  <h1>MONSOON</h1>
+  <p class="sub">Three weathers · recorded in ink &amp; water</p>
+  <div class="cue" aria-hidden="true"></div>
+</header>
+
+<section class="wx rain" data-weather="rain" data-stop="92,122,153" data-ang="-26" data-word="RAIN">
+  <canvas aria-hidden="true"></canvas>
+  <div class="inner">
+    <p class="label">I · Rain</p>
+    <h2>the downpour</h2>
+    <div class="poem">
+      <p>The sky rehearses its argument all afternoon, then loses its temper at once. Rain writes fast cursive down the windows, signing everything. Streets fill with small applause. Somewhere a gutter learns to sing. We count the seconds between light and thunder, and call that distance weather, or luck.</p>
+    </div>
+    <p class="meta">18:42 — pressure falling · 34&nbsp;mm before midnight</p>
+  </div>
+</section>
+
+<section class="wx fog" data-weather="fog" data-stop="201,207,212" data-ang="26" data-word="FOG">
+  <canvas aria-hidden="true"></canvas>
+  <div class="inner">
+    <p class="label">II · Fog</p>
+    <h2>the white hour</h2>
+    <div class="poem">
+      <p>Morning arrives without edges. The fog moves in like a landlord, measuring everything, naming nothing. Trees become rumors of trees; the harbor forgets its boats. Sound travels farther than sight, and softer. Walk out far enough and you become a rumor too — a grey coat, a slower kind of breathing.</p>
+    </div>
+    <p class="meta">06:15 — visibility 40&nbsp;m · the harbor bell, twice</p>
+  </div>
+</section>
+
+<section class="wx clearing" data-weather="clearing" data-stop="232,201,125" data-ang="78" data-word="FAIR">
+  <div class="rays" aria-hidden="true"><div class="ray"></div><div class="ray"></div><div class="ray"></div></div>
+  <canvas aria-hidden="true"></canvas>
+  <div class="inner">
+    <p class="label">III · Clearing</p>
+    <h2>the golden hour</h2>
+    <div class="poem">
+      <p>Then, absolution. Light leans through the torn cloud like a ladder set down for whoever still needs one. Dust rises to meet it, each mote a small planet with its own gold season. The wet world steams. Everything that survived the storm now glitters, briefly, as if chosen.</p>
+    </div>
+    <p class="meta">16:03 — pressure rising · steam off the roof tiles</p>
+  </div>
+</section>
+
+<footer data-stop="26,31,39" data-ang="78" data-word="FAIR">
+  <div class="rule"></div>
+  <p class="brand">Monsoon</p>
+  <p>A weather journal in three movements, drawn live on canvas — no photographs, no film, no images at all. Set in <em>Newsreader</em> &amp; Inter. Barometer readings are honest about the sky and unreliable in all other matters.</p>
+  <a class="top" href="#" id="toTop">Back to the storm</a>
+</footer>
+
+<script>
+(() => {
+'use strict';
+const dpr = () => Math.min(window.devicePixelRatio || 1, 2); // re-read on resize: zoom / monitor moves
+const REDUCED = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+const lerp = (a, b, t) => a + (b - a) * t;
+const smooth = t => t * t * (3 - 2 * t);
+const rand = (a, b) => a + Math.random() * (b - a);
+const TAU = Math.PI * 2;
+
+/* ---------- canvas sizing ---------- */
+function fit(canvas) {
+  const D = dpr();
+  const r = canvas.parentElement.getBoundingClientRect();
+  canvas.width = Math.max(1, Math.round(r.width * D));
+  canvas.height = Math.max(1, Math.round(r.height * D));
+  const ctx = canvas.getContext('2d');
+  ctx.setTransform(D, 0, 0, D, 0, 0);
+  return { w: r.width, h: r.height, ctx };
+}
+
+/* ---------- RAIN ---------- */
+function Rain(canvas) {
+  let w = 0, h = 0, ctx = null;
+  let buckets = [], splashes = [];
+  let flash = 0, rePulsed = true, nextFlash = rand(2.5, 6);
+  let bolt = null, boltA = 0;
+  const WIND = -0.16;
+
+  function resize(keep) {
+    ({ w, h, ctx } = fit(canvas));
+    if (keep && buckets.length) return;
+    const n = w < 640 ? 160 : 300;
+    // three depth planes drawn as single batched paths (one stroke per plane)
+    buckets = [
+      { z: 0.45, arr: [] },
+      { z: 0.72, arr: [] },
+      { z: 0.95, arr: [] }
+    ];
+    for (let i = 0; i < n; i++) {
+      const b = buckets[i < n * 0.42 ? 0 : (i < n * 0.75 ? 1 : 2)];
+      b.arr.push({
+        x: rand(-60, w + 60), y: rand(0, h),
+        spd: 850 * b.z + rand(-50, 90), len: 10 + 17 * b.z
+      });
+    }
+    splashes = [];
+  }
+
+  function makeBolt() {
+    const pts = [];
+    let x = rand(w * 0.2, w * 0.85), y = -10;
+    while (y < h * rand(0.4, 0.6)) {
+      pts.push([x, y]);
+      x += rand(-w * 0.03, w * 0.03);
+      y += rand(h * 0.04, h * 0.09);
+    }
+    return pts;
+  }
+
+  function spawnSplash(x, gy) {
+    if (splashes.length > 210) return;
+    for (let i = 0; i < 3; i++) {
+      splashes.push({ x, y: gy, vx: rand(-70, 70), vy: rand(-170, -50), life: rand(0.22, 0.42), t: 0 });
+    }
+  }
+
+  function paintAtmo() {
+    const g = ctx.createLinearGradient(0, 0, 0, h * 0.45);
+    g.addColorStop(0, 'rgba(23,31,41,0.62)');
+    g.addColorStop(1, 'rgba(23,31,41,0)');
+    ctx.fillStyle = g;
+    ctx.fillRect(0, 0, w, h * 0.45);
+    const g2 = ctx.createLinearGradient(0, h * 0.85, 0, h);
+    g2.addColorStop(0, 'rgba(27,36,47,0)');
+    g2.addColorStop(1, 'rgba(27,36,47,0.55)');
+    ctx.fillStyle = g2;
+    ctx.fillRect(0, h * 0.85, w, h * 0.15);
+  }
+
+  function frame(t, dt) {
+    ctx.clearRect(0, 0, w, h);
+    paintAtmo();
+    const gy = h * 0.94;
+
+    // lightning schedule
+    nextFlash -= dt;
+    if (nextFlash <= 0) {
+      flash = 1;
+      rePulsed = false;
+      nextFlash = rand(4.5, 9.5);
+      if (Math.random() < 0.5) { bolt = makeBolt(); boltA = 1; }
+    }
+    if (flash > 0) {
+      flash *= Math.exp(-dt * 9);
+      if (!rePulsed && flash < 0.35) { flash = 0.8; rePulsed = true; }
+      if (flash < 0.02) flash = 0;
+    }
+
+    // bolt
+    if (bolt && boltA > 0.03) {
+      ctx.lineJoin = 'round';
+      ctx.lineCap = 'round';
+      ctx.strokeStyle = 'rgba(210,228,250,' + (boltA * 0.28).toFixed(3) + ')';
+      ctx.lineWidth = 5;
+      ctx.beginPath();
+      bolt.forEach((p, i) => i ? ctx.lineTo(p[0], p[1]) : ctx.moveTo(p[0], p[1]));
+      ctx.stroke();
+      ctx.strokeStyle = 'rgba(245,250,255,' + (boltA * 0.9).toFixed(3) + ')';
+      ctx.lineWidth = 1.4;
+      ctx.stroke();
+      boltA *= Math.exp(-dt * 7);
+    }
+
+    // drops — one batched path per depth plane
+    ctx.lineCap = 'round';
+    for (const b of buckets) {
+      ctx.strokeStyle = 'rgba(214,228,242,' + (0.12 + 0.26 * b.z + flash * 0.22).toFixed(3) + ')';
+      ctx.lineWidth = 0.7 + b.z * 0.9;
+      ctx.beginPath();
+      for (const d of b.arr) {
+        d.y += d.spd * dt;
+        d.x += d.spd * WIND * dt;
+        if (d.y > gy) {
+          if (b.z > 0.74) spawnSplash(d.x, gy);
+          d.y = rand(-90, -10);
+          d.x = rand(-60, w + 60);
+        }
+        ctx.moveTo(d.x, d.y);
+        ctx.lineTo(d.x + WIND * d.len, d.y + d.len);
+      }
+      ctx.stroke();
+    }
+
+    // splashes
+    for (let i = splashes.length - 1; i >= 0; i--) {
+      const s = splashes[i];
+      s.t += dt;
+      if (s.t > s.life) { splashes.splice(i, 1); continue; }
+      s.vy += 900 * dt;
+      s.x += s.vx * dt;
+      s.y += s.vy * dt;
+      ctx.fillStyle = 'rgba(222,234,246,' + ((1 - s.t / s.life) * 0.5).toFixed(3) + ')';
+      ctx.fillRect(s.x, s.y, 1.6, 1.6);
+    }
+
+    // flash wash
+    if (flash > 0) {
+      ctx.fillStyle = 'rgba(228,240,254,' + (flash * 0.22).toFixed(3) + ')';
+      ctx.fillRect(0, 0, w, h);
+      const fg = ctx.createLinearGradient(0, 0, 0, h);
+      fg.addColorStop(0, 'rgba(240,248,255,' + (flash * 0.34).toFixed(3) + ')');
+      fg.addColorStop(0.6, 'rgba(240,248,255,0)');
+      ctx.fillStyle = fg;
+      ctx.fillRect(0, 0, w, h);
+    }
+  }
+
+  function still() {
+    ctx.clearRect(0, 0, w, h);
+    paintAtmo();
+    ctx.lineCap = 'round';
+    for (const b of buckets) {
+      ctx.strokeStyle = 'rgba(214,228,242,' + (0.12 + 0.26 * b.z).toFixed(3) + ')';
+      ctx.lineWidth = 0.7 + b.z * 0.9;
+      ctx.beginPath();
+      for (const d of b.arr) {
+        ctx.moveTo(d.x, d.y);
+        ctx.lineTo(d.x + WIND * d.len, d.y + d.len);
+      }
+      ctx.stroke();
+    }
+    const gy = h * 0.94;
+    ctx.fillStyle = 'rgba(222,234,246,0.4)';
+    for (let i = 0; i < 40; i++) ctx.fillRect(rand(0, w), gy - rand(0, 14), 1.6, 1.6);
+  }
+
+  return { resize, frame, still };
+}
+
+/* ---------- FOG ---------- */
+function Fog(canvas) {
+  let w = 0, h = 0, ctx = null, blobs = [];
+  let lightSprite = null, darkSprite = null;
+
+  function makeSprite(inner, mid) {
+    const c = document.createElement('canvas');
+    c.width = c.height = 260;
+    const s = c.getContext('2d');
+    const g = s.createRadialGradient(130, 130, 12, 130, 130, 128);
+    g.addColorStop(0, inner);
+    g.addColorStop(0.55, mid);
+    g.addColorStop(1, 'rgba(0,0,0,0)');
+    s.fillStyle = g;
+    s.fillRect(0, 0, 260, 260);
+    return c;
+  }
+
+  function resize(keep) {
+    ({ w, h, ctx } = fit(canvas));
+    if (keep && blobs.length) return;
+    if (!lightSprite) {
+      lightSprite = makeSprite('rgba(238,243,246,0.85)', 'rgba(234,239,244,0.36)');
+      darkSprite = makeSprite('rgba(122,138,153,0.5)', 'rgba(122,138,153,0.2)');
+    }
+    blobs = [];
+    const n = w < 640 ? 8 : 12;
+    for (let i = 0; i < n; i++) {
+      blobs.push({
+        dark: i % 4 === 3,
+        x0: rand(-0.05, 1.05), y0: rand(0.08, 0.92),
+        s: rand(0.38, 0.9),
+        ax: rand(0.05, 0.15),
+        sp: rand(0.02, 0.065),
+        ph: rand(0, TAU),
+        al: rand(0.3, 0.65)
+      });
+    }
+  }
+
+  function frame(t) {
+    ctx.clearRect(0, 0, w, h);
+    for (const b of blobs) {
+      const x = (b.x0 + Math.sin(t * b.sp * TAU + b.ph) * b.ax) * w;
+      const y = b.y0 * h + Math.sin(t * b.sp * 1.3 * TAU + b.ph * 1.7) * h * 0.03;
+      const size = b.s * Math.min(w, 940);
+      ctx.globalAlpha = b.al * (0.85 + 0.15 * Math.sin(t * 0.08 * TAU + b.ph));
+      ctx.drawImage(b.dark ? darkSprite : lightSprite, x - size / 2, y - size / 2, size, size);
+    }
+    ctx.globalAlpha = 1;
+  }
+
+  function still() { frame(4.2); }
+
+  return { resize, frame, still };
+}
+
+/* ---------- CLEARING (dust motes) ---------- */
+function Motes(canvas) {
+  let w = 0, h = 0, ctx = null, motes = [];
+
+  function resize(keep) {
+    ({ w, h, ctx } = fit(canvas));
+    if (keep && motes.length) return;
+    const n = w < 640 ? 55 : 95;
+    motes = [];
+    for (let i = 0; i < n; i++) {
+      motes.push({
+        x: rand(0, w), y: rand(0, h),
+        r: rand(0.7, 2.2),
+        vx: rand(-5, 11), vy: rand(-15, -4),
+        tw: rand(0.4, 1.4), ph: rand(0, TAU)
+      });
+    }
+  }
+
+  function frame(t, dt) {
+    ctx.clearRect(0, 0, w, h);
+    for (const m of motes) {
+      m.x += m.vx * dt + Math.sin(t * 0.6 + m.ph) * 9 * dt;
+      m.y += m.vy * dt;
+      if (m.y < -4) { m.y = h + 4; m.x = rand(0, w); }
+      if (m.x < -4) m.x = w + 4;
+      else if (m.x > w + 4) m.x = -4;
+      const a = 0.16 + 0.4 * (0.5 + 0.5 * Math.sin(t * m.tw * 2 + m.ph));
+      ctx.fillStyle = 'rgba(255,249,226,' + a.toFixed(3) + ')';
+      ctx.beginPath();
+      ctx.arc(m.x, m.y, m.r, 0, TAU);
+      ctx.fill();
+    }
+  }
+
+  function still() { frame(2.1, 0); }
+
+  return { resize, frame, still };
+}
+
+/* ---------- system manager ---------- */
+const systems = [];
+document.querySelectorAll('[data-weather]').forEach(sec => {
+  const canvas = sec.querySelector('canvas');
+  const kind = sec.dataset.weather;
+  const api = kind === 'rain' ? Rain(canvas) : kind === 'fog' ? Fog(canvas) : Motes(canvas);
+  systems.push({ sec, api, raf: 0, last: 0, visible: false });
+});
+
+function startSys(s) {
+  if (REDUCED || s.raf) return;
+  s.last = performance.now();
+  const loop = now => {
+    const dt = Math.min(0.05, (now - s.last) / 1000);
+    s.last = now;
+    s.api.frame(now / 1000, dt);
+    s.raf = requestAnimationFrame(loop);
+  };
+  s.raf = requestAnimationFrame(loop);
+}
+function stopSys(s) {
+  if (s.raf) { cancelAnimationFrame(s.raf); s.raf = 0; }
+}
+
+const io = new IntersectionObserver(entries => {
+  for (const e of entries) {
+    const s = systems.find(x => x.sec === e.target);
+    if (!s) continue;
+    s.visible = e.isIntersecting;
+    if (e.isIntersecting) startSys(s); else stopSys(s);
+  }
+}, { threshold: 0.02 });
+systems.forEach(s => io.observe(s.sec));
+
+document.addEventListener('visibilitychange', () => {
+  if (document.hidden) systems.forEach(stopSys);
+  else systems.forEach(s => { if (s.visible) startSys(s); });
+});
+
+/* ---------- background crossfade + barometer ---------- */
+const bgEl = document.getElementById('bg');
+const needleEl = document.getElementById('needle');
+const baroWordEl = document.getElementById('baroWord');
+const stopEls = Array.from(document.querySelectorAll('[data-stop]'));
+let stops = [];
+
+function buildStops() {
+  stops = stopEls.map(el => ({
+    y: el.offsetTop + el.offsetHeight / 2,
+    c: el.dataset.stop.split(',').map(Number),
+    ang: parseFloat(el.dataset.ang),
+    word: el.dataset.word
+  })).sort((a, b) => a.y - b.y);
+}
+
+let curAng = -78, lastWord = '', lastYc = -1;
+function uiStep() {
+  const yc = scrollY + innerHeight / 2;
+  let i = 0;
+  while (i < stops.length - 2 && yc > stops[i + 1].y) i++;
+  const a = stops[i], b = stops[i + 1];
+  const u = smooth(Math.min(1, Math.max(0, (yc - a.y) / ((b.y - a.y) || 1))));
+  const target = lerp(a.ang, b.ang, u);
+  const settled = Math.abs(curAng - target) < 0.05;
+  if (yc === lastYc && settled) return; // idle: skip DOM writes entirely
+  if (yc !== lastYc) {
+    lastYc = yc;
+    const r = Math.round(lerp(a.c[0], b.c[0], u));
+    const g = Math.round(lerp(a.c[1], b.c[1], u));
+    const bl = Math.round(lerp(a.c[2], b.c[2], u));
+    bgEl.style.backgroundColor = 'rgb(' + r + ',' + g + ',' + bl + ')';
+    const word = u < 0.5 ? a.word : b.word;
+    if (word !== lastWord) { lastWord = word; baroWordEl.textContent = word; }
+  }
+  curAng = REDUCED ? target : lerp(curAng, target, 0.09);
+  needleEl.style.transform = 'rotate(' + curAng.toFixed(2) + 'deg)';
+}
+function ui() { uiStep(); requestAnimationFrame(ui); }
+
+/* ---------- barometer ticks ---------- */
+(function ticks() {
+  const g = document.getElementById('ticks');
+  const NS = 'http://www.w3.org/2000/svg';
+  for (let k = 0; k <= 12; k++) {
+    const a = (-78 + k * 13) * Math.PI / 180;
+    const major = k % 3 === 0;
+    const r1 = 50, r2 = major ? 44 : 47;
+    const ln = document.createElementNS(NS, 'line');
+    ln.setAttribute('x1', (60 + r1 * Math.sin(a)).toFixed(1));
+    ln.setAttribute('y1', (60 - r1 * Math.cos(a)).toFixed(1));
+    ln.setAttribute('x2', (60 + r2 * Math.sin(a)).toFixed(1));
+    ln.setAttribute('y2', (60 - r2 * Math.cos(a)).toFixed(1));
+    g.appendChild(ln);
+  }
+})();
+
+/* ---------- resize ---------- */
+let prevW = 0;
+function resizeAll() {
+  // height-only resizes (mobile URL bar) refit the canvas but keep particles,
+  // so the weather doesn't visibly re-shuffle mid-scroll
+  const keep = innerWidth === prevW;
+  prevW = innerWidth;
+  systems.forEach(s => {
+    s.api.resize(keep);
+    if (REDUCED) s.api.still();
+  });
+  buildStops();
+}
+let rzT = 0;
+addEventListener('resize', () => {
+  clearTimeout(rzT);
+  rzT = setTimeout(resizeAll, 150);
+}, { passive: true });
+
+/* back-to-top honours prefers-reduced-motion */
+document.getElementById('toTop').addEventListener('click', e => {
+  e.preventDefault();
+  scrollTo({ top: 0, behavior: REDUCED ? 'auto' : 'smooth' });
+});
+
+/* stops depend on final layout — rebuild once webfonts have settled */
+if (document.fonts && document.fonts.ready) document.fonts.ready.then(buildStops);
+
+resizeAll();
+if (REDUCED) {
+  // no perpetual rAF under reduced motion — update dial/background per scroll event only
+  uiStep();
+  addEventListener('scroll', uiStep, { passive: true });
+  addEventListener('resize', uiStep, { passive: true });
+} else {
+  requestAnimationFrame(ui);
+}
+})();
+</script>
+</body>
+</html>
