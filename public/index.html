@@ -51,6 +51,21 @@ footer p b{color:var(--ink);font-weight:500}
 .wavehead{grid-column:1/-1;display:flex;align-items:baseline;gap:16px;padding:34px 4px 10px;border-bottom:1px solid var(--line);margin-bottom:8px}
 .wavehead span{font-size:12px;letter-spacing:.3em;text-transform:uppercase;color:var(--ink)}
 .wavehead em{font-family:"Instrument Serif",serif;font-style:italic;color:var(--mut);font-size:15px}
+/* shop */
+.shop{padding:0 0 34px}
+.tiers{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:14px}
+.tier{border:1px solid var(--line);border-radius:14px;padding:22px 22px 20px;background:#101014;position:relative}
+.tier.hot{border-color:rgba(255,217,138,.45)}
+.tier .badge{position:absolute;top:-10px;right:16px;background:#FFD98A;color:#0B0B0E;font-size:10px;letter-spacing:.14em;text-transform:uppercase;font-weight:600;border-radius:99px;padding:3px 10px}
+.tier h3{font-size:15px;font-weight:500;letter-spacing:.04em;margin-bottom:6px}
+.tier .pr{font-size:26px;font-weight:600;color:#FFD98A;margin-bottom:8px;font-variant-numeric:tabular-nums}
+.tier p{color:var(--mut);font-size:12.5px;font-weight:300;line-height:1.6}
+.tiernote{color:var(--mut);font-size:12px;margin:12px 2px 26px;font-weight:300}
+.how{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:14px;border-top:1px solid var(--line);padding-top:22px}
+.how b{display:block;font-size:13px;letter-spacing:.06em;margin-bottom:4px}
+.how span{color:var(--mut);font-size:12.5px;font-weight:300;line-height:1.6}
+.price{position:absolute;top:14px;right:16px;z-index:3;font-size:11px;letter-spacing:.1em;background:rgba(11,11,14,.72);border:1px solid rgba(245,243,238,.25);border-radius:99px;padding:4px 10px;color:#FFD98A;font-variant-numeric:tabular-nums}
+.fcol{max-width:56ch;display:flex;flex-direction:column;gap:10px}
 /* filters */
 .filters{display:flex;flex-wrap:wrap;gap:8px;position:sticky;top:0;z-index:40;background:var(--bg);padding:14px 0 16px;margin-top:-14px;border-bottom:1px solid var(--line);box-shadow:0 18px 22px -20px rgba(0,0,0,.85)}
 .grid{padding-top:22px}
@@ -66,23 +81,37 @@ footer p b{color:var(--ink);font-weight:500}
 <body>
 <div class="wrap">
 <header>
-  <div class="kick">A design capability study — 69 sites, zero stock assets</div>
-  <h1>One model. <em>Sixty-nine</em> design languages.</h1>
-  <p class="sub">Every site below is a complete, living landing page in a fundamentally different visual dialect — <b>built from code</b>: WebGL shaders, real-time 3D, canvas simulations, generative SVG, kinetic type. Zero stock assets — where a site carries imagery, it is generated and palette-locked to its design system. Each passed documented design-review iterations before shipping. Every site carries its own <b>/guide</b> with a copy-paste reproduction prompt.</p>
+  <div class="kick">Premium website templates — 69 builds, engineered not assembled</div>
+  <h1>Templates, die man <em>nicht vergisst.</em></h1>
+  <p class="sub">69 produktionsreife Website-Templates — jedes eine eigene Designsprache mit einer Signatur-Technik: WebGL, Canvas-Simulationen, Scroll-Choreografie, generative Grafik. <b>Eine Datei, kein Build-Step, kommerzielle Lizenz.</b> Jedes Template kommt mit Technik-Guide und dem vollständigen Reproduktions-Prompt.</p>
   <div class="meta-row">
-    <span><b>69</b>websites</span>
-    <span><b>120</b>iteration passes</span>
-    <span><b>0</b>stock images</span>
-    <span><b>1</b>author — Fable</span>
+    <span><b>69</b>Templates</span>
+    <span><b>3</b>Preisstufen</span>
+    <span><b>1</b>Datei pro Template</span>
+    <span><b>CHF 490</b>ab</span>
   </div>
 </header>
 
+<section id="pricing" class="shop">
+  <div class="tiers">
+    <div class="tier"><h3>Standard</h3><div class="pr">CHF 490</div><p>Waves I–III · die 48 Showcase-Templates. Volle Designsprache, eine Signatur-Technik.</p></div>
+    <div class="tier hot"><span class="badge">Signature</span><h3>Signature Collection</h3><div class="pr">CHF 980</div><p>Templates 49–58 · drei Signatur-Techniken pro Site, Flaggschiff-Tiefe.</p></div>
+    <div class="tier"><h3>Swiss Templates</h3><div class="pr">CHF 690</div><p>59–64 · einsatzfertige KMU-Templates (Praxis, Treuhand, Kanzlei, Gastro, Handwerk, Physio), de-CH.</p></div>
+  </div>
+  <p class="tiernote">The Big Five (65–69) sind Showcase-Stücke — als Kollektion auf Anfrage.</p>
+  <div class="how">
+    <div><b>1 · Ansehen</b><span>Jedes Template läuft live als Vorschau — klick dich durch.</span></div>
+    <div><b>2 · Kaufen</b><span>Kaufanfrage per Klick, Rechnung (CH-QR), Lieferung innert 24 h.</span></div>
+    <div><b>3 · Erhalten</b><span>Template-Datei, Technik-Guide, Repro-Prompt + kommerzielle Einzellizenz.</span></div>
+  </div>
+</section>
 <nav class="filters" id="filters" aria-label="Filter by direction"></nav>
 <main class="grid" id="grid"></main>
 
 <footer>
-  <p><b>How was this made?</b> The full process — concept system, code-only asset rule, agent fleet, iteration protocol — is documented so you can reproduce it yourself.</p>
-  <a class="gbtn" href="/guide/">Read the guide →</a>
+  <div class="fcol"><p><b>Lizenz.</b> Jeder Kauf umfasst eine kommerzielle Einzellizenz: ein Projekt, unbegrenzte Anpassung, kein Weiterverkauf als Template. Quellcode gehört dir.</p>
+  <p><b>Fragen?</b> Anpassungen, Kombi-Pakete oder das passende Template fürs Projekt — schreib mir.</p></div>
+  <a class="gbtn" href="mailto:laserfabio@icloud.com?subject=Template-Anfrage%20FABLE%2F25">Template anfragen →</a>
 </footer>
 </div>
 <script>
@@ -180,7 +209,8 @@ function render(filter){
   grid.innerHTML=rows.map(([[n,slug,name,tag,tech,cols],i])=>{
     const g=`linear-gradient(125deg, ${cols[0]} 0%, ${cols[1]} 55%, ${cols[2]||cols[0]} 100%)`;
     const wave=(filter==='all'&&WAVES[i])?`<div class="wavehead"><span>${WAVES[i][0]}</span><em>${WAVES[i][1]}</em></div>`:``;
-    return wave+`<a class="card" href="/${slug}/"><div class="tile"><div class="sw" style="--g:${g}"></div><span class="num">${n} / 69</span></div><div class="body"><div class="name">${name}<span class="arr">→</span></div><div class="tag">${tag}</div><div class="tech">${tech}</div></div></a>`;
+    const nr=+n; const price=nr>=65?"Kollektion":nr>=59?"CHF 690":nr>=49?"CHF 980":"CHF 490";
+    return wave+`<a class="card" href="/${slug}/"><div class="tile"><div class="sw" style="--g:${g}"></div><span class="num">${n} / 69</span><span class="price">${price}</span></div><div class="body"><div class="name">${name}<span class="arr">Preview →</span></div><div class="tag">${tag}</div><div class="tech">${tech}</div></div></a>`;
   }).join('')||`<p class="empty">Nothing here yet.</p>`;
   if(io)io.disconnect();
   io=new IntersectionObserver(es=>es.forEach(e=>{if(e.isIntersecting){e.target.classList.add('in');io.unobserve(e.target)}}),{threshold:.08});
