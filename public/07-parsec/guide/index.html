@@ -51,12 +51,16 @@ p{font-size:.98rem;color:var(--mute);max-width:66ch;margin-bottom:12px}
 
   <h2>The instruments</h2>
   <p>The whole night sky is a single fixed canvas: between 800 and 1,400 stars are seeded into three parallax layers with different drift speeds and sizes, each one twinkling through a sine-modulated alpha, and the cursor acts as a gravity well whose pull strength fades in and out so stars never lurch when the pointer enters or leaves. Performance is the quiet star of the show — stars are sorted by color so the render loop changes fillStyle only three times per frame, pixel ratio is capped at 2, rendering pauses when the tab hides, and the field only re-seeds on a genuine resize so mobile URL-bar collapse never scrambles the sky. The nebula is painted entirely in code, once, at half resolution: additive radial-gradient blobs, bezier filaments, per-pixel grain and a vignette, upscaled into softness. A telescope "focus ring" in the corner doubles as a scroll-progress dial, constellation cards draw their star-lines on hover via stroke-dashoffset, the readout panel counts its numbers up on entry, and a real local-sidereal-time clock ticks in the header of the instrument feed. Reduced-motion visitors get a still, pre-drawn sky.</p>
+  <p>The sky also misbehaves on schedule: every 8–15 seconds a meteor streaks across the starfield — a radial-gradient bright head trailing a gradient tail, falling left or right at random — and one panel in the catalogue holds "the Surveyor" (Mensor), a fictional constellation of a theodolite on its tripod whose lines draw themselves in four staggered stages when scrolled into view, labelled in the site's mono style (α MEN · THE EYEPIECE, δ MEN · THE PLUMB). Under prefers-reduced-motion the meteors never fire and the Surveyor arrives pre-drawn.</p>
+
+  <h2>Generated assets</h2>
+  <p>The full-bleed station photograph — the dome on the Piz Larun ridge under the Milky Way, one warm light in the slit — was generated with <strong>Nano Banana 2</strong> via the <strong>Higgsfield MCP</strong> at 2K, palette-locked to the site's four colours (#05070F, #F2F6FF, #6EE7F0, #C77DFF), then converted and compressed to WebP with <strong>ffmpeg</strong> (1920×1072, lazy-loaded with real dimensions). On the page it drifts with a subtle transform-based parallax and carries a low-density live canvas of twinkling stars over its sky, so the photograph and the code-drawn sky share one atmosphere. Reduced-motion visitors get the still image.</p>
 
   <h2>Reproduction prompt</h2>
   <div class="lockbox">
     <div class="lb-head"><span>PROMPT — PARSEC/RIDGE</span><span>LOCKED</span></div>
     <div class="teaser">
-      <p>Build a single-file HTML showcase for PARSEC, a fictional public observatory at 2,742 m on Piz Larun. Palette: near-black ink #05070F, star-white #F2F6FF, cyan #6EE7F0, magenta #C77DFF; translucent glass cards with cyan-tinted borders and backdrop blur. Fonts: Unbounded 300–900 for display, Inter for body, a system mono stack for…</p>
+      <p>Build a single-file HTML showcase for PARSEC, a fictional public observatory at 2,742 m on Piz Larun. Palette: near-black ink #05070F, star-white #F2F6FF, cyan #6EE7F0, magenta #C77DFF; translucent glass cards with cyan-tinted borders and backdrop blur. Include a full-bleed night photograph of the dome on the ridge (generate it palette-locked, 2K) with subtle parallax and a live twinkle canvas over its sky. Fonts: Unbounded…</p>
       <div class="fade" aria-hidden="true"></div>
     </div>
     <div class="lockline">✦ Full prompt (≈250 words) included with purchase.</div>
@@ -72,6 +76,7 @@ p{font-size:.98rem;color:var(--mute);max-width:66ch;margin-bottom:12px}
     <a href="/">Index of all sites</a>
   </div>
 </main>
-<!-- PASS: lock-box teaser cut at ~48 words with fade gradient matching card background; full prompt exists only in the paid deliverable, not in this file; links /07-parsec/, /shop/, / and Gumroad fable-07 verified; CSS-only starfield keeps the guide light and mobile-safe. -->
+<!-- PASS: lock-box teaser cut at ~48 words with fade gradient matching card background; full prompt exists only in the paid deliverable, not in this file; links /07-parsec/, /shop/, / and Gumroad fable-07 verified; CSS-only starfield keeps the guide light and mobile-safe.
+     PASS 2: documented the Nano Banana 2 / Higgsfield MCP / ffmpeg-WebP generated dome photograph, the 8–15 s meteors and the scroll-drawn Surveyor constellation; teaser updated to mention the photograph. -->
 </body>
 </html>

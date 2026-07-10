@@ -8,7 +8,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Anton&family=Permanent+Marker&family=Courier+Prime:wght@400;700&display=swap" rel="stylesheet">
-<!-- PASS: teaser cut mid-sentence at ~45 words, fade overlay uses card white so the tear stays readable; no full prompt anywhere in this file; links /17-riot/ + / verified; lock-box pattern matches guides 16-20; card polygon has shallow rag so text never hits the tear at 390px. -->
+<!-- PASS: teaser cut mid-sentence at ~45 words, fade overlay uses card white so the tear stays readable; no full prompt anywhere in this file; links /17-riot/ + / verified; lock-box pattern matches guides 16-20; card polygon has shallow rag so text never hits the tear at 390px. PASS 2: added "Generated assets" section (centerfold photo via Nano Banana 2 / Higgsfield MCP, ffmpeg WebP) + slap-in and photocopier-pass descriptions; teaser updated to match new prompt opening. -->
 <style>
 :root{--paper:#F1EFE9;--ink:#101010;--red:#E8281E;--yellow:#F5E642;--tape:rgba(228,220,180,.55)}
 *{margin:0;padding:0;box-sizing:border-box}
@@ -93,14 +93,32 @@ p strong{font-weight:700}
   <h1>How this mess was made</h1>
 
   <h2>The <span class="hl">techniques</span></h2>
-  <p>Every texture on RIOT PAPER is CSS &mdash; there is not a single image. The torn-paper cards are many-point <strong>polygon clip-paths on a ::before layer</strong>, never on the card itself, while filter:drop-shadow sits on the parent: that ordering trick makes the shadow follow the ragged edge and lets tape strips and staples overhang the tear instead of being clipped. The masking tape is a translucent clipped strip with faint repeating stripes, the staples are tiny inline SVGs, and the "APPROVED BY NO ONE" rubber stamps get their uneven ink from a radial mask-image, slamming in once at 3x scale when they scroll into view. A fixed pseudo-layer of two offset dot grids with mix-blend-mode:multiply reads as photocopy toner over the whole page, with a toner smear down the right edge. Cards tilt a couple of degrees each way and jitter on hover with a steps(2) animation, so they skip like a dying Xerox.</p>
+  <p>Every texture on RIOT PAPER is CSS, with exactly one exception (see below). The torn-paper cards are many-point <strong>polygon clip-paths on a ::before layer</strong>, never on the card itself, while filter:drop-shadow sits on the parent: that ordering trick makes the shadow follow the ragged edge and lets tape strips and staples overhang the tear instead of being clipped. The masking tape is a translucent clipped strip with faint repeating stripes, the staples are tiny inline SVGs, and the "APPROVED BY NO ONE" rubber stamps get their uneven ink from a radial mask-image, slamming in once at 3x scale when they scroll into view. A fixed pseudo-layer of two offset dot grids with mix-blend-mode:multiply reads as photocopy toner over the whole page, with a toner smear down the right edge. Cards tilt a couple of degrees each way and jitter on hover with a steps(2) animation, so they skip like a dying Xerox.</p>
+
+  <h2>Generated <span class="hl">assets</span></h2>
+  <p>Issue #13 finally has a photograph: the centerfold shot of a punk singer mid-jump on a
+  basement stage, photocopied to death &mdash; heavy xerox grain, a torn edge and a strip of
+  masking tape baked right into the print. It was generated with <strong>Nano Banana 2</strong>
+  through the <strong>Higgsfield MCP</strong> from a 2K xerox-style prompt written to be
+  palette-exact (paper #F1EFE9, ink #101010), then squeezed into a lazy-loaded
+  <strong>WebP with ffmpeg</strong>.</p>
+  <p>It doesn't fade in like a coward &mdash; it <strong>slaps in</strong>: an IntersectionObserver
+  fires once and the photo drops from 1.4x scale with a hard overshoot (scale .955, past the
+  target, back to 1) while its paper drop-shadow bounces from long-and-faint to tight-and-dark,
+  like a print being slammed onto the paste-up board. CSS tape holds the corners, a highlighter
+  scribble circles the boots, and a red <em>LIVE AT ROTKELLER</em> stamp hits the top corner.
+  Meanwhile the whole zine gets a <strong>photocopier pass</strong> every 12 seconds &mdash; one
+  fixed, pointer-events-none light band sweeping down the viewport on a transform-only animation
+  &mdash; and headlines double-print on hover, snapping red/yellow text-shadow offsets at
+  steps(2) like misregistered plates. All of it is switched off under
+  prefers-reduced-motion; the photo is simply pre-placed.</p>
 
   <h2>Reproduction <span class="hl">prompt</span></h2>
   <div class="card">
     <span class="tape tc" aria-hidden="true"></span>
     <p class="kicker">Prompt preview · pg. 1 of 1</p>
     <div class="teaser">
-      <p>Build a single-file HTML site for RIOT PAPER, a DIY punk zine collective presenting Issue #13: NOISE. Use zero images &mdash; every texture must be CSS. Palette: aged paper #F1EFE9, ink #101010, safety-pin red #E8281E, highlighter yellow #F5E642, translucent masking tape&hellip;</p>
+      <p>Build a single-file HTML site for RIOT PAPER, a DIY punk zine collective presenting Issue #13: NOISE. Every texture must be CSS, except one generated photograph: a xerox-grain shot of a punk singer mid-jump, used as the centerfold. Palette: aged paper #F1EFE9, ink #101010, safety-pin red&hellip;</p>
     </div>
     <p class="lockline">🔒 full prompt (≈250 words) included with purchase. no, you can't photocopy this bit.</p>
   </div>

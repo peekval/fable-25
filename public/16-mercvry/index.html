@@ -25,6 +25,13 @@ PASS 3: (1) metaball anti-aliased skirt now carries an electric #4D5BFF halo so 
         as charged, not smudged; (2) :focus-visible volt outlines + aria-label on the back
         link; (3) fixed radial vignette + styled scrollbar for atmosphere; (4) deep-core
         darkening kept but rim brightened toward blue-white for stronger liquid-metal read.
+PASS 4: (1) new 02/EXHIBIT A section — generated gyroid-lattice macro (assets/lattice.webp,
+        1400x1738, lazy + intrinsic dims) in a machined frame with engraved caption plate;
+        (2) laser-scan reveal: stepped clip-path inset (steps(36)) + volt scanline + layer-line
+        flicker overlay, IO-triggered once; (3) four metric readouts count up in 26 quantised
+        steps (cubic ease-out); (4) hover/focus: volt rim intensifies + crosshair metrology
+        overlay with dimension callouts; (5) reduced motion = image pre-completed, counters at
+        final values; later sections renumbered 03-05; 390px audit clean, no console errors.
 -->
 
 <style>
@@ -182,6 +189,87 @@ section{padding:clamp(90px,12vw,160px) var(--pad);border-bottom:1px solid var(--
 .step p{font-size:12.5px;color:var(--steel-lo)}
 .step .tag{margin-top:16px;font-size:10px;letter-spacing:.2em;color:var(--volt);text-transform:uppercase}
 
+/* exhibit A — sintered lattice specimen */
+.ex-grid{display:grid;grid-template-columns:1.05fr 1fr;gap:clamp(28px,5vw,72px);align-items:center}
+.frame{
+  margin:0;position:relative;padding:14px 14px 0;
+  border:1px solid rgba(221,227,234,.16);border-radius:3px;
+  background:
+    repeating-linear-gradient(90deg,rgba(255,255,255,.03) 0 1px,rgba(255,255,255,0) 1px 3px),
+    linear-gradient(180deg,#1a1c21 0%,#121317 55%,#15171c 100%);
+}
+.frame::before{ /* inner hairline, machined rebate */
+  content:"";position:absolute;inset:7px;border:1px solid rgba(221,227,234,.10);
+  border-radius:2px;pointer-events:none;z-index:3;
+}
+.scanwrap{position:relative;overflow:hidden;background:#0b0c0f}
+.ex-img{
+  display:block;width:100%;height:auto;
+  clip-path:inset(0 0 100% 0);
+  transition:filter .45s ease;
+  filter:saturate(1) brightness(1);
+}
+.frame.scanned .ex-img{animation:sinter 2.6s steps(36,jump-end) .15s forwards}
+@keyframes sinter{to{clip-path:inset(0 0 -1% 0)}}
+.scanline{
+  position:absolute;left:0;right:0;top:0;height:2px;background:var(--volt);
+  box-shadow:0 0 12px 2px rgba(77,91,255,.8),0 0 42px 10px rgba(77,91,255,.35);
+  opacity:0;pointer-events:none;z-index:2;
+}
+.frame.scanned .scanline{animation:scan 2.6s steps(36,jump-end) .15s forwards}
+@keyframes scan{0%{top:0;opacity:1}97%{opacity:1}100%{top:100%;opacity:0}}
+.flicker{ /* faint layer-line interference while the laser passes */
+  position:absolute;inset:0;pointer-events:none;z-index:1;opacity:0;mix-blend-mode:screen;
+  background:repeating-linear-gradient(0deg,rgba(77,91,255,.12) 0 1px,transparent 1px 4px);
+}
+.frame.scanned .flicker{animation:flick 2.9s linear forwards}
+@keyframes flick{
+  0%{opacity:0}12%{opacity:.5}28%{opacity:.18}46%{opacity:.42}
+  63%{opacity:.14}80%{opacity:.3}100%{opacity:0}
+}
+/* metrology overlay — crosshair + dimension callouts on hover */
+.measure{
+  position:absolute;inset:0;z-index:4;opacity:0;transition:opacity .35s;
+  pointer-events:none;font-size:10px;letter-spacing:.16em;color:var(--steel-hi);
+}
+.measure .mh{position:absolute;left:5%;right:5%;top:50%;height:1px;background:rgba(77,91,255,.55)}
+.measure .mv{position:absolute;top:4%;bottom:4%;left:50%;width:1px;background:rgba(77,91,255,.55)}
+.measure .dim{
+  position:absolute;background:rgba(16,17,20,.82);border:1px solid rgba(77,91,255,.4);
+  color:var(--volt);padding:2px 7px;white-space:nowrap;
+}
+.measure .dim-w{top:calc(50% + 10px);right:6%}
+.measure .dim-h{left:calc(50% + 10px);top:7%}
+.measure .dim-z{left:6%;bottom:6%}
+.measure .tick{position:absolute;width:14px;height:14px;border:0 solid rgba(221,227,234,.7)}
+.measure .t-tl{top:8px;left:8px;border-top-width:1px;border-left-width:1px}
+.measure .t-tr{top:8px;right:8px;border-top-width:1px;border-right-width:1px}
+.measure .t-bl{bottom:8px;left:8px;border-bottom-width:1px;border-left-width:1px}
+.measure .t-br{bottom:8px;right:8px;border-bottom-width:1px;border-right-width:1px}
+@media (hover:hover){
+  .frame:hover .ex-img,.frame:focus-within .ex-img{
+    filter:saturate(1.18) brightness(1.07) drop-shadow(0 0 26px rgba(77,91,255,.4));
+  }
+  .frame:hover .measure,.frame:focus-within .measure{opacity:1}
+}
+.engrave{ /* caption plate, engraved into the frame's lower rail */
+  display:flex;justify-content:space-between;gap:8px 18px;flex-wrap:wrap;
+  padding:13px 4px 15px;margin-top:14px;border-top:1px solid rgba(221,227,234,.14);
+  font-size:10px;letter-spacing:.24em;text-transform:uppercase;color:var(--steel-lo);
+  text-shadow:0 1px 0 rgba(0,0,0,.9);
+}
+.engrave b{color:var(--steel);font-weight:400}
+.ex-copy p+p{margin-top:18px}
+.ex-copy .volt{color:var(--volt)}
+.readouts{display:grid;grid-template-columns:repeat(2,1fr);gap:12px;margin-top:36px}
+.ro{border:1px solid var(--line);background:var(--ink2);padding:16px 18px 14px}
+.ro b{
+  display:block;font-size:clamp(22px,2.4vw,32px);font-weight:700;
+  color:var(--steel-hi);letter-spacing:-.01em;font-variant-numeric:tabular-nums;
+}
+.ro b i{font-style:normal;font-size:.55em;color:var(--steel-lo);margin-left:2px}
+.ro span{font-size:9.5px;letter-spacing:.22em;text-transform:uppercase;color:var(--steel-lo)}
+
 /* specimens */
 .pieces{display:grid;grid-template-columns:repeat(3,1fr);gap:14px}
 .piece{overflow:hidden}
@@ -241,6 +329,7 @@ footer a:hover{color:var(--steel-hi)}
   .steps{grid-template-columns:repeat(2,1fr)}
   .pieces{grid-template-columns:1fr}
   .mat-grid{grid-template-columns:1fr}
+  .ex-grid{grid-template-columns:1fr}
 }
 @media (max-width:520px){
   .steps{grid-template-columns:1fr}
@@ -252,10 +341,18 @@ footer a:hover{color:var(--steel-hi)}
   .plate dl{grid-template-columns:1fr}
   .plate dd{text-align:left;margin-bottom:6px}
 }
+@media (max-width:520px){
+  .readouts{grid-template-columns:1fr 1fr;gap:8px}
+  .ro{padding:12px 12px 10px}
+  .measure .dim-h{display:none}
+}
 @media (prefers-reduced-motion:reduce){
   html{scroll-behavior:auto}
   .track{animation:none}
   .rv{opacity:1;transform:none;transition:none}
+  .ex-img{clip-path:none!important;animation:none!important;transition:none}
+  .scanline,.flicker{display:none}
+  .measure{transition:none}
 }
 </style>
 </head>
@@ -321,10 +418,50 @@ footer a:hover{color:var(--steel-hi)}
   </div>
 </section>
 
+<!-- ============ EXHIBIT A ============ -->
+<section id="exhibit">
+  <div class="sec-head rv">
+    <span class="sec-no">02 / EXHIBIT A</span>
+    <h2 class="chrome">BUILT FROM LIGHT</h2>
+  </div>
+  <div class="ex-grid">
+    <figure class="frame rv" id="frame" tabindex="0" aria-label="Reference specimen photograph — hover or focus for dimension callouts">
+      <div class="scanwrap">
+        <img class="ex-img" src="assets/lattice.webp" width="1400" height="1738" loading="lazy" decoding="async"
+             alt="Macro photograph of a 3D-printed titanium gyroid lattice cube, sinter layer lines visible across its curved walls, lit by a single volt-blue rim light against near-black steel">
+        <div class="flicker" aria-hidden="true"></div>
+        <div class="scanline" aria-hidden="true"></div>
+        <div class="measure" aria-hidden="true">
+          <span class="mh"></span><span class="mv"></span>
+          <span class="dim dim-w">X 40.00 MM</span>
+          <span class="dim dim-h">Z 40.00 MM</span>
+          <span class="dim dim-z">CELL 8.0 MM &middot; WALL 0.42 MM</span>
+          <span class="tick t-tl"></span><span class="tick t-tr"></span>
+          <span class="tick t-bl"></span><span class="tick t-br"></span>
+        </div>
+      </div>
+      <figcaption class="engrave">
+        <span>MRC&#8209;0417 &middot; GYROID LATTICE &middot; <b>REFERENCE CUBE</b></span>
+        <span>TI&#8209;6AL&#8209;4V &middot; AS SINTERED, UNPOLISHED</span>
+      </figcaption>
+    </figure>
+    <div class="ex-copy rv">
+      <p>Before any commission, we print this: a gyroid lattice cube, straight off the plate, layer lines left showing. It is the atelier's handwriting sample &mdash; a surface no mould could release and no cutter could reach, <span class="volt">grown from powder in 1,334 passes of light</span>.</p>
+      <p>The gyroid is a minimal surface: it divides space into two mirrored channels without a single flat face or right angle. Sixty-two percent of this cube is air, yet it shrugs off a tonne. We keep one from every powder lot; the photograph is of cube seventeen.</p>
+      <div class="readouts" id="readouts">
+        <div class="ro"><b data-v="30" data-d="0" data-u="&micro;m">0<i>&micro;m</i></b><span>Layer height</span></div>
+        <div class="ro"><b data-v="11.4" data-d="1" data-u="h">0<i>h</i></b><span>Build time</span></div>
+        <div class="ro"><b data-v="99.97" data-d="2" data-u="%">0<i>%</i></b><span>Relative density</span></div>
+        <div class="ro"><b data-v="1334" data-d="0" data-u="">0</b><span>Layers fused</span></div>
+      </div>
+    </div>
+  </div>
+</section>
+
 <!-- ============ SPECIMENS ============ -->
 <section id="specimens">
   <div class="sec-head rv">
-    <span class="sec-no">02 / SPECIMENS</span>
+    <span class="sec-no">03 / SPECIMENS</span>
     <h2 class="chrome">THREE PIECES</h2>
   </div>
   <div class="pieces">
@@ -433,7 +570,7 @@ footer a:hover{color:var(--steel-hi)}
 <!-- ============ MATERIAL ============ -->
 <section id="material">
   <div class="sec-head rv">
-    <span class="sec-no">03 / MATERIAL</span>
+    <span class="sec-no">04 / MATERIAL</span>
     <h2 class="chrome">POWDER SCIENCE</h2>
   </div>
   <div class="mat-grid">
@@ -459,7 +596,7 @@ footer a:hover{color:var(--steel-hi)}
 <!-- ============ COMMISSIONS ============ -->
 <section id="commission" class="comm">
   <div class="rv">
-    <span class="sec-no">04 / COMMISSIONS</span>
+    <span class="sec-no">05 / COMMISSIONS</span>
     <h2 class="chrome">TWELVE A YEAR</h2>
     <p class="lead">We accept twelve commissions annually &mdash; rings, pendants, small sculpture. You bring an obsession; we bring a laser. Every piece ships with its build log: layer count, laser hours, powder lot.</p>
     <div class="meta">
@@ -674,6 +811,46 @@ if(!RM){
     track.style.filter = vel > 2 ? `blur(${(vel*.06).toFixed(2)}px)` : "";
     requestAnimationFrame(blurLoop);
   })();
+}
+
+/* ================= exhibit A: laser-scan reveal + stepped counters ================= */
+const exFrame = document.getElementById("frame");
+const roVals = Array.from(document.querySelectorAll("#readouts b"));
+function roFmt(n, d){
+  return d ? n.toFixed(d) : Math.round(n).toLocaleString("en-US");
+}
+function roSet(el, n){
+  const u = el.dataset.u;
+  el.innerHTML = roFmt(n, +el.dataset.d) + (u ? "<i>" + u + "</i>" : "");
+}
+function roFinal(){ roVals.forEach(el => roSet(el, parseFloat(el.dataset.v))); }
+if(RM){
+  exFrame.classList.add("scanned");        /* CSS shows the image pre-completed */
+  roFinal();                               /* counters at final values */
+} else {
+  const STEPS = 26, DUR = 2100;            /* readouts tick in discrete machine steps */
+  function runCounters(){
+    const t0 = performance.now();
+    let last = -1;
+    (function tick(t){
+      const p = Math.min((t - t0) / DUR, 1);
+      const q = Math.floor(p * STEPS);
+      if(q !== last){
+        last = q;
+        const e = 1 - Math.pow(1 - q / STEPS, 3);   /* cubic ease-out, quantised */
+        roVals.forEach(el => roSet(el, parseFloat(el.dataset.v) * e));
+      }
+      if(p < 1) requestAnimationFrame(tick); else roFinal();
+    })(t0);
+  }
+  const exIO = new IntersectionObserver(es => {
+    if(es[0].isIntersecting){
+      exIO.disconnect();
+      exFrame.classList.add("scanned");    /* stepped clip-path sinter + scanline */
+      runCounters();
+    }
+  }, { threshold:.35 });
+  exIO.observe(exFrame);
 }
 
 /* ================= reveal on scroll ================= */

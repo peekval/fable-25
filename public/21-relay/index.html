@@ -170,6 +170,41 @@ main{
 .bars i.low{background:var(--amber)}
 .commsmeta{margin-top:12px;font-size:12px;color:var(--dim);display:grid;gap:4px}
 .commsmeta b{color:var(--ink);font-weight:400;float:right;font-variant-numeric:tabular-nums}
+/* ---------- downlink image ---------- */
+#downlink{grid-column:span 12}
+.dlframe{position:relative;margin:0;border:1px solid var(--grid);background:#05070A;overflow:hidden}
+.dlframe img{display:block;width:100%;height:auto;clip-path:inset(0 0 calc((1 - var(--rx,0))*100%) 0)}
+.dlframe.done img{clip-path:none}
+.dledge{
+  position:absolute;left:0;right:0;top:calc(var(--rx,0)*100%);height:3px;margin-top:-2px;opacity:0;
+  background:linear-gradient(90deg,transparent,var(--amber) 30%,var(--amber) 70%,transparent);
+  box-shadow:0 0 16px rgba(255,176,0,.85);
+}
+.dlframe.rx .dledge{opacity:.9}
+.dlframe.retx .dledge{
+  background:linear-gradient(90deg,transparent,var(--red) 30%,var(--red) 70%,transparent);
+  box-shadow:0 0 16px rgba(255,59,48,.85);
+}
+.dlstatic{
+  position:absolute;inset:0;pointer-events:none;opacity:.45;
+  background:repeating-linear-gradient(0deg,rgba(255,176,0,.055) 0 2px,transparent 2px 5px);
+}
+.dlframe.done .dlstatic{opacity:0;transition:opacity 1.2s ease}
+.dlmeta{
+  display:flex;justify-content:space-between;gap:6px 18px;flex-wrap:wrap;
+  margin-top:10px;font-size:12px;color:var(--green);letter-spacing:.06em;font-variant-numeric:tabular-nums;
+}
+.dlmeta span{min-width:0}
+.dlmeta.dim2{color:var(--dim);font-size:11px;margin-top:4px}
+.dlmeta .rtx{color:var(--red)}
+/* ---------- phosphor sweep ---------- */
+.sweepbar{
+  position:fixed;left:0;top:-18vh;width:100%;height:18vh;z-index:95;pointer-events:none;display:none;
+  background:linear-gradient(180deg,transparent,rgba(255,176,0,.10) 45%,rgba(255,176,0,.24) 68%,rgba(255,176,0,.04) 85%,transparent);
+  mix-blend-mode:screen;
+}
+.sweepbar.go{display:block;animation:phosSweep .3s linear}
+@keyframes phosSweep{from{transform:translateY(0)}to{transform:translateY(124vh)}}
 /* ---------- log ---------- */
 #log{grid-column:span 5}
 .logbody{min-height:280px;font-size:12.5px}
@@ -199,9 +234,10 @@ footer .sig{color:var(--amber)}
 #radar{animation-delay:2.10s}
 #traj{animation-delay:2.25s}
 #comms{animation-delay:2.40s}
-#log{animation-delay:2.55s}
-#roster{animation-delay:2.70s}
-footer.panel{animation-delay:2.85s}
+#downlink{animation-delay:2.55s}
+#log{animation-delay:2.70s}
+#roster{animation-delay:2.85s}
+footer.panel{animation-delay:3.00s}
 /* ---------- responsive ---------- */
 @media (max-width:920px){
   #telemetry,#radar,#traj,#comms,#log,#roster{grid-column:span 12}
@@ -217,11 +253,15 @@ footer.panel{animation-delay:2.85s}
   #boot{display:none}
   .scope .beam{display:none}
   .blip{opacity:.7}
+  .sweepbar{display:none!important}
+  .dlframe img{clip-path:none}
+  .dlstatic{opacity:0}
 }
 </style>
 </head>
 <body>
 <div class="overlay" aria-hidden="true"></div>
+<div class="sweepbar" id="sweep" aria-hidden="true"></div>
 
 <div id="boot" aria-hidden="true">
   <div class="bl">&gt; DEEP RELAY GROUND SEGMENT v4.2.1</div>
@@ -354,6 +394,24 @@ footer.panel{animation-delay:2.85s}
       <div>SNR (SYMBOL) <b id="c-snr">4.7 dB</b></div>
       <div>FRAME ERRORS (24 h) <b>0</b></div>
       <div>NEXT PASS <b>DSS-14 GOLDSTONE 11:40 UTC</b></div>
+    </div>
+  </section>
+
+  <!-- ================= DOWNLINK IMAGE ================= -->
+  <section class="panel" id="downlink" aria-label="Downlink optical navigation frame">
+    <div class="phead"><span>Downlink — Optical Nav Frame</span><span class="pid">PNL-07 / IMG</span></div>
+    <figure class="dlframe" id="dlframe">
+      <img id="dlimg" src="assets/probe.webp" alt="Last optical navigation frame: the DEEP RELAY probe — parabolic high-gain dish, gold thermal foil and magnetometer boom — tiny against the black interstellar starfield, an amber glint on the dish rim" width="1920" height="1072" loading="lazy" decoding="async">
+      <div class="dledge" aria-hidden="true"></div>
+      <div class="dlstatic" aria-hidden="true"></div>
+    </figure>
+    <div class="dlmeta">
+      <span id="dlrx">RX 0% · AWAITING FRAME SYNC</span>
+      <span id="dlsum">CHECKSUM — PENDING</span>
+    </div>
+    <div class="dlmeta dim2">
+      <span>FRAME OPNAV-4471 · 1920×1072 · 12-BIT MONO · RS(255,223)</span>
+      <span>SHUTTER 2026-07-08 13:49:51 UTC · RX’D +14:20:07 OWLT</span>
     </div>
   </section>
 
@@ -492,7 +550,7 @@ function sizeCanvas(){
 }
 sizeCanvas();
 window.addEventListener('resize',sizeCanvas);
-var phase=0;
+var phase=0, burst=0;
 function drawWave(){
   var w = cv.getBoundingClientRect().width, h=110, mid=h/2;
   cx.clearRect(0,0,w,h);
@@ -509,11 +567,13 @@ function drawWave(){
   cx.strokeStyle='#FFB000'; cx.lineWidth=1.4; cx.beginPath();
   for(x=0;x<=w;x+=2){
     var env=Math.sin(x*.006+phase*.4)*.6+.9;
-    var yy=mid+(Math.sin(x*.09+phase)*13+(Math.random()-.5)*3)*env;
+    var yy=mid+(Math.sin(x*.09+phase)*13*(1+burst*1.6)+(Math.random()-.5)*(3+burst*30))*env;
+    if(yy<2)yy=2; if(yy>h-2)yy=h-2;
     x===0?cx.moveTo(x,yy):cx.lineTo(x,yy);
   }
   cx.stroke(); cx.lineWidth=1;
   phase+=.09;
+  burst*=.93;
 }
 drawWave();
 
@@ -570,6 +630,92 @@ function typeLog(i){
 }
 if(RM) renderLogStatic(); else setTimeout(function(){ typeLog(0); },2600);
 
+/* ---------- live log events (prepended) ---------- */
+function logEvent(tx){
+  var now=new Date();
+  var ts=now.toISOString().slice(0,19).replace('T',' ');
+  var d=document.createElement('div');
+  d.className='le hl';
+  d.innerHTML='<span class="ts">['+ts+' UTC]</span> <span class="tx"></span>';
+  logBody.insertBefore(d,logBody.firstChild);
+  while(logBody.children.length>10) logBody.removeChild(logBody.lastChild);
+  var txe=d.querySelector('.tx');
+  if(RM){ txe.textContent=tx; return; }
+  var j=0;
+  (function st(){ if(j<=tx.length){ txe.textContent=tx.slice(0,j); j+=2; setTimeout(st,14); } })();
+}
+
+/* ---------- downlink image reconstruction ---------- */
+var dlframe=$('dlframe'), dlrx=$('dlrx'), dlsum=$('dlsum');
+var SEGS=28, FRAME_B=345088, dlStarted=false;
+function fmtB(n){ return String(n).replace(/\B(?=(\d{3})+(?!\d))/g,' '); }
+function dlDone(quiet){
+  dlframe.classList.remove('rx','retx');
+  dlframe.classList.add('done');
+  dlframe.style.setProperty('--rx',1);
+  dlrx.textContent='RX 100% · '+fmtB(FRAME_B)+' / '+fmtB(FRAME_B)+' B · FRAME RECONSTRUCTED';
+  dlsum.textContent='CHECKSUM 0x7F3A9C21 OK · RS 0 ERR';
+  if(!quiet) logEvent('OPNAV-4471 reconstruction complete — 28/28 segments, checksum 0x7F3A9C21 verified. Last optical fix before imager power-down.');
+}
+function runDownlink(){
+  var seg=0;
+  dlframe.classList.add('rx');
+  dlrx.textContent='RX 0% · FRAME SYNC OK · SEG 0/'+SEGS;
+  function step(){
+    if(seg>=SEGS){ setTimeout(function(){ dlDone(false); },340); return; }
+    if(seg>3 && seg<SEGS-2 && Math.random()<.14){
+      dlframe.classList.add('retx');
+      dlrx.innerHTML='RX '+Math.round(seg/SEGS*100)+'% · <span class="rtx">SEG '+(seg+1)+' CRC FAIL — RETRANSMIT REQ</span>';
+      setTimeout(function(){ dlframe.classList.remove('retx'); advance(); },260+Math.random()*260);
+      return;
+    }
+    advance();
+  }
+  function advance(){
+    seg++;
+    var rx=seg/SEGS;
+    dlframe.style.setProperty('--rx',rx.toFixed(4));
+    dlrx.textContent='RX '+Math.round(rx*100)+'% · '+fmtB(Math.round(rx*FRAME_B))+' / '+fmtB(FRAME_B)+' B · SEG '+seg+'/'+SEGS;
+    setTimeout(step,60+Math.random()*150);
+  }
+  step();
+}
+if(RM){ dlDone(true); }
+else if('IntersectionObserver' in window){
+  var dlio=new IntersectionObserver(function(en){
+    if(en[0].isIntersecting && !dlStarted){ dlStarted=true; dlio.disconnect(); setTimeout(runDownlink,400); }
+  },{threshold:.35});
+  dlio.observe(dlframe);
+}else{ dlDone(true); }
+
+/* ---------- signal acquisition sweep ---------- */
+var sweepEl=$('sweep');
+sweepEl.addEventListener('animationend',function(){ sweepEl.classList.remove('go'); });
+function fireSweep(){
+  sweepEl.classList.remove('go');
+  void sweepEl.offsetWidth;
+  sweepEl.classList.add('go');
+  snr=5.2; pwr=-157.4;             /* momentary lock-on */
+}
+if(!RM) setInterval(fireSweep, 20000);
+
+/* ---------- PWS burst events on carrier trace ---------- */
+var BURSTS=[
+ 'PWS burst: plasma oscillation event, f_pe 2.93 kHz → n_e 0.107 cm⁻³. Spectrum archived.',
+ 'PWS burst: Langmuir wave packet 2.6–3.1 kHz, 41 s duration. Shock precursor candidate flagged.',
+ 'IDA event 4472: grain impact transient on PWS channel B. Coincidence window logged.'
+];
+var burstIdx=0;
+function scheduleBurst(){
+  setTimeout(function(){
+    burst=1;
+    snr=5.2;
+    logEvent(BURSTS[burstIdx%BURSTS.length]); burstIdx++;
+    scheduleBurst();
+  }, 16000+Math.random()*20000);
+}
+if(!RM) scheduleBurst();
+
 /* ---------- glitch flicker ---------- */
 function scheduleGlitch(){
   setTimeout(function(){
@@ -593,5 +739,6 @@ if(!RM){ requestAnimationFrame(loop); scheduleGlitch(); }
 <!-- PASS 1: pending -->
 <!-- PASS 2: pending -->
 <!-- PASS 3: pending -->
+<!-- PASS 4: PNL-07 DOWNLINK added — assets/probe.webp OPNAV frame, 28-segment scanline RX reveal (IO-triggered once, CRC-fail retransmit flicker, byte/checksum readout); 20 s phosphor sweepbar w/ SNR lock-on; PWS burst spikes on carrier canvas feeding live typed log entries; reduced-motion = full image + no sweeps/bursts; 390 px scrollWidth clean, zero console errors via file://. -->
 </body>
 </html>

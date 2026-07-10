@@ -221,6 +221,59 @@ section h2 em{font-style:italic;color:var(--peach)}
 .journal-copy p{line-height:1.75;color:var(--dim);margin-top:1.1rem}
 .journal-copy strong{color:var(--ink);font-weight:500}
 
+/* rem dream sequence */
+.dream-sec{padding:0;position:relative}
+.dream-media{
+  position:relative;overflow:hidden;
+  min-height:min(118svh,900px);
+  display:flex;align-items:center;justify-content:center;
+}
+.dream-still,.dream-video{
+  position:absolute;inset:0;width:100%;height:100%;
+  object-fit:cover;object-position:center;
+}
+.dream-video{opacity:0;transition:opacity 2.8s ease}
+.dream-video.playing{opacity:1}
+.dream-scrim{position:absolute;left:0;right:0;height:38%;pointer-events:none}
+.dream-scrim.top{top:0;background:linear-gradient(180deg,#12112e 0%,rgba(18,17,46,.55) 42%,rgba(18,17,46,0) 100%)}
+.dream-scrim.bot{bottom:0;background:linear-gradient(0deg,#12112e 0%,rgba(18,17,46,.55) 42%,rgba(18,17,46,0) 100%)}
+.dream-vignette{
+  position:absolute;inset:0;pointer-events:none;
+  background:radial-gradient(115% 90% at 50% 48%,rgba(11,10,32,0) 52%,rgba(11,10,32,.62) 100%);
+}
+.glim{
+  position:absolute;width:3px;height:3px;border-radius:50%;
+  background:var(--star);
+  box-shadow:0 0 9px 2px rgba(255,243,201,.55);
+  animation:twinkle 6.5s ease-in-out infinite;
+}
+.dream-quote{
+  position:relative;z-index:2;max-width:46ch;
+  margin:0 auto;padding:0 1.4rem;text-align:center;
+  animation:dreamBreathe 10s ease-in-out infinite;
+  will-change:transform,opacity;
+}
+@keyframes dreamBreathe{
+  0%,100%{transform:scale(1);opacity:.84}
+  50%{transform:scale(1.035);opacity:1}
+}
+.dream-quote blockquote{
+  font-family:"Fraunces",serif;font-style:italic;font-weight:330;
+  font-size:clamp(1.35rem,3.4vw,2.15rem);line-height:1.45;color:var(--mist);
+  text-shadow:0 2px 34px rgba(11,10,32,.85),0 0 90px rgba(20,19,47,.6);
+}
+.dream-quote figcaption{
+  margin-top:1.5rem;font-family:"Albert Sans",sans-serif;font-style:normal;
+  font-size:.74rem;letter-spacing:.3em;text-transform:uppercase;
+  color:rgba(255,243,201,.8);text-shadow:0 1px 18px rgba(11,10,32,.9);
+}
+
+/* deep-sleep dimming overlay (scroll-linked around the REM section) */
+#dreamdim{
+  position:fixed;inset:0;z-index:1;pointer-events:none;
+  background:#0b0a20;opacity:0;will-change:opacity;
+}
+
 /* breathing */
 .breathe-sec{text-align:center;overflow-x:clip} /* halo rings (.ring.r3 inset:-26%) bleed past 390px viewports */
 .breathe-sec h2,.breathe-sec .lede{margin-left:auto;margin-right:auto}
@@ -302,6 +355,7 @@ footer a:hover{color:var(--star)}
   .rise{opacity:1;transform:none;transition:none}
   .orb{transform:scale(1) !important;transition:none !important}
   .streak{display:none}
+  .dream-quote,.glim{animation:none}
 }
 </style>
 </head>
@@ -434,6 +488,7 @@ footer a:hover{color:var(--star)}
 </div>
 
 <div id="nightfall" aria-hidden="true"></div>
+<div id="dreamdim" aria-hidden="true"></div>
 
 <!-- ======= CONTENT ======= -->
 <main>
@@ -526,6 +581,29 @@ footer a:hover{color:var(--star)}
              and it always shows up before a big decision.</p>
         </div>
       </div>
+    </div>
+  </section>
+
+  <section id="rem" class="dream-sec" aria-label="A dream in progress — moonlit clouds seen from above">
+    <div class="dream-media" id="dreamMedia">
+      <img class="dream-still" src="assets/clouds.webp" width="1920" height="1072"
+           alt="An ocean of moonlit clouds seen from far above — lavender and peach glow drifting over deep-sleep indigo, pricked with faint stars"
+           loading="lazy" decoding="async">
+      <div class="dream-scrim top" aria-hidden="true"></div>
+      <div class="dream-scrim bot" aria-hidden="true"></div>
+      <div class="dream-vignette" aria-hidden="true"></div>
+      <span class="glim" style="top:22%;left:14%" aria-hidden="true"></span>
+      <span class="glim" style="top:15%;left:71%;animation-delay:-2.1s" aria-hidden="true"></span>
+      <span class="glim" style="top:34%;left:86%;animation-delay:-4.4s" aria-hidden="true"></span>
+      <span class="glim" style="top:68%;left:9%;animation-delay:-1.2s" aria-hidden="true"></span>
+      <span class="glim" style="top:79%;left:63%;animation-delay:-5.6s" aria-hidden="true"></span>
+      <span class="glim" style="top:58%;left:33%;animation-delay:-3.3s" aria-hidden="true"></span>
+      <figure class="dream-quote rise">
+        <blockquote>&ldquo;I was above the clouds, and the clouds were also asleep.
+          Somewhere underneath, a lighthouse kept blinking my name &mdash;
+          slower, and slower, and slower.&rdquo;</blockquote>
+        <figcaption>Somnium journal &middot; night 214 &middot; REM, 05:52</figcaption>
+      </figure>
     </div>
   </section>
 
@@ -670,8 +748,25 @@ window.addEventListener("scroll", function(){ scrollY = window.pageYOffset; }, {
 scrollY = window.pageYOffset;
 
 var nightfall = document.getElementById("nightfall");
-var docH = 1;
-function measure(){ docH = Math.max(1, document.documentElement.scrollHeight - window.innerHeight); }
+var dreamdim = document.getElementById("dreamdim");
+var dreamMedia = document.getElementById("dreamMedia");
+var docH = 1, remMid = 0, remSpan = 1;
+function measure(){
+  docH = Math.max(1, document.documentElement.scrollHeight - window.innerHeight);
+  if(dreamMedia){
+    var r = dreamMedia.getBoundingClientRect();
+    var top = r.top + window.pageYOffset;
+    remMid = top + r.height / 2;
+    remSpan = r.height / 2 + window.innerHeight * 0.95;
+  }
+}
+/* deep-sleep dimming: 0 far from the REM section, peaks as its center crosses the viewport center */
+function dreamDimAmount(sy){
+  if(!dreamMedia) return 0;
+  var d = Math.abs((sy + window.innerHeight / 2) - remMid);
+  var t = Math.max(0, Math.min(1, 1 - d / remSpan));
+  return (t * t * (3 - 2 * t)) * 0.72; // smoothstep, capped so text stays readable
+}
 measure();
 window.addEventListener("resize", measure);
 window.addEventListener("load", measure);
@@ -742,6 +837,7 @@ function frame(t){
   }
   var p = Math.min(1, scrollY / (docH * 0.72));
   nightfall.style.opacity = (p * 0.88).toFixed(3);
+  dreamdim.style.opacity = dreamDimAmount(scrollY).toFixed(3);
   if(!reduced) drawMotes(t);
   requestAnimationFrame(frame);
 }
@@ -750,8 +846,10 @@ if(reduced){
   layers.forEach(function(L){ L.el.style.transform = "translate3d(0,0,0)"; });
   drawMotes(0);
   window.addEventListener("scroll", function(){
-    var p = Math.min(1, window.pageYOffset / (docH * 0.72));
+    var sy = window.pageYOffset;
+    var p = Math.min(1, sy / (docH * 0.72));
     nightfall.style.opacity = (p * 0.88).toFixed(3);
+    dreamdim.style.opacity = dreamDimAmount(sy).toFixed(3);
   }, {passive:true});
 }else{
   requestAnimationFrame(frame);
@@ -775,6 +873,43 @@ function spawnStreak(){
   setTimeout(spawnStreak, 6500 + Math.random()*8500);
 }
 if(!reduced) setTimeout(spawnStreak, 3000);
+
+/* ---------- REM cloudscape loop ---------- */
+/* The <video> only exists when motion is allowed — under prefers-reduced-motion the
+   section keeps the still clouds.webp and nothing autoplays. */
+if(!reduced && dreamMedia && window.matchMedia("(prefers-reduced-motion: no-preference)").matches){
+  var dv = document.createElement("video");
+  dv.className = "dream-video";
+  dv.muted = true;
+  dv.loop = true;
+  dv.playsInline = true;
+  dv.autoplay = true;
+  dv.setAttribute("muted","");
+  dv.setAttribute("playsinline","");
+  dv.setAttribute("autoplay","");
+  dv.setAttribute("aria-hidden","true");
+  dv.preload = "metadata";
+  dv.poster = "assets/clouds-poster.webp";
+  dv.width = 1280; dv.height = 720;
+  dv.src = "assets/clouds.mp4";
+  dv.addEventListener("playing", function(){ dv.classList.add("playing"); });
+  dv.addEventListener("error", function(){ dv.remove(); }); // fall back to the still
+  dreamMedia.insertBefore(dv, dreamMedia.querySelector(".dream-scrim"));
+  var vio = new IntersectionObserver(function(es){
+    es.forEach(function(e){
+      if(e.isIntersecting){
+        var pr = dv.play();
+        if(pr && pr.catch) pr.catch(function(){});
+      }else{
+        dv.pause();
+      }
+    });
+  },{rootMargin:"140px 0px"});
+  vio.observe(dreamMedia);
+  document.addEventListener("visibilitychange", function(){
+    if(document.hidden) dv.pause();
+  });
+}
 
 /* ---------- section rise ---------- */
 var io = new IntersectionObserver(function(es){
@@ -872,5 +1007,11 @@ document.addEventListener("visibilitychange", function(){
         buttons and aria-hidden on all decorative layers added.
      6. Pointer parallax gated to (pointer:fine) so touch-scroll drags never yank the scene; document height
         re-measured on load so the nightfall arc stays calibrated after fonts settle. -->
+<!-- PASS 4 (REM cloudscape): full-bleed generated dream section (Nano Banana 2 still → Kling 3.0 Turbo loop,
+     304KB h264 crossfade self-loop) — JS-injected video (autoplay/muted/loop/playsinline, poster, IO play/pause,
+     error→still fallback), reduced-motion keeps only the lazy 1920×1072 still; edges dissolved with indigo
+     scrims + vignette; scroll-linked #dreamdim smoothstep overlay sinks the page toward deep-sleep indigo around
+     the section and releases after; quote breathes on a 10s cycle, six staggered star glimmers twinkle. -->
+
 </body>
 </html>

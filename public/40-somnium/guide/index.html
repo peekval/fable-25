@@ -104,13 +104,31 @@ p{line-height:1.75;color:var(--dim);margin-bottom:1.05rem}
   <p>Everything animates with transforms and opacity only, pauses when the tab hides, and collapses
      to a still, readable dreamscape under reduced-motion preferences.</p>
 
+  <h2>Generated assets</h2>
+  <p>The REM section's ocean of moonlit clouds is a generated cloudscape: a palette-exact still
+     (lavender #B9AEE0 and peach #F5C9B0 glow on deep-sleep indigo #232152, star glimmers #FFF3C9)
+     was created with <strong>Nano Banana 2</strong>, then animated into an extreme-slow-motion drift with
+     <strong>Kling 3.0 Turbo image-to-video</strong>, both driven through the <strong>Higgsfield MCP</strong>.
+     ffmpeg finished the job: a 1920-wide WebP still and poster, and an h264 CRF-26 encode with a
+     crossfaded head/tail so the ~4.5-second, 304KB clip loops seamlessly.</p>
+  <p>On the page it plays as a full-bleed dream sequence behind a floating journal quote. The video is
+     injected by JS only when motion is allowed (autoplay, muted, loop, playsinline, poster), an
+     IntersectionObserver pauses it offscreen, and under reduced motion the section keeps only the lazy
+     still image. Indigo gradient scrims and a vignette dissolve its edges into the page, and a
+     scroll-linked overlay — a smoothstep of the section's distance from the viewport center — dims the
+     whole site toward deep-sleep indigo as you sink into the dream, then gently releases it after.</p>
+
   <h2>Reproduction prompt</h2>
   <div class="prompt-box">
-    <p id="promptText">Build a one-page marketing site for SOMNIUM, a sleep and dream journal app, as a single self-contained HTML file (Google Fonts only; no images). Palette: dusk lavender #B9AEE0, drowsy peach #F5C9B0, deep-sleep indigo #232152, mist #E9E4F4, star glimmer #FFF3C9. Fonts: Fraunces for dreamy display headlines (italic accents), Albert Sans for body.
+    <p id="promptText">Build a one-page marketing site for SOMNIUM, a sleep and dream journal app, as a single self-contained HTML file (Google Fonts; the only local assets are a generated cloudscape in assets/: clouds.webp still, clouds.mp4 loop, clouds-poster.webp). Palette: dusk lavender #B9AEE0, drowsy peach #F5C9B0, deep-sleep indigo #232152, mist #E9E4F4, star glimmer #FFF3C9. Fonts: Fraunces for dreamy display headlines (italic accents), Albert Sans for body.
 
 The hero is a surreal floating dreamscape with true depth: a fixed full-viewport scene of 5–6 parallax planes — twinkling starfield, a giant slow SVG moon with radial shading and craters, soft blurred SVG cloud blobs near and far, and floating SVG islands with tiny glowing windows. One rAF loop moves each plane by a different ratio of damped pointer position (lerp ~0.035, underwater-slow) plus scroll offset, so scrolling sinks the dreamscape upward. Give every plane its own slow drift or bob animation with mismatched durations and negative delays so nothing moves in sync. Add ~80 canvas fireflies on slow sine drift (40 on mobile) and occasional falling-star streaks. As the user scrolls, fade in a fixed indigo overlay so the palette deepens dusk-to-indigo like falling asleep.
 
-Sections: how it works (three rituals), dream journal feature with sample half-awake entries, a genuinely usable 4-7-8 breathing widget (expanding orb, text cue, countdown), a science-of-sleep note, download CTA, footer. Barely-moving wavy SVG dividers between sections. Tender, unsappy copy. Transforms and opacity only, pause when hidden, full prefers-reduced-motion fallback with a static dreamscape and text-timed breathing.</p>
+Generate the cloudscape assets first: prompt Nano Banana 2 for a 16:9 ocean of moonlit clouds seen from far above — lavender and peach glow on deep indigo, mist veils, faint star glimmers, palette-exact — then feed that still to Kling 3.0 Turbo image-to-video (via the Higgsfield MCP) for an extreme-slow-motion drift, and finish with ffmpeg: a 1920-wide WebP still and poster, plus an h264 CRF-26 encode with a crossfaded head/tail so the ~4–5s clip self-loops seamlessly at ~300KB.
+
+After the dream-journal section, stage the loop as a full-bleed REM dream sequence: the video plays behind a floating journal quote that breathes (very slow ~10s scale/opacity oscillation) among a few staggered twinkling star dots, with indigo gradient scrims top and bottom plus a vignette so the edges dissolve into the page — sinking into a dream, not watching a video. Inject the video with JS only when motion is allowed (autoplay muted loop playsinline, preload=metadata, poster); an IntersectionObserver pauses it offscreen; prefers-reduced-motion gets only the lazy still image with real dimensions. Add a scroll-linked deep-sleep dimmer: a fixed overlay whose opacity is a smoothstep of the REM section's distance from the viewport center, so the whole page darkens toward deep indigo as you reach the dream and gently returns after.
+
+Sections: how it works (three rituals), dream journal feature with sample half-awake entries, the REM dream sequence, a genuinely usable 4-7-8 breathing widget (expanding orb, text cue, countdown), a science-of-sleep note, download CTA, footer. Barely-moving wavy SVG dividers between sections. Tender, unsappy copy. Transforms and opacity only, pause when hidden, full prefers-reduced-motion fallback with a static dreamscape and text-timed breathing.</p>
   </div>
   <button class="copy-btn" id="copyBtn" type="button">Copy prompt</button>
 

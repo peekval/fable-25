@@ -8,7 +8,8 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Syne:wght@700;800&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
-<!-- PASS: teaser cut mid-sentence at ~45 words, fade overlay uses site ink #101114, no full prompt anywhere in this file; links /16-mercvry/ + / verified; lock-box pattern matches guides 17-20; single column layout is mobile-safe at 390px. -->
+<!-- PASS: teaser cut mid-sentence at ~45 words, fade overlay uses site ink #101114, no full prompt anywhere in this file; links /16-mercvry/ + / verified; lock-box pattern matches guides 17-20; single column layout is mobile-safe at 390px.
+PASS 2: added Exhibit A laser-scan-reveal walkthrough + Generated-assets note (Nano Banana 2 via Higgsfield MCP, 2K, palette-locked, ffmpeg WebP); teaser + word count updated to match the expanded prompt. -->
 <style>
 :root{
   --ink:#101114; --ink2:#16181d; --steel-hi:#DDE3EA; --steel:#9AA2AE;
@@ -85,6 +86,8 @@ p strong{color:var(--steel-hi);font-weight:700}
 
   <h2><span class="no">01 / THE READ</span>How it was built</h2>
   <p>The liquid-metal hero is a <strong>2D metaball field</strong>: six blobs whose r&sup2;/d&sup2; influence is summed per pixel at quarter resolution into an offscreen buffer, then upscaled &mdash; pixels above the threshold get a vertical chrome palette, a blue-white rim just above the isoline, darkened cores, and an electric #4D5BFF halo on the anti-aliased skirt. One blob chases the cursor; on touch it drifts autonomously.</p>
+  <p>Exhibit&nbsp;A is a <strong>laser-scan reveal</strong>: the lattice photograph sits in a machined frame with an engraved caption plate, clipped to nothing until it scrolls into view &mdash; then a volt scanline sweeps down while a stepped clip-path inset (steps(36)) uncovers the image in discrete slices, as if it were being sintered layer by layer, with a faint layer-line flicker overlay riding the pass. Four metric readouts tick up alongside in 26 quantised steps; hovering the frame intensifies the volt rim and raises a crosshair metrology overlay with dimension callouts. Under reduced motion the image renders pre-completed and the counters land on their final values.</p>
+  <p><strong>Generated assets.</strong> The gyroid-lattice macro was generated with <strong>Nano Banana 2</strong> via the <strong>Higgsfield MCP</strong> at 2K, palette-locked to the site's inks (#101114 / #DDE3EA / #9AA2AE with a single #4D5BFF rim light), then converted to WebP with <strong>ffmpeg</strong> (1400&times;1738, ~150&nbsp;KB, served with intrinsic dimensions and lazy loading).</p>
   <p>The headlines are <strong>chrome text</strong>: a ten-stop silver gradient clipped into the glyphs with background-clip:text, its background-position eased toward the cursor's X so the "environment" slides across the metal &mdash; wrapped in an @supports guard so unsupported browsers fall back to solid silver. Magnetic buttons follow the pointer and release with a springy overshoot, the marquee blurs proportionally to scroll velocity, and the specimen drawings animate their gradients with SMIL &mdash; which the script strips under reduced motion, since CSS media queries can't stop SMIL. The whole simulation pauses via IntersectionObserver whenever the hero leaves the viewport.</p>
 
   <h2><span class="no">02 / THE PRODUCT</span>Reproduction prompt</h2>
@@ -95,7 +98,7 @@ p strong{color:var(--steel-hi);font-weight:700}
     </div>
     <div class="lockline">
       <svg width="12" height="14" viewBox="0 0 12 14" fill="none" aria-hidden="true"><rect x="1" y="6" width="10" height="7" rx="1" stroke="#6E7683"/><path d="M3.5 6V4.5a2.5 2.5 0 0 1 5 0V6" stroke="#6E7683"/></svg>
-      Full prompt (&approx;250 words) included with purchase.
+      Full prompt (&approx;340 words) included with purchase.
     </div>
   </div>
 

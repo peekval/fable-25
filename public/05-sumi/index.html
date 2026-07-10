@@ -31,6 +31,11 @@
     canvases — threshold lowered with an early rootMargin; (3) added theme-color meta for
     mobile browser chrome; (4) added lang="ja" to visible Japanese text (headings, quote,
     hero glyph, session labels) for correct screen-reader pronunciation.
+  PASS 4: added the 掛軸 Masterwork section — a generated sumi-e scroll (assets/inkscape.webp,
+    lazy + intrinsic 1920x1072) unveiled once by a diagonal soft-edged mask-position sweep
+    (ink-wipe, wash "dries" via delayed blur/contrast settle); scroll strokes now bloom
+    (one-shot blur pulse) the instant they complete; hanko stamps emit suzuri ripple rings.
+    All three honor prefers-reduced-motion with static final states.
 -->
 <style>
   :root{
@@ -305,6 +310,88 @@
   .g-cap .t span{display:block; font-family:var(--body); font-weight:400; font-size:.68rem; color:var(--ink-60); letter-spacing:.3em; text-transform:uppercase; margin-top:.25rem}
   .g-cap .n{font-family:var(--disp); color:var(--seal); font-size:1.05rem}
 
+  /* ---------- masterwork ---------- */
+  .masterwork{padding:clamp(6rem,13vh,10rem) 0 clamp(4rem,9vh,7rem); overflow-x:clip}
+  .masterwork .head-row{display:flex; align-items:flex-end; justify-content:space-between; gap:2rem; margin-bottom:clamp(3rem,7vh,5rem)}
+  .scroll-mount{
+    max-width:1100px; margin:0 auto;
+    padding:clamp(1.6rem,4.5vw,3.4rem) clamp(1.2rem,4vw,3.4rem);
+    background:var(--washi-deep);
+    border:1px solid var(--ink-15);
+    position:relative;
+  }
+  /* jiku — the dark rods a hanging scroll is mounted on */
+  .scroll-mount::before, .scroll-mount::after{
+    content:""; position:absolute; left:clamp(.5rem,1.6vw,1.4rem); right:clamp(.5rem,1.6vw,1.4rem);
+    height:7px; background:linear-gradient(rgba(26,24,21,.92), rgba(26,24,21,.72));
+    border-radius:4px;
+  }
+  .scroll-mount::before{top:clamp(.55rem,1.7vw,1.5rem)}
+  .scroll-mount::after{bottom:clamp(.55rem,1.7vw,1.5rem)}
+  .scroll-mount img{
+    display:block; width:100%; height:auto;
+    border:1px solid var(--ink-08);
+    /* ink-wipe reveal: a soft-edged diagonal mask three times the width of the
+       frame; sliding its position sweeps a wet brush edge across the paper */
+    -webkit-mask-image:linear-gradient(115deg, #000 38%, rgba(0,0,0,.72) 46%, rgba(0,0,0,.22) 54%, transparent 62%);
+            mask-image:linear-gradient(115deg, #000 38%, rgba(0,0,0,.72) 46%, rgba(0,0,0,.22) 54%, transparent 62%);
+    -webkit-mask-size:300% 100%; mask-size:300% 100%;
+    -webkit-mask-repeat:no-repeat; mask-repeat:no-repeat;
+    -webkit-mask-position:98% 0; mask-position:98% 0;
+    filter:blur(4px) contrast(.92);
+  }
+  .scroll-mount.revealed img{
+    -webkit-mask-position:0% 0; mask-position:0% 0;
+    filter:blur(0) contrast(1);
+    transition:
+      -webkit-mask-position 3s cubic-bezier(.24,.55,.26,.99),
+      mask-position 3s cubic-bezier(.24,.55,.26,.99),
+      filter 2.6s ease .6s; /* fast attack, slow drying tail — like the ensō */
+  }
+  .scroll-cap{
+    display:flex; justify-content:space-between; align-items:baseline; gap:1rem;
+    margin-top:clamp(1.3rem,3vw,2rem);
+    opacity:0; transform:translateY(10px);
+    transition:opacity 1.2s ease 1.6s, transform 1.2s cubic-bezier(.22,1,.36,1) 1.6s;
+  }
+  .scroll-mount.revealed .scroll-cap{opacity:1; transform:none}
+  .scroll-cap .t{font-family:var(--disp); font-weight:600; font-size:1.05rem; letter-spacing:.1em}
+  .scroll-cap .t span{display:block; font-family:var(--body); font-weight:400; font-size:.68rem; color:var(--ink-60); letter-spacing:.3em; text-transform:uppercase; margin-top:.3rem}
+  .scroll-cap .n{font-family:var(--disp); color:var(--seal); font-size:1.05rem; white-space:nowrap}
+  @media (prefers-reduced-motion: reduce){
+    .scroll-mount img{
+      -webkit-mask-image:none; mask-image:none;
+      filter:none; transition:none;
+    }
+    .scroll-cap{opacity:1; transform:none; transition:none}
+  }
+
+  /* ink-bleed pulse — a stroke blooms into the paper the instant it completes */
+  canvas.bloom{animation:inkbleed 1.1s ease-out 1}
+  @keyframes inkbleed{
+    0%,100%{filter:blur(0)}
+    38%{filter:blur(1.6px)}
+  }
+  @media (prefers-reduced-motion: reduce){ canvas.bloom{animation:none} }
+
+  /* suzuri ripple — ink-drop rings spreading from a freshly pressed seal */
+  .seal-wrap{position:relative; display:inline-block}
+  .seal-wrap::before, .seal-wrap::after{
+    content:""; position:absolute; left:50%; top:50%;
+    width:64px; height:64px; margin:-32px 0 0 -32px;
+    border-radius:50%; border:1px solid rgba(26,24,21,.34);
+    opacity:0; transform:scale(.45); pointer-events:none;
+  }
+  .seal-wrap.rippling::before{animation:ripple 1.3s cubic-bezier(.2,.6,.35,1) .3s forwards}
+  .seal-wrap.rippling::after{border-color:rgba(199,62,46,.32); animation:ripple 1.5s cubic-bezier(.2,.6,.35,1) .46s forwards}
+  @keyframes ripple{
+    0%{opacity:.85; transform:scale(.45)}
+    100%{opacity:0; transform:scale(2.4)}
+  }
+  @media (prefers-reduced-motion: reduce){
+    .seal-wrap.rippling::before, .seal-wrap.rippling::after{animation:none; opacity:0}
+  }
+
   /* ---------- workshop ---------- */
   .workshop{padding:clamp(6rem,13vh,10rem) 0 clamp(5rem,10vh,8rem); overflow-x:clip}
   .workshop .grid{display:grid; grid-template-columns:auto 1fr auto; gap:clamp(2.5rem,6vw,6rem); align-items:start}
@@ -370,7 +457,8 @@
     .vhead .en{padding-top:0}
     .philosophy .grid, .workshop .grid{grid-template-columns:1fr}
     .ph-cols{grid-template-columns:1fr; gap:1.6rem}
-    .treasures .head-row, .gallery .head-row{flex-direction:column; align-items:flex-start}
+    .treasures .head-row, .gallery .head-row, .masterwork .head-row{flex-direction:column; align-items:flex-start}
+    .scroll-cap{flex-direction:column; gap:.4rem}
     .t-grid{grid-template-columns:1fr; border-left:none}
     .t-card{border-right:none; border-bottom:1px solid var(--ink-15); padding:2.2rem .2rem}
     .inkwash .quote{height:min(62vh,420px); font-size:1.15rem}
@@ -417,7 +505,7 @@
           <p class="copy rise">What remains unpainted matters most. Emptiness in the composition — <strong>yohaku, the left-white</strong> — is not absence but held breath. Fog, water, distance, silence: all of it lives in the untouched cream of the paper.</p>
         </div>
         <div class="ph-seal">
-          <svg class="hanko" viewBox="0 0 64 64" role="img" aria-label="Red seal reading ink heart">
+          <span class="seal-wrap"><svg class="hanko" viewBox="0 0 64 64" role="img" aria-label="Red seal reading ink heart">
             <g filter="url(#roughen)">
               <rect x="3" y="3" width="58" height="58" rx="7" fill="#C73E2E"/>
               <text x="32" y="27" text-anchor="middle" font-family="'Shippori Mincho',serif" font-weight="700" font-size="21" fill="#F5F0E6">墨</text>
@@ -429,7 +517,7 @@
                 <feDisplacementMap in="SourceGraphic" in2="n" scale="2.6"/>
               </filter>
             </defs>
-          </svg>
+          </svg></span>
         </div>
       </div>
     </div>
@@ -506,6 +594,26 @@
   </div>
 </section>
 
+<!-- ═══════════ MASTERWORK ═══════════ -->
+<section class="masterwork" id="masterwork">
+  <div class="wrap">
+    <div class="head-row">
+      <h2 class="vhead rise"><span class="kanji" lang="ja">掛軸</span><span class="en">The Masterwork</span></h2>
+      <p class="copy intro rise" style="max-width:26rem">One painting in this house is never for sale. The second master painted it in the winter of 1978, in a single sitting, and hung it before the ink was dry. It has not moved since.</p>
+    </div>
+  </div>
+  <div class="wrap">
+    <figure class="scroll-mount rise">
+      <img src="assets/inkscape.webp" width="1920" height="1072" loading="lazy" decoding="async"
+           alt="Sumi-e ink painting: mist-wrapped mountains rendered in dry-brush strokes, wet fog washes across the valleys, a tiny heron in flight, and a vermilion seal stamped on warm washi paper">
+      <figcaption class="scroll-cap">
+        <div class="t">遠山無尽 — Far Mountains, Without End<span>Ink on washi · hanging scroll · 1978</span></div>
+        <div class="n">掛物 · 非売</div>
+      </figcaption>
+    </figure>
+  </div>
+</section>
+
 <!-- ═══════════ WORKSHOP ═══════════ -->
 <section class="workshop" id="workshop">
   <canvas class="stroke-line" data-stroke="under" aria-hidden="true"></canvas>
@@ -525,7 +633,7 @@
         <a class="cta rise" href="mailto:keiko@sumi-studio.jp"><span>Request a seat</span></a>
       </div>
       <div class="w-seal">
-        <svg class="hanko" viewBox="0 0 64 64" role="img" aria-label="Red seal reading practice">
+        <span class="seal-wrap"><svg class="hanko" viewBox="0 0 64 64" role="img" aria-label="Red seal reading practice">
           <g filter="url(#roughen2)">
             <rect x="3" y="3" width="58" height="58" rx="7" fill="#C73E2E"/>
             <text x="32" y="27" text-anchor="middle" font-family="'Shippori Mincho',serif" font-weight="700" font-size="21" fill="#F5F0E6">稽</text>
@@ -537,7 +645,7 @@
               <feDisplacementMap in="SourceGraphic" in2="n" scale="2.6"/>
             </filter>
           </defs>
-        </svg>
+        </svg></span>
       </div>
     </div>
   </div>
@@ -769,6 +877,11 @@
           /* cap work per frame — a fast scroll never stalls a frame */
           s.drawn = drawStations(s.ctx, s.st, s.drawn, Math.min(s.target, s.drawn + 450));
           if (s.drawn < s.target) more = true;
+        }
+        /* the moment a stroke completes it blooms into the paper once */
+        if (!s.bloomed && s.drawn >= s.st.length){
+          s.bloomed = true;
+          if (!REDUCED) s.cv.classList.add('bloom');
         }
       }
       if (more) onScroll();
@@ -1006,6 +1119,8 @@
     if (REDUCED){
       document.querySelectorAll('.rise').forEach(el => el.classList.add('in'));
       document.querySelectorAll('.hanko').forEach(el => el.classList.add('stamped'));
+      const mw = document.querySelector('.scroll-mount');
+      if (mw) mw.classList.add('revealed');
       return;
     }
     const io = new IntersectionObserver(entries => {
@@ -1021,10 +1136,26 @@
       entries.forEach(e => {
         if (!e.isIntersecting) return;
         e.target.classList.add('stamped');
+        /* suzuri moment — ink-drop rings spread from the impact */
+        const wrap = e.target.closest('.seal-wrap');
+        if (wrap) wrap.classList.add('rippling');
         ioSeal.unobserve(e.target);
       });
     }, { threshold: .7 });
     document.querySelectorAll('.hanko').forEach(el => ioSeal.observe(el));
+
+    /* the masterwork — one ink-wipe reveal, fired once */
+    const mount = document.querySelector('.scroll-mount');
+    if (mount){
+      const ioMw = new IntersectionObserver(entries => {
+        entries.forEach(e => {
+          if (!e.isIntersecting) return;
+          e.target.classList.add('revealed');
+          ioMw.unobserve(e.target);
+        });
+      }, { threshold: .35, rootMargin: '0px 0px -4% 0px' });
+      ioMw.observe(mount);
+    }
 
     const ioLand = new IntersectionObserver(entries => {
       entries.forEach(e => {

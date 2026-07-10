@@ -93,13 +93,20 @@ footer a:hover{color:var(--amber)}
     <div class="phead"><span>How it was built</span><span class="pid">PNL-01 / DOC</span></div>
     <p>The page opens with a <strong>fake boot sequence</strong>: four terminal lines type themselves in using a steps() width animation, then the overlay fades and every panel wipes in with a staggered clip-path reveal. A fixed overlay of repeating 1px scanlines plus a radial vignette sits over everything, selling the CRT look, while a faint 48px grid is painted straight onto the body background.</p>
     <p>Each panel gets its amber corner brackets injected by a few lines of JS, and the instruments are genuinely alive: a real UTC clock, telemetry values that <strong>random-walk inside tight bounds</strong>, a radar sweep made from a rotating conic-gradient with blips that fade in sync, and a canvas waveform redrawn at a throttled ~8fps. The trajectory plot is plain SVG — a dot rides the flight path using getPointAtLength — and the mission log types itself entry by entry. A 60ms inverted "glitch" flash every few seconds and a prefers-reduced-motion path that skips all of it complete the illusion.</p>
+    <p>The showpiece is PNL-07, the <strong>downlink optical-nav frame</strong>: when the panel scrolls into view, the probe photograph reconstructs like a real deep-space transmission — 28 horizontal scanline segments revealed top-down via a CSS clip-path inset driven by a <strong>--rx custom property</strong>, an amber phosphor edge line riding the reveal boundary, occasional red "CRC FAIL — RETRANSMIT REQ" flickers, and a mono byte-count readout that ends in a verified checksum line plus a typed mission-log entry. Two more escalations keep the room busy: a full-viewport <strong>300ms amber phosphor sweep every 20 seconds</strong> (with a momentary SNR lock-on), and randomized PWS plasma-burst spikes on the carrier canvas that each log a diegetic ops note. Reduced-motion users get the fully rendered frame and no sweeps.</p>
+  </section>
+
+  <section class="panel howto">
+    <b class="crn c1"></b><b class="crn c2"></b><b class="crn c3"></b><b class="crn c4"></b>
+    <div class="phead"><span>Generated assets</span><span class="pid">PNL-02 / GEN</span></div>
+    <p>The single photograph — <strong>assets/probe.webp</strong>, the probe's parabolic dish, gold foil and magnetometer boom tiny against the black starfield — was generated with <strong>Nano Banana 2</strong> via the <strong>Higgsfield MCP</strong> at 2K, with the prompt <strong>palette-locked</strong> to the site's exact colors (#0A0C10 space, #FFB000 amber glint, #3DFF8C accents), then converted and compressed to WebP with <strong>ffmpeg</strong>. It ships at 1920×1072 with real width/height attributes and lazy loading.</p>
   </section>
 
   <section class="panel">
     <b class="crn c1"></b><b class="crn c2"></b><b class="crn c3"></b><b class="crn c4"></b>
-    <div class="phead"><span>Reproduction Prompt</span><span class="pid">PNL-02 / PRM</span></div>
+    <div class="phead"><span>Reproduction Prompt</span><span class="pid">PNL-03 / PRM</span></div>
     <div class="prompt-teaser">
-      <div class="tz">Build a single-file HTML mission-control dashboard for "DEEP RELAY", a fictional interstellar probe 103 AU out. Palette: near-black #0A0C10 background with panel gradient #0D1016, phosphor amber #FFB000, signal green #3DFF8C, alert red #FF3B30, grid-line blue-grey #2A3442, body ink #C8D2DC, dim #5C6B7A. Fonts: Share Tech Mono for everything, Rajdhani 700 for the giant hero wordmark. Signature technique: a CRT boot sequence…
+      <div class="tz">Build a single-file HTML mission-control dashboard for "DEEP RELAY", a fictional interstellar probe 103 AU out, plus one generated probe photograph revealed as a scanline-reconstructed downlink frame. Palette: near-black #0A0C10 background with panel gradient #0D1016, phosphor amber #FFB000, signal green #3DFF8C, alert red #FF3B30, grid-line blue-grey #2A3442, body ink #C8D2DC, dim #5C6B7A. Fonts: Share Tech Mono for everything, Rajdhani 700 for the giant hero wordmark. Signature technique: a CRT boot sequence…
         <div class="fade" aria-hidden="true"></div>
       </div>
       <p class="lockline"><span class="padlock">[LOCKED]</span> Full prompt (≈250 words) included with purchase.</p>

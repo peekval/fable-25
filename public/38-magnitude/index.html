@@ -99,12 +99,18 @@ body{
   mask-image:radial-gradient(85% 70% at 50% 55%,#000 0%,transparent 100%);
   transition:background-color 1s ease;
 }
-.layer{
-  position:absolute;inset:-15%;display:none;
-  transform-origin:50% 50%;
-  will-change:transform,opacity;
+.lmask{
+  /* stationary mask wrapper: masking the scaled layers directly forces the
+     compositor to rasterize the mask at scale-18 size (GPU-memory blowup /
+     tab crash on real hardware) — masking this fixed-size group is cheap */
+  position:absolute;inset:-15%;pointer-events:none;
   -webkit-mask-image:radial-gradient(circle,#000 52%,transparent 76%);
   mask-image:radial-gradient(circle,#000 52%,transparent 76%);
+}
+.layer{
+  position:absolute;inset:0;display:none;
+  transform-origin:50% 50%;
+  will-change:transform,opacity;
 }
 .layer canvas,.layer svg{position:absolute;inset:0;width:100%;height:100%;display:block}
 .layer .spinwrap{position:absolute;inset:0}
@@ -244,6 +250,7 @@ footer a:hover{color:var(--cyan);border-color:var(--cyan)}
   <div class="stage" id="stage">
     <div class="tint" aria-hidden="true"></div>
 
+    <div class="lmask" aria-hidden="true">
     <div class="layer l-cosmic"  data-l="0"><canvas></canvas></div>
     <div class="layer l-galaxy"  data-l="1"><div class="spinwrap"><canvas></canvas></div></div>
     <div class="layer l-solar"   data-l="2"><canvas></canvas></div>
@@ -291,6 +298,7 @@ footer a:hover{color:var(--cyan);border-color:var(--cyan)}
         <g id="nucleus"></g>
       </svg>
     </div>
+    </div><!-- /.lmask -->
 
     <!-- captions -->
     <aside class="cap" data-l="0">
@@ -392,7 +400,7 @@ function rand(seedObj){ // small deterministic PRNG so resize redraws look ident
 /* ============ drawing ============ */
 function setupCanvas(cv, w, h){
   // cap backing-store width so six oversized layers never exhaust GPU memory on 4K screens
-  var eff = Math.min(DPR, 2800 / Math.max(w, 1));
+  var eff = Math.min(DPR, 2200 / Math.max(w, 1));
   cv.width = Math.round(w * eff); cv.height = Math.round(h * eff);
   var ctx = cv.getContext("2d");
   ctx.setTransform(eff,0,0,eff,0,0);
@@ -811,8 +819,6 @@ function update(){
 
   layers.forEach(function(layer,i){
     var active = (i===cur) || (i===cur+1);
-    layer.style.display = active ? "block" : "none";
-    if(!active) return;
     var s, op;
     if(i === cur){
       s = Math.pow(Z, i===N-1 ? Math.min(t,.4)*.5 : t);
@@ -821,6 +827,10 @@ function update(){
       s = Math.pow(Z, t-1);
       op = clamp(t/.35, 0, 1);
     }
+    // fully faded-out layers leave the compositor entirely — a scale-16 layer
+    // at opacity 0 still costs GPU memory if it stays displayed
+    if(!active || op <= .02){ layer.style.display = "none"; return; }
+    layer.style.display = "block";
     layer.style.transform = "scale(" + s.toFixed(4) + ")";
     layer.style.opacity = op.toFixed(3);
   });
@@ -935,5 +945,13 @@ addEventListener("load", function(){ measure(); update(); });
         12-nucleon nucleus; epilogue uses the true log-midpoint (atom↔Sun ≈ 0.37 m ≈ human).
      4. Rail dots are real buttons with aria-labels that scroll to their level; accent colour
         eases through violet→gold→teal→green→rose→cyan via a single --accent custom property. -->
+<!-- PASS 5 (GPU-crash fix):
+     1. Fixed a nested-loop bug (mito() reused drawCell's loop var i) that hung the page before
+        DOMContentLoaded (PASS 4, separate commit).
+     2. The radial mask moved from the scaled .layer elements onto a stationary .lmask wrapper —
+        masking a layer mid scale(18) forced the compositor to rasterize mask textures at up to
+        ~50k px and crashed the GPU process on real hardware.
+     3. Faded-out layers (opacity <= .02) now switch to display:none instead of staying composited
+        at scale ~16; canvas backing-store cap lowered 2800 -> 2200 px (~70 MB less at 4K). -->
 </body>
 </html>

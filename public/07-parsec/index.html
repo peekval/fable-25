@@ -156,6 +156,88 @@
   .card h3{font-size:.82rem;font-weight:500;letter-spacing:.1em;text-transform:uppercase;color:var(--cyan);margin-bottom:.55rem}
   .card p{font-size:.9rem;color:var(--mute)}
 
+  /* ---------- station photo ---------- */
+  .photo-sec{padding:0;margin:clamp(84px,12vh,150px) 0}
+  .photo-frame{
+    position:relative;overflow:hidden;
+    min-height:clamp(460px,88svh,780px);
+    display:flex;align-items:flex-end;
+    border-top:1px solid rgba(110,231,240,.14);
+    border-bottom:1px solid rgba(110,231,240,.14);
+  }
+  .photo-frame img{
+    position:absolute;left:0;top:-6%;width:100%;height:112%;
+    object-fit:cover;object-position:center 40%;
+    will-change:transform;
+  }
+  #photoSky{position:absolute;inset:0;width:100%;height:100%;pointer-events:none}
+  .photo-frame::after{ /* readability scrim over the dark foreground */
+    content:"";position:absolute;inset:0;pointer-events:none;
+    background:linear-gradient(180deg,rgba(5,7,15,.28) 0%,rgba(5,7,15,0) 30%,rgba(5,7,15,.05) 62%,rgba(5,7,15,.78) 100%);
+  }
+  .photo-inner{
+    position:relative;z-index:2;width:100%;max-width:1120px;margin:0 auto;
+    padding:clamp(20px,5vw,48px);
+  }
+  .photo-panel{
+    max-width:480px;background:rgba(5,7,15,.55);border:1px solid var(--line);
+    border-radius:18px;padding:clamp(1.4rem,3vw,2.2rem);
+    backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);
+  }
+  .photo-panel h2{font-size:clamp(1.5rem,3.4vw,2.3rem);max-width:none}
+  .photo-panel p{color:rgba(242,246,255,.78);font-size:.95rem}
+  .photo-plate{
+    /* top offset clears the fixed FOCUS ring (58px + 20px) when the section pins to the viewport top */
+    position:absolute;top:clamp(92px,14vh,120px);right:clamp(16px,3vw,34px);z-index:2;
+    font-family:var(--mono);font-size:.62rem;letter-spacing:.24em;color:rgba(242,246,255,.7);
+    text-align:right;text-transform:uppercase;
+    text-shadow:0 1px 8px rgba(5,7,15,.9);
+  }
+  .photo-plate b{display:block;color:var(--cyan);font-weight:500;margin-bottom:.25rem}
+
+  /* ---------- the Surveyor ---------- */
+  .surveyor{
+    margin-top:3.5rem;background:var(--card);border:1px solid var(--line);border-radius:20px;
+    overflow:hidden;backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);
+  }
+  .surv-head{
+    display:flex;justify-content:space-between;flex-wrap:wrap;gap:.6rem;
+    padding:1rem 1.5rem;border-bottom:1px solid rgba(242,246,255,.08);
+    font-family:var(--mono);font-size:.66rem;letter-spacing:.22em;color:var(--faint);text-transform:uppercase;
+  }
+  .surv-head span:last-child{color:var(--magenta)}
+  .surveyor svg{display:block;width:100%;height:auto}
+  .surv-line{
+    fill:none;stroke:var(--cyan);stroke-width:1.2;opacity:.9;
+    stroke-dasharray:1;stroke-dashoffset:1;
+    filter:drop-shadow(0 0 3px rgba(110,231,240,.7));
+    transition:stroke-dashoffset 1.4s cubic-bezier(.3,.7,.2,1);
+  }
+  .surveyor.in .surv-line{stroke-dashoffset:0}
+  .surveyor.in .surv-line:nth-of-type(2){transition-delay:.7s}
+  .surveyor.in .surv-line:nth-of-type(3){transition-delay:1.4s}
+  .surveyor.in .surv-line:nth-of-type(4){transition-delay:2.1s}
+  .surv-star{fill:var(--star)}
+  .surv-star.bright{filter:drop-shadow(0 0 5px rgba(242,246,255,.9))}
+  .surv-label{
+    font-family:var(--mono);font-size:11px;letter-spacing:.18em;
+    fill:rgba(242,246,255,.72);text-transform:uppercase;
+    opacity:0;transition:opacity .9s ease 2.6s;
+  }
+  .surv-label tspan{fill:var(--cyan)}
+  .surveyor.in .surv-label{opacity:1}
+  @media (prefers-reduced-motion:reduce){
+    .surv-line{stroke-dashoffset:0;transition:none}
+    .surv-label{opacity:1;transition:none}
+  }
+  .surv-copy{
+    padding:1.4rem 1.5rem 1.7rem;border-top:1px solid rgba(242,246,255,.08);
+    display:flex;flex-wrap:wrap;gap:1rem 2.5rem;align-items:baseline;
+  }
+  .surv-copy h3{font-size:1.05rem;font-weight:500}
+  .surv-copy .latin{font-family:var(--mono);font-size:.68rem;letter-spacing:.18em;color:var(--magenta);text-transform:uppercase}
+  .surv-copy p{font-size:.88rem;color:var(--mute);flex:1 1 320px;max-width:60ch}
+
   /* ---------- constellations ---------- */
   .const-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(250px,1fr));gap:16px;margin-top:3rem}
   .const-card{
@@ -364,10 +446,30 @@
     </div>
   </section>
 
+  <!-- STATION PHOTO -->
+  <section class="photo-sec" id="station">
+    <div class="photo-frame" id="photoFrame">
+      <img id="domeImg" src="assets/dome.webp" width="1920" height="1072" loading="lazy" decoding="async"
+           alt="The PARSEC dome on the Piz Larun summit ridge at night, a single warm light in the open slit, under the Milky Way with faint cyan and magenta airglow.">
+      <canvas id="photoSky" aria-hidden="true"></canvas>
+      <div class="photo-plate" aria-hidden="true">
+        <b>FIELD PLATE 07</b>
+        RIDGE CAM · 30 S EXPOSURE<br>03:12 CET · AIRGLOW N-NE
+      </div>
+      <div class="photo-inner">
+        <div class="photo-panel reveal">
+          <p class="kicker"><span class="idx">02</span> The station</p>
+          <h2>The observatory at 2,742 m.</h2>
+          <p>One dome, one ridge, no other lights for eleven kilometres. The warm glow in the slit is the control room; everything above it is exactly what you will see when you step out of the funicular. On the clearest nights the airglow itself is visible — the atmosphere fluorescing faintly at the horizon.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
   <!-- CONSTELLATIONS -->
   <section id="constellations" class="wrap">
     <div class="reveal">
-      <p class="kicker"><span class="idx">02</span> The catalogue</p>
+      <p class="kicker"><span class="idx">03</span> The catalogue</p>
       <h2>Hover a field. Let the lines find themselves.</h2>
       <p class="lede">Four of the fields our guides return to every season. On the ridge we draw them with a laser; here, your cursor will do.</p>
     </div>
@@ -442,12 +544,50 @@
       </div>
 
     </div>
+
+    <!-- THE SURVEYOR — ridge exclusive, draws itself on scroll -->
+    <div class="surveyor reveal" id="surveyor">
+      <div class="surv-head">
+        <span>FIELD 05 · RIDGE EXCLUSIVE</span>
+        <span>NOT IN ANY ATLAS</span>
+      </div>
+      <svg viewBox="0 0 800 380" role="img" aria-label="The Surveyor, a fictional constellation: a stick figure of a theodolite on a tripod, with a plumb line hanging from its sighting arm.">
+        <path class="surv-line" pathLength="1" d="M168,72 L214,152 L236,238"/>
+        <path class="surv-line" pathLength="1" d="M236,238 L152,332 M236,238 L322,326"/>
+        <path class="surv-line" pathLength="1" d="M236,238 L402,188 L562,118"/>
+        <path class="surv-line" pathLength="1" d="M562,118 L578,252"/>
+        <circle class="surv-star bright" cx="168" cy="72" r="4"/>
+        <circle class="surv-star" cx="214" cy="152" r="2.6"/>
+        <circle class="surv-star bright" cx="236" cy="238" r="3.4"/>
+        <circle class="surv-star" cx="152" cy="332" r="2.6"/>
+        <circle class="surv-star" cx="322" cy="326" r="2.6"/>
+        <circle class="surv-star" cx="402" cy="188" r="2.4"/>
+        <circle class="surv-star bright" cx="562" cy="118" r="3.8"/>
+        <circle class="surv-star" cx="578" cy="252" r="2.8"/>
+        <circle class="surv-star" cx="640" cy="60" r="1.4" opacity=".6"/>
+        <circle class="surv-star" cx="700" cy="300" r="1.4" opacity=".55"/>
+        <circle class="surv-star" cx="80" cy="200" r="1.3" opacity=".5"/>
+        <circle class="surv-star" cx="480" cy="320" r="1.3" opacity=".5"/>
+        <circle class="surv-star" cx="360" cy="70" r="1.3" opacity=".5"/>
+        <text class="surv-label" x="150" y="50"><tspan>α MEN</tspan> · THE EYEPIECE</text>
+        <text class="surv-label" x="258" y="246"><tspan>β MEN</tspan> · THE KNEE</text>
+        <text class="surv-label" x="584" y="106"><tspan>γ MEN</tspan> · THE ARM</text>
+        <text class="surv-label" x="596" y="262"><tspan>δ MEN</tspan> · THE PLUMB</text>
+      </svg>
+      <div class="surv-copy">
+        <div>
+          <h3>The Surveyor</h3>
+          <span class="latin">Mensor · fictional</span>
+        </div>
+        <p>Our guides invented one constellation of their own — a theodolite on its tripod, plumb line hanging dead vertical — and they draw it with the laser at the end of every ridge tour. It is on no chart and never will be. You have to come up to see it.</p>
+      </div>
+    </div>
   </section>
 
   <!-- TONIGHT -->
   <section id="tonight" class="wrap">
     <div class="reveal">
-      <p class="kicker"><span class="idx">03</span> Conditions</p>
+      <p class="kicker"><span class="idx">04</span> Conditions</p>
       <h2>Tonight's sky, measured hourly.</h2>
       <p class="lede">Our all-sky camera, seeing monitor and weather mast report from the ridge every sixty minutes. These are the numbers our astronomers checked before opening the domes tonight.</p>
     </div>
@@ -506,7 +646,7 @@
   <!-- MEMBERSHIP -->
   <section id="membership" class="wrap">
     <div class="reveal">
-      <p class="kicker"><span class="idx">04</span> Membership</p>
+      <p class="kicker"><span class="idx">05</span> Membership</p>
       <h2>Keep a mountain between you and the streetlights.</h2>
       <p class="lede">PARSEC is a foundation, not a business. Memberships fund the funicular's night service, the instruments and the free school programme. Every tier includes unlimited open-dome nights.</p>
     </div>
@@ -563,6 +703,7 @@
         <div>
           <h3>Visit</h3>
           <a href="#visit">Plan your ascent</a>
+          <a href="#station">The station</a>
           <a href="#tonight">Tonight's conditions</a>
           <a href="#constellations">Season catalogue</a>
           <a href="#membership">Membership</a>
@@ -598,7 +739,7 @@
     {n:.32, drift: 5.5, size:[.9,1.7], pull: 14, alpha:.8},
     {n:.18, drift:11,   size:[1.4,2.6], pull: 26, alpha:1}
   ];
-  var shooting = null, nextShoot = 2800; /* let the sky settle before the first meteor */
+  var shooting = null, nextShoot = 3200; /* let the sky settle before the first meteor; then every 8–15 s */
 
   function resize(){
     var nw = window.innerWidth, nh = window.innerHeight;
@@ -685,8 +826,16 @@
         ctx.moveTo(shooting.x, shooting.y);
         ctx.lineTo(shooting.x - shooting.vx*tail*.12, shooting.y - shooting.vy*tail*.12);
         ctx.stroke();
+        /* bright head: a soft cyan-white glow so the meteor reads as an object, not a scratch */
+        var hl = Math.max(shooting.life, 0);
+        var hg = ctx.createRadialGradient(shooting.x, shooting.y, 0, shooting.x, shooting.y, 7);
+        hg.addColorStop(0, "rgba(242,246,255," + hl + ")");
+        hg.addColorStop(.4, "rgba(110,231,240," + (hl*.5).toFixed(3) + ")");
+        hg.addColorStop(1, "rgba(110,231,240,0)");
+        ctx.fillStyle = hg;
+        ctx.beginPath(); ctx.arc(shooting.x, shooting.y, 7, 0, 6.2832); ctx.fill();
         if (shooting.life <= 0 || shooting.x < -tail || shooting.x > W+tail || shooting.y > H+tail){
-          shooting = null; nextShoot = t + 4000 + Math.random()*7000;
+          shooting = null; nextShoot = t + 8000 + Math.random()*7000;
         }
       }
     }
@@ -707,9 +856,75 @@
     mouse.x = e.clientX; mouse.y = e.clientY; mouse.on = true;
   }, {passive:true});
   document.documentElement.addEventListener("mouseleave", function(){ mouse.on = false; });
-  document.addEventListener("visibilitychange", function(){ document.hidden ? stop() : start(); });
+  document.addEventListener("visibilitychange", function(){
+    if (document.hidden){ stop(); pStop(); } else { start(); pStart(); }
+  });
   resize();
   start();
+
+  /* ================= STATION PHOTO (parallax + twinkle overlay) ================= */
+  var frame = document.getElementById("photoFrame");
+  var domeImg = document.getElementById("domeImg");
+  var psky = document.getElementById("photoSky");
+  var pctx = psky.getContext("2d");
+  var pStars = [], pW = 0, pH = 0, pRun = false, pRaf = 0, pVisible = false;
+
+  function pResize(){
+    var r = frame.getBoundingClientRect();
+    var w = Math.round(r.width), h = Math.round(r.height);
+    if (w === pW && h === pH) return;
+    pW = w; pH = h;
+    psky.width = pW * DPR; psky.height = pH * DPR;
+    pctx.setTransform(DPR,0,0,DPR,0,0);
+    pStars = [];
+    /* low density on purpose — the photograph's own stars carry the field,
+       these just make the sky feel alive; keep them out of the ridge/foreground */
+    var n = Math.round(pW * pH / 16000);
+    for (var i=0;i<n;i++){
+      pStars.push({
+        x: Math.random()*pW, y: Math.random()*pH*.58,
+        s: .7 + Math.random()*1.2,
+        p: Math.random()*Math.PI*2, tw: .4 + Math.random()*1.2,
+        c: Math.random() < .08 ? "#6EE7F0" : (Math.random() < .05 ? "#C77DFF" : "#F2F6FF")
+      });
+    }
+    pStars.sort(function(a,b){ return a.c < b.c ? -1 : a.c > b.c ? 1 : 0; });
+    pDraw(0);
+  }
+  function pDraw(t){
+    pctx.clearRect(0,0,pW,pH);
+    var lastFill = "";
+    for (var i=0;i<pStars.length;i++){
+      var st = pStars[i];
+      pctx.globalAlpha = reduced ? .5 : .12 + .55 * (.5 + .5*Math.sin(t*.0012*st.tw + st.p));
+      if (st.c !== lastFill){ pctx.fillStyle = st.c; lastFill = st.c; }
+      pctx.fillRect(st.x, st.y, st.s, st.s);
+    }
+    pctx.globalAlpha = 1;
+  }
+  function pLoop(t){ pDraw(t); if (pRun) pRaf = requestAnimationFrame(pLoop); }
+  function pStart(){
+    if (!pRun && !reduced && pVisible && !document.hidden){
+      pRun = true; pRaf = requestAnimationFrame(pLoop);
+    }
+  }
+  function pStop(){ pRun = false; cancelAnimationFrame(pRaf); }
+
+  function parallax(){
+    if (reduced || !pVisible) return;
+    var r = frame.getBoundingClientRect();
+    var span = window.innerHeight + r.height;
+    var prog = Math.max(-1, Math.min(1, 1 - 2 * (r.top + r.height) / span)); /* -1 entering .. 1 leaving */
+    domeImg.style.transform = "translateY(" + (prog * -3.5).toFixed(3) + "%)"; /* image has 6% bleed each side */
+  }
+
+  var pIO = new IntersectionObserver(function(entries){
+    pVisible = entries[0].isIntersecting;
+    if (pVisible){ pResize(); parallax(); pStart(); } else { pStop(); }
+  }, {rootMargin:"80px"});
+  pIO.observe(frame);
+  window.addEventListener("scroll", parallax, {passive:true});
+  window.addEventListener("resize", function(){ if (pVisible){ pResize(); parallax(); } });
 
   /* ================= NEBULA (code-drawn) ================= */
   var neb = document.getElementById("nebula");
@@ -865,6 +1080,7 @@
           (c) raised --faint label contrast .34 -> .45 for the mono readout labels;
           (d) soft radial glow behind hero type for readability over dense star regions;
           (e) SVG data-URI favicon + theme-color so the tab chrome matches the midnight UI.
+  PASS 4: added the generated ridge photograph (assets/dome.webp, lazy, real 1920×1072 dims) as a full-bleed "station" section with transform-based parallax (6% bleed, IO-gated, off under reduced-motion) and a low-density twinkle canvas overlaid on the photo sky that pauses offscreen/tab-hidden; meteors gained a radial-gradient bright head and now recur every 8–15 s; new "Surveyor" fictional constellation panel draws its lines in four staggered stages on scroll-into-view with mono star labels, pre-drawn under reduced-motion; sections renumbered 01–05.
 -->
 </body>
 </html>

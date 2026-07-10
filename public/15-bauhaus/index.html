@@ -25,6 +25,16 @@
           the rAF loop exits once every body has locked — no idle CPU burn; (4) German orthography fixed
           for a Dessau venue (große, Ermäßigt, einschließlich, Dessau-Roßlau), dead .mani-facts selector
           and redundant ticker border removed.
+  PASS 4 (photograph + kinetic escalation): (1) new section 02 "Das Gebäude" mounts a generated duotone
+          archival plate (assets/dessau.webp, Nano Banana 2 via Higgsfield MCP, ffmpeg→WebP, lazy +
+          intrinsic 1200×1490) behind a three-panel red/blue/yellow shutter that slides+rotates open once
+          on scroll entry — pure CSS transforms, .open class toggle, no-JS/PRM see it pre-opened; giant
+          red Kat.-Nr. 001 overlaps the frame and hard-swaps to blue on hover (steps(2)); (2) a
+          "Fassaden-Partitur" band scrubs with scroll, quantized to 8 steps: circle translates along the
+          grid, square rotates in 45° increments, triangle counter-translates + flips, bar grows — all
+          snapping via the sharp bezier, composed still under PRM/no-JS; (3) ticket cards now hard
+          color-block swap (red/blue/yellow) on hover with a 2-frame steps(2,end) feel; sections
+          renumbered 01–05, nav gained "Gebäude". Verified 1280/390 (scrollWidth 390), zero console errors.
 -->
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -245,6 +255,76 @@ img{display:none}
   .manifest .vert-label{display:none}
 }
 
+/* ================= BUILDING / DAS GEBÄUDE ================= */
+.building{padding:clamp(4.5rem,11vh,8rem) var(--gutter);position:relative}
+.building .sec-num{background:var(--ink);color:var(--paper)}
+.building .h-rule{background:var(--ink)}
+.building-grid{display:grid;grid-template-columns:minmax(0,5fr) minmax(0,6fr);gap:clamp(2.5rem,6vw,6rem);align-items:start}
+.plate{position:relative;max-width:30rem;margin-top:1.4rem}
+.plate-mount{position:relative}
+.plate-frame{position:relative;overflow:hidden;border:var(--rule) solid var(--ink);background:var(--ink)}
+.plate-img{display:block;width:100%;height:auto}
+/* shutter panels — base state = revealed (no-JS visitors see the photograph) */
+.sh{position:absolute;top:-1%;bottom:-1%;width:34.5%;transition:transform .6s var(--snap)}
+.sh1{left:-.5%;background:var(--red);transform:translate(-135%,-8%) rotate(-9deg);transition-delay:.05s}
+.sh2{left:33%;background:var(--blue);transform:translateY(112%);transition-delay:.17s}
+.sh3{left:66%;background:var(--yellow);transform:translate(135%,8%) rotate(9deg);transition-delay:.29s}
+/* covering state until JS opens it — three color blocks over the plate */
+.js .plate:not(.open) .sh{transform:none}
+.plate-no-big{
+  position:absolute;z-index:3;top:-.52em;left:-.05em;
+  font-family:"Archivo",sans-serif;font-weight:900;
+  font-size:clamp(4.2rem,9vw,7rem);line-height:1;letter-spacing:-.05em;
+  color:var(--red);pointer-events:none;
+  transition:color .12s steps(2,end);
+}
+.plate:hover .plate-no-big{color:var(--blue)}
+.plate-ring{
+  position:absolute;z-index:3;left:-1.1rem;bottom:4.6rem;
+  width:4.2rem;height:4.2rem;border:.85rem solid var(--blue);border-radius:50%;
+}
+.plate-tri{
+  position:absolute;z-index:3;right:1.6rem;bottom:-1rem;
+  width:0;height:0;border-left:1.5rem solid transparent;border-right:1.5rem solid transparent;
+  border-bottom:2.5rem solid var(--yellow);
+}
+.plate-cap{
+  display:flex;gap:1rem;align-items:baseline;
+  margin-top:1.1rem;padding-top:.8rem;border-top:var(--rule) solid var(--ink);
+  font-size:.85rem;color:#4b4842;
+}
+.plate-cap .plate-no{
+  font-family:"Archivo",sans-serif;font-weight:900;font-size:.8rem;letter-spacing:.14em;
+  text-transform:uppercase;color:var(--red);flex:none;
+}
+.building-copy p{margin-bottom:1.3rem;color:#4b4842;max-width:38rem}
+.building-copy p strong{color:var(--ink);font-weight:600}
+/* Fassaden-Partitur: 8-cell band, shapes snap between quantized scroll steps */
+.score{
+  position:relative;overflow:hidden;margin-top:2rem;
+  height:clamp(5rem,10vw,6.5rem);
+  border:var(--rule) solid var(--ink);
+  background-image:linear-gradient(90deg,rgba(20,20,20,.18) 2px,transparent 2px);
+  background-size:12.5% 100%;
+}
+.score>span{position:absolute;transition:transform .3s var(--snap)}
+.sc-c{width:2.4rem;height:2.4rem;border-radius:50%;background:var(--red);top:16%;right:4px}
+.sc-q{width:2.1rem;height:2.1rem;background:var(--blue);left:calc(50% - 1.05rem);top:calc(50% - 1.05rem);transform:rotate(315deg)}
+.sc-t{
+  width:0;height:0;border-left:1.2rem solid transparent;border-right:1.2rem solid transparent;
+  border-bottom:2rem solid var(--yellow);bottom:14%;left:4px;transform:rotate(180deg);
+}
+.sc-b{left:0;bottom:0;width:100%;height:8px;background:var(--ink);transform-origin:left}
+/* live mode (JS + motion allowed): circle & triangle re-park left, JS drives quantized transforms */
+.score.live .sc-c{right:auto;left:4px}
+.score-cap{font-size:.8rem;letter-spacing:.12em;text-transform:uppercase;color:#8b877d;margin-top:.7rem}
+.building .vert-label{right:1.2rem;top:10rem;color:#b3afa3}
+@media(max-width:900px){
+  .building-grid{grid-template-columns:1fr}
+  .plate{margin:1.6rem auto 0}
+  .building .vert-label{display:none}
+}
+
 /* ================= PROGRAM / WERKSTÄTTEN ================= */
 .program{padding:clamp(4.5rem,11vh,8rem) var(--gutter);position:relative}
 .program .sec-num{background:var(--blue);color:var(--paper)}
@@ -368,9 +448,19 @@ img{display:none}
   padding:clamp(1.4rem,2.4vw,2.2rem);
   display:flex;flex-direction:column;gap:.9rem;
   box-shadow:8px 8px 0 var(--ink);
-  transition:transform .3s var(--snap),box-shadow .3s var(--snap);
+  --hb:var(--red);--hf:var(--paper);
+  transition:transform .3s var(--snap),box-shadow .3s var(--snap),
+             background .12s steps(2,end),color .12s steps(2,end);
 }
+.ticket.t-red{--hb:var(--blue)}
+.ticket.t-pass{--hb:var(--yellow);--hf:var(--ink)}
 .ticket:hover{transform:translate(-5px,-5px);box-shadow:14px 14px 0 var(--ink)}
+/* hard color-block swap — the whole card snaps to a primary with a 2-frame feel */
+.ticket:hover,.ticket:focus-within{background:var(--hb);color:var(--hf)}
+.ticket:hover p,.ticket:focus-within p{color:inherit}
+.ticket.t-day:hover h3 i,.ticket.t-day:focus-within h3 i{background:var(--yellow)}
+.ticket.t-red:hover h3 i,.ticket.t-red:focus-within h3 i{background:var(--yellow)}
+.ticket.t-pass:hover h3 i,.ticket.t-pass:focus-within h3 i{border-bottom-color:var(--red)}
 .ticket h3{font-weight:900;font-size:clamp(1.15rem,1.7vw,1.5rem);letter-spacing:-.01em;display:flex;align-items:center;gap:.7rem}
 .ticket h3 i{flex:none;display:inline-block}
 .ticket.t-day h3 i{width:.95rem;height:.95rem;border-radius:50%;background:var(--red)}
@@ -444,6 +534,7 @@ img{display:none}
 
 <nav class="nav" aria-label="Bereiche">
   <a href="#manifest">Manifest</a>
+  <a href="#gebaeude">Gebäude</a>
   <a href="#werkstaetten">Werkstätten</a>
   <a href="#buehne">Bühne</a>
   <a href="#eintritt">Eintritt</a>
@@ -529,11 +620,51 @@ img{display:none}
   </div>
 </section>
 
+<!-- ============ BUILDING ============ -->
+<section class="building" id="gebaeude">
+  <p class="vert-label">Gropiusallee 38 &middot; Aufnahme 1926</p>
+  <div class="sec-head rv">
+    <span class="sec-num" aria-hidden="true">02</span>
+    <h2>Das Gebäude</h2>
+    <span class="h-rule" aria-hidden="true"></span>
+  </div>
+  <div class="building-grid">
+    <figure class="plate rv d1" id="plate">
+      <span class="plate-no-big" aria-hidden="true">001</span>
+      <div class="plate-mount">
+        <div class="plate-frame">
+          <img class="plate-img" src="assets/dessau.webp" width="1200" height="1490" loading="lazy" decoding="async" alt="Duoton-Archivaufnahme des Werkstattflügels des Bauhausgebäudes Dessau um 1926: Glasvorhangfassade und der senkrechte Schriftzug BAUHAUS, Tinte auf Papier mit Rasterkorn.">
+          <span class="sh sh1" aria-hidden="true"></span>
+          <span class="sh sh2" aria-hidden="true"></span>
+          <span class="sh sh3" aria-hidden="true"></span>
+        </div>
+        <span class="plate-ring" aria-hidden="true"></span>
+        <span class="plate-tri" aria-hidden="true"></span>
+      </div>
+      <figcaption class="plate-cap">
+        <span class="plate-no">Kat. Nr. 001</span>
+        <span>Werkstattflügel mit Fassadenschriftzug, Dessau um 1926. Duotondruck, Tinte auf Papier, 4:5.</span>
+      </figcaption>
+    </figure>
+    <div class="building-copy rv d2">
+      <p>Am <strong>4. Dezember 1926</strong> öffnet der Bau an der Gropiusallee: ein Stahlbetonskelett, davor die berühmte <strong>Glasvorhangfassade</strong> des Werkstattflügels &mdash; drei Geschosse Werkstatt hinter einer einzigen, hängenden Glashaut. Senkrecht an der Brücke: sechs Buchstaben, <strong>BAUHAUS</strong>, gesetzt von Herbert Bayer. Das Haus ist Plakat, Programm und Exponat zugleich.</p>
+      <p>Katalognummer 001 dieser Ausstellung ist deshalb keine Teekanne und kein Sessel, sondern die Aufnahme des Gebäudes selbst: ein <strong>Duotondruck</strong> im Rasterkorn der zwanziger Jahre, Tinte auf Papier. Drei Farbtafeln verschließen die Platte &mdash; sie öffnen sich, sobald Sie ankommen.</p>
+      <div class="score" id="score" aria-hidden="true">
+        <span class="sc-c"></span>
+        <span class="sc-q"></span>
+        <span class="sc-t"></span>
+        <span class="sc-b"></span>
+      </div>
+      <p class="score-cap">Fassaden-Partitur &mdash; acht Takte, geführt von Ihrem Scrollen, eingerastet auf dem Raster.</p>
+    </div>
+  </div>
+</section>
+
 <!-- ============ PROGRAM ============ -->
 <section class="program" id="werkstaetten">
   <p class="vert-label">Rundgang &middot; Sechs Räume</p>
   <div class="sec-head rv">
-    <span class="sec-num" aria-hidden="true">02</span>
+    <span class="sec-num" aria-hidden="true">03</span>
     <h2>Werkstätten</h2>
     <span class="h-rule" aria-hidden="true"></span>
   </div>
@@ -594,7 +725,7 @@ img{display:none}
 <section class="stage" id="buehne">
   <p class="vert-label">Schlemmer &middot; Bühnenwerkstatt</p>
   <div class="sec-head rv">
-    <span class="sec-num" aria-hidden="true">03</span>
+    <span class="sec-num" aria-hidden="true">04</span>
     <h2>Die Bühne</h2>
     <span class="h-rule" aria-hidden="true"></span>
   </div>
@@ -624,7 +755,7 @@ img{display:none}
 <section class="tickets" id="eintritt">
   <p class="vert-label">Karten &middot; Kasse Gropiusallee</p>
   <div class="sec-head rv">
-    <span class="sec-num" aria-hidden="true">04</span>
+    <span class="sec-num" aria-hidden="true">05</span>
     <h2>Eintritt</h2>
     <span class="h-rule" aria-hidden="true"></span>
   </div>
@@ -718,6 +849,53 @@ img{display:none}
         });
       }, { threshold: 0.35 }).observe(hero);
     }
+  }
+
+  /* ---------- exhibition plate: shutter reveal, once ---------- */
+  var plate = document.getElementById('plate');
+  if (plate) {
+    if (prm || !('IntersectionObserver' in window)) {
+      plate.classList.add('open'); /* pre-opened: no shutter choreography */
+    } else {
+      new IntersectionObserver(function(entries, obs){
+        entries.forEach(function(en){
+          if (en.isIntersecting) { plate.classList.add('open'); obs.disconnect(); }
+        });
+      }, { threshold: 0.35 }).observe(plate);
+    }
+  }
+
+  /* ---------- Fassaden-Partitur: scroll progress quantized to 8 steps ---------- */
+  var score = document.getElementById('score');
+  var buildingSec = document.getElementById('gebaeude');
+  if (!prm && score && buildingSec) {
+    score.classList.add('live');
+    var scC = score.querySelector('.sc-c'),
+        scQ = score.querySelector('.sc-q'),
+        scT = score.querySelector('.sc-t'),
+        scB = score.querySelector('.sc-b');
+    var lastStep = -1, scoreTick = false;
+    var updateScore = function(){
+      scoreTick = false;
+      var r = buildingSec.getBoundingClientRect();
+      var vh = window.innerHeight;
+      var p = (vh - r.top) / (vh + r.height);
+      p = Math.max(0, Math.min(1, p));
+      var step = Math.round(p * 7);
+      if (step === lastStep) return;
+      lastStep = step;
+      var track = Math.max(0, score.clientWidth - scC.offsetWidth - 8);
+      scC.style.transform = 'translateX(' + (track * step / 7).toFixed(1) + 'px)';
+      scQ.style.transform = 'rotate(' + (step * 45) + 'deg)';
+      scT.style.transform = 'translateX(' + (track * (7 - step) / 7).toFixed(1) + 'px) rotate(' + (step % 2 ? 180 : 0) + 'deg)';
+      scB.style.transform = 'scaleX(' + ((step + 1) / 8).toFixed(3) + ')';
+    };
+    var onScoreScroll = function(){
+      if (!scoreTick) { scoreTick = true; requestAnimationFrame(updateScore); }
+    };
+    updateScore();
+    window.addEventListener('scroll', onScoreScroll, { passive: true });
+    window.addEventListener('resize', function(){ lastStep = -1; onScoreScroll(); });
   }
 
   /* ---------- kinetic stage: gravity + restitution ---------- */

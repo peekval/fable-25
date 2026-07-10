@@ -80,15 +80,21 @@ h2{font-family:"Caveat",cursive;font-weight:700;font-size:clamp(34px,5vw,48px);
     <div class="prose">
       <p>Every illustration on the sketchbook — the suitcase, the tram, the tiles, the lighthouse — is hand-plotted inline SVG, and each stroke carries <em>pathLength="1"</em> with a dash offset so it can draw itself in when scrolled into view. A small script measures every path&rsquo;s real length with getTotalLength, gives long strokes more time than short ones, and compresses the whole choreography so no page takes more than about four seconds to finish.</p>
       <p>Colour arrives late on purpose: soft ellipse washes, dashed route lines and handwritten labels fade in only after the ink is down, exactly like a real sketchbook session. The paper itself is layered CSS — rotated sheets, ruled and dotted notebook backgrounds, washi tape cut with clip-path, a corner-curl shadow — under a full-page SVG turbulence grain. A pooled set of fading dots trails the cursor like pencil dust, and without JavaScript or with reduced motion, every drawing simply appears fully finished.</p>
+      <p>Three finished paintings are now taped and paper-clipped into the pages — tram 28 in Alfama, an azulejo corner study with margin swatch dabs, and a fishing harbour at golden hour. Each <em>washes in</em> when scrolled into view: the image sits behind a stack of four soft-edged radial-gradient CSS mask layers whose mask-size keyframes from 0% to 340% at staggered rates while saturation and a slight blur resolve, so the picture spreads like pigment on wet paper; a handwritten Caveat caption then writes itself in with a clip-path wipe and a self-drawing pencil underline. Hovering lifts a painting — it straightens, rises and its shadow deepens, as if picked up for a closer look — and the sheets and plates drift at slightly different scroll rates (the CSS <em>translate</em> property, so the resting rotations survive). Reduced motion shows every painting pre-revealed with no parallax.</p>
+    </div>
+
+    <h2>Generated assets</h2>
+    <div class="prose">
+      <p>The three watercolours (<em>tram.webp</em>, <em>azulejo.webp</em>, <em>harbor.webp</em>) were generated with <em>Nano Banana 2</em> through the <em>Higgsfield MCP</em> at 2K, from watercolour-style prompts locked to the site palette — paper #F8F4EA, ink #3A3733, blue #2B4C7E, terracotta #D97D54, olive #8A9B6E, sky #7FA8C9 — then converted and optimised to WebP with <em>ffmpeg</em>. They load lazily with real width/height attributes so the sketchbook never reflows.</p>
     </div>
 
     <h2>Reproduction prompt</h2>
     <div class="prompt-teaser">
       <p class="ph">torn from the master prompt —</p>
-      <div class="tz">Build a single-file HTML travel sketchbook titled "Field Notes — Portugal". Palette: warm paper #F8F4EA on a desk background #ECE4D2, pen ink #3A3733, Portuguese blue #2B4C7E, terracotta #D97D54, olive #8A9B6E, sky #7FA8C9. Fonts: Caveat (headlines + handwritten annotations), Patrick Hand (kickers, captions, page tabs), Lora (body prose). Signature technique: every illustration is hand-plotted inline SVG line art that draws itself…
+      <div class="tz">Build a single-file HTML travel sketchbook titled "Field Notes — Portugal". Palette: warm paper #F8F4EA on a desk background #ECE4D2, pen ink #3A3733, Portuguese blue #2B4C7E, terracotta #D97D54, olive #8A9B6E, sky #7FA8C9. Fonts: Caveat (headlines + handwritten annotations), Patrick Hand (kickers, captions, page tabs), Lora (body prose). Signature techniques: every illustration is hand-plotted inline SVG line art that draws itself, and three generated watercolour paintings are taped/paper-clipped into the pages, each washing in through an animated stack of soft-edged radial CSS mask layers like pigment…
         <div class="fade" aria-hidden="true"></div>
       </div>
-      <p class="lockline">&#128274; Full prompt (&asymp;250 words) included with purchase.</p>
+      <p class="lockline">&#128274; Full prompt (&asymp;400 words) included with purchase.</p>
     </div>
     <div class="cta-row">
       <a class="buy" href="https://laserfabio.gumroad.com/l/fable-22">Get this prompt — CHF 9</a>

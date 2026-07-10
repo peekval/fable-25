@@ -16,6 +16,12 @@
     tape scaled down on small screens; prefers-reduced-motion block completed (underline
     squiggles + beams were still animatable) - reduced motion now shows everything
     pre-drawn with zero transitions and no pencil cursor trail.
+  PASS 4 (paintings): three generated watercolours (Nano Banana 2 via Higgsfield, palette-locked,
+    ffmpeg WebP) taped/clipped in as plates on tram, azulejo and closing pages; each blooms in via
+    a 4-layer animated radial mask (pigment-on-wet-paper) with a self-writing Caveat caption +
+    drawn underline; hover lifts the plate (straighten + deeper shadow); sheets/plates get subtle
+    counter-rate scroll parallax via the translate property so rotate transforms survive; reduced
+    motion = pre-painted, no mask, no parallax; verified 0 console/page errors, scrollWidth 390 OK.
 -->
 <html lang="en">
 <head>
@@ -221,6 +227,98 @@ h1 .pt{color:var(--blue)}
   margin-top:14px;text-align:center;
 }
 
+/* ---------- watercolour plates (generated paintings) ---------- */
+.plate{display:flex;justify-content:center}
+.paint{
+  position:relative;margin:44px auto 14px;max-width:430px;width:100%;
+  transform:rotate(var(--pr,-2deg));
+  transition:transform .5s cubic-bezier(.3,.7,.3,1);
+}
+.paint.wide{max-width:620px}
+.pframe{
+  position:relative;background:#FDFAF2;
+  padding:10px 10px 12px;border-radius:2px;
+  box-shadow:0 2px 5px rgba(58,55,51,.16), 0 12px 26px rgba(58,55,51,.15);
+  transition:box-shadow .5s cubic-bezier(.3,.7,.3,1);
+}
+.paint img{display:block;width:100%;height:auto;border-radius:1px}
+/* picked up to look closer */
+@media (hover:hover){
+  .paint:hover{transform:rotate(0deg) translateY(-7px) scale(1.015)}
+  .paint:hover .pframe{box-shadow:0 10px 18px rgba(58,55,51,.24), 0 30px 54px rgba(58,55,51,.26)}
+}
+/* washi corners pinning the painting down */
+.ptape{
+  position:absolute;width:96px;height:26px;z-index:2;
+  background:
+    repeating-linear-gradient(90deg, rgba(255,255,255,.16) 0 7px, transparent 7px 14px),
+    var(--tapec, rgba(217,125,84,.46));
+  clip-path:polygon(0% 10%, 3% 0%, 97% 4%, 100% 14%, 98% 86%, 100% 100%, 4% 95%, 0% 84%);
+  box-shadow:0 2px 4px rgba(58,55,51,.16);
+  opacity:.88;
+}
+.ptape.tl{left:-30px;top:-8px;transform:rotate(-44deg)}
+.ptape.tr{right:-30px;top:-8px;transform:rotate(44deg)}
+.ptape.bl{left:-28px;bottom:-6px;transform:rotate(42deg)}
+.ptape.br{right:-28px;bottom:-6px;transform:rotate(-42deg)}
+/* paperclip for the harbour plate */
+.pclip{position:absolute;top:-24px;left:11%;width:30px;height:66px;z-index:3;transform:rotate(-7deg);pointer-events:none}
+.pclip::before{
+  content:"";position:absolute;inset:0;
+  border:3.2px solid #979aa1;border-radius:15px/17px;
+  border-bottom-color:#7d8087;box-shadow:0 1px 2px rgba(58,55,51,.25);
+}
+.pclip::after{
+  content:"";position:absolute;left:7px;top:11px;width:16px;height:66px;
+  border:3.2px solid #aaaeb6;border-radius:9px/11px;border-bottom:none;
+}
+/* watercolour bloom reveal: pigment spreading from four wet points */
+.js .paint img{
+  opacity:0;
+  -webkit-mask-image:
+    radial-gradient(circle, #000 30%, rgba(0,0,0,.55) 54%, transparent 74%),
+    radial-gradient(circle, #000 26%, rgba(0,0,0,.5) 50%, transparent 72%),
+    radial-gradient(circle, #000 28%, rgba(0,0,0,.45) 52%, transparent 70%),
+    radial-gradient(circle, #000 24%, rgba(0,0,0,.4) 48%, transparent 68%);
+  mask-image:
+    radial-gradient(circle, #000 30%, rgba(0,0,0,.55) 54%, transparent 74%),
+    radial-gradient(circle, #000 26%, rgba(0,0,0,.5) 50%, transparent 72%),
+    radial-gradient(circle, #000 28%, rgba(0,0,0,.45) 52%, transparent 70%),
+    radial-gradient(circle, #000 24%, rgba(0,0,0,.4) 48%, transparent 68%);
+  -webkit-mask-repeat:no-repeat;mask-repeat:no-repeat;
+  -webkit-mask-position:24% 28%, 78% 18%, 30% 82%, 84% 74%;
+  mask-position:24% 28%, 78% 18%, 30% 82%, 84% 74%;
+  -webkit-mask-size:0% 0%, 0% 0%, 0% 0%, 0% 0%;
+  mask-size:0% 0%, 0% 0%, 0% 0%, 0% 0%;
+}
+.js .paint.in img{animation:bloom 2.8s cubic-bezier(.32,.62,.35,1) forwards}
+@keyframes bloom{
+  0%{opacity:0;filter:saturate(.35) contrast(.92) blur(1.5px);
+    -webkit-mask-size:0% 0%, 0% 0%, 0% 0%, 0% 0%;
+    mask-size:0% 0%, 0% 0%, 0% 0%, 0% 0%}
+  10%{opacity:.85}
+  30%{-webkit-mask-size:80% 80%, 34% 34%, 20% 20%, 0% 0%;
+    mask-size:80% 80%, 34% 34%, 20% 20%, 0% 0%}
+  58%{filter:saturate(.8) contrast(.98) blur(.4px);
+    -webkit-mask-size:230% 230%, 170% 170%, 140% 140%, 100% 100%;
+    mask-size:230% 230%, 170% 170%, 140% 140%, 100% 100%}
+  100%{opacity:1;filter:saturate(1) contrast(1) blur(0);
+    -webkit-mask-size:340% 340%, 340% 340%, 340% 340%, 340% 340%;
+    mask-size:340% 340%, 340% 340%, 340% 340%, 340% 340%}
+}
+/* handwritten plate caption writes itself in */
+.pcap{
+  font-family:"Caveat",cursive;font-size:clamp(19px,2.6vw,23px);font-weight:600;
+  color:var(--blue);text-align:center;margin-top:12px;transform:rotate(-.8deg);
+}
+.pcap .pdate{color:var(--terra)}
+.js .pcap{clip-path:inset(-12% 103% -12% -3%);transition:clip-path 1.5s cubic-bezier(.4,.1,.3,1) 1.7s}
+.js .paint.in .pcap{clip-path:inset(-12% -3% -12% -3%)}
+.pline{display:block;width:64%;height:8px;margin:1px auto 0;overflow:visible}
+.pline path{fill:none;stroke:var(--terra);stroke-width:2;stroke-linecap:round;opacity:.7}
+.js .pline path{stroke-dasharray:100;stroke-dashoffset:100;transition:stroke-dashoffset 1s ease 2.5s}
+.js .paint.in .pline path{stroke-dashoffset:0}
+
 /* page tab */
 .tab{
   position:absolute;top:22px;right:-13px;
@@ -280,6 +378,15 @@ h1 .pt{color:var(--blue)}
   .stamp{width:84px;height:84px;font-size:11px;top:20px;right:14px}
   .page{padding:6vh 12px 7vh}
   .tape{width:104px;height:30px}
+  .paint{max-width:340px;margin:36px auto 10px}
+  .paint.wide{max-width:100%}
+  .ptape{width:76px;height:22px}
+  .ptape.tl{left:-24px;top:-7px}
+  .ptape.tr{right:-24px;top:-7px}
+  .ptape.bl{left:-22px;bottom:-5px}
+  .ptape.br{right:-22px;bottom:-5px}
+  .pclip{width:24px;height:54px;top:-19px}
+  .pclip::after{left:5px;top:9px;width:13px;height:54px}
   body{font-size:16px}
 }
 
@@ -291,6 +398,14 @@ h1 .pt{color:var(--blue)}
   h2 .u svg path{stroke-dashoffset:0 !important;transition:none !important}
   .anno{opacity:1 !important;transform:rotate(var(--r,-3deg)) !important;transition:none !important}
   .pdot{display:none !important}
+  /* paintings arrive pre-painted, pinned flat, no parallax (JS also gates it) */
+  .paint img{opacity:1 !important;animation:none !important;
+    -webkit-mask-image:none !important;mask-image:none !important;filter:none !important}
+  .pcap{clip-path:none !important;transition:none !important}
+  .pline path{stroke-dashoffset:0 !important;transition:none !important}
+  .paint,.pframe{transition:none !important}
+  .paint:hover{transform:rotate(var(--pr,-2deg)) !important}
+  .sheet,.paint{translate:none !important}
 }
 </style>
 </head>
@@ -410,6 +525,18 @@ h1 .pt{color:var(--blue)}
       </div>
     </div>
     <p class="caption">fig. 1 — electrico 28, drawn between Martim Moniz and the cemetery loop</p>
+    <div class="plate">
+      <figure class="paint" style="--pr:-2.1deg">
+        <div class="pframe">
+          <span class="ptape tl" style="--tapec:rgba(138,155,110,.46)" aria-hidden="true"></span>
+          <span class="ptape tr" style="--tapec:rgba(217,125,84,.44)" aria-hidden="true"></span>
+          <img src="assets/tram.webp" alt="Loose watercolour across a sketchbook spread: yellow tram 28 to Martim Moniz climbing a narrow Alfama street between terracotta roofs, laundry lines and cobbles" width="1200" height="1490" loading="lazy" decoding="async">
+        </div>
+        <figcaption class="pcap">later, in actual paint — the 28 again, Alfama · <span class="pdate">terça, 14 de abril</span>
+          <svg class="pline" viewBox="0 0 100 8" preserveAspectRatio="none" aria-hidden="true"><path pathLength="100" d="M2,5 C24,2 52,7 74,4 C84,3 94,6 98,4"/></svg>
+        </figcaption>
+      </figure>
+    </div>
   </div>
 </section>
 
@@ -467,6 +594,18 @@ h1 .pt{color:var(--blue)}
       </div>
     </div>
     <p class="caption">fig. 2 — fa&ccedil;ade study, Rua das Flores; balcony ironwork abbreviated out of respect</p>
+    <div class="plate">
+      <figure class="paint" style="--pr:1.7deg">
+        <div class="pframe">
+          <span class="ptape tl" style="--tapec:rgba(127,168,201,.48)" aria-hidden="true"></span>
+          <span class="ptape br" style="--tapec:rgba(217,125,84,.44)" aria-hidden="true"></span>
+          <img src="assets/azulejo.webp" alt="Watercolour study of a crumbling Porto corner clad in blue-and-white azulejo tiles, exposed terracotta brick in the crack, pigment swatch dabs in the margin" width="1200" height="1490" loading="lazy" decoding="async">
+        </div>
+        <figcaption class="pcap">the panel that stopped repeating — swatches to prove the eleven blues · <span class="pdate">quinta, 23 de abril</span>
+          <svg class="pline" viewBox="0 0 100 8" preserveAspectRatio="none" aria-hidden="true"><path pathLength="100" d="M2,5 C24,2 52,7 74,4 C84,3 94,6 98,4"/></svg>
+        </figcaption>
+      </figure>
+    </div>
   </div>
 </section>
 
@@ -605,6 +744,18 @@ h1 .pt{color:var(--blue)}
         <svg class="arrow" viewBox="0 0 56 34"><path d="M4,4 C18,20 30,12 46,26 M46,26 l-11,-1 M46,26 l-2,-10"/></svg>
       </div>
     </div>
+    <div class="plate">
+      <figure class="paint wide" style="--pr:-1.3deg">
+        <div class="pframe">
+          <span class="pclip" aria-hidden="true"></span>
+          <span class="ptape br" style="--tapec:rgba(138,155,110,.46)" aria-hidden="true"></span>
+          <img src="assets/harbor.webp" alt="Plein-air watercolour of a fishing harbour at golden hour: beached boats named Estrela do Mar, Saudade and Barco Azul, whitewashed town and lighthouse behind, gulls overhead" width="1600" height="1067" loading="lazy" decoding="async">
+        </div>
+        <figcaption class="pcap">the last one, painted by the yellow postbox while the light ran out · <span class="pdate">véspera de partir, maio</span>
+          <svg class="pline" viewBox="0 0 100 8" preserveAspectRatio="none" aria-hidden="true"><path pathLength="100" d="M2,5 C24,2 52,7 74,4 C84,3 94,6 98,4"/></svg>
+        </figcaption>
+      </figure>
+    </div>
     <div class="prose">
       <p>I posted the loose pages to myself from a yellow box near the harbour, because a sketchbook that travels home separately gets one more story than you do. They arrived two weeks after I did, smelling faintly of somewhere better.</p>
       <p>If these notes make you buy a pen before a plane ticket, they&rsquo;ve done their job in the right order.</p>
@@ -613,7 +764,7 @@ h1 .pt{color:var(--blue)}
   </div>
 </footer>
 
-<p class="footnote">Field Notes &middot; page 22 of 25 &middot; every line above is hand-plotted SVG — no photographs were harmed &middot; <a href="/">back to the shelf</a> &middot; <a href="/22-fieldnotes/guide/">guide &amp; prompt →</a></p>
+<p class="footnote">Field Notes &middot; page 22 of 25 &middot; every line above is hand-plotted SVG, every painting a generated watercolour — no photographs were harmed &middot; <a href="/">back to the shelf</a> &middot; <a href="/22-fieldnotes/guide/">guide &amp; prompt →</a></p>
 
 <script>
 (function(){
@@ -664,6 +815,47 @@ h1 .pt{color:var(--blue)}
     });
   },{threshold:0.16, rootMargin:'0px 0px -7% 0px'});
   document.querySelectorAll('.page').forEach(function(p){ io.observe(p); });
+
+  /* ---- watercolour plates: bloom in when the painting itself is reached ---- */
+  var pio = new IntersectionObserver(function(entries){
+    entries.forEach(function(e){
+      if(e.isIntersecting){
+        e.target.classList.add('in');
+        pio.unobserve(e.target);
+      }
+    });
+  },{threshold:0.3, rootMargin:'0px 0px -6% 0px'});
+  document.querySelectorAll('.paint').forEach(function(p){ pio.observe(p); });
+
+  /* ---- sketchbook parallax: sheets drift slightly against the desk,
+         paintings drift slightly against their sheet (translate property,
+         so it composes with the rotate transforms) ---- */
+  if(!reduce){
+    var sheets = [].slice.call(document.querySelectorAll('.sheet'));
+    var paints = [].slice.call(document.querySelectorAll('.paint'));
+    var ticking = false;
+    function parallax(){
+      ticking = false;
+      var vh = window.innerHeight || 1;
+      sheets.forEach(function(s){
+        var r = s.getBoundingClientRect();
+        var c = (r.top + r.height/2 - vh/2) / vh;      /* -x..x around viewport centre */
+        s.style.translate = '0 ' + (c * 14).toFixed(1) + 'px';
+      });
+      paints.forEach(function(p){
+        var r = p.getBoundingClientRect();
+        var c = (r.top + r.height/2 - vh/2) / vh;
+        p.style.translate = '0 ' + (c * -12).toFixed(1) + 'px';
+      });
+    }
+    window.addEventListener('scroll', function(){
+      if(!ticking){ ticking = true; requestAnimationFrame(parallax); }
+    }, {passive:true});
+    window.addEventListener('resize', function(){
+      if(!ticking){ ticking = true; requestAnimationFrame(parallax); }
+    }, {passive:true});
+    parallax();
+  }
 
   /* ---- pencil cursor trail ---- */
   if(!reduce && window.matchMedia('(pointer: fine)').matches){

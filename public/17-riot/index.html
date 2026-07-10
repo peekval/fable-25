@@ -39,6 +39,7 @@
    - prefers-reduced-motion: jitter/ticker/slam/reveal transforms all neutralised
      (opacity-only, static stamps); focus-visible outlines in safety-pin red; aria-hidden
      on every decorative SVG, scrap, tape, halftone and the barcode.
+  PASS 4: (centerfold + more riot) — added the one (1) image: generated xerox singer shot slaps onto the board once (scale 1.4 → overshoot, drop-shadow bounce, IO-triggered, lazy + real dimensions), taped corners + highlighter scribble + LIVE AT ROTKELLER stamp; a photocopier light-pass sweeps the viewport every 12s (one fixed div, transform-only); headlines hover-misregister red/yellow at steps(2); all of it neutralised under prefers-reduced-motion; colophon now admits to exactly one image; verified no h-scroll at 390px.
 -->
 <style>
   :root{
@@ -373,6 +374,108 @@
   }
   .card .halftone.corner{bottom:-6px;left:-6px;width:110px;height:110px;border-radius:50%;opacity:.12}
 
+  /* headline double-print misregistration on hover */
+  @keyframes misprint{
+    0%{text-shadow:3px 0 0 var(--red), -3px 1px 0 var(--yellow)}
+    50%{text-shadow:-3px 1px 0 var(--red), 3px -1px 0 var(--yellow)}
+    100%{text-shadow:3px 0 0 var(--red), -3px 1px 0 var(--yellow)}
+  }
+  .wall-head:hover,.card h3:hover,.manifesto h2:hover,.submit h2:hover,.cf-head:hover{
+    animation:misprint .24s steps(2, jump-none) infinite;
+  }
+
+  /* photocopier light pass — one fixed band, transform only */
+  .copier-pass{
+    position:fixed;left:0;right:0;top:0;height:34vh;
+    pointer-events:none;z-index:70;
+    background:linear-gradient(to bottom,
+      rgba(255,255,255,0) 0%,
+      rgba(255,255,255,.28) 38%,
+      rgba(255,255,255,.5) 50%,
+      rgba(255,255,255,.28) 62%,
+      rgba(255,255,255,0) 100%);
+    transform:translateY(-40vh);
+    animation:copier 12s linear 3s infinite;
+    will-change:transform;
+  }
+  @keyframes copier{
+    0%{transform:translateY(-40vh)}
+    11%{transform:translateY(105vh)}
+    100%{transform:translateY(105vh)}
+  }
+
+  /* ============ CENTERFOLD ============ */
+  .centerfold{
+    position:relative;
+    padding:clamp(2.5rem,6vw,5rem) clamp(1rem,4vw,4rem) clamp(4rem,8vw,7rem);
+    text-align:center;
+    overflow-x:clip;
+    background:repeating-linear-gradient(0deg, transparent 0 90px, rgba(16,16,16,.045) 90px 91px);
+  }
+  .cf-head{
+    font-size:clamp(2rem,5vw,4rem);
+    transform:rotate(-1.4deg);
+    display:inline-block;
+  }
+  .cf-head .hl{
+    background:linear-gradient(97deg, transparent 1.5%, rgba(245,230,66,.55) 4%, rgba(245,230,66,.95) 12%, rgba(245,230,66,.8) 55%, rgba(245,230,66,.95) 86%, rgba(245,230,66,.4) 96%, transparent 99%);
+    padding:.04em .12em;
+  }
+  .cf-sub{
+    display:block;
+    color:var(--red);
+    font-size:clamp(.95rem,1.7vw,1.25rem);
+    transform:rotate(.8deg);
+    margin-top:.3em;
+  }
+  .photo-frame{
+    position:relative;
+    display:block;
+    width:min(520px, calc(100vw - 4.5rem));
+    margin:clamp(1.8rem,4vw,3rem) auto 0;
+    transform:rotate(-3deg);
+    filter:drop-shadow(6px 9px 0 rgba(16,16,16,.3));
+  }
+  .photo-frame img{display:block;width:100%;height:auto}
+  /* pre-slap state: floating above the paste-up board */
+  .photo-frame.slap{opacity:0;transform:scale(1.42) rotate(-11deg)}
+  .photo-frame.slap.slapped{animation:slapin .62s cubic-bezier(.3,.9,.35,1) forwards}
+  @keyframes slapin{
+    0%{opacity:0;transform:scale(1.42) rotate(-11deg);filter:drop-shadow(24px 32px 0 rgba(16,16,16,.1))}
+    55%{opacity:1;transform:scale(.955) rotate(-1.2deg);filter:drop-shadow(2px 3px 0 rgba(16,16,16,.45))}
+    76%{transform:scale(1.03) rotate(-4.3deg);filter:drop-shadow(10px 14px 0 rgba(16,16,16,.22))}
+    100%{opacity:1;transform:scale(1) rotate(-3deg);filter:drop-shadow(6px 9px 0 rgba(16,16,16,.3))}
+  }
+  .photo-frame .tape{width:120px;height:32px}
+  .tape.ctl{top:-11px;left:-34px;transform:rotate(-42deg)}
+  .tape.ctr{top:-11px;right:-34px;transform:rotate(42deg)}
+  .tape.cbl{bottom:2px;left:-34px;transform:rotate(38deg)}
+  .tape.cbr{bottom:2px;right:-34px;transform:rotate(-38deg)}
+  .scribble{
+    position:absolute;
+    left:16%;bottom:16%;
+    width:56%;height:auto;
+    pointer-events:none;
+    mix-blend-mode:multiply;
+    transform:rotate(-5deg);
+    opacity:.9;
+  }
+  .stamp-live{
+    top:5%;right:-5%;
+    font-size:clamp(1rem,2.4vw,1.6rem);
+    transform:rotate(-14deg);
+  }
+  .stamp-live.slam{transform:rotate(-14deg) scale(3)}
+  .stamp-live.slam.stamped{transform:rotate(-14deg) scale(1)}
+  .cf-caption{
+    font-family:'Permanent Marker',cursive;
+    font-size:clamp(.9rem,1.6vw,1.1rem);
+    margin:1.4rem auto 0;
+    max-width:44ch;
+    opacity:.8;
+    transform:rotate(-1deg);
+  }
+
   /* price sticker on wall */
   .price-sticker{
     position:absolute;
@@ -562,16 +665,23 @@
     .stamp.slam{transform:none;opacity:.88}
     .stamp-hero.slam{transform:rotate(-12deg)}
     .stamp-manifesto.slam{transform:rotate(7deg)}
+    .stamp-live.slam{transform:rotate(-14deg)}
     .stamp.slam.stamped{transition:none}
     .card,.rv{transition:opacity .4s ease;transform:none}
     .card{transform:rotate(var(--tilt,0deg))}
     .card.in{transform:rotate(var(--tilt,0deg))}
+    .copier-pass{display:none}
+    .photo-frame.slap{opacity:1;transform:rotate(-3deg)}
+    .photo-frame.slap.slapped{animation:none}
+    .wall-head:hover,.card h3:hover,.manifesto h2:hover,.submit h2:hover,.cf-head:hover{animation:none}
   }
 </style>
 </head>
 <body>
 
 <a class="back" href="/">←&nbsp;25</a>
+
+<div class="copier-pass" aria-hidden="true"></div>
 
 <!-- ==================== COVER ==================== -->
 <header class="cover">
@@ -676,6 +786,30 @@
   </div>
 </main>
 
+<!-- ==================== CENTERFOLD ==================== -->
+<section class="centerfold">
+  <p class="kicker rv">Centerfold · pg. 8–9 · pull out, tape to wall, deny everything</p>
+  <h2 class="cf-head rv">The <span class="hl">centerfold</span></h2>
+  <span class="cf-sub rv scrawl">shot on a disposable, photocopied until it confessed</span>
+
+  <figure class="photo-frame">
+    <span class="tape ctl" aria-hidden="true"></span>
+    <span class="tape ctr" aria-hidden="true"></span>
+    <span class="tape cbl" aria-hidden="true"></span>
+    <span class="tape cbr" aria-hidden="true"></span>
+    <img src="assets/singer.webp" width="1200" height="1490" loading="lazy" decoding="async"
+         alt="Photocopied black-and-white photo of a punk singer mid-jump on a basement stage, heavy xerox grain, torn edge, masking tape strip at the top">
+    <svg class="scribble" viewBox="0 0 220 130" aria-hidden="true">
+      <path d="M22 68 C12 30, 76 8, 122 13 C172 18, 212 42, 200 76 C189 108, 124 126, 72 116 C30 108, 6 90, 16 58 C26 26, 84 12, 134 20"
+            fill="none" stroke="#F5E642" stroke-width="8" stroke-linecap="round" opacity=".85"/>
+      <path d="M30 72 C24 42, 80 20, 124 24 C168 28, 198 48, 189 74"
+            fill="none" stroke="#F5E642" stroke-width="6" stroke-linecap="round" opacity=".6"/>
+    </svg>
+    <div class="stamp stamp-live slam" aria-hidden="true">Live at<br>Rotkeller</div>
+  </figure>
+  <p class="cf-caption rv">↑ the exact second the PA gave up. photographer unharmed (physically).</p>
+</section>
+
 <!-- ==================== MANIFESTO ==================== -->
 <section class="manifesto">
   <div class="halftone" aria-hidden="true"></div>
@@ -722,8 +856,9 @@
   <div class="barcode-strip">
     <p class="colophon">
       RIOT PAPER #13 · print run: 200-ish · typos: intentional, all of them ·
-      no images were used in this website. every texture is CSS holding
-      scissors. © nobody, ever. copying is the whole point.
+      exactly one (1) image was used in this website: the centerfold, which
+      earned it. every other texture is CSS holding scissors.
+      © nobody, ever. copying is the whole point.
       <a href="/17-riot/guide/">guide &amp; prompt →</a>
     </p>
     <div class="barcode" aria-hidden="true">
@@ -788,6 +923,21 @@
     });
   }, {threshold: 0.6});
   stamps.forEach(function(el){ so.observe(el); });
+
+  // centerfold photo slaps onto the paste-up board, once
+  var photo = document.querySelector('.photo-frame');
+  if (photo) {
+    photo.classList.add('slap');
+    var po = new IntersectionObserver(function(entries){
+      entries.forEach(function(e){
+        if (e.isIntersecting) {
+          po.unobserve(e.target);
+          e.target.classList.add('slapped');
+        }
+      });
+    }, {threshold: 0.3});
+    po.observe(photo);
+  }
 })();
 </script>
 
