@@ -1,0 +1,14 @@
+# FABLE/25 — static showcase, no build step
+[build]
+  publish = "public"
+
+# long-lived caching for generated assets (immutable, content lives in git)
+[[headers]]
+  for = "/*/assets/*"
+  [headers.values]
+    Cache-Control = "public, max-age=604800"
+
+[[headers]]
+  for = "/*"
+  [headers.values]
+    X-Content-Type-Options = "nosniff"
