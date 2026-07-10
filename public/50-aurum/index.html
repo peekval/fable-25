@@ -30,6 +30,14 @@
            empty bolt slots softened so a retracted bolt reads as machined
            recess, not a missing tooth; verified pointer-proximity breathing
            and Prinzipien cards in the browser.
+  PASS 4 — motion cleanliness pass: one easing system (--ease-out custom
+           property; entrances .6s/20px, micro-interactions .25-.3s), rosette
+           rotation slowed .016 -> .010 rad/s (barely perceptible, as an
+           engraving should be), counters 1.6s -> 1.2s (no bounce), vault and
+           chart scroll scrubs damped via converging lerp (bolts/rings/door
+           move with machined smoothness on fast scroll). Bolt sequence kept:
+           identical per-bolt windows, even 2.8% stagger. Reduced-motion path
+           unchanged.
 -->
 <html lang="de">
 <head>
@@ -42,6 +50,7 @@
 <link href="https://fonts.googleapis.com/css2?family=Cormorant:ital,wght@0,400;0,500;0,600;1,400;1,500&family=Cormorant+SC:wght@400;500;600&family=EB+Garamond:ital,wght@0,400;0,500;1,400&display=swap" rel="stylesheet">
 <style>
   :root{
+    --ease-out:cubic-bezier(.25,.6,.3,1); /* the house curve — every transition uses it */
     --marble:#17151A;
     --panel:#1E1B22;
     --gold:#C2A14D;
@@ -87,7 +96,7 @@
     text-decoration:none;padding:.48rem 1rem;border-radius:99px;
     background:rgba(23,21,26,.82);color:var(--gold-bright);
     border:1px solid var(--hair);backdrop-filter:blur(6px);
-    transition:border-color .3s ease,color .3s ease;
+    transition:border-color .25s var(--ease-out),color .25s var(--ease-out);
   }
   .pill:hover{border-color:var(--gold);color:var(--cream)}
 
@@ -226,14 +235,14 @@
     display:flex;align-items:center;gap:1rem;
     font-family:var(--sc);font-size:.74rem;letter-spacing:.34em;color:var(--dim);
   }
-  .vault-status .st{color:var(--gold);min-width:11ch;text-align:left;transition:color .4s ease}
+  .vault-status .st{color:var(--gold);min-width:11ch;text-align:left;transition:color .3s var(--ease-out)}
   .vault-status .st.open{color:var(--gold-bright)}
   .vault-status .tick{width:34px;height:1px;background:var(--hair)}
   .vault-caption{
     max-width:520px;text-align:center;padding:0 1.2rem;
     color:var(--dim);font-size:.95rem;
     opacity:0;transform:translateY(10px);
-    transition:opacity .6s ease,transform .6s ease;
+    transition:opacity .5s var(--ease-out),transform .5s var(--ease-out);
   }
   .vault-caption.on{opacity:1;transform:none}
   .vault-caption .sc{color:var(--gold);font-size:.7rem;display:block;margin-bottom:.3rem}
@@ -270,7 +279,7 @@
     font-family:var(--sc);font-size:.82rem;letter-spacing:.3em;
     color:var(--marble);background:var(--gold);text-decoration:none;
     padding:.9rem 1.7rem;border:1px solid var(--gold);
-    transition:background .3s ease,color .3s ease;
+    transition:background .25s var(--ease-out),color .25s var(--ease-out);
   }
   .cta:hover{background:transparent;color:var(--gold-bright)}
 
@@ -282,7 +291,7 @@
   footer a:hover{color:var(--cream)}
 
   /* fade-up entries */
-  .fx{opacity:0;transform:translateY(22px);transition:opacity .9s ease,transform .9s ease}
+  .fx{opacity:0;transform:translateY(20px);transition:opacity .6s var(--ease-out),transform .6s var(--ease-out)}
   .fx.in{opacity:1;transform:none}
 
   @media (prefers-reduced-motion:reduce){
@@ -592,7 +601,7 @@
       { lines: 26, segs: 240, base: .315, gap: .0042, A1: .085, k1: 9, d1: .065, A2: .020, k2: 3, d2: .3, e: .010, m: 27, alpha: .125 }
     ],
     rings: [.262, .268, .455, .59, .597, .835, .9, .908],
-    ringAlpha: .3, spin: .016, drawDur: 3.6,
+    ringAlpha: .3, spin: .010, drawDur: 3.6,
     pointer: hero
   });
 
@@ -758,16 +767,21 @@
   if (RM) {
     setVault(1);
   } else {
-    let vTicking = false, vVisible = false;
+    // scrub is damped: the mechanism converges on the scroll target instead
+    // of jumping per pixel — machined, never twitchy
+    let vVisible = false, vCur = 0, vRaf = 0;
     const vaultScroll = () => {
-      vTicking = false;
+      vRaf = 0;
       if (!vVisible) return;
       const r = vaultTrack.getBoundingClientRect();
       const span = r.height - innerHeight;
-      const p = clamp(-r.top / Math.max(span, 1), 0, 1);
-      setVault(p);
+      const t = clamp(-r.top / Math.max(span, 1), 0, 1);
+      vCur += (t - vCur) * .22;
+      if (Math.abs(t - vCur) < .0004) vCur = t;
+      setVault(vCur);
+      if (vCur !== t) vRaf = requestAnimationFrame(vaultScroll);
     };
-    const onScroll = () => { if (!vTicking) { vTicking = true; requestAnimationFrame(vaultScroll); } };
+    const onScroll = () => { if (!vRaf) vRaf = requestAnimationFrame(vaultScroll); };
     new IntersectionObserver(en => {
       vVisible = en[0].isIntersecting;
       if (vVisible) onScroll();
@@ -813,7 +827,7 @@
     new IntersectionObserver((en, ob) => {
       if (!en[0].isIntersecting || done) return;
       done = true; ob.disconnect();
-      const t0 = performance.now(), dur = 1600;
+      const t0 = performance.now(), dur = 1200;
       (function tick(t) {
         const p = ease(clamp((t - t0) / dur, 0, 1));
         setTab(elm, (target * p).toFixed(dec));
@@ -880,15 +894,18 @@
     else {
       setChart(0);
       const box = document.getElementById('chartBox');
-      let cTick = false;
+      let cCur = 0, cRaf = 0;
       const upd = () => {
-        cTick = false;
+        cRaf = 0;
         const r = box.getBoundingClientRect();
-        // draw as the chart passes through the viewport's middle band
-        const p = clamp((innerHeight * .88 - r.top) / (innerHeight * .62), 0, 1);
-        setChart(p >= .99 ? 1 : ease(p));
+        // draw as the chart passes through the viewport's middle band; damped
+        const t = clamp((innerHeight * .88 - r.top) / (innerHeight * .62), 0, 1);
+        cCur += (t - cCur) * .18;
+        if (Math.abs(t - cCur) < .002) cCur = t;
+        setChart(cCur >= .99 ? 1 : ease(cCur));
+        if (cCur !== t) cRaf = requestAnimationFrame(upd);
       };
-      addEventListener('scroll', () => { if (!cTick) { cTick = true; requestAnimationFrame(upd); } }, { passive: true });
+      addEventListener('scroll', () => { if (!cRaf) cRaf = requestAnimationFrame(upd); }, { passive: true });
       upd();
     }
   }

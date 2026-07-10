@@ -22,6 +22,7 @@
   --hud-line:rgba(16,21,28,.28);
   --hw:112;   /* headline wdth axis (g-force) */
   --hwt:640;  /* headline wght axis (g-force) */
+  --e:cubic-bezier(.2,.7,.2,1);
 }
 *{margin:0;padding:0;box-sizing:border-box}
 html{scroll-behavior:smooth}
@@ -72,7 +73,7 @@ body.dark-sky{
 #hud .lab{color:var(--hud-dim);font-size:.6rem;letter-spacing:.14em;align-self:center;transition:color .4s}
 #hud .val{font-weight:500;min-width:7.4ch}
 #clock.shudder{animation:shud .09s steps(2) infinite}
-@keyframes shud{0%{transform:translate(0,0)}50%{transform:translate(1px,-1px)}100%{transform:translate(-1px,1px)}}
+@keyframes shud{0%{transform:translate(0,0)}50%{transform:translate(.6px,-.6px)}100%{transform:translate(-.6px,.6px)}}
 
 /* altitude rail */
 #rail{
@@ -142,7 +143,7 @@ h1,h2,h3{font-variation-settings:'wdth' 112,'wght' 700;letter-spacing:-.01em}
 .karman{min-height:64vh;display:flex;align-items:center}
 .karman .inner{width:100%}
 .karman .kline{height:1px;background:linear-gradient(90deg,transparent,var(--tele) 18%,var(--tele) 82%,transparent);
-  box-shadow:0 0 12px rgba(89,217,140,.55);transform:scaleX(.2);opacity:0;transition:transform 1.2s cubic-bezier(.2,.7,.2,1),opacity .9s}
+  box-shadow:0 0 12px rgba(89,217,140,.55);transform:scaleX(.2);opacity:0;transition:transform 1.2s var(--e),opacity .7s var(--e)}
 .karman.lit .kline{transform:scaleX(1);opacity:1}
 .karman .klab{display:flex;justify-content:space-between;margin-top:.9rem;font-family:"JetBrains Mono",monospace;font-size:.7rem;letter-spacing:.24em;color:var(--tele)}
 .karman .ksub{margin-top:2.2rem;max-width:30rem;font-size:1.05rem;line-height:1.65;opacity:.85}
@@ -173,7 +174,7 @@ h1,h2,h3{font-variation-settings:'wdth' 112,'wght' 700;letter-spacing:-.01em}
 #stage .cap{
   position:absolute;left:50%;bottom:10vh;transform:translate(-50%,14px);
   font-family:"JetBrains Mono",monospace;font-size:.72rem;letter-spacing:.3em;color:var(--white);
-  text-shadow:0 1px 6px rgba(0,0,0,.7);opacity:0;transition:opacity .8s,transform .8s;white-space:nowrap;
+  text-shadow:0 1px 6px rgba(0,0,0,.7);opacity:0;transition:opacity .6s var(--e),transform .6s var(--e);white-space:nowrap;
 }
 #stage.open .cap{opacity:.95;transform:translate(-50%,0)}
 
@@ -189,15 +190,15 @@ h1,h2,h3{font-variation-settings:'wdth' 112,'wght' 700;letter-spacing:-.01em}
 }
 .fcard .tag{font-family:"JetBrains Mono",monospace;font-size:.62rem;letter-spacing:.22em;color:var(--tele);display:block;margin-bottom:.9rem}
 .fcard q{quotes:"“" "”"}
-#apogee.floating .fcard{animation:floaty var(--fd,9s) ease-in-out var(--fdelay,0s) infinite alternate}
-#apogee.floating .fcard:nth-child(2){--fd:11s;--fdelay:-3s}
-#apogee.floating .fcard:nth-child(3){--fd:8s;--fdelay:-5s}
-#apogee.floating .fcard:nth-child(4){--fd:12s;--fdelay:-7s}
+#apogee.floating .fcard{animation:floaty var(--fd,12s) ease-in-out var(--fdelay,0s) infinite alternate}
+#apogee.floating .fcard:nth-child(2){--fd:14s;--fdelay:-4s}
+#apogee.floating .fcard:nth-child(3){--fd:11s;--fdelay:-6s}
+#apogee.floating .fcard:nth-child(4){--fd:16s;--fdelay:-9s}
 @keyframes floaty{
   0%{transform:translate(0,0) rotate(0deg)}
-  33%{transform:translate(6px,-10px) rotate(1.1deg)}
-  66%{transform:translate(-5px,-4px) rotate(-.9deg)}
-  100%{transform:translate(3px,-12px) rotate(.7deg)}
+  33%{transform:translate(5px,-8px) rotate(.9deg)}
+  66%{transform:translate(-4px,-3px) rotate(-.7deg)}
+  100%{transform:translate(3px,-10px) rotate(.6deg)}
 }
 
 /* ---------- return ---------- */
@@ -495,9 +496,11 @@ var reduced = matchMedia('(prefers-reduced-motion: reduce)').matches;
 var $ = function(s){ return document.querySelector(s); };
 
 /* ---------- flight keyframes from markers ---------- */
-var KEYS = [];
+var KEYS = [], stageTop = 0;
 function measure(){
   KEYS = [];
+  var sEl = document.getElementById('stage');
+  if(sEl) stageTop = sEl.getBoundingClientRect().top + window.scrollY;
   var els = document.querySelectorAll('[data-key]');
   for(var i=0;i<els.length;i++){
     var el = els[i], r = el.getBoundingClientRect();
@@ -537,6 +540,7 @@ function rampColor(alt){
     if(alt<=RAMP[i][0]){
       var a=RAMP[i-1], b=RAMP[i];
       var m=(alt-a[0])/(b[0]-a[0]);
+      m = m*m*(3-2*m); /* zero-slope at each stop — ramp stays seamless over the whole scroll */
       return [ Math.round(lerp(a[1][0],b[1][0],m)),
                Math.round(lerp(a[1][1],b[1][1],m)),
                Math.round(lerp(a[1][2],b[1][2],m)) ];
@@ -567,7 +571,7 @@ function drawStars(now){
   if(starAlpha<=0.01) return;
   for(var i=0;i<STARS.length;i++){
     var st=STARS[i];
-    var tw = reduced ? 1 : (0.72 + 0.28*Math.sin(st.p + now*0.001*st.s));
+    var tw = reduced ? 1 : (0.82 + 0.18*Math.sin(st.p + now*0.001*st.s));
     ctx.globalAlpha = starAlpha * st.b * tw;
     ctx.fillStyle = '#EAF2FF';
     ctx.beginPath();
@@ -606,11 +610,18 @@ function fmtClock(t){
 function pad(n,w){ n=''+n; while(n.length<w) n='0'+n; return n; }
 
 /* ---------- main scroll-driven update ---------- */
-var ticking=false, lastDark=null, lastShudder=null;
+var ticking=false, lastDark=null, lastShudder=null, syCur=window.scrollY;
 function update(){
   ticking=false;
   if(hidden) return;
-  var anchor = window.scrollY + innerHeight*0.55;
+  /* damped scrub: chase scroll so the sky ramp and HUD never step on fast flicks */
+  var syT = window.scrollY;
+  if(reduced){ syCur = syT; }
+  else{
+    syCur += (syT-syCur)*0.22;
+    if(Math.abs(syT-syCur)<0.5) syCur = syT;
+  }
+  var anchor = syCur + innerHeight*0.55;
   var f = sample(anchor);
 
   /* sky */
@@ -654,9 +665,8 @@ function update(){
 
   /* window reveal */
   if(!reduced){
-    var st = stage.getBoundingClientRect();
     var span = stage.offsetHeight - innerHeight;
-    var w = Math.max(0, Math.min(1, -st.top / Math.max(1,span)));
+    var w = Math.max(0, Math.min(1, (syCur-stageTop) / Math.max(1,span)));
     var e = w<.5 ? 2*w*w : 1-Math.pow(-2*w+2,2)/2; /* easeInOutQuad */
     var ix = lerp(27,0,e), iy = lerp(33,0,e), rr = lerp(30,0,e), rr2 = lerp(42,0,e);
     if(innerWidth<760){ ix = lerp(13,0,e); iy = lerp(32,0,e); }
@@ -665,6 +675,7 @@ function update(){
     frame.style.opacity = smooth(.55,.9,w).toFixed(3);
     stage.classList.toggle('open', w>.72);
   }
+  if(!reduced && syCur!==window.scrollY && !ticking){ ticking=true; requestAnimationFrame(update); }
 }
 function onScroll(){
   if(!ticking){ ticking=true; requestAnimationFrame(update); }
@@ -730,6 +741,12 @@ PASS 3 (mobile & flow):
     (fixed HUD already carries ALT/VEL/G); bottom frame row wraps cleanly, caption raised.
   - kmlab nowrap; will-change on the reveal layer; verified weightless float, max-Q compression
     (wdth 112→~79 under 3.5 g), re-entry amber, RM static window, 0 errors, scrollWidth 390/1280.
+PASS 4 (motion cleanliness pass):
+  - One easing curve (--e) shared by kline, caption and reveals; scroll scrub damped
+    (lerped anchor, .22/frame) so the sky ramp, HUD and window mask never step on fast flicks;
+    sky ramp stops smoothstepped — seamless over the whole profile.
+  - Weightless float slowed to 11–16 s periods, rotations ≤0.9°; G-shudder amplitude
+    tightened to ±0.6 px (still 90 ms steps, boost-only); star twinkle calmed (0.82±0.18).
 -->
 </body>
 </html>

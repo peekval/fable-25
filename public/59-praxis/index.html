@@ -1,0 +1,590 @@
+<!doctype html>
+<!--
+  PRAXIS — Zahnarztpraxis am Lindenplatz, Winterthur (fiktiv)
+  FABLE/25 · site 59 · Swiss template wave · single-file showcase
+
+  CHANGELOG
+  PASS 1 — Full template build: bright/calm dental-practice one-pager in
+           de-CH (kein ß). Split hero with treatment-room photo and animated
+           "Lächeln-Linie" (single drawn smile curve, reused as section
+           divider motif); 6 Leistungen cards with inline-SVG icons; team
+           section with initials-monogram circles (no faces); static booking
+           form with JS confirmation; Öffnungszeiten/Notfall/Krankenkassen;
+           stylised SVG map of the Lindenplatz quarter; one easing curve,
+           short IntersectionObserver reveals (<=20px), reduced-motion
+           static; fixed "← 25" pill, guide footer link.
+  PASS 2 — Polish after Playwright review: compact top-bar CTA on <=520px
+           (no wrap), scroll-margin-top so anchored sections clear the
+           sticky bar, soft mint wash behind the hero, clearer
+           root-canal icon (tooth + canal lines).
+-->
+<html lang="de-CH">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Zahnarztpraxis am Lindenplatz — Winterthur</title>
+<meta name="description" content="Zahnarztpraxis am Lindenplatz in Winterthur: Dentalhygiene, Füllungen, Implantate und Kinderzahnmedizin. Warm, modern, gut erreichbar. Jetzt Termin vereinbaren.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,420;9..144,520;9..144,600&family=Karla:ital,wght@0,400;0,500;0,700;1,400&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --paper:#FBFAF7;
+    --paper-2:#F3F1EA;
+    --mint:#7FBFAE;
+    --mint-deep:#4E9483;
+    --mint-soft:#E4F0EC;
+    --oak:#C8A778;
+    --oak-deep:#A5854F;
+    --oak-soft:#F4ECDF;
+    --ink:#2A2E32;
+    --ink-60:#5C6369;
+    --line:#E3E0D7;
+    --serif:"Fraunces",Georgia,serif;
+    --sans:"Karla","Segoe UI",system-ui,sans-serif;
+    --ease:cubic-bezier(.33,.72,.28,1);
+    --radius:18px;
+    --shadow:0 10px 30px -18px rgba(42,46,50,.28);
+  }
+  *{margin:0;padding:0;box-sizing:border-box}
+  html{scroll-behavior:smooth}
+  body{font-family:var(--sans);background:var(--paper);color:var(--ink);line-height:1.65;font-size:1.02rem;-webkit-font-smoothing:antialiased}
+  ::selection{background:var(--mint);color:#fff}
+  img{max-width:100%;height:auto;display:block}
+  a{color:var(--mint-deep)}
+  h1,h2,h3{font-family:var(--serif);font-weight:520;line-height:1.12;letter-spacing:.005em}
+  .wrap{max-width:1120px;margin:0 auto;padding:0 clamp(1.15rem,4vw,2.5rem)}
+
+  /* ——— reveals: one curve, one distance ——— */
+  .rv{opacity:0;transform:translateY(18px);transition:opacity .7s var(--ease),transform .7s var(--ease)}
+  .rv.in{opacity:1;transform:none}
+
+  /* ——— top bar ——— */
+  .top{position:sticky;top:0;z-index:40;background:rgba(251,250,247,.92);backdrop-filter:blur(8px);border-bottom:1px solid var(--line)}
+  .top .wrap{display:flex;align-items:center;gap:1.5rem;min-height:4.1rem}
+  .brand{font-family:var(--serif);font-weight:600;font-size:1.06rem;color:var(--ink);text-decoration:none;line-height:1.2}
+  .brand small{display:block;font-family:var(--sans);font-weight:500;font-size:.68rem;letter-spacing:.22em;text-transform:uppercase;color:var(--mint-deep)}
+  nav.main{margin-left:auto;display:flex;gap:1.4rem;align-items:center}
+  nav.main a{font-size:.9rem;font-weight:500;color:var(--ink-60);text-decoration:none;transition:color .25s var(--ease)}
+  nav.main a:hover{color:var(--ink)}
+  .navlinks{display:flex;gap:1.4rem}
+  @media(max-width:840px){.navlinks{display:none}}
+  .btn .long{display:inline}
+  @media(max-width:520px){
+    .top .wrap{gap:.9rem}
+    .brand{font-size:.95rem}
+    .btn.small{padding:.5rem .95rem;white-space:nowrap}
+    .btn.small .long{display:none}
+  }
+  .btn{display:inline-block;background:var(--mint-deep);color:#fff;text-decoration:none;font-weight:700;font-size:.92rem;
+    padding:.72rem 1.35rem;border-radius:999px;border:none;cursor:pointer;font-family:var(--sans);
+    transition:background .25s var(--ease),transform .25s var(--ease),box-shadow .25s var(--ease);box-shadow:0 6px 18px -10px rgba(78,148,131,.6)}
+  .btn:hover{background:#417e6f;transform:translateY(-2px)}
+  .btn.oak{background:var(--oak-deep);box-shadow:0 6px 18px -10px rgba(165,133,79,.6)}
+  .btn.oak:hover{background:#8d7040}
+  .btn.small{padding:.55rem 1.1rem;font-size:.85rem}
+
+  /* ——— hero ——— */
+  .hero{padding:clamp(2.8rem,7vw,5.5rem) 0 clamp(2.4rem,5vw,4.2rem);
+    background:linear-gradient(180deg,#EFF6F3 0%,var(--paper) 78%)}
+  .hero .wrap{display:grid;grid-template-columns:minmax(0,10fr) minmax(0,11fr);gap:clamp(1.8rem,4vw,3.6rem);align-items:center}
+  @media(max-width:840px){.hero .wrap{grid-template-columns:1fr}}
+  .eyebrow{font-size:.72rem;font-weight:700;letter-spacing:.3em;text-transform:uppercase;color:var(--oak-deep)}
+  .hero h1{font-size:clamp(2.2rem,5.4vw,3.6rem);margin:.7rem 0 .35rem;max-width:12em}
+  .smile{display:block;width:min(240px,60%);height:auto;margin:.35rem 0 1.15rem;overflow:visible}
+  .smile path{fill:none;stroke:var(--mint);stroke-width:5;stroke-linecap:round}
+  .hero .smile path{stroke-dasharray:250;stroke-dashoffset:250;animation:draw 1.4s var(--ease) .35s forwards}
+  @keyframes draw{to{stroke-dashoffset:0}}
+  .hero p.lead{max-width:30em;color:var(--ink-60);font-size:1.08rem}
+  .hero .cta-row{display:flex;gap:.9rem;flex-wrap:wrap;margin-top:1.6rem;align-items:center}
+  .cta-note{font-size:.85rem;color:var(--ink-60)}
+  .hero-photo{position:relative}
+  .hero-photo img{border-radius:var(--radius) var(--radius) 72px var(--radius);box-shadow:var(--shadow)}
+  .hero-photo::after{content:"";position:absolute;inset:auto -14px -14px auto;width:120px;height:120px;border-radius:50%;
+    background:radial-gradient(circle at 30% 30%,var(--oak-soft),transparent 70%);z-index:-1}
+  .hero-badge{position:absolute;left:1rem;bottom:1rem;background:rgba(251,250,247,.94);border:1px solid var(--line);
+    border-radius:12px;padding:.55rem .9rem;font-size:.8rem;line-height:1.45;box-shadow:var(--shadow)}
+  .hero-badge strong{font-weight:700;color:var(--mint-deep)}
+
+  /* ——— section scaffolding + divider motif ——— */
+  section{padding:clamp(2.8rem,6.5vw,5rem) 0;scroll-margin-top:4.4rem}
+  .sec-head{max-width:38em;margin-bottom:clamp(1.6rem,3.5vw,2.6rem)}
+  .sec-head h2{font-size:clamp(1.7rem,3.6vw,2.5rem);margin:.4rem 0 .55rem}
+  .sec-head p{color:var(--ink-60)}
+  .divider{display:flex;justify-content:center;padding:.2rem 0}
+  .divider svg{width:120px;height:26px;overflow:visible}
+  .divider path{fill:none;stroke:var(--oak);stroke-width:4;stroke-linecap:round;opacity:.75}
+  .alt{background:var(--paper-2)}
+
+  /* ——— Leistungen ——— */
+  .cards{display:grid;grid-template-columns:repeat(3,1fr);gap:1.15rem}
+  @media(max-width:920px){.cards{grid-template-columns:repeat(2,1fr)}}
+  @media(max-width:600px){.cards{grid-template-columns:1fr}}
+  .card{background:#fff;border:1px solid var(--line);border-radius:var(--radius);padding:1.5rem 1.4rem 1.45rem;
+    transition:transform .35s var(--ease),box-shadow .35s var(--ease)}
+  .card:hover{transform:translateY(-4px);box-shadow:var(--shadow)}
+  .card .ic{width:46px;height:46px;border-radius:13px;background:var(--mint-soft);display:grid;place-items:center;margin-bottom:.95rem}
+  .card:nth-child(even) .ic{background:var(--oak-soft)}
+  .card .ic svg{width:25px;height:25px;stroke:var(--mint-deep);fill:none;stroke-width:1.7;stroke-linecap:round;stroke-linejoin:round}
+  .card:nth-child(even) .ic svg{stroke:var(--oak-deep)}
+  .card h3{font-size:1.18rem;margin-bottom:.4rem}
+  .card p{font-size:.92rem;color:var(--ink-60)}
+
+  /* ——— Team ——— */
+  .team-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:1.15rem;margin-top:.5rem}
+  @media(max-width:840px){.team-grid{grid-template-columns:1fr;max-width:30rem}}
+  .member{background:#fff;border:1px solid var(--line);border-radius:var(--radius);padding:1.7rem 1.5rem;text-align:center}
+  .mono{width:84px;height:84px;margin:0 auto 1rem;border-radius:50%;display:grid;place-items:center;
+    font-family:var(--serif);font-weight:600;font-size:1.7rem;letter-spacing:.03em;color:#fff;
+    background:linear-gradient(135deg,var(--mint),var(--mint-deep));box-shadow:inset 0 0 0 4px rgba(255,255,255,.35)}
+  .member:nth-child(2) .mono{background:linear-gradient(135deg,var(--oak),var(--oak-deep))}
+  .member:nth-child(3) .mono{background:linear-gradient(135deg,#9CC9BC,var(--mint-deep))}
+  .member h3{font-size:1.15rem}
+  .member .role{font-size:.78rem;font-weight:700;letter-spacing:.16em;text-transform:uppercase;color:var(--mint-deep);margin:.25rem 0 .6rem}
+  .member:nth-child(2) .role{color:var(--oak-deep)}
+  .member p{font-size:.9rem;color:var(--ink-60)}
+  .praxis-note{display:grid;grid-template-columns:minmax(0,7fr) minmax(0,5fr);gap:clamp(1.4rem,3.5vw,2.8rem);align-items:center;margin-top:clamp(1.8rem,4vw,3rem)}
+  @media(max-width:840px){.praxis-note{grid-template-columns:1fr}}
+  .praxis-note img{border-radius:var(--radius);box-shadow:var(--shadow)}
+  .praxis-note h3{font-size:1.45rem;margin-bottom:.55rem}
+  .praxis-note p{color:var(--ink-60);max-width:34em}
+
+  /* ——— Termin form ——— */
+  .form-shell{max-width:720px;margin:0 auto;background:#fff;border:1px solid var(--line);border-radius:22px;
+    padding:clamp(1.5rem,4vw,2.6rem);box-shadow:var(--shadow)}
+  .fgrid{display:grid;grid-template-columns:1fr 1fr;gap:1rem}
+  @media(max-width:600px){.fgrid{grid-template-columns:1fr}}
+  .field{display:flex;flex-direction:column;gap:.35rem}
+  .field.full{grid-column:1/-1}
+  label{font-size:.82rem;font-weight:700;letter-spacing:.04em}
+  label .opt{font-weight:400;color:var(--ink-60)}
+  input,select,textarea{font-family:var(--sans);font-size:.95rem;color:var(--ink);background:var(--paper);
+    border:1px solid var(--line);border-radius:11px;padding:.72rem .85rem;width:100%;
+    transition:border-color .25s var(--ease),box-shadow .25s var(--ease)}
+  input:focus,select:focus,textarea:focus{outline:none;border-color:var(--mint);box-shadow:0 0 0 3px var(--mint-soft)}
+  textarea{resize:vertical;min-height:5.2rem}
+  .form-foot{display:flex;align-items:center;gap:1rem;flex-wrap:wrap;margin-top:1.35rem}
+  .form-foot .hint{font-size:.82rem;color:var(--ink-60);max-width:24em}
+  .confirm{display:none;text-align:center;padding:1rem 0 .4rem}
+  .confirm.show{display:block}
+  .confirm .smile{margin:.2rem auto 1rem;width:150px}
+  .confirm .smile path{stroke-dasharray:250;stroke-dashoffset:250;animation:draw 1.1s var(--ease) .1s forwards}
+  .confirm h3{font-size:1.5rem;margin-bottom:.5rem}
+  .confirm p{color:var(--ink-60);max-width:30em;margin:0 auto}
+
+  /* ——— Praktisches ——— */
+  .prak{display:grid;grid-template-columns:repeat(3,1fr);gap:1.15rem}
+  @media(max-width:920px){.prak{grid-template-columns:1fr}}
+  .prak .box{background:#fff;border:1px solid var(--line);border-radius:var(--radius);padding:1.5rem 1.45rem}
+  .prak h3{font-size:1.15rem;margin-bottom:.75rem;display:flex;align-items:center;gap:.55rem}
+  .prak h3 svg{width:20px;height:20px;stroke:var(--mint-deep);fill:none;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round;flex:none}
+  table{width:100%;border-collapse:collapse;font-size:.92rem}
+  td{padding:.42rem 0;border-bottom:1px dashed var(--line);vertical-align:top}
+  tr:last-child td{border-bottom:none}
+  td:last-child{text-align:right;color:var(--ink-60);white-space:nowrap}
+  td .closed{color:var(--oak-deep);font-weight:700}
+  .box p{font-size:.92rem;color:var(--ink-60)}
+  .box p+p{margin-top:.6em}
+  .box .tel-big{display:inline-block;margin-top:.5rem;font-family:var(--serif);font-size:1.25rem;font-weight:600;color:var(--ink);text-decoration:none}
+  .notfall{border-left:4px solid var(--oak)}
+
+  /* ——— Kontakt / Karte ——— */
+  .kontakt-grid{display:grid;grid-template-columns:minmax(0,5fr) minmax(0,7fr);gap:clamp(1.5rem,4vw,3rem);align-items:start}
+  @media(max-width:840px){.kontakt-grid{grid-template-columns:1fr}}
+  .addr{font-style:normal;font-size:1rem;line-height:1.8}
+  .addr strong{font-family:var(--serif);font-size:1.2rem;font-weight:600;display:block;margin-bottom:.3rem}
+  .k-list{margin-top:1.2rem;display:grid;gap:.55rem;font-size:.94rem}
+  .k-list div{display:flex;gap:.6rem;align-items:baseline}
+  .k-list .dot{width:8px;height:8px;border-radius:50%;background:var(--mint);flex:none;transform:translateY(-1px)}
+  .mapbox{background:#fff;border:1px solid var(--line);border-radius:var(--radius);overflow:hidden;box-shadow:var(--shadow)}
+  .mapbox svg{display:block;width:100%;height:auto}
+  .map-cap{font-size:.8rem;color:var(--ink-60);padding:.7rem 1rem;border-top:1px solid var(--line)}
+
+  /* ——— footer ——— */
+  footer{background:var(--ink);color:#C9CDD0;padding:2.6rem 0 5.5rem;margin-top:1rem}
+  footer .wrap{display:flex;flex-wrap:wrap;gap:1rem 2rem;align-items:center;justify-content:space-between}
+  footer .fbrand{font-family:var(--serif);color:#fff;font-size:1.05rem}
+  footer nav{display:flex;gap:1.4rem;flex-wrap:wrap}
+  footer a{color:#C9CDD0;text-decoration:none;font-size:.86rem;transition:color .25s var(--ease)}
+  footer a:hover{color:#fff}
+  footer .guide-link{color:var(--mint)}
+  footer .fine{width:100%;font-size:.78rem;color:#8B9196}
+
+  /* ——— fixed hub pill ——— */
+  .hub-pill{position:fixed;left:1rem;bottom:1rem;z-index:60;background:var(--ink);color:#fff;text-decoration:none;
+    font-size:.8rem;font-weight:700;letter-spacing:.08em;padding:.5rem .95rem;border-radius:999px;
+    box-shadow:0 8px 22px -10px rgba(42,46,50,.55);transition:transform .25s var(--ease),background .25s var(--ease)}
+  .hub-pill:hover{transform:translateY(-2px);background:#000}
+
+  @media (prefers-reduced-motion: reduce){
+    html{scroll-behavior:auto}
+    .rv{opacity:1;transform:none;transition:none}
+    .hero .smile path,.confirm .smile path{animation:none;stroke-dashoffset:0}
+    .btn,.card,.hub-pill{transition:none}
+    .btn:hover,.card:hover,.hub-pill:hover{transform:none}
+  }
+</style>
+</head>
+<body>
+
+<a class="hub-pill" href="/" aria-label="Zurück zur FABLE/25 Übersicht">← 25</a>
+
+<header class="top">
+  <div class="wrap">
+    <a class="brand" href="#top"><small>Winterthur</small>Zahnarztpraxis am Lindenplatz</a>
+    <nav class="main" aria-label="Hauptnavigation">
+      <div class="navlinks">
+        <a href="#leistungen">Leistungen</a>
+        <a href="#team">Praxis &amp; Team</a>
+        <a href="#praktisches">Praktisches</a>
+        <a href="#kontakt">Kontakt</a>
+      </div>
+      <a class="btn small" href="#termin">Termin<span class="long"> vereinbaren</span></a>
+    </nav>
+  </div>
+</header>
+
+<main id="top">
+
+  <!-- ——— HERO ——— -->
+  <section class="hero" aria-labelledby="hero-h">
+    <div class="wrap">
+      <div>
+        <p class="eyebrow rv">Ihre Zahnärztin in Winterthur</p>
+        <h1 id="hero-h" class="rv">Gesunde Zähne. Und ein Grund zu lächeln.</h1>
+        <svg class="smile" viewBox="0 0 240 44" aria-hidden="true"><path d="M6 10 C 70 46, 170 46, 234 10"/></svg>
+        <p class="lead rv">Von der Dentalhygiene bis zum Implantat: Wir nehmen uns Zeit, erklären verständlich und behandeln so schonend wie möglich — für die ganze Familie, mitten im Quartier.</p>
+        <div class="cta-row rv">
+          <a class="btn" href="#termin">Termin vereinbaren</a>
+          <span class="cta-note">oder rufen Sie uns an: <a href="tel:+41522123456">052 212 34 56</a></span>
+        </div>
+      </div>
+      <div class="hero-photo rv">
+        <img src="assets/praxis.webp" alt="Helles Behandlungszimmer der Zahnarztpraxis am Lindenplatz mit mintfarbenem Behandlungsstuhl und Blick ins Grüne" width="1920" height="1080" fetchpriority="high">
+        <div class="hero-badge"><strong>Neue Patientinnen und Patienten willkommen</strong><br>Termine meist innert 2 Wochen</div>
+      </div>
+    </div>
+  </section>
+
+  <div class="divider" aria-hidden="true"><svg viewBox="0 0 120 26"><path d="M4 5 C 34 24, 86 24, 116 5"/></svg></div>
+
+  <!-- ——— LEISTUNGEN ——— -->
+  <section id="leistungen" aria-labelledby="leist-h">
+    <div class="wrap">
+      <div class="sec-head rv">
+        <p class="eyebrow">Leistungen</p>
+        <h2 id="leist-h">Alles für Ihr Lächeln, unter einem Dach</h2>
+        <p>Moderne Zahnmedizin heisst für uns: sorgfältige Diagnostik, transparente Kostenvoranschläge und Behandlungen, die zu Ihrem Alltag passen.</p>
+      </div>
+      <div class="cards">
+        <article class="card rv">
+          <div class="ic" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M12 4c-2-1.6-6-1.8-7 1.5-.9 3 .8 6 1.6 9.2.5 2 .9 5.3 2.4 5.3 1.6 0 1.2-4 3-4s1.4 4 3 4c1.5 0 1.9-3.3 2.4-5.3.8-3.2 2.5-6.2 1.6-9.2-1-3.3-5-3.1-7-1.5Z"/></svg></div>
+          <h3>Dentalhygiene</h3>
+          <p>Professionelle Zahnreinigung und Prophylaxe — die beste Versicherung gegen Karies und Zahnfleischprobleme. Empfohlen ein- bis zweimal pro Jahr.</p>
+        </article>
+        <article class="card rv">
+          <div class="ic" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M12 4c-2-1.6-6-1.8-7 1.5-.9 3 .8 6 1.6 9.2.5 2 .9 5.3 2.4 5.3 1.6 0 1.2-4 3-4s1.4 4 3 4c1.5 0 1.9-3.3 2.4-5.3.8-3.2 2.5-6.2 1.6-9.2-1-3.3-5-3.1-7-1.5Z"/><path d="M8.5 8.5c1 1.2 2.2 1.8 3.5 1.8s2.5-.6 3.5-1.8"/></svg></div>
+          <h3>Füllungen</h3>
+          <p>Zahnfarbene Komposit-Füllungen, die man nicht sieht und kaum spürt. Minimalinvasiv gearbeitet, damit möglichst viel gesunde Zahnsubstanz bleibt.</p>
+        </article>
+        <article class="card rv">
+          <div class="ic" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M12 4c-2-1.6-6-1.8-7 1.5-.9 3 .8 6 1.6 9.2.5 2 .9 5.3 2.4 5.3 1.6 0 1.2-4 3-4s1.4 4 3 4c1.5 0 1.9-3.3 2.4-5.3.8-3.2 2.5-6.2 1.6-9.2-1-3.3-5-3.1-7-1.5Z"/><path d="M12 7v6.5M12 13.5l-1.6 3M12 13.5l1.6 3"/></svg></div>
+          <h3>Wurzelbehandlung</h3>
+          <p>Wenn der Nerv entzündet ist, retten wir den Zahn — mit moderner Technik, Lupenbrille und viel Geduld. Meist in ein bis zwei Sitzungen.</p>
+        </article>
+        <article class="card rv">
+          <div class="ic" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M8 3h8v3H8zM9 6h6l-.7 4H9.7L9 6Z"/><path d="M10 10h4l-.6 3.5h-2.8L10 10ZM10.8 13.5h2.4l-.5 3h-1.4l-.5-3ZM11.5 16.5h1l-.5 4.5-.5-4.5Z"/></svg></div>
+          <h3>Implantate</h3>
+          <p>Fester Zahnersatz, der sich anfühlt wie der eigene Zahn. Planung, Eingriff und Krone aus einer Hand — inklusive 3-D-Röntgen in der Praxis.</p>
+        </article>
+        <article class="card rv">
+          <div class="ic" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M12 3v3M12 18v3M3 12h3M18 12h3M5.6 5.6l2.1 2.1M16.3 16.3l2.1 2.1M18.4 5.6l-2.1 2.1M7.7 16.3l-2.1 2.1"/><circle cx="12" cy="12" r="3.2"/></svg></div>
+          <h3>Bleaching</h3>
+          <p>Sanfte, zahnschonende Aufhellung in der Praxis oder bequem zu Hause mit massgefertigten Schienen. Vorher beraten wir Sie ehrlich, was möglich ist.</p>
+        </article>
+        <article class="card rv">
+          <div class="ic" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M14 5.5c-1.3-1-3.7-1.1-4.4 1-.6 1.9.5 3.9 1 5.9.4 1.3.6 3.6 1.7 3.6 1 0 .8-2.6 1.7-2.6s.7 2.6 1.7 2.6c1.1 0 1.3-2.3 1.7-3.6.5-2 1.6-4 1-5.9-.7-2.1-3.1-2-4.4-1Z"/><path d="M5.5 14.5c.8.4 1.5 1.1 1.8 2M4 18.5c.9 0 1.8.2 2.5.7"/></svg></div>
+          <h3>Kinderzahnmedizin</h3>
+          <p>Erste Besuche ohne Druck, Behandlungen mit Ablenkung und Lob. Damit der Zahnarztbesuch für Ihre Kinder etwas ganz Normales wird.</p>
+        </article>
+      </div>
+    </div>
+  </section>
+
+  <div class="divider" aria-hidden="true"><svg viewBox="0 0 120 26"><path d="M4 5 C 34 24, 86 24, 116 5"/></svg></div>
+
+  <!-- ——— PRAXIS & TEAM ——— -->
+  <section id="team" class="alt" aria-labelledby="team-h">
+    <div class="wrap">
+      <div class="sec-head rv">
+        <p class="eyebrow">Praxis &amp; Team</p>
+        <h2 id="team-h">Menschen, die gerne zuhören</h2>
+        <p>Ein kleines, eingespieltes Team — Sie werden bei uns immer von denselben Gesichtern begrüsst und behandelt.</p>
+      </div>
+      <div class="team-grid">
+        <article class="member rv">
+          <div class="mono" aria-hidden="true">LB</div>
+          <h3>Dr. med. dent. Lea Brunner</h3>
+          <p class="role">Praxisinhaberin · Zahnärztin</p>
+          <p>Staatsexamen an der Universität Zürich, Weiterbildung in Implantologie. Seit 2014 mit eigener Praxis am Lindenplatz — und immer noch mit Freude dabei.</p>
+        </article>
+        <article class="member rv">
+          <div class="mono" aria-hidden="true">MK</div>
+          <h3>Marco Keller</h3>
+          <p class="role">Dentalhygieniker HF</p>
+          <p>Der Grund, warum viele unserer Patientinnen und Patienten sich sogar auf die Zahnreinigung freuen. Gründlich, geduldig und mit ruhiger Hand.</p>
+        </article>
+        <article class="member rv">
+          <div class="mono" aria-hidden="true">SF</div>
+          <h3>Seraina Furrer</h3>
+          <p class="role">Praxisleitung · Empfang</p>
+          <p>Ihre erste Ansprechperson am Telefon und an der Réception. Findet fast immer einen Termin, der in Ihren Kalender passt.</p>
+        </article>
+      </div>
+      <div class="praxis-note">
+        <div class="rv">
+          <img src="assets/praxis.webp" alt="Behandlungszimmer mit grossem Fenster, Eichenholz-Wand und Blick auf das Grüne rund um den Lindenplatz" width="1920" height="1080" loading="lazy">
+        </div>
+        <div class="rv">
+          <h3>Hell, ruhig, auf dem neusten Stand</h3>
+          <p>Unsere Räume wurden 2023 komplett erneuert: viel Tageslicht, warme Eichenoberflächen und leise Technik. Digitales Röntgen mit reduzierter Strahlendosis, Intraoralkamera und ein Sterilisationsraum nach aktuellen SSO-Richtlinien gehören selbstverständlich dazu.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <div class="divider" aria-hidden="true"><svg viewBox="0 0 120 26"><path d="M4 5 C 34 24, 86 24, 116 5"/></svg></div>
+
+  <!-- ——— TERMIN ——— -->
+  <section id="termin" aria-labelledby="termin-h">
+    <div class="wrap">
+      <div class="sec-head rv" style="text-align:center;margin-left:auto;margin-right:auto">
+        <p class="eyebrow">Terminbuchung</p>
+        <h2 id="termin-h">Wunschtermin anfragen</h2>
+        <p>Sagen Sie uns, wann es Ihnen passt — wir melden uns innert eines Arbeitstages mit einer Bestätigung oder einem Alternativvorschlag.</p>
+      </div>
+      <div class="form-shell rv">
+        <form id="terminform" novalidate>
+          <div class="fgrid">
+            <div class="field">
+              <label for="f-name">Name</label>
+              <input id="f-name" name="name" type="text" autocomplete="name" placeholder="Vor- und Nachname" required>
+            </div>
+            <div class="field">
+              <label for="f-kontakt">Telefon oder E-Mail</label>
+              <input id="f-kontakt" name="kontakt" type="text" autocomplete="tel" placeholder="z.&nbsp;B. 079 123 45 67" required>
+            </div>
+            <div class="field">
+              <label for="f-datum">Wunschtermin</label>
+              <input id="f-datum" name="datum" type="date" required>
+            </div>
+            <div class="field">
+              <label for="f-zeit">Tageszeit</label>
+              <select id="f-zeit" name="zeit">
+                <option>Egal / flexibel</option>
+                <option>Vormittag</option>
+                <option>Nachmittag</option>
+                <option>Abend (Do)</option>
+              </select>
+            </div>
+            <div class="field full">
+              <label for="f-grund">Grund des Besuchs</label>
+              <select id="f-grund" name="grund">
+                <option>Kontrolle / Check-up</option>
+                <option>Dentalhygiene</option>
+                <option>Zahnschmerzen</option>
+                <option>Beratung (Implantat, Bleaching, …)</option>
+                <option>Kinder-Termin</option>
+                <option>Anderes</option>
+              </select>
+            </div>
+            <div class="field full">
+              <label for="f-msg">Nachricht <span class="opt">(optional)</span></label>
+              <textarea id="f-msg" name="nachricht" placeholder="Gibt es etwas, das wir vorab wissen sollten?"></textarea>
+            </div>
+          </div>
+          <div class="form-foot">
+            <button class="btn" type="submit">Anfrage senden</button>
+            <p class="hint">Kein Notfall-Kanal: Bei akuten Schmerzen rufen Sie uns bitte direkt an.</p>
+          </div>
+        </form>
+        <div class="confirm" id="confirm" role="status" aria-live="polite">
+          <svg class="smile" viewBox="0 0 240 44" aria-hidden="true"><path d="M6 10 C 70 46, 170 46, 234 10"/></svg>
+          <h3>Vielen Dank<span id="c-name"></span>!</h3>
+          <p id="c-text">Ihre Terminanfrage ist bei uns eingegangen. Wir melden uns innert eines Arbeitstages bei Ihnen — versprochen.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <div class="divider" aria-hidden="true"><svg viewBox="0 0 120 26"><path d="M4 5 C 34 24, 86 24, 116 5"/></svg></div>
+
+  <!-- ——— PRAKTISCHES ——— -->
+  <section id="praktisches" class="alt" aria-labelledby="prak-h">
+    <div class="wrap">
+      <div class="sec-head rv">
+        <p class="eyebrow">Praktisches</p>
+        <h2 id="prak-h">Gut zu wissen</h2>
+      </div>
+      <div class="prak">
+        <div class="box rv">
+          <h3><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3.5 2"/></svg>Öffnungszeiten</h3>
+          <table>
+            <tr><td>Montag</td><td>08.00–12.00 · 13.30–17.30</td></tr>
+            <tr><td>Dienstag</td><td>08.00–12.00 · 13.30–17.30</td></tr>
+            <tr><td>Mittwoch</td><td>08.00–12.00</td></tr>
+            <tr><td>Donnerstag</td><td>08.00–12.00 · 13.30–19.00</td></tr>
+            <tr><td>Freitag</td><td>08.00–12.00 · 13.30–16.00</td></tr>
+            <tr><td>Sa / So</td><td><span class="closed">geschlossen</span></td></tr>
+          </table>
+        </div>
+        <div class="box notfall rv">
+          <h3><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3 2.5 19.5h19L12 3Z"/><path d="M12 10v4M12 16.8v.4"/></svg>Im Notfall</h3>
+          <p>Bei starken Schmerzen, Unfall oder abgebrochenem Zahn rufen Sie uns während der Öffnungszeiten direkt an — wir halten täglich Notfall-Slots frei.</p>
+          <p>Ausserhalb der Öffnungszeiten hilft der zahnärztliche Notfalldienst der Region Winterthur weiter.</p>
+          <a class="tel-big" href="tel:+41522123456">052 212 34 56</a>
+        </div>
+        <div class="box rv">
+          <h3><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 8h16v11H4zM4 8l2-4h12l2 4M12 11v5M9.5 13.5h5"/></svg>Kosten &amp; Krankenkassen</h3>
+          <p>Wir rechnen nach dem offiziellen SSO-Zahnarzttarif ab. Vor grösseren Behandlungen erhalten Sie immer einen schriftlichen Kostenvoranschlag.</p>
+          <p>Zahnzusatzversicherungen sowie Leistungen über Grundversicherung (z.&nbsp;B. nach Unfall) rechnen wir wo möglich direkt mit Ihrer Kasse ab.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <div class="divider" aria-hidden="true"><svg viewBox="0 0 120 26"><path d="M4 5 C 34 24, 86 24, 116 5"/></svg></div>
+
+  <!-- ——— KONTAKT / ANFAHRT ——— -->
+  <section id="kontakt" aria-labelledby="kontakt-h">
+    <div class="wrap">
+      <div class="sec-head rv">
+        <p class="eyebrow">Kontakt &amp; Anfahrt</p>
+        <h2 id="kontakt-h">Mitten im Quartier, gut erreichbar</h2>
+      </div>
+      <div class="kontakt-grid">
+        <div class="rv">
+          <address class="addr">
+            <strong>Zahnarztpraxis am Lindenplatz</strong>
+            Lindenplatz 4<br>
+            8408 Winterthur<br>
+            <a href="tel:+41522123456">+41 52 212 34 56</a><br>
+            <a href="mailto:praxis@lindenplatz-zahn.ch">praxis@lindenplatz-zahn.ch</a>
+          </address>
+          <div class="k-list">
+            <div><span class="dot"></span><span><strong>Bus 2 &amp; 10</strong> bis Haltestelle «Lindenplatz», direkt vor der Tür</span></div>
+            <div><span class="dot"></span><span><strong>Parkplätze</strong> im Hof hinter dem Haus (Einfahrt Feldstrasse)</span></div>
+            <div><span class="dot"></span><span><strong>Rollstuhlgängig</strong> — Lift und stufenfreier Zugang</span></div>
+          </div>
+          <p style="margin-top:1.4rem"><a class="btn oak" href="#termin">Termin vereinbaren</a></p>
+        </div>
+        <div class="mapbox rv" role="img" aria-label="Stilisierte Karte des Quartiers: Die Praxis liegt am Lindenplatz, an der Kreuzung von Wülflingerstrasse und Feldstrasse, Bushaltestelle direkt am Platz.">
+          <svg viewBox="0 0 640 420" aria-hidden="true">
+            <rect width="640" height="420" fill="#F3F1EA"/>
+            <!-- park -->
+            <rect x="430" y="40" width="170" height="130" rx="14" fill="#E4F0EC"/>
+            <circle cx="480" cy="80" r="14" fill="#BEDCD3"/><circle cx="530" cy="110" r="18" fill="#BEDCD3"/><circle cx="565" cy="70" r="11" fill="#BEDCD3"/>
+            <text x="515" y="155" font-family="Karla,sans-serif" font-size="13" fill="#4E9483" text-anchor="middle">Lindenpark</text>
+            <!-- streets -->
+            <path d="M0 250 C 160 240, 300 235, 640 215" stroke="#fff" stroke-width="34" fill="none"/>
+            <path d="M0 250 C 160 240, 300 235, 640 215" stroke="#E3E0D7" stroke-width="36" fill="none" stroke-dasharray="0" opacity=".5"/>
+            <path d="M300 0 C 296 140, 300 300, 320 420" stroke="#fff" stroke-width="26" fill="none"/>
+            <path d="M80 420 C 120 330, 210 280, 300 250" stroke="#fff" stroke-width="18" fill="none"/>
+            <path d="M0 250 C 160 240, 300 235, 640 215" stroke="#D8D4C8" stroke-width="2" fill="none" stroke-dasharray="8 10"/>
+            <!-- street labels -->
+            <text x="120" y="232" font-family="Karla,sans-serif" font-size="13" fill="#8B9196" transform="rotate(-2 120 236)">Wülflingerstrasse</text>
+            <text x="312" y="90" font-family="Karla,sans-serif" font-size="13" fill="#8B9196" transform="rotate(88 312 90)">Feldstrasse</text>
+            <!-- blocks -->
+            <rect x="60" y="60" width="90" height="60" rx="8" fill="#EAE6DB"/>
+            <rect x="180" y="90" width="70" height="80" rx="8" fill="#EAE6DB"/>
+            <rect x="90" y="300" width="100" height="70" rx="8" fill="#EAE6DB"/>
+            <rect x="360" y="300" width="120" height="80" rx="8" fill="#EAE6DB"/>
+            <rect x="500" y="260" width="90" height="60" rx="8" fill="#EAE6DB"/>
+            <!-- platz -->
+            <circle cx="330" cy="232" r="46" fill="#F4ECDF"/>
+            <circle cx="330" cy="232" r="46" fill="none" stroke="#C8A778" stroke-width="2" stroke-dasharray="4 7"/>
+            <circle cx="330" cy="232" r="7" fill="#C8A778"/>
+            <text x="330" y="300" font-family="Karla,sans-serif" font-size="14" font-weight="700" fill="#2A2E32" text-anchor="middle">Lindenplatz</text>
+            <!-- bus stop -->
+            <rect x="252" y="196" width="22" height="22" rx="5" fill="#4E9483"/>
+            <text x="263" y="212" font-family="Karla,sans-serif" font-size="12" font-weight="700" fill="#fff" text-anchor="middle">B</text>
+            <!-- praxis pin -->
+            <g transform="translate(376 168)">
+              <path d="M0-2C0-2-26-30-26-46a26 26 0 1 1 52 0C26-30 0-2 0-2Z" fill="#4E9483" transform="translate(0 46)"/>
+              <circle cx="0" cy="0" r="15" fill="#fff"/>
+              <path d="M0-6c-1.6-1.3-4.8-1.4-5.6 1.2-.7 2.4.6 4.8 1.3 7.4.4 1.6.7 4.2 1.9 4.2 1.3 0 1-3.2 2.4-3.2s1.1 3.2 2.4 3.2c1.2 0 1.5-2.6 1.9-4.2.7-2.6 2-5 1.3-7.4C4.8-7.4 1.6-7.3 0-6Z" fill="#4E9483"/>
+            </g>
+            <text x="376" y="140" font-family="Karla,sans-serif" font-size="14" font-weight="700" fill="#2A2E32" text-anchor="middle">Praxis</text>
+          </svg>
+          <p class="map-cap">Stilisierter Quartierplan — kein massstabgetreuer Stadtplan.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+</main>
+
+<footer>
+  <div class="wrap">
+    <span class="fbrand">Zahnarztpraxis am Lindenplatz</span>
+    <nav aria-label="Fusszeile">
+      <a href="#" aria-disabled="true">Impressum</a>
+      <a href="#" aria-disabled="true">Datenschutz</a>
+      <a class="guide-link" href="/59-praxis/guide/">guide &amp; prompt →</a>
+    </nav>
+    <p class="fine">Fiktive Praxis, gestaltet als Template für FABLE/25 · Alle Namen, Adressen und Nummern sind erfunden.</p>
+  </div>
+</footer>
+
+<script>
+(function(){
+  "use strict";
+  var reduced = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+  /* reveals */
+  var els = document.querySelectorAll(".rv");
+  if (reduced || !("IntersectionObserver" in window)) {
+    els.forEach(function(el){ el.classList.add("in"); });
+  } else {
+    var io = new IntersectionObserver(function(entries){
+      entries.forEach(function(e){
+        if (e.isIntersecting){ e.target.classList.add("in"); io.unobserve(e.target); }
+      });
+    },{threshold:.12,rootMargin:"0px 0px -6% 0px"});
+    els.forEach(function(el){ io.observe(el); });
+  }
+
+  /* booking form -> friendly confirmation (no backend) */
+  var form = document.getElementById("terminform");
+  var confirmBox = document.getElementById("confirm");
+  form.addEventListener("submit", function(ev){
+    ev.preventDefault();
+    var name = document.getElementById("f-name").value.trim();
+    var kontakt = document.getElementById("f-kontakt").value.trim();
+    if (!name || !kontakt){
+      (!name ? document.getElementById("f-name") : document.getElementById("f-kontakt")).focus();
+      return;
+    }
+    var first = name.split(/\s+/)[0];
+    document.getElementById("c-name").textContent = first ? ", " + first : "";
+    var d = document.getElementById("f-datum").value;
+    if (d){
+      try{
+        var dt = new Date(d + "T12:00:00");
+        var fmt = dt.toLocaleDateString("de-CH",{weekday:"long",day:"numeric",month:"long"});
+        document.getElementById("c-text").textContent =
+          "Ihre Anfrage für " + fmt + " ist bei uns eingegangen. Wir melden uns innert eines Arbeitstages bei Ihnen — versprochen.";
+      }catch(e){}
+    }
+    form.style.display = "none";
+    confirmBox.classList.add("show");
+  });
+
+  /* min date = today for the date picker */
+  var dateInput = document.getElementById("f-datum");
+  var t = new Date(), p = function(n){ return (n<10?"0":"")+n; };
+  dateInput.min = t.getFullYear()+"-"+p(t.getMonth()+1)+"-"+p(t.getDate());
+})();
+</script>
+</body>
+</html>

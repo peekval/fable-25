@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>KANZLEI — how this site was built</title>
+<meta name="description" content="How the Advokatur Steiner & Frey template was built: the scroll-drawn § thread, the blind-emboss card hover, small-caps discipline — plus a reproduction prompt.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=EB+Garamond:ital,wght@0,400;0,500;0,600;1,400&display=swap" rel="stylesheet">
+<style>
+:root{
+  --oxblood:#5E2B25;--green:#2F4536;--walnut:#4A382A;--paper:#F4EFE6;--brass:#B08D57;
+  --ink:#2B211A;--dim:#6E5F51;--line:rgba(74,56,42,.22);--line-soft:rgba(74,56,42,.12);
+}
+*{margin:0;padding:0;box-sizing:border-box}
+body{
+  font-family:"EB Garamond",Georgia,serif;color:var(--ink);background:var(--paper);
+  font-size:1.08rem;line-height:1.7;-webkit-font-smoothing:antialiased;
+}
+::selection{background:var(--oxblood);color:var(--paper)}
+.wrap{max-width:780px;margin:0 auto;padding:6.5rem 1.4rem 5rem}
+.back{
+  position:fixed;top:1.1rem;left:1.2rem;z-index:9;font-size:.85rem;letter-spacing:.1em;
+  text-decoration:none;color:var(--walnut);background:rgba(244,239,230,.85);
+  border:1px solid var(--line);border-radius:999px;padding:.42rem .95rem;transition:all .3s;
+}
+.back:hover{background:var(--walnut);color:var(--paper)}
+.kicker{font-variant-caps:all-small-caps;letter-spacing:.34em;color:var(--oxblood);font-weight:500}
+h1{font-weight:500;font-size:clamp(2.1rem,5.5vw,3.1rem);line-height:1.12;margin:.9rem 0 2rem;color:var(--walnut)}
+h1 em{font-style:italic;color:var(--oxblood)}
+h2{font-weight:600;font-size:1.6rem;margin:3rem 0 .9rem;color:var(--walnut)}
+h2::before{content:"§ ";color:var(--brass);font-weight:400}
+p{color:var(--dim);margin-bottom:1.05rem}
+p b{font-weight:600;color:var(--ink)}
+code{font-family:ui-monospace,Menlo,Consolas,monospace;font-size:.84em;color:var(--oxblood);background:rgba(94,43,37,.08);padding:.08em .35em;border-radius:3px}
+ul{margin:0 0 1.05rem 1.2rem;color:var(--dim)}
+li{margin-bottom:.45rem}
+.prompt-box{background:#F8F4EC;border:1px solid var(--line);padding:1.6rem 1.7rem;margin:1.3rem 0 .8rem;box-shadow:inset 0 1px 4px rgba(74,56,42,.08)}
+pre#prompt{white-space:pre-wrap;font-family:inherit;font-size:.98rem;line-height:1.7;color:var(--ink)}
+.copy-btn{
+  margin-top:1rem;cursor:pointer;font-family:inherit;font-variant-caps:all-small-caps;letter-spacing:.24em;font-size:1rem;
+  color:var(--paper);background:var(--oxblood);border:1px solid var(--oxblood);padding:.65rem 1.5rem;transition:all .3s;
+}
+.copy-btn:hover{background:var(--paper);color:var(--oxblood)}
+footer{margin-top:4rem;padding-top:1.6rem;border-top:1px solid var(--line-soft);font-size:.9rem;color:var(--dim)}
+footer a{color:var(--oxblood);text-decoration:none;border-bottom:1px solid rgba(94,43,37,.35)}
+footer a:hover{border-bottom-color:var(--oxblood)}
+</style>
+</head>
+<body>
+<a class="back" href="/61-kanzlei/">← KANZLEI</a>
+<div class="wrap">
+  <p class="kicker">FABLE/25 · Site 61 · Build notes</p>
+  <h1>How the paragraph became <em>a red thread</em></h1>
+
+  <p>Advokatur Steiner &amp; Frey is a practical Swiss SME template — a fictional Basel law firm — built as one self-contained HTML file. No frameworks, no build step: one Google Font, one photograph, one runtime-generated SVG path and about 120 lines of vanilla JS.</p>
+
+  <h2>The template structure</h2>
+  <p>Hero (photo under a walnut/green scrim, classical wordmark between hairlines, claim, CTA «Beratungstermin») → six Rechtsgebiete cards → Vorgehen in three numbered steps with a Honorar-Transparenz box → three lawyer profiles → Publikationen list → Kontakt with a mock form → footer with a bar-association text badge. All copy is de-CH: <b>no ß anywhere</b>, always «ss», prices in CHF, guillemets («…») for quotes.</p>
+
+  <h2>Der Paragraph — the signature detail</h2>
+  <p>The Rechtsgebiete grid reserves a narrow left rail for an SVG whose <code>d</code> attribute is <b>built by JS at runtime</b>, so it always fits the measured card layout:</p>
+  <ul>
+    <li>The path starts with a <b>§-figure</b>: two stacked, overlapping S-curves drawn as one stroke, closed by a short tail into the vertical axis.</li>
+    <li>From there the <b>red thread</b> (oxblood, 1.7px) descends the full rail, bowing ~14px toward each card row's vertical centre — alternating sides — with a brass node circle at each apex.</li>
+    <li><code>getTotalLength()</code> sets <code>stroke-dasharray</code>; a passive, rAF-throttled scroll listener maps section progress to <code>stroke-dashoffset</code>, so the line inks itself in as you read. Nodes fill brass once the thread passes them.</li>
+    <li>On resize the whole path is rebuilt (44px rail and a 0.62-scaled § on mobile). With <code>prefers-reduced-motion</code> the thread renders fully drawn and the listener is never attached.</li>
+  </ul>
+
+  <h2>Prägedruck &amp; small-caps discipline</h2>
+  <p>The six cards rest on a faint outset shadow; on hover it flips to a paired <b>inset</b> shadow plus a 1px <code>translateY</code> — the card reads as blind-embossed into the paper rather than lifted off it. Reveals behave like a file folder opening: a slight <code>rotateX(-5deg)</code> from the top edge plus an 18px rise, gated by IntersectionObserver, with no bounce. One serif carries everything — EB Garamond — and all labels, kickers and buttons use <code>font-variant-caps:all-small-caps</code> with wide tracking, which is what gives the page its notarial calm.</p>
+
+  <h2>The photograph</h2>
+  <p><code>assets/bibliothek.webp</code> (1920×1072) — a wood-panelled chambers library with leather-bound statute volumes and brass bouillotte lamps — was generated with <b>Nano Banana 2 via the Higgsfield MCP</b> and converted to WebP with <b>ffmpeg</b>. It loads eagerly with <code>fetchpriority="high"</code> and real <code>width</code>/<code>height</code> attributes; everything else on the page is CSS.</p>
+
+  <h2>Reproduction prompt</h2>
+  <p>Paste this into a capable coding agent to rebuild the site from scratch:</p>
+  <div class="prompt-box">
+<pre id="prompt">Build a one-page website for ADVOKATUR STEINER &amp; FREY, a fictional law firm in Basel, as a single self-contained HTML file with all copy in Swiss Standard German (de-CH — never use ß, always ss). Tone: precise, sovereign, discreet. The only local asset is assets/bibliothek.webp (1920×1072), a wood-panelled chambers library with leather-bound statute volumes and brass bouillotte lamps; generate it with Nano Banana 2 via the Higgsfield MCP and convert to WebP with ffmpeg. Palette: oxblood #5E2B25, deep green #2F4536, walnut #4A382A, paper #F4EFE6, brass #B08D57. One authoritative classical serif — EB Garamond — everywhere, with small-caps discipline: every label, kicker and button uses font-variant-caps:all-small-caps with wide letter-spacing.
+
+Hero: the library photo full-bleed under a dark walnut/green scrim, a classical wordmark between hairlines («Basel · gegr. 1987» in brass small caps, "Advokatur Steiner &amp; Frey" with an italic brass ampersand), an italic guillemet claim, CTAs "Beratungstermin" and "Rechtsgebiete", a three-column meta row, and a fixed "← 25" pill linking to /.
+
+The signature is der Paragraph: the Rechtsgebiete section keeps a narrow left rail holding an SVG whose path is built at runtime — a §-figure of two stacked overlapping S-curves at the top, then a red thread (oxblood, 1.7px) descending past all six cards, bowing gently toward each card's vertical centre, where a brass node circle fills once the line has passed. Measure the path with getTotalLength and draw it via stroke-dasharray/-offset coupled to scroll progress through a rAF-throttled passive listener; rebuild on resize (44px rail with a scaled § on mobile). The six cards (Vertragsrecht, Arbeitsrecht, Erbrecht, Immobilienrecht, Gesellschaftsrecht, Prozessführung — numbered § 1–§ 6 in small caps over a hairline) get a Prägedruck hover: the resting outset shadow flips to an inset shadow pair plus a 1px translateY, like a blind-embossed stamp.
+
+Vorgehen: a deep-green section with three numbered steps (Erstgespräch, 45 Minuten, pauschal CHF 250 → schriftliche Einschätzung innert fünf Arbeitstagen → Mandatsvereinbarung vor Tätigwerden) and a bordered Honorar-Transparenz box (CHF 280–420/h, Kostendach auf Wunsch). Die Anwälte: three fictional profiles with embossed monogram medallions instead of photos (MS / BF / LS), role in small caps, then Schwerpunkte, Zulassung and Sprachen as a definition list. Publikationen: three fictional practice notes as a ruled, dated list. Kontakt: Basel address, +41 61 555 44 88, and a mock form (Name, E-Mail, Rechtsgebiet select, Anliegen textarea) with a §-marked confidentiality note and a demo confirmation on submit. Footer: walnut ground, bar-association text badge, Impressum/Datenschutz dummies, link to /61-kanzlei/guide/.
+
+Reveals open like a file folder: slight rotateX from the top edge plus a rise, IntersectionObserver-gated, precise and unplayful. prefers-reduced-motion gets everything static with the thread fully drawn. No horizontal overflow at 390px; zero console errors over file://.</pre>
+  </div>
+  <button class="copy-btn" id="copy">Copy prompt</button>
+
+  <footer>
+    <p>FABLE/25 — an experiment in code-only sites. <a href="/61-kanzlei/">View the site</a> · <a href="/">All sites</a></p>
+  </footer>
+</div>
+<script>
+(function(){
+  'use strict';
+  var btn = document.getElementById('copy');
+  btn.addEventListener('click', function(){
+    var t = document.getElementById('prompt').textContent;
+    function done(){ btn.textContent = 'Copied'; setTimeout(function(){ btn.textContent = 'Copy prompt'; }, 1600); }
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(t).then(done, done);
+    } else { done(); }
+  });
+})();
+</script>
+</body>
+</html>

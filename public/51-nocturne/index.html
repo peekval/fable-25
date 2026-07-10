@@ -55,6 +55,16 @@
     clipped and its centre stretch could never be hovered. viewBox extended to -45.
   - Interaction verified with a real mouse path (getPointAtLength midpoints): rows light
     gold and the playbill caption updates on hover, focus and keyboard (Enter/Space).
+
+  PASS 5 changelog:
+  - motion cleanliness pass: easing collapsed to two custom-property curves — --sweep
+    (the signature settle, no overshoot) for beams/curtains/light fades and --ease-out
+    for entrances and micro-interactions. Text reveals tightened 2.4s/.9s -> .7s/.6s so
+    only the light moves while the beams settle; curtain wipes made uniform (both layers
+    1.4s, second keeps its .08s offset); beam pair given identical 2.6s durations (b2
+    keeps its .18s delay). Score-line tremolo halved (vel*.28 -> .16) and scroll-driven
+    phase push eased; followspot damping (.045 lerp) confirmed heavy. Micro-interactions
+    (tiers, fan rows, buttons) .25s. Reduced-motion path unchanged.
 -->
 <html lang="de">
 <head>
@@ -67,6 +77,8 @@
 <link href="https://fonts.googleapis.com/css2?family=Bodoni+Moda:ital,opsz,wght@0,6..96,400..800;1,6..96,400..700&family=Hanken+Grotesk:ital,wght@0,300..600;1,300..500&display=swap" rel="stylesheet">
 <style>
 :root{
+  --sweep:cubic-bezier(.24,.9,.28,1); /* signature light curve — settles, never overshoots */
+  --ease-out:cubic-bezier(.25,.6,.3,1); /* standard curve for entrances & micro-interactions */
   --hall:#100A0D;
   --hall2:#17090e;
   --velvet:#5C1E2E;
@@ -100,7 +112,7 @@ a{color:inherit}
   position:fixed;top:0;left:0;width:56vmax;height:56vmax;z-index:2;pointer-events:none;
   margin:-28vmax 0 0 -28vmax;border-radius:50%;opacity:0;
   background:radial-gradient(circle,rgba(239,217,167,.10) 0%,rgba(201,162,94,.05) 38%,transparent 68%);
-  mix-blend-mode:screen;transition:opacity 1.2s ease;
+  mix-blend-mode:screen;transition:opacity .8s var(--ease-out);
 }
 main{position:relative;z-index:3}
 
@@ -110,7 +122,7 @@ main{position:relative;z-index:3}
   font-size:.85rem;letter-spacing:.1em;text-decoration:none;color:var(--cream);
   background:rgba(16,10,13,.6);border:1px solid var(--line);border-radius:999px;
   padding:.42rem .95rem;backdrop-filter:blur(6px);
-  transition:background .3s,color .3s;
+  transition:background .25s var(--ease-out),color .25s var(--ease-out);
 }
 .back:hover{background:var(--gold);color:var(--hall);border-color:var(--gold)}
 
@@ -132,15 +144,15 @@ main{position:relative;z-index:3}
 .lit .beam{
   opacity:var(--beamo,.8);
   transform:translateX(-50%) rotate(var(--settle,-12deg));
-  transition:transform 2.6s cubic-bezier(.24,.9,.28,1),opacity 2.2s ease;
+  transition:transform 2.6s var(--sweep),opacity 2.2s var(--sweep);
 }
 .beam.b2{transform:translateX(-50%) rotate(var(--sweepFrom2,40deg))}
 .lit .beam.b2{
   transform:translateX(-50%) rotate(var(--settle2,12deg));
-  transition:transform 3.1s cubic-bezier(.24,.9,.28,1) .18s,opacity 2.6s ease .18s;
+  transition:transform 2.6s var(--sweep) .18s,opacity 2.2s var(--sweep) .18s;
 }
 .fadein{opacity:0;transform:translateY(12px)}
-.lit .fadein{opacity:1;transform:none;transition:opacity 2.4s ease .9s,transform 2.4s ease .9s}
+.lit .fadein{opacity:1;transform:none;transition:opacity .7s var(--ease-out) .6s,transform .7s var(--ease-out) .6s}
 
 /* ---------- hero ---------- */
 .hero{
@@ -156,7 +168,7 @@ main{position:relative;z-index:3}
 .floorglow{
   position:absolute;left:50%;bottom:-6%;width:80vw;height:26vh;transform:translateX(-50%);
   background:radial-gradient(50% 60% at 50% 60%,rgba(201,162,94,.22),transparent 70%);
-  filter:blur(10px);mix-blend-mode:screen;pointer-events:none;opacity:0;transition:opacity 2.6s ease .8s;
+  filter:blur(10px);mix-blend-mode:screen;pointer-events:none;opacity:0;transition:opacity 2.2s var(--sweep) .6s;
 }
 .lit .floorglow{opacity:1}
 .kicker{
@@ -228,8 +240,8 @@ main{position:relative;z-index:3}
   background:linear-gradient(100deg,rgba(92,30,46,0) 0%,rgba(92,30,46,.85) 30%,#1c0710 100%);
   transform:translateX(4%);
 }
-.lit .playbill::before{transform:translateX(-108%);transition:transform 1.7s cubic-bezier(.6,.05,.25,1)}
-.lit .playbill::after{transform:translateX(112%);transition:transform 1.9s cubic-bezier(.6,.05,.25,1) .08s}
+.lit .playbill::before{transform:translateX(-108%);transition:transform 1.4s var(--sweep)}
+.lit .playbill::after{transform:translateX(112%);transition:transform 1.4s var(--sweep) .08s}
 .act-no{
   font-family:"Bodoni Moda",serif;font-size:.86rem;letter-spacing:.44em;text-transform:uppercase;
   color:var(--gold);display:flex;align-items:center;gap:1rem;
@@ -247,7 +259,7 @@ main{position:relative;z-index:3}
 .act-cta{
   display:inline-block;margin-top:2rem;font-size:.78rem;letter-spacing:.3em;text-transform:uppercase;
   color:var(--gold);text-decoration:none;border-bottom:1px solid var(--line);padding-bottom:.35rem;
-  transition:color .3s,border-color .3s;
+  transition:color .25s var(--ease-out),border-color .25s var(--ease-out);
 }
 .act-cta:hover{color:var(--bright);border-color:var(--bright)}
 
@@ -256,7 +268,7 @@ main{position:relative;z-index:3}
 .haus img{width:100%;height:auto}
 .haus .hbeam{
   position:absolute;pointer-events:none;mix-blend-mode:screen;filter:blur(14px);opacity:0;
-  transition:opacity 2.8s ease .4s;
+  transition:opacity 2.2s var(--sweep) .4s;
 }
 .lit .hbeam{opacity:1}
 .hbeam.organ{ /* fans down from the organ, top centre */
@@ -292,7 +304,7 @@ main{position:relative;z-index:3}
 .fan .row{cursor:pointer;outline:none}
 .fan .row .vis{
   fill:none;stroke:rgba(138,122,128,.5);stroke-width:7;stroke-linecap:round;
-  stroke-dasharray:.1 13;transition:stroke .45s ease;pointer-events:none;
+  stroke-dasharray:.1 13;transition:stroke .25s var(--ease-out);pointer-events:none;
 }
 .fan .row .hit{fill:none;stroke:#000;stroke-opacity:0;stroke-width:26;pointer-events:stroke}
 .fan .row:hover .vis,.fan .row:focus-visible .vis,.fan .row.on .vis{stroke:var(--bright)}
@@ -311,7 +323,7 @@ main{position:relative;z-index:3}
 .tier{
   position:relative;padding:2.6rem 2rem 2.4rem;text-align:center;
   border:1px solid var(--line);background:linear-gradient(180deg,rgba(23,9,14,.7),rgba(16,10,13,.9));
-  transition:transform .5s cubic-bezier(.2,.8,.2,1),border-color .5s,box-shadow .5s;
+  transition:transform .25s var(--ease-out),border-color .25s var(--ease-out),box-shadow .25s var(--ease-out);
 }
 .tier::before{
   content:"";position:absolute;inset:8px;border:1px solid var(--line-soft);pointer-events:none;
@@ -343,7 +355,7 @@ main{position:relative;z-index:3}
   display:inline-block;margin-top:2.4rem;padding:1rem 2.8rem;
   font-size:.8rem;letter-spacing:.32em;text-transform:uppercase;text-decoration:none;
   color:var(--hall);background:var(--gold);font-weight:600;
-  transition:background .3s,transform .3s;
+  transition:background .25s var(--ease-out),transform .25s var(--ease-out);
 }
 .btn:hover{background:var(--bright);transform:translateY(-3px)}
 footer{
@@ -658,7 +670,7 @@ function curveY(px, a, t){
     + Math.sin(px*.0052 + t)        * a       * e
     + Math.sin(px*.0131 - t*1.6)    * a*.38   * e
     + Math.sin(px*.031  + t*2.3)    * a*.14   * e
-    + Math.sin(px*.052  + t*7.1)    * vel*.28 * e;        /* tremolo */
+    + Math.sin(px*.052  + t*7.1)    * vel*.16 * e;        /* tremolo — subtle */
 }
 function strokeLine(a, t, alpha, lw){
   ctx.beginPath();
@@ -689,7 +701,7 @@ function frame(){
     if (s > target) target = s;
   }
   amp += (target-amp)*.035;
-  phase += .011 + vel*.0007;
+  phase += .011 + vel*.0005;
 
   ctx.clearRect(0,0,W,H);
   ctx.globalCompositeOperation = 'lighter';

@@ -22,6 +22,7 @@
   --line:rgba(217,165,84,.28);
   --line-soft:rgba(139,144,160,.18);
   --card:rgba(17,24,38,.62);
+  --e:cubic-bezier(.2,.7,.2,1);
 }
 *{margin:0;padding:0;box-sizing:border-box}
 html{scroll-behavior:smooth}
@@ -85,13 +86,13 @@ section{position:relative}
 .chapno svg{position:absolute;inset:0;width:100%;height:100%;overflow:visible}
 .chapno svg *{fill:none;stroke:var(--brass);stroke-width:1.1;
   stroke-dasharray:var(--len,300);stroke-dashoffset:var(--len,300);
-  transition:stroke-dashoffset 1.6s cubic-bezier(.6,.05,.2,1)}
-.chapno svg .d2{transition-delay:.45s}
+  transition:stroke-dashoffset 1.2s cubic-bezier(.6,.05,.2,1)}
+.chapno svg .d2{transition-delay:.3s}
 .in .chapno svg *,.chapno.in svg *{stroke-dashoffset:0}
 .chapno b{font-family:"Cinzel",serif;font-weight:500;font-size:1.5rem;color:var(--brass);letter-spacing:.05em}
 
 /* reveal */
-.rv{opacity:0;transform:translateY(26px);transition:opacity 1s ease,transform 1s cubic-bezier(.2,.7,.2,1)}
+.rv{opacity:0;transform:translateY(24px);transition:opacity .7s var(--e),transform .7s var(--e)}
 .rv.in{opacity:1;transform:none}
 
 /* ---------- hero ---------- */
@@ -103,9 +104,9 @@ section{position:relative}
 .hero .vig{position:absolute;inset:0;background:radial-gradient(120% 90% at 50% 42%,transparent 55%,rgba(11,16,29,.55) 100%)}
 .steam{position:absolute;left:-20%;bottom:-6%;width:70%;height:55%;pointer-events:none;
   background:radial-gradient(48% 42% at 50% 60%,rgba(242,237,226,.16),transparent 70%);
-  filter:blur(18px);opacity:.8;animation:drift 26s linear infinite}
-.steam.s2{left:15%;bottom:-14%;width:60%;animation-duration:34s;animation-delay:-14s;opacity:.55}
-.steam.s3{left:45%;bottom:-4%;width:50%;animation-duration:21s;animation-delay:-7s;opacity:.4}
+  filter:blur(18px);opacity:.6;animation:drift 30s linear infinite}
+.steam.s2{left:15%;bottom:-14%;width:60%;animation-duration:38s;animation-delay:-16s;opacity:.42}
+.steam.s3{left:45%;bottom:-4%;width:50%;animation-duration:26s;animation-delay:-9s;opacity:.3}
 @keyframes drift{
   0%{transform:translate3d(-6%,4%,0) scale(.9)}
   50%{transform:translate3d(22%,-10%,0) scale(1.12)}
@@ -165,7 +166,7 @@ section{position:relative}
 .sky-dawn{background:linear-gradient(180deg,#182137 0%,#3c3f63 40%,#8d6478 66%,#c88a7e 82%,#f2c79c 100%);opacity:0}
 .stars{opacity:0}
 .stars i{position:absolute;width:2px;height:2px;border-radius:50%;background:#f6f1de;animation:twk 3.4s ease-in-out infinite}
-@keyframes twk{0%,100%{opacity:.25}50%{opacity:1}}
+@keyframes twk{0%,100%{opacity:.4}50%{opacity:.95}}
 .moon{
   position:absolute;width:9.5%;aspect-ratio:1;left:0;top:0;border-radius:50%;
   background:radial-gradient(circle at 36% 34%,#fdf7e4,#e9dcb4 58%,#cbbd90 100%);
@@ -233,7 +234,7 @@ section{position:relative}
 /* chapters */
 .chapters{position:relative;width:min(880px,92vw);height:7.2rem;margin-top:.4rem}
 .chapter{position:absolute;inset:0;display:flex;align-items:flex-start;gap:1.2rem;opacity:0;transform:translateY(14px);
-  transition:opacity .7s ease,transform .7s ease;pointer-events:none}
+  transition:opacity .55s var(--e),transform .55s var(--e);pointer-events:none}
 .chapter.active{opacity:1;transform:none}
 .chapter .chapno{flex:none;width:58px;height:58px}
 .chapter .chapno b{font-size:1.15rem}
@@ -255,9 +256,9 @@ section{position:relative}
   background:linear-gradient(150deg,#caa059,#6f5230 35%,#b98f4a 60%,#5c452a 90%);
   box-shadow:0 26px 70px rgba(0,0,0,.55),inset 0 1px 0 rgba(255,235,190,.5)}
 .cabin-scene{position:relative;overflow:hidden;border-radius:2px;--lamp:1}
-.cabin-scene img{width:100%;height:auto;transition:filter .9s ease;
+.cabin-scene img{width:100%;height:auto;transition:filter .3s linear;
   filter:brightness(calc(.42 + .58*var(--lamp))) saturate(calc(.72 + .28*var(--lamp)))}
-.cabin-scene .ovl{position:absolute;inset:0;pointer-events:none;transition:opacity .9s ease}
+.cabin-scene .ovl{position:absolute;inset:0;pointer-events:none;transition:opacity .3s linear}
 .ovl.dark{background:linear-gradient(200deg,rgba(6,10,20,.55),rgba(6,10,20,.82));opacity:calc((1 - var(--lamp))*.62)}
 .ovl.glow{opacity:var(--lamp);background:
   radial-gradient(24% 15% at 44.5% 30%,rgba(255,214,150,.55),rgba(255,190,110,.18) 55%,transparent 75%),
@@ -827,14 +828,15 @@ var chapterEls=[].slice.call(document.querySelectorAll('.chapter'));
 var wjolt=document.getElementById('wjolt');
 
 function range(p,a,b){ return clamp((p-a)/(b-a),0,1); }
-/* tunnel windows: two blackouts */
+/* tunnel windows: two blackouts — quick-in, slow-out */
 function tunnelAmt(p){
-  function tw(c,w,e){ // center, half-width, edge
-    var d=Math.abs(p-c);
-    if(d>w) return 0;
-    return smooth(clamp((w-d)/e,0,1));
+  function tw(c,w,eIn,eOut){ // center, half-width, entry edge (steep), exit edge (soft)
+    var d=p-c;
+    if(d<-w||d>w) return 0;
+    var e = d<0 ? eIn : eOut;
+    return smooth(clamp((w-Math.abs(d))/e,0,1));
   }
-  return Math.max(tw(.435,.038,.014), tw(.685,.03,.012));
+  return Math.max(tw(.435,.038,.009,.022), tw(.685,.03,.008,.018));
 }
 var lastP=-1, journeyVisible=false, pageHidden=false;
 var pTarget=0, pCur=0;
@@ -865,7 +867,7 @@ function paint(p){
   Object.keys(L).forEach(function(k){
     var o=L[k];
     var x = -((p*o.speed) % o.tileW);
-    o.el.style.backgroundPositionX = x.toFixed(1)+'px';
+    o.el.style.backgroundPositionX = x.toFixed(3)+'px'; /* full precision — no rounding stutter */
   });
   /* tunnels */
   var t = tunnelAmt(p);
@@ -973,9 +975,22 @@ var scene=document.getElementById('cabinScene');
 var lampRange=document.getElementById('lampRange');
 var lampState=document.getElementById('lampState');
 var lampBase=1, hoverDim=false;
-function setLamp(v){
+var lampCur=1, lampTarget=1, lampRaf=null;
+function applyLamp(v){
   scene.style.setProperty('--lamp', v.toFixed(3));
   lampState.textContent = v>.8 ? 'Lampe an.' : v>.45 ? 'Gedämpft…' : v>.12 ? 'Fast Nacht…' : 'Nur noch der Mond.';
+}
+function lampLoop(){
+  lampRaf=null;
+  lampCur += (lampTarget-lampCur)*0.14;   /* damped dimmer — the light eases, never snaps */
+  if(Math.abs(lampTarget-lampCur)<0.004) lampCur=lampTarget;
+  applyLamp(lampCur);
+  if(lampCur!==lampTarget) lampRaf=requestAnimationFrame(lampLoop);
+}
+function setLamp(v){
+  lampTarget=v;
+  if(RM){ lampCur=v; applyLamp(v); return; }
+  if(lampRaf===null) lampRaf=requestAnimationFrame(lampLoop);
 }
 lampRange.addEventListener('input',function(){
   lampBase=+lampRange.value/100;
@@ -1015,7 +1030,8 @@ if(!RM){
     rows.forEach(function(row,r){
       var cs=[].slice.call(row.querySelectorAll('.flap'));
       cs.forEach(function(sp,c){
-        spans.push({sp:sp, settle: 4 + r*5 + c*1.6 + Math.random()*3});
+        /* uniform per-character timing: strict left-to-right, row by row, no jitter */
+        spans.push({sp:sp, settle: 4 + r*4 + c*1.4});
       });
     });
     var tick=0;
@@ -1064,6 +1080,12 @@ PASS 4 (the fill bug & final grade): tile() URL-encodes the whole SVG, so pre-en
   double-encoded and every landscape rendered black — switched to literal '#'; lamp reflection opacity
   eased to .6; scroll lerp .16→.22 so captions settle faster. Verified: both viewports, reduced-motion
   static night + settled board, dusk/night/tunnel/dawn states, cabin dim, flap settle. Zero errors.
+PASS 5 (motion cleanliness pass): one easing curve (--e) for reveals/chapters; reveals .7s/24px;
+  parallax strips at full sub-pixel precision (no .1px rounding stutter); tunnel blackouts now
+  asymmetric — quick-in, slow-out; split-flap settle made uniform (strict left-to-right per row,
+  77ms per character, random jitter removed); lamp dimmer damped in JS (lerp .14) with short
+  linear CSS smoothing instead of .9s transitions; steam ~25% fainter and slower; star twinkle
+  calmed; chapno frame draw 1.6s→1.2s.
 -->
 </body>
 </html>

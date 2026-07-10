@@ -1,0 +1,110 @@
+<!doctype html>
+<html lang="de-CH">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>physiowerk Luzern — Guide &amp; Prompt</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,420;9..144,520;9..144,560&family=Karla:ital,wght@0,400;0,500;0,600;0,700;1,400&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --sage:#9BB09A;--sage-deep:#7C947B;--sage-mist:#EDF1EB;--paper:#FAF8F4;
+    --terra:#C97B5A;--ink:#2E3230;--ink-soft:#5C635E;--wood:#D9C9B2;
+    --disp:"Fraunces",Georgia,serif;--body:"Karla",system-ui,sans-serif;
+  }
+  *{margin:0;padding:0;box-sizing:border-box}
+  body{font-family:var(--body);background:var(--paper);color:var(--ink);line-height:1.68}
+  ::selection{background:var(--terra);color:var(--paper)}
+  .wrap{max-width:820px;margin:0 auto;padding:0 clamp(1.2rem,4vw,2rem)}
+  header{background:var(--ink);color:var(--paper);padding:4.2rem 0 3.4rem}
+  header .back{display:inline-block;font-size:.8rem;font-weight:700;letter-spacing:.14em;text-transform:uppercase;
+    color:var(--paper);text-decoration:none;border:1px solid rgba(250,248,244,.35);
+    border-radius:99px;padding:.45rem .95rem;margin-bottom:2.2rem}
+  header .back:hover{background:rgba(250,248,244,.12)}
+  .eyebrow{font-size:.72rem;letter-spacing:.36em;text-transform:uppercase;font-weight:700;color:var(--sage)}
+  h1{font-family:var(--disp);font-weight:520;font-size:clamp(2.2rem,6vw,3.4rem);line-height:1.06;margin:.6rem 0 .8rem}
+  header p{max-width:38em;color:rgba(250,248,244,.82)}
+  main{padding:3.4rem 0 5rem}
+  h2{font-family:var(--disp);font-weight:560;font-size:1.8rem;margin:2.6rem 0 .8rem}
+  h2:first-child{margin-top:0}
+  p{max-width:46em}
+  p+p{margin-top:.8em}
+  em{color:var(--terra);font-style:normal;font-weight:600}
+  code{font-family:ui-monospace,Menlo,monospace;font-size:.86em;background:var(--sage-mist);padding:.1em .35em;border-radius:4px}
+  ol,ul{margin:.6em 0 .6em 1.3em;max-width:44em}
+  li{margin:.35em 0}
+  .swatches{display:flex;gap:.5rem;flex-wrap:wrap;margin:1rem 0}
+  .swatches span{width:3.2rem;height:3.2rem;border-radius:8px;display:inline-block;border:1px solid rgba(46,50,48,.14)}
+  pre{
+    background:var(--ink);color:#E7EBE7;border-radius:8px;
+    padding:1.5rem 1.4rem;margin:1.2rem 0 0;white-space:pre-wrap;
+    font-family:ui-monospace,Menlo,monospace;font-size:.85rem;line-height:1.6;
+    overflow-x:auto;border-left:4px solid var(--terra);
+  }
+  footer{border-top:1px solid var(--wood);padding:1.6rem 0 2.4rem;font-size:.85rem;color:var(--ink-soft)}
+  footer a{color:var(--ink)}
+</style>
+</head>
+<body>
+<header>
+  <div class="wrap">
+    <a class="back" href="/64-physio/">&larr; zur Praxis</a>
+    <p class="eyebrow">FABLE/25 · Nº 64 · Guide · Swiss Template Wave</p>
+    <h1>physiowerk Luzern — die Seite, die sich mitbewegt</h1>
+    <p>Template-Aufbau einer Physiotherapie-Praxis-Site, das Bewegungsbahn-Motiv mit morphenden Übungs-Piktogrammen — und der vollständige Repro-Prompt.</p>
+  </div>
+</header>
+<main>
+  <div class="wrap">
+
+    <h2>1 · Der Template-Aufbau</h2>
+    <p>Das Template folgt der Anfrage-Logik einer echten Schweizer Physiopraxis: <em>Vertrauen zuerst, Buchung sofort erreichbar.</em> Der Hero beantwortet die zwei wichtigsten Fragen in einer Sekunde — «Bin ich hier richtig?» (Foto des hellen Behandlungsraums, ruhige Headline «Wieder in Bewegung.») und «Zahlt das meine Kasse?» (Badge «Krankenkassen-anerkannt» direkt neben dem CTA).</p>
+    <ol>
+      <li><strong>Behandlungen</strong> — sechs Karten, jede mit Abrechnungs-Tag (Grundversicherung / Selbstzahler), damit die Kostenfrage nie offen bleibt.</li>
+      <li><strong>Ablauf</strong> — vier Schritte von der ärztlichen Verordnung bis zum Training; nimmt Erstpatienten die Hemmschwelle.</li>
+      <li><strong>Team</strong> — drei fiktive Profile mit Monogramm-Kreisen statt Fotos (Template-freundlich) und Spezialisierungs-Chips.</li>
+      <li><strong>Selbstzahler &amp; Training</strong> — MTT-Abopreise in CHF plus Firmenangebot: das Umsatzstandbein nach der Verordnung.</li>
+      <li><strong>Termin</strong> — Formular-Mock mit Behandlung, Wunschzeit-Chips und der entscheidenden Frage «Verordnung vorhanden?».</li>
+      <li><strong>Kontakt/Footer</strong> — Luzern-Adresse, ÖV- und Parkplatz-Hinweis, Impressum-Dummies.</li>
+    </ol>
+    <p>Palette hell und regenerativ, direkt aus dem Foto gezogen:</p>
+    <div class="swatches">
+      <span style="background:#9BB09A" title="Sage #9BB09A"></span>
+      <span style="background:#FAF8F4" title="Warm White #FAF8F4"></span>
+      <span style="background:#C97B5A" title="Terracotta #C97B5A"></span>
+      <span style="background:#2E3230" title="Ink #2E3230"></span>
+      <span style="background:#D9C9B2" title="Light Wood #D9C9B2"></span>
+    </div>
+    <p>Typo: <code>Fraunces</code> (weiche, warme Display-Serif) für Headlines, <code>Karla</code> (freundliche Humanist-Sans) für alles andere. Copy de-CH, ohne ß, im Ton motivierend-ruhig.</p>
+
+    <h2>2 · Das Motiv: die Bewegungsbahn</h2>
+    <p>Das Signature-Detail ist eine einzige geschwungene SVG-Linie, die als <em>Bewegungsspur</em> hinter dem gesamten Inhalt liegt — vom Hero bis zum Terminformular. Technisch: ein absolut positioniertes SVG mit <code>preserveAspectRatio="none"</code> füllt den Inhalts-Container; der Pfad nutzt <code>vector-effect: non-scaling-stroke</code>, damit die Strichstärke bei jeder Viewport-Grösse konstant bleibt.</p>
+    <p>Gezeichnet wird die Bahn beim Scrollen: <code>getTotalLength()</code> liefert die Pfadlänge, <code>stroke-dasharray/-dashoffset</code> machen sie unsichtbar, und ein rAF-gedrosselter Scroll-Handler mappt den Seitenfortschritt auf den Offset — die Spur wächst, während man sich durch die Seite «bewegt».</p>
+    <p>Bei den Behandlungen verdichtet sich das Motiv zu sechs <em>Übungs-Piktogrammen</em>: minimale Strichfiguren (Kreis-Kopf, Linien-Gliedmassen) in Sage-Kreisen. Je ein bis zwei Gelenkgruppen (<code>&lt;g&gt;</code> mit <code>transform-box: view-box</code> und Gelenk als <code>transform-origin</code>) morphen per CSS-Keyframes langsam zwischen zwei Posen — Arm heben, Seitneigung, Laufschritt, pulsierender Triggerpunkt, Kniebeuge, Gehen. 4.6&thinsp;s, <code>alternate</code>, dieselbe atmende Kurve wie die Reveals: <code>cubic-bezier(.25,.7,.25,1)</code>.</p>
+    <p><strong>Reduced Motion:</strong> Die Markup-Pose ist immer die Endpose. Bei <code>prefers-reduced-motion</code> werden Animationen und Scroll-Zeichnung deaktiviert — Piktogramme stehen ruhig in der Endpose, die Bahn ist voll gezeichnet, alle Reveals sichtbar.</p>
+
+    <h2>3 · Asset-Pipeline</h2>
+    <p>Das Hero-Foto <code>assets/studio.webp</code> (1920&times;1072) wurde mit <em>Nano Banana 2 via Higgsfield MCP</em> generiert — Prompt palette-locked auf Sage-Wand, Warmweiss, Terracotta-Frottee und helles Holz, damit Foto und CSS-Palette dieselbe Welt erzählen — und anschliessend mit <em>ffmpeg</em> zu WebP encodiert. Eingebunden mit echten Dimensionen und <code>fetchpriority="high"</code> (above the fold).</p>
+
+    <h2>4 · Repro-Prompt</h2>
+    <p>Der vollständige Prompt, um die Seite aus dem Nichts zu reproduzieren:</p>
+    <pre id="prompt">Build a one-page website for "physiowerk Luzern", a fictional Swiss physiotherapy practice, as a single self-contained HTML file (Google Fonts only, no libraries; only local asset: assets/studio.webp, 1920x1072). All copy in de-CH German — no ß anywhere (Fuss, gross, Strasse) — in a calm, motivating tone. Aesthetic: hell und regenerativ. Palette: sage #9BB09A, warm white #FAF8F4, terracotta accent #C97B5A, ink #2E3230, light wood #D9C9B2. Fonts: Fraunces (soft warm display serif, weights ~420-560) for headlines, Karla (friendly humanist sans) for body and UI.
+
+Generate the hero asset first: prompt Nano Banana 2 via the Higgsfield MCP for a bright physiotherapy treatment room — sage green accent wall, warm white walls, light oak floor, treatment table with a terracotta towel, resistance bands and small dumbbells on wood shelving, large window with plants, soft daylight, editorial interior photography — then encode to 1920-wide WebP with ffmpeg.
+
+The signature detail is "die Bewegungsbahn": one elegant curved SVG line that flows as a motion trail behind the entire page content. Implement it as an absolutely positioned SVG filling the main content wrapper with preserveAspectRatio="none" and vector-effect: non-scaling-stroke (constant 2.4px sage stroke at ~.6 opacity). Draw it on scroll: measure getTotalLength(), hide via stroke-dasharray/dashoffset, and map page scroll progress to the offset inside a rAF-throttled passive scroll handler. At the treatments section the motif condenses into six minimal exercise pictograms: stick figures (filled circle head, round-cap stroke limbs) inside sage-mist circles, where one or two joint groups (g elements, transform-box: view-box, transform-origin at the joint) morph slowly between two poses via CSS keyframes — arm raise, side bend, running stride, pulsing terracotta trigger point (dry needling), squat, walking figure beside a tiny house outline. 4.6s, ease cubic-bezier(.25,.7,.25,1), alternate infinite. The markup pose is always the end pose; prefers-reduced-motion disables all animation (pictograms rest in end pose, trail fully drawn, reveals visible).
+
+Sections: sticky header (wordmark "physiowerk", nav, terracotta pill CTA "Termin buchen"); hero with photo card, headline "Wieder in Bewegung." (Bewegung in terracotta), CTA plus check-badge "Krankenkassen-anerkannt"; Behandlungen — six cards (Physiotherapie, Manuelle Therapie, Sportphysiotherapie, Dry Needling, MTT/Trainingstherapie, Domizilbehandlung) each with billing tag; Ablauf — four steps (Verordnung vom Arzt, Erstbefund, Behandlungsplan, Training) with wood-topped cards and arrows; Team — three fictional profiles with gradient monogram circles and specialization chips; Selbstzahler & Training — three MTT price cards in CHF (Einzeleintritt 28, 10er-Abo 240 highlighted "Beliebt", Halbjahres-Abo 690) plus a Firmenangebote wood-toned banner; Termin — mock form (name/phone, Behandlung select, Wunschzeit radio chips, Verordnung ja/nein chips, textarea, success note on submit, clearly labeled demo); footer in ink with Luzern address, +41 41 XXX XX XX, ÖV and Parkplatz notes, Impressum/Datenschutz dummies.
+
+Reveals breathe: IntersectionObserver adds a class that eases opacity/translateY/scale over ~1s with the same soft curve, small stagger delays — nothing springy. Fixed "← 25" pill to the hub, footer link "guide & prompt →". Lazy dimensions on images, zero console errors from file://, no horizontal scroll at 390px, excellent mobile layout.</pre>
+
+  </div>
+</main>
+<footer>
+  <div class="wrap">
+    <p>FABLE/25 · Nº 64 · <a href="/64-physio/">physiowerk Luzern</a> · <a href="/">zur Übersicht</a></p>
+  </div>
+</footer>
+</body>
+</html>

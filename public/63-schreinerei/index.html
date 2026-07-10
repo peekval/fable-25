@@ -1,0 +1,731 @@
+<!doctype html>
+<!--
+  SCHREINEREI FURRER — Möbel, die bleiben.
+  FABLE/25 · site 63 · Swiss SME template wave · single-file showcase
+
+  CHANGELOG
+  PASS 1 — Full build: werkstatt-warm palette (oak/walnut/paper + Zimmermanns-
+           bleistift red); Fraunces × Archivo pairing; procedural "Maserung"
+           (SVG wood-grain curve families with knot, drawn on scroll, generated
+           per divider); Projekt cards with Schwalbenschwanz corner joints that
+           snap shut on hover; board-like precise slide reveals; Ablauf with
+           chisel-struck Zimmermanns numerals (IIII, not IV); Anfrage form mock
+           with success state; de-CH copy throughout (kein ß); reduced-motion
+           fully static; "← 25" pill + guide link.
+  PASS 2 — Verify + polish: fixed 390px overflow (min-width:0 on grid items,
+           minmax facts grid, overflow-x:clip); holz-list wraps cleanly on
+           mobile (description on own line); dovetail seam tightened to 2.5px
+           with snappier 130ms click.
+-->
+<html lang="de-CH">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Schreinerei Furrer — Möbel, die bleiben. Massivholz aus dem Emmental</title>
+<meta name="description" content="Schreinerei Furrer, Langnau im Emmental — seit 1987. Einbauschränke, Küchen und Massivholzmöbel aus Schweizer Holz. Von Hand, mit Verstand.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,500;0,9..144,600;1,9..144,400;1,9..144,500&family=Archivo:ital,wght@0,400;0,500;0,600;0,700;1,400&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --oak:#A97C4F;
+    --oak-light:#C39B72;
+    --walnut:#6E4A2E;
+    --walnut-deep:#4A3120;
+    --grey:#8E8B85;
+    --paper:#F6F3ED;
+    --paper-warm:#EFE9DE;
+    --pencil:#C24E32;
+    --ink:#2B2119;
+    --line:#DAD2C4;
+    --serif:"Fraunces",Georgia,serif;
+    --sans:"Archivo",system-ui,sans-serif;
+    --snap:cubic-bezier(.3,0,.1,1); /* einrasten */
+    --board:cubic-bezier(.22,.9,.26,1); /* gefügtes Brett */
+  }
+  *{margin:0;padding:0;box-sizing:border-box}
+  html{scroll-behavior:smooth}
+  @media (prefers-reduced-motion:reduce){html{scroll-behavior:auto}}
+  html{overflow-x:clip}
+  body{
+    font-family:var(--sans);background:var(--paper);color:var(--ink);
+    line-height:1.6;font-size:1rem;overflow-x:clip;
+  }
+  ::selection{background:var(--pencil);color:var(--paper)}
+  img{max-width:100%;display:block}
+  a{color:inherit}
+
+  /* ——— fixed hub pill ——— */
+  .pill{
+    position:fixed;top:1rem;left:1rem;z-index:70;
+    font-size:.82rem;font-weight:600;letter-spacing:.1em;text-decoration:none;
+    padding:.48rem .95rem;border-radius:99px;
+    background:rgba(43,33,25,.86);color:var(--paper);
+    border:1px solid rgba(246,243,237,.25);backdrop-filter:blur(6px);
+    transition:transform .2s var(--snap);
+  }
+  .pill:hover{transform:translateY(-2px)}
+
+  /* ——— layout ——— */
+  .wrap{max-width:1120px;margin:0 auto;padding:0 clamp(1.1rem,4vw,2.4rem)}
+  section{padding:clamp(4rem,8vw,7rem) 0}
+  .eyebrow{
+    display:flex;align-items:center;gap:.8rem;
+    font-size:.72rem;letter-spacing:.32em;text-transform:uppercase;font-weight:700;
+    color:var(--pencil);
+  }
+  .eyebrow::before{content:"";width:2.4rem;height:2px;background:var(--pencil)}
+  h2{
+    font-family:var(--serif);font-weight:500;line-height:1.06;letter-spacing:-.01em;
+    font-size:clamp(2rem,4.6vw,3.3rem);margin:.8rem 0 1.2rem;
+  }
+  h2 em{font-style:italic;color:var(--walnut)}
+  .lede{font-size:clamp(1rem,1.5vw,1.15rem);max-width:38em;color:#4C3E30}
+  p+p{margin-top:1em}
+
+  /* board reveals: kurze, exakte Slides */
+  .rv{opacity:0;transform:translateY(18px)}
+  .rv-l{transform:translateX(-22px)}
+  .rv-r{transform:translateX(22px)}
+  .rv.in{opacity:1;transform:none;transition:opacity .45s ease,transform .5s var(--board)}
+  @media (prefers-reduced-motion:reduce){.rv{opacity:1;transform:none;transition:none}}
+
+  /* ——— Maserung dividers ——— */
+  .grain{display:block;width:100%;height:72px;color:var(--oak);opacity:.75}
+  .grain.on-dark{color:var(--oak-light);opacity:.55}
+  .grain path,.grain ellipse{fill:none;stroke:currentColor;stroke-width:1.3;vector-effect:non-scaling-stroke}
+
+  /* ——— hero ——— */
+  .hero{position:relative;min-height:100svh;display:flex;flex-direction:column;background:var(--walnut-deep);color:var(--paper)}
+  .hero-media{position:absolute;inset:0;overflow:hidden}
+  .hero-media img{width:100%;height:100%;object-fit:cover;object-position:center 60%}
+  .hero-media::after{
+    content:"";position:absolute;inset:0;
+    background:linear-gradient(100deg,rgba(42,26,14,.86) 0%,rgba(42,26,14,.55) 46%,rgba(42,26,14,.18) 100%),
+               linear-gradient(to top,rgba(42,26,14,.78),transparent 45%);
+  }
+  .topbar{
+    position:relative;z-index:5;display:flex;align-items:center;justify-content:space-between;gap:1rem;
+    padding:1.05rem clamp(1.1rem,4vw,2.4rem) 0 clamp(5.4rem,10vw,6.4rem);
+  }
+  .brand{display:flex;flex-direction:column;line-height:1.15;text-decoration:none}
+  .brand b{font-family:var(--serif);font-weight:600;font-size:1.12rem;letter-spacing:.02em}
+  .brand span{font-size:.68rem;letter-spacing:.24em;text-transform:uppercase;color:rgba(246,243,237,.72)}
+  nav.main{display:flex;gap:1.6rem}
+  nav.main a{
+    font-size:.8rem;font-weight:600;letter-spacing:.14em;text-transform:uppercase;
+    text-decoration:none;color:rgba(246,243,237,.85);padding:.3rem 0;
+    border-bottom:2px solid transparent;transition:border-color .2s var(--snap),color .2s;
+  }
+  nav.main a:hover{color:var(--paper);border-bottom-color:var(--pencil)}
+  .hero-inner{
+    position:relative;z-index:5;flex:1;display:flex;flex-direction:column;justify-content:flex-end;
+    padding:4rem clamp(1.1rem,4vw,2.4rem) clamp(3rem,7vh,5rem);
+    max-width:1120px;margin:0 auto;width:100%;
+  }
+  .hero .kicker{font-size:.74rem;letter-spacing:.34em;text-transform:uppercase;font-weight:600;color:var(--oak-light)}
+  .hero h1{
+    font-family:var(--serif);font-weight:500;letter-spacing:-.015em;
+    font-size:clamp(2.9rem,8.4vw,6.2rem);line-height:1.0;margin:.7rem 0 1rem;
+    text-shadow:0 2px 26px rgba(20,12,6,.45);
+  }
+  .hero h1 em{font-style:italic;color:var(--oak-light)}
+  .hero .sub{max-width:34em;font-size:clamp(1rem,1.7vw,1.2rem);color:rgba(246,243,237,.9)}
+  .hero-grain{width:min(420px,72%);height:44px;margin:1.3rem 0 .2rem;color:var(--oak-light);opacity:.9}
+  .hero-grain path,.hero-grain ellipse{fill:none;stroke:currentColor;stroke-width:1.3}
+  .hero-ctas{display:flex;gap:.9rem;flex-wrap:wrap;margin-top:1.4rem}
+  .btn{
+    display:inline-flex;align-items:center;gap:.6rem;text-decoration:none;cursor:pointer;
+    font-family:var(--sans);font-weight:700;font-size:.82rem;letter-spacing:.16em;text-transform:uppercase;
+    padding:1rem 1.6rem;border:2px solid var(--pencil);border-radius:2px;
+    background:var(--pencil);color:var(--paper);
+    transition:transform .16s var(--snap),box-shadow .16s var(--snap),background-color .2s;
+  }
+  .btn:hover{transform:translate(0,-2px);box-shadow:3px 3px 0 rgba(20,12,6,.5)}
+  .btn.ghost{background:transparent;color:var(--paper);border-color:rgba(246,243,237,.6)}
+  .btn.ghost:hover{border-color:var(--paper)}
+  .hero-meta{
+    display:flex;gap:2rem;flex-wrap:wrap;margin-top:2.4rem;padding-top:1.2rem;
+    border-top:1px solid rgba(246,243,237,.25);font-size:.82rem;color:rgba(246,243,237,.78);
+  }
+  .hero-meta b{display:block;font-family:var(--serif);font-size:1.35rem;font-weight:600;color:var(--paper)}
+
+  /* ——— Leistungen ——— */
+  #leistungen{background:var(--paper)}
+  .leist-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:1px;background:var(--line);border:1px solid var(--line);margin-top:2.6rem}
+  .leist{background:var(--paper);padding:1.7rem 1.5rem 1.6rem;position:relative;transition:background-color .25s}
+  .leist:hover{background:#FBF9F4}
+  .leist .no{font-family:var(--serif);font-style:italic;font-size:.95rem;color:var(--grey)}
+  .leist h3{font-family:var(--serif);font-weight:600;font-size:1.45rem;margin:.5rem 0 .45rem;letter-spacing:0}
+  .leist p{font-size:.94rem;color:#54463A}
+  .leist::after{
+    content:"";position:absolute;left:1.5rem;bottom:1.1rem;height:2px;width:2rem;
+    background:var(--oak);transition:width .3s var(--snap),background-color .3s;
+  }
+  .leist:hover::after{width:3.4rem;background:var(--pencil)}
+  .leist{padding-bottom:2.6rem}
+
+  /* ——— Projekte (dark band) ——— */
+  #projekte{background:var(--walnut-deep);color:var(--paper)}
+  #projekte h2 em{color:var(--oak-light)}
+  #projekte .lede{color:rgba(246,243,237,.82)}
+  .proj-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:clamp(1.2rem,2.6vw,1.8rem);margin-top:2.8rem}
+  .pcard{
+    position:relative;background:#553823;border:1px solid rgba(246,243,237,.16);
+    padding:1.9rem 1.6rem 1.5rem;display:flex;flex-direction:column;gap:.7rem;min-height:15rem;
+    transition:transform .18s var(--snap),box-shadow .18s var(--snap),border-color .2s;
+  }
+  .pcard:hover{transform:translateY(-3px);box-shadow:4px 4px 0 rgba(20,12,6,.45);border-color:rgba(246,243,237,.3)}
+  .pcard h3{font-family:var(--serif);font-weight:500;font-size:1.5rem;line-height:1.15;letter-spacing:0}
+  .pcard .meta{font-size:.76rem;letter-spacing:.2em;text-transform:uppercase;color:rgba(246,243,237,.62);font-weight:600}
+  .pcard p{font-size:.93rem;color:rgba(246,243,237,.85)}
+  .pcard .mat{
+    margin-top:auto;display:flex;align-items:center;gap:.7rem;padding-top:1rem;
+    border-top:1px dashed rgba(246,243,237,.22);
+  }
+  .mat .chips{display:flex;gap:3px}
+  .mat .chips span{width:1.15rem;height:1.7rem;border-radius:1px;border:1px solid rgba(20,12,6,.35);display:block}
+  .mat small{font-size:.74rem;letter-spacing:.14em;text-transform:uppercase;color:rgba(246,243,237,.66);font-weight:600}
+  /* Schwalbenschwanz corner joints (injected by JS) */
+  .joint{position:absolute;width:34px;height:34px;pointer-events:none;overflow:visible}
+  .joint.tl{top:-5px;left:-5px}
+  .joint.tr{top:-5px;right:-5px;transform:rotate(90deg)}
+  .joint.br{bottom:-5px;right:-5px;transform:rotate(180deg)}
+  .joint.bl{bottom:-5px;left:-5px;transform:rotate(270deg)}
+  .joint .ja{fill:var(--oak);transform:translate(0,-2.5px);transition:transform .13s var(--snap)}
+  .joint .jb{fill:var(--oak-light);transform:translate(-2.5px,0);transition:transform .13s var(--snap)}
+  .pcard:hover .joint .ja,.pcard:hover .joint .jb{transform:translate(0,0)}
+  @media (prefers-reduced-motion:reduce){
+    .joint .ja,.joint .jb{transform:none;transition:none}
+    .pcard:hover{transform:none}
+    .btn:hover,.pill:hover{transform:none}
+  }
+  .proj-note{margin-top:2rem;font-size:.9rem;color:rgba(246,243,237,.66);font-style:italic;font-family:var(--serif)}
+
+  /* ——— Werkstatt & Material ——— */
+  #werkstatt{background:var(--paper-warm)}
+  .werk-grid{display:grid;grid-template-columns:1fr 1fr;gap:clamp(2rem,5vw,4rem);align-items:start}
+  .werk-grid>*,.anfrage-grid>*,.leist,.pcard{min-width:0}
+  .werk-photo{position:relative;margin-top:.4rem}
+  .werk-photo img{width:100%;height:auto;border:1px solid var(--line);box-shadow:6px 6px 0 rgba(110,74,46,.22)}
+  .werk-photo figcaption{
+    margin-top:.7rem;font-size:.78rem;letter-spacing:.16em;text-transform:uppercase;
+    color:var(--grey);font-weight:600;
+  }
+  .holz-list{list-style:none;margin-top:1.8rem;border-top:1px solid var(--line)}
+  .holz-list li{
+    display:flex;align-items:center;gap:1rem;padding:.85rem 0;
+    border-bottom:1px solid var(--line);font-size:.95rem;
+  }
+  .holz-list .sw{width:2.1rem;height:1.35rem;border-radius:1px;border:1px solid rgba(43,33,25,.25);flex:none}
+  .holz-list b{font-family:var(--serif);font-weight:600;font-size:1.05rem;min-width:6.5rem}
+  .holz-list .d{font-style:normal;color:#54463A}
+  .holz-list span.src{margin-left:auto;font-size:.76rem;letter-spacing:.14em;text-transform:uppercase;color:var(--grey);font-weight:600;text-align:right}
+  @media (max-width:640px){
+    .holz-list li{flex-wrap:wrap;row-gap:.15rem}
+    .holz-list b{min-width:0}
+    .holz-list .d{flex-basis:100%;order:4;padding-left:3.1rem;font-size:.88rem}
+  }
+  .werk-facts{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:1px;background:var(--line);border:1px solid var(--line);margin-top:2rem}
+  .werk-facts span{hyphens:auto;overflow-wrap:break-word}
+  .werk-facts div{background:var(--paper);padding:1rem .9rem}
+  .werk-facts b{display:block;font-family:var(--serif);font-size:1.55rem;font-weight:600;line-height:1.15}
+  .werk-facts span{font-size:.7rem;letter-spacing:.14em;text-transform:uppercase;color:var(--grey);font-weight:600}
+
+  /* ——— Ablauf ——— */
+  #ablauf{background:var(--paper)}
+  .steps{margin-top:2.8rem;border-top:1px solid var(--line)}
+  .step{
+    display:grid;grid-template-columns:7.5rem 14rem 1fr;gap:1.4rem;align-items:baseline;
+    padding:1.6rem 0;border-bottom:1px solid var(--line);
+  }
+  .znum{height:44px;width:96px;overflow:visible}
+  .znum line{stroke:var(--pencil);stroke-width:5;stroke-linecap:square}
+  .step h3{font-family:var(--serif);font-weight:600;font-size:1.5rem;letter-spacing:0}
+  .step p{font-size:.95rem;color:#54463A;max-width:44em}
+  .ablauf-note{margin-top:1.6rem;font-family:var(--serif);font-style:italic;font-size:1.02rem;color:var(--walnut)}
+
+  /* ——— Anfrage ——— */
+  #anfrage{background:var(--walnut);color:var(--paper)}
+  #anfrage h2 em{color:var(--oak-light)}
+  #anfrage .lede{color:rgba(246,243,237,.85)}
+  .anfrage-grid{display:grid;grid-template-columns:.85fr 1.15fr;gap:clamp(2rem,5vw,4rem);align-items:start}
+  form.mock{display:flex;flex-direction:column;gap:1.15rem;margin-top:.4rem}
+  .field label{
+    display:block;font-size:.72rem;letter-spacing:.2em;text-transform:uppercase;font-weight:700;
+    color:rgba(246,243,237,.75);margin-bottom:.45rem;
+  }
+  .field select,.field input,.field textarea{
+    width:100%;font-family:var(--sans);font-size:.98rem;color:var(--ink);
+    background:var(--paper);border:2px solid transparent;border-radius:2px;
+    padding:.8rem .9rem;outline:none;transition:border-color .15s var(--snap),box-shadow .15s var(--snap);
+    -webkit-appearance:none;appearance:none;
+  }
+  .field select{background-image:url("data:image/svg+xml;charset=utf-8,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8'%3E%3Cpath d='M1 1l5 5 5-5' fill='none' stroke='%236E4A2E' stroke-width='2'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right .9rem center}
+  .field select:focus,.field input:focus,.field textarea:focus{border-color:var(--pencil);box-shadow:3px 3px 0 rgba(20,12,6,.35)}
+  .field textarea{min-height:7.5rem;resize:vertical}
+  .zeit{display:flex;gap:.5rem;flex-wrap:wrap}
+  .zeit input{position:absolute;opacity:0;pointer-events:none;width:1px;height:1px}
+  .zeit label{
+    display:inline-block;cursor:pointer;margin:0;
+    font-size:.8rem;font-weight:600;letter-spacing:.08em;text-transform:none;color:rgba(246,243,237,.9);
+    border:1.5px solid rgba(246,243,237,.45);border-radius:99px;padding:.5rem 1rem;
+    transition:background-color .14s var(--snap),color .14s,border-color .14s;
+  }
+  .zeit input:checked+label{background:var(--paper);color:var(--walnut-deep);border-color:var(--paper)}
+  .zeit input:focus-visible+label{outline:2px solid var(--pencil);outline-offset:2px}
+  .form-row{display:grid;grid-template-columns:1fr 1fr;gap:1rem}
+  .form-foot{display:flex;align-items:center;gap:1.2rem;flex-wrap:wrap}
+  .form-foot small{font-size:.8rem;color:rgba(246,243,237,.66)}
+  #formOk{
+    display:none;border:2px solid var(--oak-light);padding:1.4rem 1.5rem;border-radius:2px;
+    font-family:var(--serif);font-size:1.15rem;line-height:1.5;background:rgba(246,243,237,.07);
+  }
+  #formOk b{color:var(--oak-light)}
+  form.mock.sent{display:none}
+  #formOk.show{display:block}
+
+  /* ——— footer ——— */
+  footer{background:var(--walnut-deep);color:rgba(246,243,237,.78);font-size:.9rem;padding:3.2rem 0 2.2rem}
+  .foot-grid{display:grid;grid-template-columns:1.2fr 1fr 1fr;gap:2rem;padding-bottom:2.2rem}
+  footer h4{font-family:var(--serif);font-weight:600;font-size:1.15rem;color:var(--paper);margin-bottom:.7rem}
+  footer a{color:var(--paper);text-decoration:none;border-bottom:1px solid var(--oak)}
+  footer address{font-style:normal;line-height:1.7}
+  .lehre{
+    display:inline-flex;align-items:center;gap:.6rem;margin-top:1rem;
+    border:1.5px solid var(--oak);border-radius:2px;padding:.6rem .9rem;
+    font-size:.78rem;letter-spacing:.1em;font-weight:600;color:var(--paper);
+  }
+  .lehre .dot{width:.6rem;height:.6rem;background:var(--pencil);border-radius:1px;flex:none}
+  .foot-legal{
+    display:flex;justify-content:space-between;gap:1rem;flex-wrap:wrap;align-items:center;
+    border-top:1px solid rgba(246,243,237,.16);padding-top:1.5rem;font-size:.8rem;color:rgba(246,243,237,.55);
+  }
+  .foot-legal a{color:rgba(246,243,237,.8);border-bottom-color:rgba(169,124,79,.6)}
+
+  /* ——— responsive ——— */
+  @media (max-width:960px){
+    .leist-grid{grid-template-columns:1fr 1fr}
+    .proj-grid{grid-template-columns:1fr 1fr}
+    .werk-grid,.anfrage-grid{grid-template-columns:1fr}
+    .step{grid-template-columns:6rem 1fr;grid-template-rows:auto auto}
+    .step p{grid-column:2}
+    .foot-grid{grid-template-columns:1fr 1fr}
+  }
+  @media (max-width:640px){
+    nav.main{display:none}
+    .topbar{padding-left:clamp(1.1rem,4vw,2.4rem);justify-content:flex-end}
+    .leist-grid{grid-template-columns:1fr}
+    .proj-grid{grid-template-columns:1fr}
+    .form-row{grid-template-columns:1fr}
+    .step{grid-template-columns:1fr;gap:.5rem;grid-template-rows:none}
+    .step p{grid-column:1}
+    .znum{height:36px;width:84px}
+    .foot-grid{grid-template-columns:1fr}
+    .hero-meta{gap:1.3rem}
+  }
+</style>
+</head>
+<body>
+
+<a class="pill" href="/">&larr; 25</a>
+
+<!-- ═══════════ HERO ═══════════ -->
+<header class="hero" id="top">
+  <div class="hero-media">
+    <img src="assets/werkstatt.webp" width="1920" height="1080" alt="Die Werkstatt der Schreinerei Furrer in Langnau: Hobelbank mit Handhobeln, Holzspäne im Abendlicht, gestapelte Eichen- und Nussbaumbretter" fetchpriority="high">
+  </div>
+  <div class="topbar">
+    <a class="brand" href="#top" aria-label="Schreinerei Furrer — zum Seitenanfang">
+      <b>Schreinerei Furrer</b>
+      <span>Emmental · seit 1987</span>
+    </a>
+    <nav class="main" aria-label="Hauptnavigation">
+      <a href="#leistungen">Leistungen</a>
+      <a href="#projekte">Projekte</a>
+      <a href="#werkstatt">Werkstatt</a>
+      <a href="#ablauf">Ablauf</a>
+      <a href="#anfrage">Anfrage</a>
+    </nav>
+  </div>
+  <div class="hero-inner">
+    <p class="kicker rv">Schreinerei · Langnau im Emmental</p>
+    <h1 class="rv">Möbel, <em>die bleiben.</em></h1>
+    <svg class="hero-grain grain-js" viewBox="0 0 420 44" preserveAspectRatio="none" aria-hidden="true" data-knot="0.62"></svg>
+    <p class="sub rv">Massivholz aus der Region, gefügt in Langnau. Vom Einbauschrank bis zur Eichenküche — von Hand, mit Verstand, seit 1987.</p>
+    <div class="hero-ctas rv">
+      <a class="btn" href="#anfrage">Projekt anfragen</a>
+      <a class="btn ghost" href="#projekte">Projekte ansehen</a>
+    </div>
+    <div class="hero-meta rv">
+      <div><b>seit 1987</b>Familienbetrieb in zweiter Generation</div>
+      <div><b>100 % Schweizer Holz</b>Eiche, Nussbaum, Esche, Arve</div>
+      <div><b>Wir bilden aus</b>Lehrbetrieb Schreiner/in EFZ</div>
+    </div>
+  </div>
+</header>
+
+<!-- ═══════════ LEISTUNGEN ═══════════ -->
+<section id="leistungen">
+  <div class="wrap">
+    <div class="rv">
+      <p class="eyebrow">Leistungen</p>
+      <h2>Was wir <em>können</em> —<br>und gern für Sie tun.</h2>
+      <p class="lede">Keine Serienware, keine Kataloge. Jedes Stück wird für Ihren Raum gezeichnet, in unserer Werkstatt gefertigt und von uns montiert.</p>
+    </div>
+    <div class="leist-grid">
+      <article class="leist rv"><span class="no">01</span><h3>Einbauschränke</h3><p>Auf den Millimeter in Nische, Dachschräge oder Flur gefügt. Innenleben nach Ihrem Alltag, nicht nach Norm.</p></article>
+      <article class="leist rv"><span class="no">02</span><h3>Küchen</h3><p>Massivholzküchen, die man anfassen darf. Geölte Fronten, Schubladen aus Schwalbenschwanz — gebaut für dreissig Jahre Znacht.</p></article>
+      <article class="leist rv"><span class="no">03</span><h3>Massivholzmöbel</h3><p>Tische, Bänke, Betten, Sideboards. Aus dem Brett, das wir mit Ihnen zusammen im Lager aussuchen.</p></article>
+      <article class="leist rv"><span class="no">04</span><h3>Innenausbau</h3><p>Täfer, Böden, Treppen, ganze Stuben. Wir arbeiten mit dem Bestand, nicht gegen ihn — auch im zweihundertjährigen Bauernhaus.</p></article>
+      <article class="leist rv"><span class="no">05</span><h3>Restaurationen</h3><p>Alte Möbel behalten ihre Geschichte, bekommen aber wieder Alltag. Behutsam ergänzt, traditionell verleimt.</p></article>
+      <article class="leist rv"><span class="no">06</span><h3>Türen &amp; Fenster</h3><p>Haustüren mit Charakter, Zimmertüren nach Mass, Holzfenster im Denkmalschutz. Dicht, ehrlich, schön.</p></article>
+    </div>
+  </div>
+</section>
+
+<svg class="grain grain-js" viewBox="0 0 1200 72" preserveAspectRatio="none" aria-hidden="true" data-knot="0.28"></svg>
+
+<!-- ═══════════ PROJEKTE ═══════════ -->
+<section id="projekte">
+  <div class="wrap">
+    <div class="rv">
+      <p class="eyebrow">Projekte</p>
+      <h2>Referenzen, auf die wir<br><em>stolz</em> sind.</h2>
+      <p class="lede">Wir zeigen hier bewusst keine Hochglanzfotos — sondern Material, Ort und Jahr. Wer eines dieser Stücke sehen will: Die meisten Kundinnen und Kunden zeigen es gern. Wir stellen den Kontakt her.</p>
+    </div>
+    <div class="proj-grid">
+      <article class="pcard rv">
+        <span class="meta">Küche · Langnau i. E. · 2025</span>
+        <h3>Eichenküche im Stöckli</h3>
+        <p>Durchgehende Maserung über fünf Fronten, Becken aus geschwärztem Chromstahl, Griffleisten von Hand ausgekehlt.</p>
+        <div class="mat"><span class="chips" aria-hidden="true"><span style="background:#B98F5F"></span><span style="background:#A97C4F"></span><span style="background:#8C6238"></span></span><small>Eiche massiv, geölt</small></div>
+      </article>
+      <article class="pcard rv">
+        <span class="meta">Einbau · Burgdorf · 2024</span>
+        <h3>Schrankwand unter der Dachschräge</h3>
+        <p>Sieben Elemente, kein rechter Winkel am Bau — jede Fuge einzeln angerissen. Front Nussbaum, Korpus Weisstanne.</p>
+        <div class="mat"><span class="chips" aria-hidden="true"><span style="background:#6E4A2E"></span><span style="background:#5A3B24"></span><span style="background:#E8DFC9"></span></span><small>Nussbaum &amp; Weisstanne</small></div>
+      </article>
+      <article class="pcard rv">
+        <span class="meta">Möbel · Trubschachen · 2024</span>
+        <h3>Esstisch für zwölf</h3>
+        <p>Vier Meter Esche aus einem Stamm, Baumkante belassen, Gestell geschmiedet vom Dorfschmied. Sitzbank dazu.</p>
+        <div class="mat"><span class="chips" aria-hidden="true"><span style="background:#D9C6A0"></span><span style="background:#C8B183"></span><span style="background:#A98F62"></span></span><small>Esche, Baumkante</small></div>
+      </article>
+      <article class="pcard rv">
+        <span class="meta">Restauration · Langnau i. E. · 2023</span>
+        <h3>Biedermeier-Kommode</h3>
+        <p>Furnier gesichert, Schellack von Hand poliert, Schubladenläufe neu verzahnt. Erbstück, wieder im Dienst.</p>
+        <div class="mat"><span class="chips" aria-hidden="true"><span style="background:#9E5B37"></span><span style="background:#7F3F22"></span><span style="background:#5E2E18"></span></span><small>Kirschbaum, Schellack</small></div>
+      </article>
+      <article class="pcard rv">
+        <span class="meta">Innenausbau · Eggiwil · 2025</span>
+        <h3>Arvenschlafzimmer</h3>
+        <p>Bett, Schränke und Täfer aus Engadiner Arve. Das ganze Zimmer riecht nach Bergwald — und schläft angeblich besser.</p>
+        <div class="mat"><span class="chips" aria-hidden="true"><span style="background:#E3CBA2"></span><span style="background:#D4B584"></span><span style="background:#B58F5D"></span></span><small>Arve, unbehandelt</small></div>
+      </article>
+      <article class="pcard rv">
+        <span class="meta">Türen · Signau · 2023</span>
+        <h3>Haustüre fürs Bauernhaus</h3>
+        <p>Aufdoppelte Eichentüre nach historischem Vorbild, innen gedämmt, Beschläge restauriert. Hält den nächsten hundert Wintern stand.</p>
+        <div class="mat"><span class="chips" aria-hidden="true"><span style="background:#8C6238"></span><span style="background:#75512D"></span><span style="background:#B98F5F"></span></span><small>Eiche &amp; Lärche</small></div>
+      </article>
+    </div>
+    <p class="proj-note rv">Die Ecken dieser Karten sind übrigens Schwalbenschwänze — die Verbindung, die ohne Schraube hält. Fahren Sie mit der Maus darüber: Sie rasten ein.</p>
+  </div>
+</section>
+
+<svg class="grain grain-js" viewBox="0 0 1200 72" preserveAspectRatio="none" aria-hidden="true" data-knot="0.74" style="background:var(--paper-warm)"></svg>
+
+<!-- ═══════════ WERKSTATT & MATERIAL ═══════════ -->
+<section id="werkstatt">
+  <div class="wrap werk-grid">
+    <div class="rv-l rv">
+      <p class="eyebrow">Werkstatt &amp; Material</p>
+      <h2>Massivholz <em>arbeitet</em>.<br>Wir auch.</h2>
+      <p class="lede">Holz lebt weiter, nachdem es gesägt ist: Es quillt, schwindet, wirft sich — wenn man es lässt. Deshalb lagern unsere Bretter zwei Jahre im Schopf, bevor sie in die Werkstatt dürfen. Und deshalb konstruieren wir so, dass das Holz sich bewegen darf, ohne dass sich Ihr Möbel bewegt.</p>
+      <p class="lede">Wir verarbeiten ausschliesslich Schweizer Holz — das meiste davon aus dem Emmental und dem Berner Mittelland. Kurze Wege, bekannte Förster, ehrliche Herkunft.</p>
+      <ul class="holz-list">
+        <li><span class="sw" style="background:#A97C4F" aria-hidden="true"></span><b>Eiche</b> <em class="d">ruhig, hart, dankbar</em> <span class="src">Berner Mittelland</span></li>
+        <li><span class="sw" style="background:#6E4A2E" aria-hidden="true"></span><b>Nussbaum</b> <em class="d">dunkel, edel, lebhaft</em> <span class="src">Emmental</span></li>
+        <li><span class="sw" style="background:#D9C6A0" aria-hidden="true"></span><b>Esche</b> <em class="d">zäh, hell, gezeichnet</em> <span class="src">Napfgebiet</span></li>
+        <li><span class="sw" style="background:#E3CBA2" aria-hidden="true"></span><b>Arve</b> <em class="d">weich, duftend, beruhigend</em> <span class="src">Engadin</span></li>
+      </ul>
+    </div>
+    <div class="rv-r rv">
+      <figure class="werk-photo">
+        <img src="assets/werkstatt.webp" width="1920" height="1080" loading="lazy" alt="Blick in die Werkstatt: Hobelbank, Werkzeug und Massivholzbretter im warmen Licht">
+        <figcaption>Die Werkstatt an der Dorfstrasse, Langnau — Freitagnachmittag, kurz vor Feierabend</figcaption>
+      </figure>
+      <div class="werk-facts">
+        <div><b>1987</b><span>gegründet</span></div>
+        <div><b>6</b><span>Schreiner:innen, davon 2 Lernende</span></div>
+        <div><b>2 Jahre</b><span>lagert unser Holz, mindestens</span></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<svg class="grain grain-js" viewBox="0 0 1200 72" preserveAspectRatio="none" aria-hidden="true" data-knot="0.45" style="background:var(--paper-warm)"></svg>
+
+<!-- ═══════════ ABLAUF ═══════════ -->
+<section id="ablauf">
+  <div class="wrap">
+    <div class="rv">
+      <p class="eyebrow">Ablauf</p>
+      <h2>Vom Gespräch zum Möbel —<br>in <em>fünf Schritten</em>.</h2>
+      <p class="lede">Nummeriert wie auf dem Abbund: mit dem Zimmermannsbleistift, in Strichen. Der Zimmermann schreibt die Vier übrigens mit vier Strichen — IIII, nicht IV. War schon immer so.</p>
+    </div>
+    <div class="steps">
+      <div class="step rv">
+        <svg class="znum" viewBox="0 0 96 44" aria-label="Schritt 1"><line x1="14" y1="4" x2="10" y2="40"/></svg>
+        <h3>Beratung</h3>
+        <p>Sie erzählen, wir hören zu — bei Ihnen zu Hause oder bei uns in der Werkstatt, mit Holzmustern zum Anfassen. Kostet nichts, verpflichtet zu nichts.</p>
+      </div>
+      <div class="step rv">
+        <svg class="znum" viewBox="0 0 96 44" aria-label="Schritt 2"><line x1="14" y1="4" x2="10" y2="40"/><line x1="30" y1="4" x2="26" y2="40"/></svg>
+        <h3>Aufmass</h3>
+        <p>Wir messen vor Ort, auf den Millimeter. Schiefe Wände und krumme Balken sind im Emmental keine Seltenheit — wir kennen sie mit Vornamen.</p>
+      </div>
+      <div class="step rv">
+        <svg class="znum" viewBox="0 0 96 44" aria-label="Schritt 3"><line x1="14" y1="4" x2="10" y2="40"/><line x1="30" y1="4" x2="26" y2="40"/><line x1="46" y1="4" x2="42" y2="40"/></svg>
+        <h3>Werkplan</h3>
+        <p>Sie erhalten eine saubere Werkzeichnung und eine ehrliche Offerte. Festpreis. Was auf dem Plan steht, steht am Schluss in Ihrer Stube.</p>
+      </div>
+      <div class="step rv">
+        <svg class="znum" viewBox="0 0 96 44" aria-label="Schritt 4"><line x1="14" y1="4" x2="10" y2="40"/><line x1="30" y1="4" x2="26" y2="40"/><line x1="46" y1="4" x2="42" y2="40"/><line x1="62" y1="4" x2="58" y2="40"/></svg>
+        <h3>Fertigung</h3>
+        <p>Gefertigt in Langnau: zugeschnitten, gefügt, verleimt, geölt. Jede Verbindung dreimal geprüft, bevor sie die Werkstatt verlässt.</p>
+      </div>
+      <div class="step rv">
+        <svg class="znum" viewBox="0 0 96 44" aria-label="Schritt 5"><line x1="10" y1="4" x2="26" y2="40"/><line x1="42" y1="4" x2="26" y2="40"/></svg>
+        <h3>Montage</h3>
+        <p>Wir montieren staubarm, pünktlich und mit Filz unter den Schuhen. Und wir räumen auf, bevor wir gehen — versprochen.</p>
+      </div>
+    </div>
+    <p class="ablauf-note rv">«Gäng wie gäng: zweimal gemessen, einmal gesägt.» — Res Furrer, Werkstattleiter</p>
+  </div>
+</section>
+
+<!-- ═══════════ ANFRAGE ═══════════ -->
+<section id="anfrage">
+  <div class="wrap anfrage-grid">
+    <div class="rv">
+      <p class="eyebrow">Anfrage</p>
+      <h2>Erzählen Sie uns<br>von Ihrem <em>Projekt</em>.</h2>
+      <p class="lede">Drei Angaben genügen für den Anfang. Wir melden uns innert zwei Arbeitstagen — mit einer ehrlichen Einschätzung, nicht mit einem Verkaufsgespräch.</p>
+      <p class="lede">Lieber direkt? Rufen Sie an: <strong>+41 34 XXX XX XX</strong>. In der Werkstatt nimmt immer jemand ab — ausser die Kreissäge läuft gerade.</p>
+    </div>
+    <div>
+      <form class="mock" id="anfrageForm" novalidate>
+        <div class="field">
+          <label for="projektart">Projektart</label>
+          <select id="projektart" name="projektart">
+            <option>Einbauschrank</option>
+            <option>Küche</option>
+            <option>Massivholzmöbel</option>
+            <option>Innenausbau</option>
+            <option>Restauration</option>
+            <option>Türen / Fenster</option>
+            <option>Etwas anderes</option>
+          </select>
+        </div>
+        <div class="field">
+          <label id="zeitLabel">Zeitrahmen</label>
+          <div class="zeit" role="radiogroup" aria-labelledby="zeitLabel">
+            <input type="radio" name="zeit" id="z1" checked><label for="z1">So bald wie möglich</label>
+            <input type="radio" name="zeit" id="z2"><label for="z2">In 3–6 Monaten</label>
+            <input type="radio" name="zeit" id="z3"><label for="z3">Ich plane voraus</label>
+          </div>
+        </div>
+        <div class="field">
+          <label for="beschrieb">Beschreibung</label>
+          <textarea id="beschrieb" name="beschrieb" placeholder="Was soll entstehen? Raum, Masse falls bekannt, Holzwunsch — alles hilft, nichts ist Pflicht."></textarea>
+        </div>
+        <div class="form-row">
+          <div class="field">
+            <label for="fname">Name</label>
+            <input id="fname" name="name" type="text" autocomplete="name" placeholder="Vor- und Nachname">
+          </div>
+          <div class="field">
+            <label for="fmail">E-Mail oder Telefon</label>
+            <input id="fmail" name="kontakt" type="text" autocomplete="email" placeholder="Wie erreichen wir Sie?">
+          </div>
+        </div>
+        <div class="form-foot">
+          <button class="btn" type="submit">Anfrage senden</button>
+          <small>Demo-Formular — es wird nichts übermittelt.</small>
+        </div>
+      </form>
+      <div id="formOk" role="status">
+        <b>Merci vielmal!</b> Ihre Anfrage ist notiert. Wir melden uns innert zwei Arbeitstagen — versprochen ist versprochen.
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════ FOOTER ═══════════ -->
+<footer>
+  <div class="wrap">
+    <div class="foot-grid">
+      <div>
+        <h4>Schreinerei Furrer AG</h4>
+        <address>
+          Dorfstrasse 41<br>
+          3550 Langnau im Emmental<br>
+          <a href="tel:+41340000000">+41 34 XXX XX XX</a><br>
+          <a href="mailto:werkstatt@schreinerei-furrer.ch">werkstatt@schreinerei-furrer.ch</a>
+        </address>
+        <span class="lehre"><span class="dot" aria-hidden="true"></span>Wir bilden aus — Schreiner/in EFZ</span>
+      </div>
+      <div>
+        <h4>Werkstatt</h4>
+        <p>Mo–Fr 07.00–12.00 / 13.30–17.30<br>Sa nach Vereinbarung<br><br>Besuch willkommen — am liebsten mit Voranmeldung, dann läuft die Kaffeemaschine schon.</p>
+      </div>
+      <div>
+        <h4>Rechtliches</h4>
+        <p>UID CHE-XXX.XXX.XXX<br>Handelsregister Kanton Bern<br>Impressum &amp; Datenschutz: Musterangaben<br><br>Mitglied VSSM — Verband Schweizerischer Schreinermeister</p>
+      </div>
+    </div>
+    <div class="foot-legal">
+      <span>Schreinerei Furrer ist ein fiktiver Betrieb · FABLE/25 · Nº 63</span>
+      <a href="/63-schreinerei/guide/">guide &amp; prompt &rarr;</a>
+    </div>
+  </div>
+</footer>
+
+<script>
+(function(){
+  "use strict";
+  var reduced = matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+  /* ───────── die Maserung: prozedurale Holzmaserungs-Kurvenschar ───────── */
+  function mulberry(seed){
+    return function(){
+      seed |= 0; seed = seed + 0x6D2B79F5 | 0;
+      var t = Math.imul(seed ^ seed >>> 15, 1 | seed);
+      t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t;
+      return ((t ^ t >>> 14) >>> 0) / 4294967296;
+    };
+  }
+  function buildGrain(svg, seedN){
+    var vb = svg.viewBox.baseVal, W = vb.width, H = vb.height;
+    var rnd = mulberry(seedN * 7919 + 13);
+    var knotX = W * (parseFloat(svg.dataset.knot || "0.5"));
+    var yc = H / 2, ns = "http://www.w3.org/2000/svg";
+    var lines = 7, spacing = H / (lines + 2.5);
+    var parts = [];
+    for (var i = 0; i < lines; i++){
+      var off = i - (lines - 1) / 2;               // -3..3
+      var baseY = yc + off * spacing;
+      var pts = [];
+      var step = W / 14;
+      for (var x = 0; x <= W + 1; x += step){
+        var d = (x - knotX) / (W * 0.13);
+        var bulge = Math.exp(-d * d) * spacing * 1.7 * Math.sign(off || 1);
+        var wob = Math.sin(x / W * Math.PI * (2 + i * 0.35) + i * 1.7) * spacing * 0.35
+                + (rnd() - 0.5) * spacing * 0.5;
+        pts.push([x, baseY + bulge + wob]);
+      }
+      var dstr = "M" + pts[0][0].toFixed(1) + " " + pts[0][1].toFixed(1);
+      for (var k = 1; k < pts.length - 1; k++){
+        var mx = (pts[k][0] + pts[k + 1][0]) / 2, my = (pts[k][1] + pts[k + 1][1]) / 2;
+        dstr += " Q" + pts[k][0].toFixed(1) + " " + pts[k][1].toFixed(1) + " " + mx.toFixed(1) + " " + my.toFixed(1);
+      }
+      var p = document.createElementNS(ns, "path");
+      p.setAttribute("d", dstr);
+      p.setAttribute("pathLength", "1");
+      parts.push(p); svg.appendChild(p);
+    }
+    // der Ast (knot)
+    [[spacing * 1.15, spacing * 0.62], [spacing * 0.55, spacing * 0.3]].forEach(function(r){
+      var e = document.createElementNS(ns, "ellipse");
+      e.setAttribute("cx", knotX.toFixed(1)); e.setAttribute("cy", yc.toFixed(1));
+      e.setAttribute("rx", r[0].toFixed(1)); e.setAttribute("ry", r[1].toFixed(1));
+      e.setAttribute("pathLength", "1");
+      parts.push(e); svg.appendChild(e);
+    });
+    return parts;
+  }
+
+  var grains = [];
+  document.querySelectorAll(".grain-js").forEach(function(svg, idx){
+    var parts = buildGrain(svg, idx + 1);
+    if (reduced){
+      parts.forEach(function(p){ p.style.strokeDasharray = "none"; });
+      return;
+    }
+    parts.forEach(function(p){ p.style.strokeDasharray = "1"; p.style.strokeDashoffset = "1"; });
+    grains.push({ el: svg, parts: parts, done: false });
+  });
+
+  function drawGrains(){
+    var vh = innerHeight;
+    for (var i = 0; i < grains.length; i++){
+      var g = grains[i];
+      if (g.done) continue;
+      var r = g.el.getBoundingClientRect();
+      if (r.top > vh || r.bottom < 0) continue;
+      var p = Math.min(1, Math.max(0, (vh - r.top) / (vh * 0.55)));
+      var allDone = true;
+      for (var k = 0; k < g.parts.length; k++){
+        var pk = Math.min(1, Math.max(0, p * 1.45 - k * 0.055));
+        g.parts[k].style.strokeDashoffset = String(1 - pk);
+        if (pk < 1) allDone = false;
+      }
+      if (allDone) g.done = true;
+    }
+  }
+  if (!reduced){
+    var tick = false;
+    function onScroll(){
+      if (tick) return; tick = true;
+      requestAnimationFrame(function(){ drawGrains(); tick = false; });
+    }
+    addEventListener("scroll", onScroll, { passive: true });
+    addEventListener("resize", onScroll);
+    drawGrains();
+  }
+
+  /* ───────── Schwalbenschwanz-Ecken für Projekt-Karten ───────── */
+  var JOINT =
+    '<rect class="ja" x="0" y="0" width="34" height="7"/>' +
+    '<path class="ja" d="M12 7 L9 16 L21 16 L18 7 Z"/>' +
+    '<rect class="jb" x="0" y="0" width="7" height="34"/>' +
+    '<path class="jb" d="M7 24 L16 21 L16 33 L7 30 Z"/>';
+  document.querySelectorAll(".pcard").forEach(function(card){
+    ["tl","tr","br","bl"].forEach(function(pos){
+      var s = document.createElementNS("http://www.w3.org/2000/svg", "svg");
+      s.setAttribute("class", "joint " + pos);
+      s.setAttribute("viewBox", "0 0 34 34");
+      s.setAttribute("aria-hidden", "true");
+      s.innerHTML = JOINT;
+      card.appendChild(s);
+    });
+  });
+
+  /* ───────── Brett-Reveals ───────── */
+  if (reduced){
+    document.querySelectorAll(".rv").forEach(function(el){ el.classList.add("in"); });
+  } else {
+    var io = new IntersectionObserver(function(es){
+      es.forEach(function(e){
+        if (e.isIntersecting){ e.target.classList.add("in"); io.unobserve(e.target); }
+      });
+    }, { threshold: 0.12 });
+    document.querySelectorAll(".rv").forEach(function(el){ io.observe(el); });
+  }
+
+  /* ───────── Anfrage-Formular (Mock) ───────── */
+  var form = document.getElementById("anfrageForm"), ok = document.getElementById("formOk");
+  form.addEventListener("submit", function(e){
+    e.preventDefault();
+    form.classList.add("sent");
+    ok.classList.add("show");
+    ok.scrollIntoView({ behavior: reduced ? "auto" : "smooth", block: "center" });
+  });
+})();
+</script>
+</body>
+</html>

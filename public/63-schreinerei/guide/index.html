@@ -1,0 +1,93 @@
+<!doctype html>
+<html lang="de-CH">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Schreinerei Furrer — Guide &amp; Prompt</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,500;0,9..144,600;1,9..144,400&family=Archivo:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --oak:#A97C4F;--walnut:#6E4A2E;--walnut-deep:#4A3120;--grey:#8E8B85;
+    --paper:#F6F3ED;--pencil:#C24E32;--ink:#2B2119;--line:#DAD2C4;
+    --serif:"Fraunces",Georgia,serif;--sans:"Archivo",system-ui,sans-serif;
+  }
+  *{margin:0;padding:0;box-sizing:border-box}
+  body{font-family:var(--sans);background:var(--paper);color:var(--ink);line-height:1.65}
+  ::selection{background:var(--pencil);color:var(--paper)}
+  .wrap{max-width:820px;margin:0 auto;padding:0 clamp(1.2rem,4vw,2rem)}
+  header{background:var(--walnut-deep);color:var(--paper);padding:4.5rem 0 3.5rem}
+  header .back{display:inline-block;font-size:.8rem;letter-spacing:.16em;text-transform:uppercase;font-weight:600;
+    color:var(--paper);text-decoration:none;border:1px solid rgba(246,243,237,.4);
+    border-radius:99px;padding:.45rem .95rem;margin-bottom:2.2rem}
+  header .back:hover{background:rgba(246,243,237,.12)}
+  .eyebrow{font-size:.72rem;letter-spacing:.34em;text-transform:uppercase;font-weight:700;color:var(--pencil)}
+  h1{font-family:var(--serif);font-weight:500;font-size:clamp(2.2rem,6vw,3.6rem);line-height:1.06;margin:.6rem 0 .8rem}
+  header p{max-width:38em;color:rgba(246,243,237,.85)}
+  main{padding:3.5rem 0 5rem}
+  h2{font-family:var(--serif);font-weight:600;font-size:1.85rem;margin:2.6rem 0 .8rem}
+  h2:first-child{margin-top:0}
+  p{max-width:46em}
+  p+p{margin-top:.8em}
+  em{color:var(--walnut)}
+  code{font-family:ui-monospace,Menlo,monospace;font-size:.86em;background:#ECE4D4;padding:.1em .35em;border-radius:3px}
+  ol,ul{margin:.6em 0 .6em 1.3em;max-width:42em}
+  li{margin:.35em 0}
+  .swatches{display:flex;gap:.5rem;flex-wrap:wrap;margin:1rem 0}
+  .swatches span{width:3.2rem;height:3.2rem;border-radius:4px;display:inline-block;border:1px solid rgba(43,33,25,.15)}
+  pre{
+    background:var(--walnut-deep);color:#F0E8DC;border-radius:6px;
+    padding:1.5rem 1.4rem;margin:1.2rem 0 0;white-space:pre-wrap;
+    font-family:ui-monospace,Menlo,monospace;font-size:.85rem;line-height:1.6;
+    overflow-x:auto;border-left:4px solid var(--pencil);
+  }
+  footer{border-top:1px solid var(--line);padding:1.6rem 0 2.4rem;font-size:.85rem;color:var(--grey)}
+  footer a{color:var(--ink)}
+</style>
+</head>
+<body>
+<header>
+  <div class="wrap">
+    <a class="back" href="/63-schreinerei/">&larr; zurück zur Werkstatt</a>
+    <p class="eyebrow">FABLE/25 · Nº 63 · Guide · Swiss Template Wave</p>
+    <h1>Schreinerei Furrer — Maserung, Schwalbenschwanz, IIII</h1>
+    <p>Template-Aufbau eines handwerklich-ehrlichen Schreinerei-Auftritts — und wie die prozedurale Holzmaserung und die einrastenden Eck-Verzahnungen gebaut sind. Mit vollständigem Repro-Prompt.</p>
+  </div>
+</header>
+<main>
+  <div class="wrap">
+    <h2>1 · Template-Aufbau</h2>
+    <p>Das Template folgt der klassischen KMU-Dramaturgie, aber in Werkstatt-Logik: <em>Hero</em> (Werkstattfoto full-bleed, «Möbel, die bleiben.», CTA «Projekt anfragen») → <em>Leistungen</em> (sechs Felder als hairline-getrenntes Raster) → <em>Projekte</em> (Referenzen bewusst ohne Fotos: Material, Ort, Jahr plus Material-Farbfelder — ehrlicher als Stockbilder) → <em>Werkstatt &amp; Material</em> (Massivholz-Philosophie, Herkunftsliste Schweizer Holz, das Foto hier gross wiederverwendet) → <em>Ablauf</em> in fünf Schritten → <em>Anfrage</em> (Formular-Mock mit Erfolgszustand) → Footer mit Lehrbetrieb-Hinweis. Copy durchgehend de-CH: kein ß, «Aufmass», ein «Merci vielmal». Palette: Eiche <code>#A97C4F</code>, Nussbaum <code>#6E4A2E</code>, Werkstattgrau <code>#8E8B85</code>, Papier <code>#F6F3ED</code> — und als einzige laute Farbe der Zimmermannsbleistift <code>#C24E32</code>. Fonts: Fraunces (charaktervolle Serif mit Holz im Bauch) × Archivo (robuste Grotesk).</p>
+    <div class="swatches" aria-hidden="true">
+      <span style="background:#A97C4F"></span><span style="background:#6E4A2E"></span>
+      <span style="background:#8E8B85"></span><span style="background:#F6F3ED"></span>
+      <span style="background:#C24E32"></span><span style="background:#2B2119"></span>
+    </div>
+
+    <h2>2 · Die Maserung</h2>
+    <p>Das Signature-Detail ist eine <em>prozedurale Holzmaserung</em>: Jede Divider-SVG bekommt per JS eine Kurvenschar aus sieben quadratischen Bézier-Zügen — Grundwellen mit deterministischem Pseudozufall (Mulberry32-Seed pro Divider), die sich um einen «Ast» herum aufwölben: eine Gauss-Beule, deren Vorzeichen von der Linienseite abhängt, plus zwei Ellipsen als Astauge an per <code>data-knot</code> gesetzter Position. Alle Pfade tragen <code>pathLength="1"</code>; ein rAF-gedrosselter Scroll-Handler mappt den Viewport-Fortschritt des Dividers auf <code>stroke-dashoffset</code>, leicht gestaffelt pro Linie — die Maserung <em>zeichnet sich</em>, wie ein Hobel sie freilegt. Auch unter dem Hero-Titel sitzt eine kleine Schar. Bei <code>prefers-reduced-motion</code> wird gar kein Dash gesetzt: alles steht fertig gezeichnet da.</p>
+
+    <h2>3 · Der Schwalbenschwanz</h2>
+    <p>Die Projekt-Karten tragen an allen vier Ecken eine <em>Schwalbenschwanz-Verzahnung</em>: ein SVG-Symbol aus zwei «Brettern» (Leiste mit ausgestelltem Zinken in Eiche, Gegenstück in hellerer Eiche), per JS in jede Karte injiziert und pro Ecke um 90° weitergedreht — dank lokalem Koordinatensystem funktioniert dieselbe Fugen-Verschiebung in jeder Rotation. Im Ruhezustand stehen die beiden Teile 2,5 px auseinander; beim Hover fahren sie mit einem harten <code>cubic-bezier(.3,0,.1,1)</code> in 130 ms zusammen — die Verbindung <em>rastet ein</em>, unterstützt vom 4-px-Hard-Shadow der Karte. Die Reveals der Seite folgen derselben Idee: kurze, exakte Slides (18–22 px) statt schwebender Fades — sauber gefügte Bretter. Bonus-Detail im Ablauf: Zimmermanns-Nummerierung als gestrichelte SVG-Striche in Bleistiftrot, mit IIII statt IV — wie auf dem Abbund.</p>
+
+    <h2>4 · Das Asset</h2>
+    <p>Das Werkstattfoto entstand mit <strong>Nano Banana 2 via Higgsfield MCP</strong> (16:9, 2K): Hobelbank mit Spänen im Abendlicht, Emmentaler Hügel im Fenster, die Sitepalette samt rotem Zimmermannsbleistift explizit im Prompt verankert. Finales Encoding auf 1920×1080 WebP mit <strong>ffmpeg</strong> (<code>scale + crop, libwebp q82</code>, ~175 KB). Im Hero lädt es eager mit <code>fetchpriority="high"</code>, in der Werkstatt-Sektion lazy — beide Male mit echten <code>width/height</code>-Attributen.</p>
+
+    <h2>5 · Repro-Prompt</h2>
+    <pre id="prompt">Build a one-page website for Schreinerei Furrer, a fictional carpentry workshop in Langnau im Emmental, Switzerland (family-run since 1987), as a single self-contained HTML file (Google Fonts only, no libraries; only local asset: assets/werkstatt.webp, 1920×1080). All copy in Swiss German — de-CH, never ß — in an honest, craftsmanlike voice ("Möbel, die bleiben.", "zweimal gemessen, einmal gesägt"). Aesthetic: werkstatt-warm. Palette: oak #A97C4F, walnut #6E4A2E (deep variant #4A3120 for dark bands), workshop grey #8E8B85, paper #F6F3ED, and a single carpenter-pencil red accent #C24E32 for eyebrows, numerals and CTAs. Fonts: Fraunces for characterful serif headlines, Archivo for sturdy body text and uppercase labels.
+
+Generate the hero asset first with Nano Banana 2 via the Higgsfield MCP at 2K, 16:9: a warm Swiss carpentry workshop interior — oak workbench with hand planes and curled shavings, stacked oak and walnut planks, grey machinery, Emmental hills through the windows, one red carpenter pencil, palette locked in the prompt — then encode to 1920×1080 WebP with ffmpeg.
+
+Signature detail 1, "die Maserung": procedural wood-grain dividers between sections. Each divider SVG gets a JS-generated family of seven quadratic-Bézier curves (seeded Mulberry32 randomness) that bulge around a knot — a Gaussian bump flipping sign per side, plus two ellipses as the knot's eye at a data-knot position. All paths have pathLength="1"; an rAF-throttled scroll handler maps each divider's viewport progress to stroke-dashoffset with a small per-line stagger, so the grain draws itself as you scroll. Reduced motion: fully drawn, static.
+
+Signature detail 2, dovetail corners: project cards carry Schwalbenschwanz joints at all four corners — an SVG of two interlocking board pieces (oak strip with flared tail, lighter counterpart), injected by JS and rotated 90° per corner. At rest the pieces sit 2.5px apart; on card hover they snap shut in 130ms with cubic-bezier(.3,0,.1,1) — the joint clicks into place. Page reveals are short, exact 18–22px slides, like cleanly joined boards.
+
+Sections: full-bleed hero photo with walnut gradient, headline, "Projekt anfragen" CTA and a facts strip; Leistungen as a six-cell hairline grid (Einbauschränke, Küchen, Massivholzmöbel, Innenausbau, Restaurationen, Türen/Fenster); Projekte as six text-only reference cards with material/place/year ("Eichenküche, Langnau, 2025") and stacked material color chips instead of photos; Werkstatt &amp; Material with the photo large, a Swiss-wood provenance list and facts; Ablauf in five steps numbered with carpenter's pencil strokes as SVG lines — IIII, not IV; an Anfrage form mock (Projektart select, Zeitrahmen radio pills, Beschreibung, name/contact) with a "Merci vielmal!" success state; footer with +41 34 XXX XX XX, "Wir bilden aus" apprenticeship badge and dummy Impressum. Fixed "← 25" pill to the hub, footer link to the guide. Real image dimensions, lazy loading below the fold, zero console errors from file://, no horizontal scroll at 390px, excellent mobile.</pre>
+  </div>
+</main>
+<footer>
+  <div class="wrap">Schreinerei Furrer · FABLE/25 Nº 63 · <a href="/63-schreinerei/">zur Site</a> · <a href="/">zur Galerie</a></div>
+</footer>
+</body>
+</html>

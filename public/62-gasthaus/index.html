@@ -1,0 +1,874 @@
+<!doctype html>
+<!--
+  BERGRESTAURANT ALPENBLICK — Sonnenterrasse mit Jungfrau-Blick
+  FABLE/25 · site 62 · Swiss SME template wave · single-file showcase
+
+  CHANGELOG
+  PASS 1 — Full build: Bergbeiz-warm template (larch/sky/checked-red/cream/pine),
+           Fraunces + Karla; signature "Höhenlinie": topographic contour bands
+           between sections whose red Wegstück draws with scroll progress from
+           Talstation (1'034 m) to the restaurant (1'642 m), plus fixed
+           Höhenmeter-Ticker pill; Anfahrt block turns the motif into a real
+           Wanderweg-Skizze (Gondel 12 Min / Wanderweg 1 h 20 / Bike 45 Min,
+           letzte Talfahrt); Speisekarte cards with CHF prices + gingham trims;
+           Öffnungszeiten Sommer/Winter tabs; Events; Reservation form mock;
+           de-CH copy (kein ß); reduced-motion fully static; lazy imgs w/ dims.
+  PASS 2 — Design-Iteration nach Playwright-Screenshots: Höhenmeter-Ticker nach
+           unten rechts (kollidierte mit Karten-Text), Anfahrt-Skizze wird auf
+           schmalen Screens horizontal wischbar statt unleserlich skaliert
+           (inkl. Wisch-Hinweis), Kontrast des Sitzplatz-Umschalters erhöht,
+           Emoji-Glyphen durch robuste Text-/SVG-Marker ersetzt, lange
+           Gerichtnamen gegen Zeilenumbruch in der Punktlinie gekürzt.
+  PASS 3 — Mobile-Feinschliff: Wegpunkt-Labels der Höhenlinien-Bänder unter
+           600 px ausgeblendet (bei 390 px unleserlich klein skaliert — die
+           Höhenstory trägt dort der Ticker), Bänder dafür etwas kompakter.
+-->
+<html lang="de-CH">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Bergrestaurant Alpenblick — Sonnenterrasse mit Jungfrau-Blick · 1'642 m ü. M.</title>
+<meta name="description" content="Bergrestaurant Alpenblick oberhalb von Grindelwald, 1'642 m ü. M. — Rösti, Älplermagronen und Wildspezialitäten auf der Sonnenterrasse mit Jungfrau-Blick.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght,SOFT@0,9..144,400..700,50;1,9..144,400..700,50&family=Karla:ital,wght@0,300..700;1,400&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --larch:#A97C4F;
+    --larch-deep:#7E5A37;
+    --sky:#7FA8C9;
+    --red:#C6403B;
+    --red-deep:#A33430;
+    --cream:#F7F2E8;
+    --cream-2:#F0E8D8;
+    --pine:#3E5340;
+    --pine-deep:#2F4032;
+    --ink:#2B241C;
+    --paper:#FCFAF4;
+    --line:#DDD2BE;
+    --disp:"Fraunces",Georgia,serif;
+    --sans:"Karla","Gill Sans",system-ui,sans-serif;
+  }
+  *{margin:0;padding:0;box-sizing:border-box}
+  html{scroll-behavior:smooth}
+  @media (prefers-reduced-motion:reduce){html{scroll-behavior:auto}}
+  body{
+    font-family:var(--sans);background:var(--cream);color:var(--ink);
+    line-height:1.65;font-size:1.02rem;overflow-x:hidden;
+  }
+  ::selection{background:var(--red);color:var(--cream)}
+  img{max-width:100%;display:block}
+  a{color:inherit}
+
+  /* gingham helper — the checked tablecloth as a thin trim */
+  .gingham{
+    height:10px;
+    background:
+      repeating-linear-gradient(90deg,rgba(198,64,59,.55) 0 8px,transparent 8px 16px),
+      repeating-linear-gradient(0deg,rgba(198,64,59,.55) 0 8px,transparent 8px 16px),
+      #FBF7EE;
+  }
+
+  /* ——— fixed chrome ——— */
+  .pill{
+    position:fixed;top:1rem;left:1rem;z-index:70;
+    font-weight:700;font-size:.83rem;letter-spacing:.1em;text-decoration:none;
+    padding:.5rem .95rem;border-radius:99px;
+    background:rgba(47,64,50,.9);color:var(--cream);
+    border:1px solid rgba(247,242,232,.28);backdrop-filter:blur(6px);
+    transition:transform .25s ease;
+  }
+  .pill:hover{transform:translateY(-2px)}
+
+  /* Höhenmeter-Ticker */
+  #ticker{
+    position:fixed;bottom:1rem;right:1rem;z-index:70;
+    display:flex;align-items:center;gap:.6rem;
+    background:rgba(47,64,50,.92);color:var(--cream);
+    border:1px solid rgba(247,242,232,.28);border-radius:99px;
+    padding:.5rem .95rem .5rem .7rem;backdrop-filter:blur(6px);
+    font-size:.85rem;letter-spacing:.04em;
+    opacity:0;transform:translateY(8px);pointer-events:none;
+    transition:opacity .5s ease,transform .5s ease;
+  }
+  #ticker.on{opacity:1;transform:none}
+  #ticker svg{width:26px;height:20px;display:block;flex:none}
+  #ticker b{font-weight:700;font-variant-numeric:tabular-nums;white-space:nowrap}
+  #ticker small{opacity:.7;font-size:.72rem;letter-spacing:.14em;text-transform:uppercase;white-space:nowrap}
+
+  /* ——— hero ——— */
+  .hero{position:relative;min-height:92svh;min-height:92vh;display:flex;align-items:flex-end;overflow:hidden;background:var(--pine-deep)}
+  .hero img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;object-position:center 38%}
+  .hero::after{
+    content:"";position:absolute;inset:0;
+    background:linear-gradient(to bottom,rgba(20,26,21,.28),rgba(20,26,21,0) 34%,rgba(24,20,14,.02) 55%,rgba(24,20,14,.72) 92%);
+  }
+  .hero-inner{
+    position:relative;z-index:2;width:100%;max-width:1120px;margin:0 auto;
+    padding:0 clamp(1.2rem,4vw,2.5rem) clamp(2.4rem,6vh,4.5rem);
+    color:var(--cream);text-shadow:0 2px 26px rgba(15,14,10,.55);
+  }
+  .hero .kicker{
+    display:inline-flex;align-items:center;gap:.7rem;
+    font-size:.78rem;letter-spacing:.3em;text-transform:uppercase;font-weight:700;
+  }
+  .hero .kicker::before{content:"";width:2.4rem;height:2px;background:var(--red);box-shadow:0 0 0 1px rgba(247,242,232,.25)}
+  .hero h1{
+    font-family:var(--disp);font-weight:600;line-height:.98;letter-spacing:.005em;
+    font-size:clamp(2.9rem,8.4vw,6.2rem);margin:.7rem 0 .5rem;
+  }
+  .hero h1 em{font-style:italic;font-weight:400}
+  .hero .sub{
+    font-family:var(--disp);font-style:italic;font-weight:400;
+    font-size:clamp(1.2rem,2.6vw,1.75rem);opacity:.96;
+  }
+  .hero-row{display:flex;align-items:center;gap:1.4rem;flex-wrap:wrap;margin-top:1.8rem}
+  .btn{
+    display:inline-flex;align-items:center;gap:.6rem;text-decoration:none;cursor:pointer;
+    font-family:var(--sans);font-weight:700;letter-spacing:.14em;text-transform:uppercase;font-size:.8rem;
+    background:var(--red);color:#FFF8EE;border:0;border-radius:99px;
+    padding:1rem 1.8rem;box-shadow:0 10px 30px -12px rgba(122,25,22,.7);
+    transition:transform .25s ease,background-color .25s ease;text-shadow:none;
+  }
+  .btn:hover{transform:translateY(-2px);background:var(--red-deep)}
+  .hero .note{font-size:.88rem;opacity:.9}
+  .hero .note b{font-weight:700}
+
+  /* ——— contour band (die Höhenlinie) ——— */
+  .band{position:relative;display:block;width:100%;height:clamp(64px,9vw,104px);background:transparent}
+  .band svg{position:absolute;inset:0;width:100%;height:100%;display:block}
+  .band .topo{fill:none;stroke:var(--larch);stroke-width:1.1;opacity:.35}
+  .band .topo.t2{stroke:var(--pine);opacity:.22}
+  .band .weg{
+    fill:none;stroke:var(--red);stroke-width:2.4;stroke-linecap:round;
+    stroke-dasharray:1 0;
+  }
+  .band .pt{fill:var(--red)}
+  .band .lbl{
+    font-family:var(--sans);font-size:11.5px;letter-spacing:.14em;font-weight:700;
+    fill:var(--larch-deep);text-transform:uppercase;
+  }
+  .band.dark{background:var(--pine)}
+  .band.dark .topo{stroke:var(--cream);opacity:.2}
+  .band.dark .topo.t2{stroke:var(--sky);opacity:.25}
+  .band.dark .lbl{fill:rgba(247,242,232,.75)}
+  .band.dark .weg{stroke:#E4736E}
+  .band.dark .pt{fill:#E4736E}
+
+  /* ——— layout ——— */
+  .wrap{max-width:1120px;margin:0 auto;padding:0 clamp(1.2rem,4vw,2.5rem)}
+  section{padding:clamp(3.6rem,7.5vw,6.2rem) 0;position:relative}
+  .eyebrow{
+    font-size:.74rem;letter-spacing:.34em;text-transform:uppercase;font-weight:700;
+    color:var(--red);display:flex;align-items:center;gap:.9rem;
+  }
+  .eyebrow::before{content:"";width:2.4rem;height:2px;background:var(--red)}
+  h2{
+    font-family:var(--disp);font-weight:600;line-height:1.06;letter-spacing:.005em;
+    font-size:clamp(2rem,4.6vw,3.3rem);margin:.8rem 0 1.1rem;
+  }
+  h2 em{font-style:italic;font-weight:400;color:var(--larch-deep)}
+  .lede{font-size:clamp(1.02rem,1.5vw,1.18rem);max-width:38em}
+  .reveal{opacity:0;transform:translateY(22px);transition:opacity .8s ease,transform .8s cubic-bezier(.2,.7,.2,1)}
+  .reveal.in{opacity:1;transform:none}
+
+  /* ——— Speisekarte ——— */
+  #karte{background:var(--cream)}
+  .karte-head{display:grid;grid-template-columns:1.1fr .9fr;gap:clamp(1.6rem,4vw,3.5rem);align-items:end;margin-bottom:2.6rem}
+  .karte-head .side{font-size:.95rem;color:#5C5142;border-left:3px solid var(--larch);padding-left:1.1rem}
+  .karte-head .side b{color:var(--ink)}
+  .menu-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:clamp(1rem,2.2vw,1.6rem)}
+  .mcard{
+    background:var(--paper);border:1px solid var(--line);border-radius:10px;overflow:hidden;
+    display:flex;flex-direction:column;box-shadow:0 18px 40px -30px rgba(63,48,30,.45);
+    transition:transform .3s ease,box-shadow .3s ease;
+  }
+  .mcard:hover{transform:translateY(-4px);box-shadow:0 26px 48px -28px rgba(63,48,30,.55)}
+  .mcard header{padding:1.3rem 1.4rem 1rem;border-bottom:1px dashed var(--line)}
+  .mcard header .tag{
+    font-size:.68rem;letter-spacing:.26em;text-transform:uppercase;font-weight:700;color:var(--larch-deep);
+    display:flex;justify-content:space-between;align-items:center;gap:.6rem;
+  }
+  .mcard header .tag .season{color:var(--sky);letter-spacing:.14em}
+  .mcard h3{font-family:var(--disp);font-weight:600;font-size:1.55rem;line-height:1.1;margin-top:.35rem}
+  .mcard ul{list-style:none;padding:0.6rem 1.4rem 1.4rem;display:flex;flex-direction:column}
+  .mcard li{padding:.75rem 0;border-bottom:1px dotted var(--line)}
+  .mcard li:last-child{border-bottom:0}
+  .dish{display:flex;align-items:baseline;gap:.5rem}
+  .dish .n{font-weight:700}
+  .dish .dots{flex:1;border-bottom:2px dotted #C9BBA0;transform:translateY(-4px);min-width:1rem}
+  .dish .p{font-family:var(--disp);font-weight:600;font-size:1.05rem;white-space:nowrap;color:var(--pine-deep)}
+  .dish-desc{font-size:.88rem;color:#6A5E4D;margin-top:.15rem;line-height:1.5}
+  .fav{display:inline-block;font-size:.62rem;letter-spacing:.16em;text-transform:uppercase;font-weight:700;
+    color:#FFF8EE;background:var(--red);border-radius:99px;padding:.14rem .55rem;vertical-align:2px;margin-left:.4rem}
+  .karte-note{margin-top:1.8rem;font-size:.88rem;color:#6A5E4D;display:flex;gap:.6rem;align-items:baseline;max-width:52em}
+  .karte-note::before{content:"※";color:var(--larch);font-weight:700}
+
+  /* ——— Terrasse & Stube ——— */
+  #haus{background:var(--pine);color:var(--cream)}
+  #haus .eyebrow{color:#E4736E}
+  #haus .eyebrow::before{background:#E4736E}
+  #haus h2 em{color:var(--sky)}
+  .haus-grid{display:grid;grid-template-columns:1.05fr .95fr;gap:clamp(1.8rem,4.5vw,4rem);align-items:start}
+  .haus-grid .lede{color:rgba(247,242,232,.88)}
+  .haus-grid p+p{margin-top:.9em}
+  .stimmung{font-family:var(--disp);font-style:italic;font-size:1.25rem;line-height:1.5;
+    border-left:3px solid var(--larch);padding-left:1.1rem;margin-top:1.6rem;color:#EAD9BF}
+  .zeiten{
+    background:rgba(247,242,232,.06);border:1px solid rgba(247,242,232,.2);
+    border-radius:12px;overflow:hidden;
+  }
+  .tabs{display:flex;gap:0;border-bottom:1px solid rgba(247,242,232,.2)}
+  .tabs button{
+    flex:1;font-family:var(--sans);font-weight:700;letter-spacing:.16em;text-transform:uppercase;font-size:.78rem;
+    background:transparent;color:rgba(247,242,232,.6);border:0;padding:.95rem .5rem;cursor:pointer;
+    border-bottom:3px solid transparent;transition:color .3s ease,border-color .3s ease;
+  }
+  .tabs button[aria-selected="true"]{color:var(--cream);border-bottom-color:var(--red)}
+  .zeiten table{width:100%;border-collapse:collapse;font-size:.95rem}
+  .zeiten td,.zeiten th{padding:.72rem 1.2rem;text-align:left;border-bottom:1px dashed rgba(247,242,232,.16)}
+  .zeiten tr:last-child td{border-bottom:0}
+  .zeiten th{font-weight:700;width:42%}
+  .zeiten .ruhe{color:#E4736E;font-weight:700}
+  .zeiten .z-note{padding:.9rem 1.2rem 1.1rem;font-size:.85rem;color:rgba(247,242,232,.75);border-top:1px solid rgba(247,242,232,.2)}
+  .zeiten .z-note b{color:#EAD9BF}
+  .zpane[hidden]{display:none}
+
+  /* ——— Anfahrt ——— */
+  #anfahrt{background:var(--cream-2)}
+  .skizze{
+    background:var(--paper);border:1px solid var(--line);border-radius:12px;
+    padding:clamp(.8rem,2vw,1.6rem);margin-top:2.2rem;
+    box-shadow:0 24px 50px -36px rgba(63,48,30,.5);
+  }
+  .skizze .scroller{overflow-x:auto;-webkit-overflow-scrolling:touch}
+  .skizze svg{width:100%;height:auto;display:block}
+  .skizze .swipe-hint{display:none;margin:.6rem .2rem 0;font-size:.78rem;letter-spacing:.14em;
+    text-transform:uppercase;font-weight:700;color:#8B7B60}
+  @media (max-width:700px){
+    .skizze svg{width:680px;max-width:none}
+    .skizze .swipe-hint{display:block}
+  }
+  .skizze .grid-l{stroke:#E7DCC6;stroke-width:1}
+  .skizze .axis{font-family:var(--sans);font-size:11px;fill:#8B7B60;letter-spacing:.08em}
+  .skizze .stn{font-family:var(--sans);font-size:12px;font-weight:700;fill:var(--ink);letter-spacing:.05em}
+  .skizze .stn.sub{font-weight:400;fill:#6A5E4D;font-size:11px}
+  .skizze .terrain{fill:#EDE3CF;stroke:var(--larch);stroke-width:1.6}
+  .skizze .route{fill:none;stroke-linecap:round;stroke-linejoin:round}
+  .skizze .r-gondel{stroke:var(--sky);stroke-width:2.6}
+  .skizze .r-wander{stroke:var(--red);stroke-width:2.4;stroke-dasharray:6 5}
+  .skizze .r-bike{stroke:var(--pine);stroke-width:2.4;stroke-dasharray:1.5 6}
+  .skizze .cab{fill:var(--sky);stroke:var(--pine-deep);stroke-width:1}
+  .skizze .dot{fill:var(--red);stroke:var(--paper);stroke-width:2}
+  .wege{display:grid;grid-template-columns:repeat(3,1fr);gap:clamp(.9rem,2vw,1.4rem);margin-top:1.6rem}
+  .weg-card{background:var(--paper);border:1px solid var(--line);border-radius:10px;padding:1.2rem 1.25rem}
+  .weg-card .k{display:flex;align-items:center;gap:.6rem;font-weight:700;letter-spacing:.02em}
+  .weg-card .k::before{content:"";width:1.5rem;height:0;border-top:3px solid var(--sky);flex:none}
+  .weg-card.wandern .k::before{border-top:3px dashed var(--red)}
+  .weg-card.bike .k::before{border-top:3px dotted var(--pine)}
+  .weg-card .t{font-family:var(--disp);font-weight:600;font-size:1.7rem;margin:.25rem 0 .2rem}
+  .weg-card p{font-size:.88rem;color:#6A5E4D;line-height:1.5}
+  .talfahrt{
+    margin-top:1.6rem;display:flex;gap:.9rem;align-items:flex-start;
+    background:#F6E7E0;border:1px solid #E5C0B4;border-left:5px solid var(--red);
+    border-radius:10px;padding:1rem 1.2rem;font-size:.93rem;max-width:46em;
+  }
+  .talfahrt b{color:var(--red-deep)}
+  .talfahrt svg{width:22px;height:22px;flex:none;margin-top:.15rem;color:var(--red-deep)}
+
+  /* ——— Events ——— */
+  #events{background:var(--cream)}
+  .ev-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:clamp(1rem,2.2vw,1.6rem);margin-top:2.4rem}
+  .ev{
+    position:relative;background:var(--paper);border:1px solid var(--line);border-radius:10px;
+    padding:1.6rem 1.5rem 1.5rem;display:flex;flex-direction:column;gap:.55rem;overflow:hidden;
+    transition:transform .3s ease;
+  }
+  .ev:hover{transform:translateY(-4px)}
+  .ev::before{content:"";position:absolute;top:0;left:0;right:0;height:6px;
+    background:repeating-linear-gradient(90deg,var(--red) 0 10px,#E9B6B0 10px 20px)}
+  .ev .when{font-size:.7rem;letter-spacing:.24em;text-transform:uppercase;font-weight:700;color:var(--larch-deep)}
+  .ev h3{font-family:var(--disp);font-weight:600;font-size:1.5rem;line-height:1.12}
+  .ev p{font-size:.92rem;color:#5C5142}
+  .ev .preis{margin-top:auto;padding-top:.8rem;border-top:1px dotted var(--line);
+    font-family:var(--disp);font-weight:600;color:var(--pine-deep)}
+
+  /* ——— Reservation ——— */
+  #reservation{background:var(--pine-deep);color:var(--cream)}
+  #reservation .eyebrow{color:#E4736E}
+  #reservation .eyebrow::before{background:#E4736E}
+  #reservation h2 em{color:var(--sky)}
+  .res-grid{display:grid;grid-template-columns:.95fr 1.05fr;gap:clamp(1.8rem,4.5vw,4rem);align-items:start}
+  .res-grid .lede{color:rgba(247,242,232,.86)}
+  .res-side{margin-top:1.4rem;display:flex;flex-direction:column;gap:.7rem;font-size:.95rem;color:rgba(247,242,232,.85)}
+  .res-side b{color:#EAD9BF}
+  form.res{
+    background:rgba(247,242,232,.06);border:1px solid rgba(247,242,232,.22);
+    border-radius:12px;padding:clamp(1.2rem,2.6vw,1.8rem);display:grid;gap:1rem;
+  }
+  .frow{display:grid;grid-template-columns:1fr 1fr;gap:1rem}
+  form.res label{display:flex;flex-direction:column;gap:.35rem;
+    font-size:.72rem;letter-spacing:.2em;text-transform:uppercase;font-weight:700;color:rgba(247,242,232,.75)}
+  form.res input,form.res select{
+    font-family:var(--sans);font-size:1rem;color:var(--ink);
+    background:var(--paper);border:1px solid var(--line);border-radius:8px;
+    padding:.72rem .85rem;width:100%;min-width:0;
+  }
+  form.res input:focus,form.res select:focus{outline:3px solid rgba(127,168,201,.55);outline-offset:1px}
+  .seg{display:flex;background:var(--paper);border:1px solid var(--line);border-radius:8px;overflow:hidden}
+  .seg label{flex:1;flex-direction:row;justify-content:center;align-items:center;gap:.5rem;cursor:pointer;
+    padding:.72rem .5rem;color:#4A4136;font-size:.78rem;letter-spacing:.12em;position:relative}
+  .seg label::before{content:"";width:.6rem;height:.6rem;border-radius:50%;border:2px solid #A99878;flex:none}
+  .seg label:has(input:checked)::before{background:#1E2B36;border-color:#1E2B36}
+  .seg input{position:absolute;opacity:0;pointer-events:none;width:auto}
+  .seg label:has(input:checked){background:var(--sky);color:#1E2B36}
+  .seg label:first-child{border-right:1px solid var(--line)}
+  .seg label:has(input:focus-visible){outline:3px solid rgba(127,168,201,.55);outline-offset:-3px}
+  form.res .btn{justify-content:center;width:100%}
+  .res-ok{
+    display:none;background:rgba(127,168,201,.16);border:1px solid rgba(127,168,201,.5);
+    border-radius:8px;padding:.9rem 1.1rem;font-size:.93rem;color:#DCE9F3;
+  }
+  .res-ok.show{display:block}
+  .res-hint{font-size:.8rem;color:rgba(247,242,232,.6);text-align:center}
+
+  /* ——— footer ——— */
+  footer{background:var(--pine-deep);color:rgba(247,242,232,.78);font-size:.9rem;padding-bottom:2.2rem}
+  footer .wrap{border-top:1px solid rgba(247,242,232,.16);padding-top:2rem;
+    display:grid;grid-template-columns:1.2fr 1fr 1fr;gap:clamp(1.4rem,3vw,2.5rem)}
+  footer .brand{font-family:var(--disp);font-weight:600;font-size:1.25rem;color:var(--cream);letter-spacing:.02em}
+  footer .brand small{display:block;font-family:var(--sans);font-weight:400;font-size:.8rem;
+    letter-spacing:.14em;text-transform:uppercase;color:rgba(247,242,232,.55);margin-top:.3rem}
+  footer h4{font-size:.7rem;letter-spacing:.26em;text-transform:uppercase;color:#EAD9BF;margin-bottom:.6rem}
+  footer ul{list-style:none}
+  footer li{padding:.16rem 0}
+  footer a{color:var(--cream);text-decoration:none;border-bottom:1px solid rgba(228,115,110,.7)}
+  footer .fin{grid-column:1/-1;display:flex;justify-content:space-between;gap:1rem;flex-wrap:wrap;
+    border-top:1px solid rgba(247,242,232,.12);margin-top:1.6rem;padding-top:1.3rem;font-size:.82rem;color:rgba(247,242,232,.55)}
+
+  /* ——— responsive ——— */
+  @media (max-width:940px){
+    .menu-grid,.ev-grid,.wege{grid-template-columns:1fr 1fr}
+    .karte-head,.haus-grid,.res-grid{grid-template-columns:1fr}
+    footer .wrap{grid-template-columns:1fr 1fr}
+  }
+  @media (max-width:600px){
+    .menu-grid,.ev-grid,.wege{grid-template-columns:1fr}
+    .frow{grid-template-columns:1fr}
+    footer .wrap{grid-template-columns:1fr}
+    .hero-row{gap:1rem}
+    .band{height:52px}
+    .band .lbl,.band .pt{display:none}
+    #ticker{bottom:.8rem;right:.8rem;padding:.42rem .8rem .42rem .6rem;font-size:.78rem}
+  }
+  @media (prefers-reduced-motion:reduce){
+    .reveal{opacity:1;transform:none;transition:none}
+    .mcard:hover,.ev:hover,.btn:hover,.pill:hover{transform:none}
+    #ticker{transition:none}
+    .band .weg{stroke-dashoffset:0!important;stroke-dasharray:1 0!important}
+    .skizze .route{stroke-dashoffset:0!important}
+  }
+</style>
+</head>
+<body>
+
+<a class="pill" href="/">&larr; 25</a>
+
+<div id="ticker" aria-hidden="true">
+  <svg viewBox="0 0 26 20" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M1 17 8 7l4 5 5-8 8 13" />
+    <path d="M1 19.2h24" opacity=".45"/>
+  </svg>
+  <span><b id="hm">1'034 m</b> <small>ü. M. · Aufstieg</small></span>
+</div>
+
+<!-- ═══════════ HERO ═══════════ -->
+<header class="hero">
+  <img src="assets/terrasse.webp" width="1920" height="1080" alt="Sonnenterrasse des Bergrestaurants Alpenblick: Rösti mit Spiegelei auf kariertem Tischtuch, dahinter Eiger, Mönch und Jungfrau" fetchpriority="high">
+  <div class="hero-inner">
+    <p class="kicker">Oberhalb von Grindelwald · 1'642 m ü. M.</p>
+    <h1>Bergrestaurant<br><em>Alpenblick</em></h1>
+    <p class="sub">Sonnenterrasse mit Jungfrau-Blick — und Rösti, die den Aufstieg wert ist.</p>
+    <div class="hero-row">
+      <a class="btn" href="#reservation">Tisch reservieren</a>
+      <p class="note">Heute geöffnet · Küche bis <b>15.30 Uhr</b> · Gondel ab Talstation alle 20 Minuten</p>
+    </div>
+  </div>
+</header>
+
+<!-- Höhenlinie · Band 1: Talstation -->
+<div class="band" aria-hidden="true">
+  <svg viewBox="0 0 1200 90" preserveAspectRatio="none">
+    <path class="topo" d="M0 62 C 140 42, 260 78, 420 58 S 720 30, 900 52 S 1100 74, 1200 50"/>
+    <path class="topo t2" d="M0 78 C 180 60, 320 88, 500 72 S 820 48, 1010 66 S 1140 82, 1200 68"/>
+    <path class="weg" data-weg d="M0 70 C 160 52, 300 82, 470 64 S 760 38, 940 58 S 1120 78, 1200 58"/>
+    <circle class="pt" cx="14" cy="68.5" r="4"/>
+    <text class="lbl" x="30" y="58">Talstation Grund · 1'034 m</text>
+  </svg>
+</div>
+
+<!-- ═══════════ SPEISEKARTE ═══════════ -->
+<section id="karte">
+  <div class="wrap">
+    <div class="karte-head reveal">
+      <div>
+        <p class="eyebrow">Die Speisekarte</p>
+        <h2>Was oben auf den Tisch kommt,<br>hat unten <em>Wurzeln</em>.</h2>
+        <p class="lede">Der Käse kommt von der Alp nebenan, die Kartoffeln aus dem Tal, das Wild im Herbst aus den eigenen Wäldern. Wir kochen, was das Bergell — pardon, das Berner Oberland — hergibt. Und davon reichlich.</p>
+      </div>
+      <p class="side">Alle Preise in <b>CHF, inkl. MwSt.</b> Halbe Portionen für halbe Wanderer: gerne. Vegetarisches ist mit <b>„Gärtner“</b> angeschrieben — fragen Sie das Terrassenpersonal, es beisst nicht.</p>
+    </div>
+
+    <div class="menu-grid">
+      <article class="mcard reveal">
+        <div class="gingham" aria-hidden="true"></div>
+        <header>
+          <p class="tag"><span>Vom Herd</span></p>
+          <h3>Rösti-Klassiker</h3>
+        </header>
+        <ul>
+          <li>
+            <div class="dish"><span class="n">Rösti Alpenblick<span class="fav">Hüttenliebling</span></span><span class="dots"></span><span class="p">CHF 24.50</span></div>
+            <p class="dish-desc">Mit Speck, Bergkäse und Spiegelei — so wie auf dem Foto, nur heisser.</p>
+          </li>
+          <li>
+            <div class="dish"><span class="n">Gärtner-Rösti</span><span class="dots"></span><span class="p">CHF 22.00</span></div>
+            <p class="dish-desc">Saisongemüse, Alpkäse, Kräuter aus dem Terrassenkistli.</p>
+          </li>
+          <li>
+            <div class="dish"><span class="n">Rösti mit Bratwurst</span><span class="dots"></span><span class="p">CHF 25.50</span></div>
+            <p class="dish-desc">Kalbsbratwurst vom Dorfmetzger, Zwiebelsauce nach Grossmutter.</p>
+          </li>
+        </ul>
+      </article>
+
+      <article class="mcard reveal">
+        <div class="gingham" aria-hidden="true"></div>
+        <header>
+          <p class="tag"><span>Aus der Alpküche</span></p>
+          <h3>Bewährtes &amp; Süsses</h3>
+        </header>
+        <ul>
+          <li>
+            <div class="dish"><span class="n">Älplermagronen</span><span class="dots"></span><span class="p">CHF 21.50</span></div>
+            <p class="dish-desc">Mit Speck, Rahm, geröstetem Zwiebelring und Apfelmus. Kompromisslos.</p>
+          </li>
+          <li>
+            <div class="dish"><span class="n">Käseschnitte</span><span class="dots"></span><span class="p">CHF 19.50</span></div>
+            <p class="dish-desc">„Bärgler“: Buurebrot, viel Alpkäse, wahlweise mit Ei oder Schinken.</p>
+          </li>
+          <li>
+            <div class="dish"><span class="n">Meringue mit Nidle</span><span class="dots"></span><span class="p">CHF 11.50</span></div>
+            <p class="dish-desc">Doppelrahm aus dem Tal. Danach ist die Talfahrt gemütlicher als der Aufstieg.</p>
+          </li>
+        </ul>
+      </article>
+
+      <article class="mcard reveal">
+        <div class="gingham" aria-hidden="true"></div>
+        <header>
+          <p class="tag"><span>Wildspezialitäten</span><span class="season">Sept.–Nov.</span></p>
+          <h3>Wild &amp; Saison</h3>
+        </header>
+        <ul>
+          <li>
+            <div class="dish"><span class="n">Rehpfeffer</span><span class="dots"></span><span class="p">CHF 34.50</span></div>
+            <p class="dish-desc">Nach Grossvaters Art: hausgemachte Spätzli, Rotkraut, glasierte Marroni, Preiselbeeren.</p>
+          </li>
+          <li>
+            <div class="dish"><span class="n">Hirschentrecôte</span><span class="dots"></span><span class="p">CHF 42.00</span></div>
+            <p class="dish-desc">Rosa gebraten, Wacholderjus, Kartoffelstock mit brauner Butter.</p>
+          </li>
+          <li>
+            <div class="dish"><span class="n">Kürbissuppe</span><span class="dots"></span><span class="p">CHF 12.50</span></div>
+            <p class="dish-desc">Mit Kernenöl und Buurebrot — der warme Auftakt, wenn der Nebel im Tal bleibt und Sie oben in der Sonne sitzen.</p>
+          </li>
+        </ul>
+      </article>
+    </div>
+
+    <p class="karte-note reveal">Deklaration: Fleisch aus der Schweiz, Wild aus einheimischer Jagd. Über Zutaten, die Allergien auslösen können, gibt Ihnen unser Personal gerne Auskunft.</p>
+  </div>
+</section>
+
+<!-- Höhenlinie · Band 2 -->
+<div class="band dark" aria-hidden="true">
+  <svg viewBox="0 0 1200 90" preserveAspectRatio="none">
+    <path class="topo" d="M0 58 C 150 76, 300 40, 470 60 S 760 80, 950 52 S 1120 36, 1200 54"/>
+    <path class="topo t2" d="M0 74 C 190 88, 360 58, 540 74 S 840 90, 1030 66 S 1150 54, 1200 66"/>
+    <path class="weg" data-weg d="M0 66 C 170 82, 330 48, 500 66 S 790 84, 970 58 S 1130 44, 1200 60"/>
+    <circle class="pt" cx="14" cy="66" r="4"/>
+    <text class="lbl" x="30" y="54">Chäsweidli · 1'287 m</text>
+  </svg>
+</div>
+
+<!-- ═══════════ TERRASSE & STUBE ═══════════ -->
+<section id="haus">
+  <div class="wrap haus-grid">
+    <div class="reveal">
+      <p class="eyebrow">Terrasse &amp; Stube</p>
+      <h2>Draussen die Jungfrau,<br>drinnen das <em>Cheminée</em>.</h2>
+      <p class="lede">Achtzig Plätze an der Sonne, karierte Tischtücher, und ein Panorama, für das andere Postkarten kaufen: Eiger, Mönch und Jungfrau sitzen bei uns gratis mit am Tisch.</p>
+      <p class="lede">Und wenn das Wetter umschlägt — das tut es hier oben gern und ohne Voranmeldung — rücken wir in der Arvenstube zusammen. Vierzig Plätze, ein Kachelofen von 1928 und der Geruch von altem Holz und frischem Kafi.</p>
+      <p class="stimmung">„Bei uns hat niemand je gefragt, ob der Tisch am Fenster frei ist. Hier oben ist jeder Tisch am Fenster.“ — Familie Brawand, Gastgeber seit drei Generationen</p>
+    </div>
+    <div class="reveal">
+      <div class="zeiten">
+        <div class="tabs" role="tablist" aria-label="Öffnungszeiten">
+          <button type="button" role="tab" id="tab-so" aria-selected="true" aria-controls="pane-so">Sommer <span style="font-weight:400">(Juni–Okt.)</span></button>
+          <button type="button" role="tab" id="tab-wi" aria-selected="false" aria-controls="pane-wi">Winter <span style="font-weight:400">(Dez.–März)</span></button>
+        </div>
+        <div class="zpane" id="pane-so" role="tabpanel" aria-labelledby="tab-so">
+          <table>
+            <tr><th>Montag</th><td class="ruhe">Ruhetag — auch der Berg schnauft mal durch</td></tr>
+            <tr><th>Dienstag – Sonntag</th><td>08.30 – 17.30 Uhr</td></tr>
+            <tr><th>Warme Küche</th><td>11.30 – 15.30 Uhr</td></tr>
+            <tr><th>Fondue-Freitag</th><td>bis 22.00 Uhr (Juli &amp; August)</td></tr>
+          </table>
+          <p class="z-note"><b>Letzte Talfahrt der Gondel: 17.45 Uhr.</b> Wer sie verpasst, wandert bei Abendlicht — oder bleibt auf ein zweites Dessert.</p>
+        </div>
+        <div class="zpane" id="pane-wi" role="tabpanel" aria-labelledby="tab-wi" hidden>
+          <table>
+            <tr><th>Montag – Mittwoch</th><td class="ruhe">geschlossen</td></tr>
+            <tr><th>Donnerstag – Sonntag</th><td>09.30 – 16.30 Uhr</td></tr>
+            <tr><th>Warme Küche</th><td>11.30 – 15.00 Uhr</td></tr>
+            <tr><th>Fondue-Abende</th><td>Freitag &amp; Samstag ab 18.00 Uhr, auf Reservation</td></tr>
+          </table>
+          <p class="z-note"><b>Letzte Talfahrt der Gondel: 16.45 Uhr</b> — an Fondue-Abenden Extrafahrt um 22.15 Uhr. Schlitten kann man bei uns mieten, Mut bringt man selber mit.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- Höhenlinie · Band 3 -->
+<div class="band" aria-hidden="true">
+  <svg viewBox="0 0 1200 90" preserveAspectRatio="none">
+    <path class="topo" d="M0 52 C 160 34, 320 70, 500 50 S 800 26, 980 48 S 1130 66, 1200 46"/>
+    <path class="topo t2" d="M0 70 C 200 52, 380 84, 560 66 S 860 44, 1040 62 S 1160 76, 1200 62"/>
+    <path class="weg" data-weg d="M0 60 C 180 44, 350 76, 530 58 S 830 34, 1000 54 S 1140 70, 1200 52"/>
+    <circle class="pt" cx="14" cy="60" r="4"/>
+    <text class="lbl" x="30" y="48">Läger · 1'455 m</text>
+  </svg>
+</div>
+
+<!-- ═══════════ ANFAHRT ═══════════ -->
+<section id="anfahrt">
+  <div class="wrap">
+    <div class="reveal">
+      <p class="eyebrow">Anfahrt &amp; Aufstieg</p>
+      <h2>Drei Wege hinauf.<br>Einer davon <em>ohne Schwitzen</em>.</h2>
+      <p class="lede">Ab Talstation Grund (1'034 m ü. M.), fünf Gehminuten vom Bahnhof Grindelwald. 608 Höhenmeter liegen zwischen Ihnen und der ersten Rösti — die Skizze zeigt, wie schnell es geht.</p>
+    </div>
+
+    <figure class="skizze reveal">
+      <div class="scroller">
+      <svg viewBox="0 0 960 400" role="img" aria-labelledby="skizzeTitle">
+        <title id="skizzeTitle">Wanderweg-Skizze: drei Routen von der Talstation Grund auf 1'034 Metern zum Bergrestaurant Alpenblick auf 1'642 Metern — Gondelbahn 12 Minuten, Wanderweg 1 Stunde 20 Minuten, Bike 45 Minuten</title>
+        <!-- height grid -->
+        <g>
+          <line class="grid-l" x1="70" y1="330" x2="930" y2="330"/>
+          <line class="grid-l" x1="70" y1="250" x2="930" y2="250"/>
+          <line class="grid-l" x1="70" y1="170" x2="930" y2="170"/>
+          <line class="grid-l" x1="70" y1="90"  x2="930" y2="90"/>
+          <text class="axis" x="62" y="334" text-anchor="end">1'000 m</text>
+          <text class="axis" x="62" y="254" text-anchor="end">1'200 m</text>
+          <text class="axis" x="62" y="174" text-anchor="end">1'400 m</text>
+          <text class="axis" x="62" y="94"  text-anchor="end">1'600 m</text>
+        </g>
+        <!-- terrain profile -->
+        <path class="terrain" d="M70 316 C 180 310, 240 292, 330 262 S 480 196, 570 168 S 730 112, 800 92 L 870 74 L 930 70 L 930 400 L 70 400 Z"/>
+        <!-- routes -->
+        <path class="route r-bike" data-route d="M78 312 C 170 306, 230 286, 300 268 S 430 224, 500 204 S 620 154, 700 128 S 810 88, 862 76"/>
+        <path class="route r-wander" data-route d="M78 312 C 150 300, 200 296, 260 278 S 350 236, 420 228 S 520 186, 590 176 S 700 122, 760 116 S 840 86, 862 76"/>
+        <path class="route r-gondel" data-route d="M78 306 L 862 68"/>
+        <!-- gondola cabins -->
+        <g data-cabs>
+          <g transform="translate(274,244)"><line x1="0" y1="-6" x2="0" y2="0" stroke="#2F4032" stroke-width="1"/><rect class="cab" x="-7" y="0" width="14" height="11" rx="2.5"/></g>
+          <g transform="translate(470,185)"><line x1="0" y1="-6" x2="0" y2="0" stroke="#2F4032" stroke-width="1"/><rect class="cab" x="-7" y="0" width="14" height="11" rx="2.5"/></g>
+          <g transform="translate(666,125)"><line x1="0" y1="-6" x2="0" y2="0" stroke="#2F4032" stroke-width="1"/><rect class="cab" x="-7" y="0" width="14" height="11" rx="2.5"/></g>
+        </g>
+        <!-- stations -->
+        <circle class="dot" cx="78" cy="312" r="6"/>
+        <text class="stn" x="78" y="352">Talstation Grund</text>
+        <text class="stn sub" x="78" y="368">1'034 m · Bahnhof 5 Min</text>
+        <circle class="dot" cx="862" cy="72" r="7"/>
+        <g>
+          <path d="M862 34 l0 22" stroke="#C6403B" stroke-width="2"/>
+          <path d="M862 34 l16 5 -16 5 Z" fill="#C6403B"/>
+        </g>
+        <text class="stn" x="854" y="30" text-anchor="end">Bergrestaurant Alpenblick</text>
+        <text class="stn sub" x="854" y="46" text-anchor="end">1'642 m ü. M. · Sonnenterrasse</text>
+      </svg>
+      </div>
+      <p class="swipe-hint" aria-hidden="true">&rarr; Skizze wischen</p>
+    </figure>
+
+    <div class="wege">
+      <div class="weg-card gondel reveal">
+        <p class="k">Gondelbahn</p>
+        <p class="t">12 Min</p>
+        <p>Ab Talstation Grund, alle 20 Minuten. Retourbillett CHF 32.–, mit Gästekarte CHF 24.–. Kinderwagen und Grosis fahren gratis gut gelaunt mit.</p>
+      </div>
+      <div class="weg-card wandern reveal">
+        <p class="k">Wanderweg Nr. 36</p>
+        <p class="t">1 h 20</p>
+        <p>Über Chäsweidli und Läger, 608 Höhenmeter, gut markiert. Im Sommer durch den Lärchenwald, im Herbst durch Gold. Gutes Schuhwerk, guter Appetit.</p>
+      </div>
+      <div class="weg-card bike reveal">
+        <p class="k">Bike-Route</p>
+        <p class="t">45 Min</p>
+        <p>Alpstrasse ab Grund, Kies, stetig steigend. E-Bike-Ladestation beim Haus — der Akku ruht, während Sie Älplermagronen essen.</p>
+      </div>
+    </div>
+
+    <p class="talfahrt reveal">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3.2 2.4"/></svg>
+      <span><b>Letzte Talfahrt:</b> Sommer 17.45 Uhr, Winter 16.45 Uhr. Die Gondel wartet nicht — unsere Stube schon. Bei Betriebsunterbruch der Bahn informiert die Talstation unter +41 33 555 62 00.</span>
+    </p>
+  </div>
+</section>
+
+<!-- Höhenlinie · Band 4 -->
+<div class="band" aria-hidden="true" style="background:var(--cream)">
+  <svg viewBox="0 0 1200 90" preserveAspectRatio="none">
+    <path class="topo" d="M0 46 C 170 62, 340 30, 520 46 S 820 68, 1000 42 S 1140 28, 1200 44"/>
+    <path class="topo t2" d="M0 64 C 210 80, 400 48, 580 64 S 880 84, 1060 58 S 1170 46, 1200 60"/>
+    <path class="weg" data-weg d="M0 54 C 190 70, 370 38, 550 54 S 850 76, 1030 50 S 1150 36, 1200 50"/>
+    <circle class="pt" cx="14" cy="54" r="4"/>
+    <text class="lbl" x="30" y="42">Sunnegg · 1'588 m</text>
+  </svg>
+</div>
+
+<!-- ═══════════ EVENTS ═══════════ -->
+<section id="events">
+  <div class="wrap">
+    <div class="reveal">
+      <p class="eyebrow">Anlässe</p>
+      <h2>Manchmal machen wir<br>den Berg <em>länger auf</em>.</h2>
+      <p class="lede">Ein paar Abende und Morgen im Jahr gehören nicht dem Mittagsservice, sondern dem besonderen Moment. Platzzahl beschränkt — der Berg baut ja nicht an.</p>
+    </div>
+    <div class="ev-grid">
+      <article class="ev reveal">
+        <p class="when">Winter · Freitag &amp; Samstag</p>
+        <h3>Fondue-Abende in der Arvenstube</h3>
+        <p>Hausmischung aus drei Alpkäsen, Kirsch vom Brienzersee, danach Schlittenfahrt oder Extragondel um 22.15 Uhr. Reservieren Sie warm an — der Kachelofen tut es auch.</p>
+        <p class="preis">CHF 39.50 pro Person, inkl. Talfahrt</p>
+      </article>
+      <article class="ev reveal">
+        <p class="when">Juli &amp; August · Sonntag, 05.30 Uhr</p>
+        <h3>Sonnenaufgangs-Frühstück</h3>
+        <p>Erste Gondel im Dunkeln, Zopf und Alpbutter, wenn der Eiger rot anläuft. Wer das einmal gesehen hat, versteht, warum wir hier oben geblieben sind.</p>
+        <p class="preis">CHF 45.00 inkl. Bergfahrt &amp; Buffet</p>
+      </article>
+      <article class="ev reveal">
+        <p class="when">Ganzjährig · auf Anfrage</p>
+        <h3>Private Anlässe</h3>
+        <p>Hochzeiten, Geburtstage, Firmenessen: Stube für 40, Terrasse für 80 Gäste. Wir kochen, die Jungfrau macht die Dekoration. Menüvorschläge ab Küche, nicht ab Stange.</p>
+        <p class="preis">Offerte innert zwei Tagen</p>
+      </article>
+    </div>
+  </div>
+</section>
+
+<!-- Höhenlinie · Band 5: Ankunft -->
+<div class="band dark" aria-hidden="true" style="background:var(--pine-deep)">
+  <svg viewBox="0 0 1200 90" preserveAspectRatio="none">
+    <path class="topo" d="M0 56 C 180 40, 360 70, 540 52 S 840 28, 1020 50 S 1150 62, 1200 48"/>
+    <path class="topo t2" d="M0 72 C 220 56, 420 86, 600 68 S 900 46, 1070 64 S 1170 74, 1200 62"/>
+    <path class="weg" data-weg d="M0 64 C 200 48, 390 78, 570 60 S 870 36, 1040 56 S 1160 68, 1186 54"/>
+    <circle class="pt" cx="1186" cy="54" r="5"/>
+    <text class="lbl" x="1170" y="40" text-anchor="end">Alpenblick · 1'642 m — Sie sind da</text>
+  </svg>
+</div>
+
+<!-- ═══════════ RESERVATION ═══════════ -->
+<section id="reservation">
+  <div class="wrap res-grid">
+    <div class="reveal">
+      <p class="eyebrow">Reservation</p>
+      <h2>Oben angekommen.<br>Jetzt noch <em>einen Tisch</em>.</h2>
+      <p class="lede">Sagen Sie uns, wann Sie kommen und wie viele Sie sind — wir melden uns innert eines Tages per Telefon oder E-Mail zurück. Für heute und morgen rufen Sie am besten direkt an: die Terrasse füllt sich mit der ersten Gondel.</p>
+      <div class="res-side">
+        <p><b>Telefon:</b> +41 33 555 62 62 (täglich ab 08.00 Uhr)</p>
+        <p><b>Gruppen ab 10 Personen:</b> bitte telefonisch — dann rücken wir Tische, nicht Kompromisse.</p>
+        <p><b>Hunde:</b> willkommen. Wasser steht bereit, Speckrinde je nach Küchenlaune.</p>
+      </div>
+    </div>
+    <form class="res reveal" id="resForm" novalidate>
+      <div class="frow">
+        <label>Datum
+          <input type="date" name="datum" required>
+        </label>
+        <label>Personen
+          <select name="personen">
+            <option>2 Personen</option>
+            <option>3 Personen</option>
+            <option selected>4 Personen</option>
+            <option>5 Personen</option>
+            <option>6 Personen</option>
+            <option>7 Personen</option>
+            <option>8 Personen</option>
+          </select>
+        </label>
+      </div>
+      <div class="frow">
+        <label>Name
+          <input type="text" name="name" autocomplete="name" placeholder="Vor- und Nachname" required>
+        </label>
+        <label>Telefon oder E-Mail
+          <input type="text" name="kontakt" autocomplete="tel" placeholder="+41 79 …" required>
+        </label>
+      </div>
+      <label>Wo möchten Sie sitzen?</label>
+      <div class="seg" role="radiogroup" aria-label="Sitzplatz">
+        <label><input type="radio" name="platz" value="terrasse" checked>Terrasse</label>
+        <label><input type="radio" name="platz" value="stube">Stube (drinnen)</label>
+      </div>
+      <button class="btn" type="submit">Anfrage senden</button>
+      <p class="res-ok" id="resOk" role="status">Merci vielmal! Ihre Anfrage ist bei uns — wir bestätigen innert eines Tages. Bei Bergwetter-Fragen: einfach anrufen.</p>
+      <p class="res-hint">Vorlage-Demo: Es werden keine Daten übermittelt.</p>
+    </form>
+  </div>
+</section>
+
+<!-- ═══════════ FOOTER ═══════════ -->
+<footer>
+  <div class="wrap">
+    <div>
+      <p class="brand">Bergrestaurant Alpenblick<small>1'642 m ü. M. · oberhalb von Grindelwald</small></p>
+      <p style="margin-top:.9rem;max-width:26em">Familie Brawand · Sonnenterrasse mit Jungfrau-Blick, Arvenstube mit Kachelofen. Ein fiktiver Vorzeige-Betrieb der FABLE/25-Templatereihe.</p>
+    </div>
+    <div>
+      <h4>Kontakt</h4>
+      <ul>
+        <li>Alpweg 3, 3818 Grindelwald</li>
+        <li>+41 33 555 62 62</li>
+        <li><a href="mailto:hoi@alpenblick-grindelwald.ch">hoi@alpenblick-grindelwald.ch</a></li>
+        <li>Talstation Grund: +41 33 555 62 00</li>
+      </ul>
+    </div>
+    <div>
+      <h4>Rechtliches</h4>
+      <ul>
+        <li>Impressum: Alpenblick Gastro AG (fiktiv)</li>
+        <li>CHE-000.000.000 (Muster)</li>
+        <li>Datenschutz: Wir sammeln Pilze, keine Daten.</li>
+        <li>© 2026 · Alle Rechte beim Berg</li>
+      </ul>
+    </div>
+    <div class="fin">
+      <span>FABLE/25 · Nº 62 · Swiss-Template-Reihe</span>
+      <a href="/62-gasthaus/guide/">guide &amp; prompt →</a>
+    </div>
+  </div>
+</footer>
+
+<script>
+(function(){
+  "use strict";
+  var reduced = matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+  /* ───── scroll reveals ───── */
+  var io = new IntersectionObserver(function(es){
+    es.forEach(function(e){ if(e.isIntersecting){ e.target.classList.add("in"); io.unobserve(e.target); } });
+  },{threshold:.14});
+  document.querySelectorAll(".reveal").forEach(function(el){ io.observe(el); });
+
+  /* ───── die Höhenlinie: ticker + weg segments drawn by scroll ───── */
+  var ALT_MIN = 1034, ALT_MAX = 1642;
+  var hm = document.getElementById("hm");
+  var ticker = document.getElementById("ticker");
+  var wege = Array.prototype.slice.call(document.querySelectorAll("[data-weg]"));
+  var lens = wege.map(function(p){
+    var L = p.getTotalLength();
+    if(!reduced){ p.style.strokeDasharray = L + " " + L; p.style.strokeDashoffset = L; }
+    return L;
+  });
+  function fmt(n){
+    n = Math.round(n);
+    var s = String(n);
+    return s.length > 3 ? s.slice(0, s.length-3) + "'" + s.slice(-3) : s;
+  }
+  var prog = 0, shownProg = -1, rafPending = false;
+  function progress(){
+    var doc = document.documentElement;
+    var max = doc.scrollHeight - innerHeight;
+    return max > 0 ? Math.min(1, Math.max(0, scrollY / max)) : 0;
+  }
+  function paint(p){
+    hm.textContent = fmt(ALT_MIN + (ALT_MAX - ALT_MIN) * p) + " m";
+    ticker.classList.toggle("on", p > 0.02 && p < 0.985);
+    if(!reduced){
+      var n = wege.length;
+      wege.forEach(function(w, i){
+        var seg = Math.min(1, Math.max(0, p * n - i));  // segment i draws over [i/n,(i+1)/n]
+        w.style.strokeDashoffset = lens[i] * (1 - seg);
+      });
+    }
+  }
+  function onScroll(){
+    if(rafPending) return;
+    rafPending = true;
+    requestAnimationFrame(function(){
+      rafPending = false;
+      paint(progress());
+    });
+  }
+  addEventListener("scroll", onScroll, {passive:true});
+  addEventListener("resize", onScroll);
+  paint(progress());
+
+  /* ───── Anfahrt sketch: routes draw when in view ───── */
+  var routes = Array.prototype.slice.call(document.querySelectorAll("[data-route]"));
+  if(!reduced && routes.length){
+    routes.forEach(function(r){
+      var L = r.getTotalLength();
+      var dash = getComputedStyle(r).strokeDasharray;
+      r.dataset.dash = dash;
+      r.style.strokeDasharray = L + " " + L;
+      r.style.strokeDashoffset = L;
+    });
+    var cabs = document.querySelector("[data-cabs]");
+    if(cabs){ cabs.style.opacity = "0"; cabs.style.transition = "opacity .8s ease 1.6s"; }
+    var rio = new IntersectionObserver(function(es){
+      if(!es[0].isIntersecting) return;
+      rio.disconnect();
+      routes.forEach(function(r, i){
+        r.style.transition = "stroke-dashoffset 1.7s cubic-bezier(.4,.1,.3,1) " + (i * .45) + "s";
+        r.style.strokeDashoffset = "0";
+        // restore dash pattern (dashed/dotted routes) after the draw finishes
+        setTimeout(function(){
+          r.style.transition = "none";
+          r.style.strokeDasharray = r.dataset.dash;
+          r.style.strokeDashoffset = "0";
+        }, 1800 + i * 450);
+      });
+      if(cabs) cabs.style.opacity = "1";
+    },{threshold:.45});
+    rio.observe(document.querySelector(".skizze svg"));
+  }
+
+  /* ───── Öffnungszeiten tabs ───── */
+  var tabSo = document.getElementById("tab-so"), tabWi = document.getElementById("tab-wi");
+  var paneSo = document.getElementById("pane-so"), paneWi = document.getElementById("pane-wi");
+  function pick(summer){
+    tabSo.setAttribute("aria-selected", summer);
+    tabWi.setAttribute("aria-selected", !summer);
+    paneSo.hidden = !summer;
+    paneWi.hidden = summer;
+  }
+  tabSo.addEventListener("click", function(){ pick(true); });
+  tabWi.addEventListener("click", function(){ pick(false); });
+
+  /* ───── reservation mock ───── */
+  var form = document.getElementById("resForm"), ok = document.getElementById("resOk");
+  form.addEventListener("submit", function(e){
+    e.preventDefault();
+    ok.classList.add("show");
+    ok.scrollIntoView({block:"nearest", behavior: reduced ? "auto" : "smooth"});
+  });
+})();
+</script>
+</body>
+</html>

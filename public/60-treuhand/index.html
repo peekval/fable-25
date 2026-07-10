@@ -1,0 +1,656 @@
+<!doctype html>
+<!--
+  BRUNNER TREUHAND AG — Zahlen, auf die Sie bauen können.
+  FABLE/25 · site 60 · Swiss template wave · single-file showcase
+
+  CHANGELOG
+  PASS 1 — Full build: ruhig-seriöses Treuhand-Template (Zug). Side-image-Hero
+           mit Nano-Banana-2-Bürofoto; Signatur "die saubere Zahl": tabellarische
+           Ziffern setzen sich per kurzem, präzisem Aufwärts-Tick zusammen
+           (900 ms, ease-out, kein Bounce), feine goldene Bilanz-Linie zeichnet
+           sich als wiederkehrendes Motiv beim Scrollen durch jede Sektion;
+           6 Dienstleistungs-Cards, 3 Zielgruppen-Spalten, Fristenkalender-
+           Timeline (MWST / Steuern ZG / AHV) mit scrollgezeichneter Linie,
+           2 Partner-Monogramme, Kontakt-Formular-Mock, TREUHAND|SUISSE-Badge;
+           reduced-motion vollständig statisch; "← 25"-Pill, Guide-Link.
+-->
+<html lang="de-CH">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Brunner Treuhand AG — Zahlen, auf die Sie bauen können</title>
+<meta name="description" content="Brunner Treuhand AG, Zug — Buchführung, Abschlüsse, Steuern, Lohnadministration, Firmengründung und Nachfolge. Sachlich, verlässlich, seit 1998.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Source+Serif+4:ital,opsz,wght@0,8..60,400;0,8..60,500;0,8..60,600;1,8..60,400&family=IBM+Plex+Sans:ital,wght@0,300;0,400;0,500;0,600;1,400&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --paper:#FAF9F6;
+    --paper-2:#F3F1EC;
+    --navy:#26374A;
+    --navy-2:#1D2B3A;
+    --grey:#B8B2A8;
+    --grey-ink:#6E6A62;
+    --gold:#B99A5B;
+    --ink:#232A32;
+    --serif:"Source Serif 4",Georgia,serif;
+    --sans:"IBM Plex Sans","Helvetica Neue",system-ui,sans-serif;
+    --line-d:1.3s;
+  }
+  *{margin:0;padding:0;box-sizing:border-box}
+  html{scroll-behavior:smooth}
+  @media (prefers-reduced-motion:reduce){html{scroll-behavior:auto}}
+  body{
+    font-family:var(--sans);font-weight:400;line-height:1.65;
+    background:var(--paper);color:var(--ink);overflow-x:hidden;
+  }
+  ::selection{background:var(--navy);color:var(--paper)}
+  img{max-width:100%;display:block}
+  a{color:inherit}
+
+  /* ——— die saubere Zahl: tabellarische Ziffern, überall ——— */
+  .num{font-variant-numeric:tabular-nums;font-feature-settings:"tnum" 1}
+
+  /* ——— fixed pill ——— */
+  .pill{
+    position:fixed;top:1.1rem;left:1.1rem;z-index:60;
+    font-size:.82rem;font-weight:500;letter-spacing:.12em;text-decoration:none;
+    padding:.48rem .95rem;border-radius:99px;
+    background:rgba(38,55,74,.92);color:var(--paper);
+    border:1px solid rgba(250,249,246,.18);backdrop-filter:blur(6px);
+    transition:transform .25s ease;
+  }
+  .pill:hover{transform:translateY(-2px)}
+
+  /* ——— Bilanz-Linie: das wiederkehrende Motiv ——— */
+  .rule{
+    height:1px;background:var(--gold);border:0;
+    transform:scaleX(0);transform-origin:left center;
+    transition:transform var(--line-d) cubic-bezier(.25,.6,.25,1);
+    margin:0 0 2.6rem;
+  }
+  .rule.drawn{transform:scaleX(1)}
+
+  /* ——— layout primitives ——— */
+  .wrap{max-width:1120px;margin:0 auto;padding:0 clamp(1.2rem,4vw,2.5rem)}
+  section{padding:clamp(4rem,8vw,7rem) 0}
+  .eyebrow{
+    font-size:.72rem;letter-spacing:.32em;text-transform:uppercase;font-weight:600;
+    color:var(--gold);margin-bottom:.9rem;
+  }
+  h2{
+    font-family:var(--serif);font-weight:500;line-height:1.12;letter-spacing:.005em;
+    font-size:clamp(1.9rem,4.2vw,2.9rem);margin-bottom:1.1rem;color:var(--navy);
+  }
+  .lede{font-weight:300;font-size:clamp(1rem,1.5vw,1.15rem);max-width:38em;color:var(--ink)}
+
+  .reveal{opacity:0;transform:translateY(18px);transition:opacity .7s ease,transform .7s cubic-bezier(.2,.7,.2,1)}
+  .reveal.in{opacity:1;transform:none}
+
+  /* ——— hero ——— */
+  .hero{min-height:100svh;display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);align-items:stretch}
+  .hero-copy{
+    display:flex;flex-direction:column;justify-content:center;
+    padding:clamp(5.5rem,10vh,8rem) clamp(1.2rem,4.5vw,4.5rem) clamp(3rem,6vh,4.5rem);
+  }
+  .hero-copy .firm{
+    font-size:.78rem;letter-spacing:.3em;text-transform:uppercase;font-weight:600;
+    color:var(--navy);display:flex;align-items:center;gap:.9rem;margin-bottom:2.4rem;
+  }
+  .hero-copy .firm::after{content:"";flex:0 0 2.4rem;height:1px;background:var(--gold)}
+  h1{
+    font-family:var(--serif);font-weight:500;color:var(--navy);
+    font-size:clamp(2.3rem,4.6vw,3.7rem);line-height:1.14;letter-spacing:.002em;
+    max-width:11.5em;
+  }
+  .hero-copy .sub{
+    margin-top:1.3rem;font-weight:300;font-size:clamp(1rem,1.6vw,1.18rem);
+    max-width:30em;color:var(--grey-ink);
+  }
+  .cta{
+    display:inline-flex;align-items:center;gap:.65rem;align-self:flex-start;
+    margin-top:2.2rem;text-decoration:none;
+    font-weight:500;letter-spacing:.14em;text-transform:uppercase;font-size:.78rem;
+    color:var(--paper);background:var(--navy);
+    padding:.95rem 1.7rem;border-radius:2px;
+    transition:background-color .3s ease,transform .3s ease;
+  }
+  .cta:hover{background:var(--navy-2);transform:translateY(-2px)}
+  .cta .arr{transition:transform .3s ease}
+  .cta:hover .arr{transform:translateX(4px)}
+  .hero-stats{
+    margin-top:clamp(2.6rem,9vh,4.5rem);
+    display:grid;grid-template-columns:repeat(3,auto);gap:clamp(1.4rem,4vw,3.2rem);
+    justify-content:start;
+  }
+  .stat b{
+    display:block;font-family:var(--serif);font-weight:600;color:var(--navy);
+    font-size:clamp(1.7rem,2.6vw,2.3rem);line-height:1.15;
+  }
+  .stat > span{font-size:.7rem;letter-spacing:.18em;text-transform:uppercase;color:var(--grey-ink)}
+  .hero-photo{position:relative;min-height:46vh;background:var(--navy-2)}
+  .hero-photo img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
+  .hero-photo::after{
+    content:"";position:absolute;inset:0;
+    background:linear-gradient(105deg,rgba(250,249,246,.28) 0%,rgba(250,249,246,0) 34%);
+    pointer-events:none;
+  }
+  .hero-photo .plate{
+    position:absolute;left:0;bottom:clamp(1.4rem,4vh,2.6rem);z-index:2;
+    background:var(--paper);color:var(--navy);
+    padding:.85rem 1.5rem .85rem clamp(1.2rem,3vw,2rem);
+    font-family:var(--serif);font-style:italic;font-size:1.02rem;
+    border-right:2px solid var(--gold);max-width:21rem;
+  }
+
+  /* ——— Dienstleistungen ——— */
+  #leistungen{background:var(--paper)}
+  .cards{display:grid;grid-template-columns:repeat(3,1fr);gap:1px;background:var(--grey);border:1px solid var(--grey);margin-top:2.8rem}
+  .card{
+    background:var(--paper);padding:1.9rem 1.7rem 1.7rem;display:flex;flex-direction:column;gap:.7rem;
+    transition:background-color .35s ease;position:relative;
+  }
+  .card::before{
+    content:"";position:absolute;top:0;left:1.7rem;right:1.7rem;height:1px;background:var(--gold);
+    transform:scaleX(0);transform-origin:left;transition:transform .5s cubic-bezier(.25,.6,.25,1);
+  }
+  .card:hover{background:#FFFFFF}
+  .card:hover::before{transform:scaleX(1)}
+  .card .no{font-family:var(--serif);font-size:.95rem;color:var(--gold);font-variant-numeric:tabular-nums}
+  .card h3{font-family:var(--serif);font-weight:600;font-size:1.35rem;color:var(--navy);line-height:1.2}
+  .card p{font-weight:300;font-size:.95rem;color:var(--ink)}
+  .card .foot{margin-top:auto;padding-top:1rem;font-size:.72rem;letter-spacing:.16em;text-transform:uppercase;color:var(--grey-ink)}
+
+  /* ——— Für wen ——— */
+  #fuerwen{background:var(--paper-2)}
+  .who{display:grid;grid-template-columns:repeat(3,1fr);gap:clamp(1.6rem,4vw,3rem);margin-top:2.6rem}
+  .who h3{font-family:var(--serif);font-weight:600;font-size:1.45rem;color:var(--navy);margin-bottom:.6rem}
+  .who .tag{font-size:.7rem;letter-spacing:.24em;text-transform:uppercase;color:var(--gold);font-weight:600;display:block;margin-bottom:.9rem}
+  .who p{font-weight:300;font-size:.96rem}
+  .who ul{list-style:none;margin-top:1.1rem}
+  .who li{
+    padding:.5rem 0;font-size:.92rem;font-weight:300;
+    border-bottom:1px solid rgba(184,178,168,.45);display:flex;gap:.7rem;align-items:baseline;
+  }
+  .who li::before{content:"—";color:var(--gold);flex:0 0 auto}
+  .who li:last-child{border-bottom:0}
+
+  /* ——— Zahlen & Fristen ——— */
+  #fristen{background:var(--navy);color:var(--paper)}
+  #fristen h2{color:var(--paper)}
+  #fristen .lede{color:rgba(250,249,246,.78)}
+  #fristen .rule{background:var(--gold)}
+  .kennzahlen{
+    display:grid;grid-template-columns:repeat(4,1fr);gap:1px;
+    background:rgba(250,249,246,.16);border:1px solid rgba(250,249,246,.16);
+    margin:2.8rem 0 3.6rem;
+  }
+  .kz{background:var(--navy);padding:1.5rem 1.3rem}
+  .kz b{
+    display:flex;align-items:baseline;gap:.15rem;
+    font-family:var(--serif);font-weight:600;font-size:clamp(1.8rem,3vw,2.5rem);line-height:1.1;color:var(--paper);
+  }
+  .kz b .unit{font-size:.55em;color:var(--gold);font-weight:500}
+  .kz > span{font-size:.68rem;letter-spacing:.18em;text-transform:uppercase;color:rgba(250,249,246,.62)}
+  .tl-head{font-size:.72rem;letter-spacing:.32em;text-transform:uppercase;font-weight:600;color:var(--gold);margin-bottom:1.8rem}
+  .timeline{position:relative;padding-left:0}
+  .tl-line{position:absolute;top:9px;left:0;right:0;height:2px}
+  .tl-line svg{display:block;width:100%;height:2px}
+  .tl-line .base{stroke:rgba(250,249,246,.22);stroke-width:2}
+  .tl-line .draw{stroke:var(--gold);stroke-width:2}
+  .tl-items{display:grid;grid-template-columns:repeat(3,1fr);gap:clamp(1.2rem,3vw,2.4rem);position:relative}
+  .tl{padding-top:2rem;position:relative}
+  .tl::before{
+    content:"";position:absolute;top:4px;left:2px;width:12px;height:12px;border-radius:50%;
+    background:var(--navy);border:2px solid var(--gold);
+  }
+  .tl time{font-family:var(--serif);font-weight:600;font-size:1.5rem;color:var(--paper);display:block;font-variant-numeric:tabular-nums}
+  .tl h4{font-size:.95rem;font-weight:600;letter-spacing:.04em;color:var(--gold);margin:.35rem 0 .4rem}
+  .tl p{font-weight:300;font-size:.92rem;color:rgba(250,249,246,.78)}
+  .tl-note{margin-top:2.6rem;font-size:.85rem;font-weight:300;color:rgba(250,249,246,.6);max-width:46em}
+
+  /* ——— Team ——— */
+  #team{background:var(--paper)}
+  .partners{display:grid;grid-template-columns:repeat(2,1fr);gap:clamp(1.8rem,4vw,3.5rem);margin-top:2.8rem;max-width:56rem}
+  .partner{display:flex;gap:1.5rem;align-items:flex-start}
+  .mono{
+    flex:0 0 auto;width:92px;height:92px;border-radius:50%;
+    background:var(--navy);color:var(--paper);
+    display:flex;align-items:center;justify-content:center;
+    font-family:var(--serif);font-weight:500;font-size:1.7rem;letter-spacing:.06em;
+    box-shadow:0 0 0 1px var(--paper),0 0 0 2px var(--gold);
+  }
+  .partner h3{font-family:var(--serif);font-weight:600;font-size:1.35rem;color:var(--navy);line-height:1.2}
+  .partner .role{font-size:.72rem;letter-spacing:.2em;text-transform:uppercase;color:var(--gold);font-weight:600;margin:.3rem 0 .6rem}
+  .partner p{font-weight:300;font-size:.94rem}
+
+  /* ——— Kontakt ——— */
+  #kontakt{background:var(--paper-2)}
+  .kontakt-grid{display:grid;grid-template-columns:1fr 1.1fr;gap:clamp(2rem,5vw,4.5rem);margin-top:2.6rem}
+  .adresse .row{
+    display:flex;gap:1rem;justify-content:space-between;align-items:baseline;
+    padding:.9rem 0;border-bottom:1px solid rgba(184,178,168,.5);
+  }
+  .adresse .k{font-size:.68rem;letter-spacing:.22em;text-transform:uppercase;color:var(--grey-ink);flex:0 0 auto}
+  .adresse .v{font-family:var(--serif);font-size:1.08rem;color:var(--navy);text-align:right}
+  .adresse .v a{text-decoration:none;border-bottom:1px solid var(--gold)}
+  .buero-klein{margin-top:2.2rem;position:relative}
+  .buero-klein img{aspect-ratio:16/9;object-fit:cover;width:100%}
+  .buero-klein figcaption{font-size:.78rem;color:var(--grey-ink);margin-top:.6rem;font-style:italic;font-family:var(--serif)}
+  form{display:flex;flex-direction:column;gap:1.1rem}
+  .field label{display:block;font-size:.7rem;letter-spacing:.2em;text-transform:uppercase;font-weight:600;color:var(--grey-ink);margin-bottom:.4rem}
+  .field input,.field select,.field textarea{
+    width:100%;font-family:var(--sans);font-size:.98rem;font-weight:300;color:var(--ink);
+    background:#FFFFFF;border:1px solid var(--grey);border-radius:2px;
+    padding:.75rem .9rem;outline:none;transition:border-color .25s ease,box-shadow .25s ease;
+  }
+  .field textarea{min-height:7.5rem;resize:vertical}
+  .field input:focus,.field select:focus,.field textarea:focus{
+    border-color:var(--navy);box-shadow:0 0 0 3px rgba(38,55,74,.12);
+  }
+  .form-row{display:grid;grid-template-columns:1fr 1fr;gap:1.1rem}
+  button.cta{border:0;cursor:pointer;font-family:var(--sans)}
+  .form-note{font-size:.8rem;font-weight:300;color:var(--grey-ink)}
+  .form-ok{
+    display:none;padding:1.1rem 1.3rem;border-left:2px solid var(--gold);
+    background:#FFFFFF;font-size:.95rem;font-weight:300;
+  }
+  .form-ok.show{display:block}
+  .form-ok b{font-family:var(--serif);color:var(--navy);font-weight:600}
+
+  /* ——— footer ——— */
+  footer{background:var(--navy-2);color:rgba(250,249,246,.68);padding:2.2rem 0 2.6rem;font-size:.85rem;font-weight:300}
+  footer .wrap{display:flex;flex-wrap:wrap;gap:1rem 2rem;justify-content:space-between;align-items:center}
+  footer .brand{font-family:var(--serif);font-size:1rem;color:var(--paper);letter-spacing:.04em}
+  .badge{
+    font-size:.68rem;letter-spacing:.2em;text-transform:uppercase;font-weight:500;
+    border:1px solid rgba(185,154,91,.55);color:var(--gold);
+    padding:.4rem .85rem;border-radius:2px;white-space:nowrap;
+  }
+  footer nav{display:flex;gap:1.4rem;flex-wrap:wrap}
+  footer a{color:rgba(250,249,246,.85);text-decoration:none;border-bottom:1px solid rgba(185,154,91,.6)}
+  footer a:hover{color:var(--paper)}
+
+  /* ——— responsive ——— */
+  @media (max-width:980px){
+    .hero{grid-template-columns:1fr}
+    .hero-photo{order:-1;min-height:38vh}
+    .hero-photo .plate{bottom:1.2rem;max-width:17rem;font-size:.95rem}
+    .hero-copy{padding-top:2.6rem}
+    .hero-stats{padding-top:2.4rem}
+    .cards{grid-template-columns:1fr 1fr}
+    .who{grid-template-columns:1fr;max-width:34rem}
+    .kennzahlen{grid-template-columns:1fr 1fr}
+    .tl-items{grid-template-columns:1fr;gap:1.6rem}
+    .tl{padding-top:0;padding-left:2rem}
+    .tl::before{top:8px;left:-5px}
+    .tl-line{top:0;bottom:0;left:0;right:auto;width:2px;height:auto}
+    .tl-line svg{width:2px;height:100%}
+    .partners{grid-template-columns:1fr}
+    .kontakt-grid{grid-template-columns:1fr}
+  }
+  @media (max-width:560px){
+    .cards{grid-template-columns:1fr}
+    .form-row{grid-template-columns:1fr}
+    .hero-stats{grid-template-columns:repeat(3,auto);gap:1.1rem}
+    .stat b{font-size:1.45rem}
+    .stat > span{font-size:.62rem;letter-spacing:.12em}
+    .mono{width:74px;height:74px;font-size:1.35rem}
+  }
+  @media (prefers-reduced-motion:reduce){
+    .reveal{opacity:1;transform:none;transition:none}
+    .rule{transform:scaleX(1);transition:none}
+    .card::before{transition:none}
+    .cta:hover,.pill:hover{transform:none}
+  }
+</style>
+</head>
+<body>
+
+<a class="pill" href="/">&larr; 25</a>
+
+<!-- ═══════════ HERO ═══════════ -->
+<header class="hero">
+  <div class="hero-copy">
+    <p class="firm">Brunner Treuhand AG · Zug</p>
+    <h1>Zahlen, auf die Sie bauen können.</h1>
+    <p class="sub">Buchführung, Abschluss, Steuern und Lohn — geführt mit der Sorgfalt, die man in Zug seit 1998 von uns erwartet. Sachlich in der Arbeit, verbindlich im Wort.</p>
+    <a class="cta" href="#kontakt">Erstgespräch vereinbaren <span class="arr" aria-hidden="true">&rarr;</span></a>
+    <div class="hero-stats">
+      <div class="stat"><b class="num"><span class="count" data-target="1998" data-grouped="0">1998</span></b><span>gegründet</span></div>
+      <div class="stat"><b class="num"><span class="count" data-target="240">240</span></b><span>Mandate</span></div>
+      <div class="stat"><b class="num"><span class="count" data-target="2">2</span></b><span>Partner, haftbar</span></div>
+    </div>
+  </div>
+  <div class="hero-photo">
+    <img src="assets/buero.webp" width="1920" height="1080" alt="Ruhiges Büro der Brunner Treuhand AG in Zug: heller Raum, Eichenpult mit geordneten Unterlagen, Messinglampe" fetchpriority="high">
+    <p class="plate">«Ein sauberer Abschluss beginnt lange vor dem Bilanzstichtag.»</p>
+  </div>
+</header>
+
+<!-- ═══════════ DIENSTLEISTUNGEN ═══════════ -->
+<section id="leistungen">
+  <div class="wrap">
+    <hr class="rule" aria-hidden="true">
+    <div class="reveal">
+      <p class="eyebrow">Dienstleistungen</p>
+      <h2>Sechs Bereiche. Eine Handschrift.</h2>
+      <p class="lede">Wir übernehmen so viel, wie Sie abgeben möchten — vom monatlichen Buchungslauf bis zur geregelten Übergabe Ihres Lebenswerks. Immer nachvollziehbar, immer termingerecht.</p>
+    </div>
+    <div class="cards">
+      <article class="card reveal">
+        <span class="no">01</span>
+        <h3>Buchführung</h3>
+        <p>Laufende Finanzbuchhaltung, Nebenbücher, MWST-Abrechnung. Digital angebunden oder klassisch mit Belegordner — beides sauber.</p>
+        <span class="foot">Monatlich oder quartalsweise</span>
+      </article>
+      <article class="card reveal">
+        <span class="no">02</span>
+        <h3>Abschlüsse</h3>
+        <p>Jahres- und Zwischenabschlüsse nach OR, stille Reserven im Griff, Kennzahlen kommentiert — damit Sie die eigene Bilanz wirklich lesen können.</p>
+        <span class="foot">Nach OR · auf Wunsch Swiss GAAP FER</span>
+      </article>
+      <article class="card reveal">
+        <span class="no">03</span>
+        <h3>Steuern</h3>
+        <p>Steuererklärungen für Gesellschaften und Private, Vorabklärungen mit der Steuerverwaltung Zug, Rulings und Fristenkontrolle.</p>
+        <span class="foot">Juristische &amp; natürliche Personen</span>
+      </article>
+      <article class="card reveal">
+        <span class="no">04</span>
+        <h3>Lohnadministration</h3>
+        <p>Lohnläufe, Sozialversicherungen, Quellensteuer, Lohnausweise. Ihre Mitarbeitenden werden pünktlich bezahlt — und korrekt deklariert.</p>
+        <span class="foot">AHV · BVG · UVG · KTG</span>
+      </article>
+      <article class="card reveal">
+        <span class="no">05</span>
+        <h3>Firmengründung</h3>
+        <p>Rechtsformwahl, Statuten, Handelsregister, Domizil in Zug. Von der Idee bis zum ersten Buchungssatz aus einer Hand.</p>
+        <span class="foot">GmbH &amp; AG · ab CHF 1'900</span>
+      </article>
+      <article class="card reveal">
+        <span class="no">06</span>
+        <h3>Nachfolge</h3>
+        <p>Unternehmensbewertung, Übergabeplanung, steuerliche Optimierung. Eine Nachfolge braucht Jahre — wir beginnen, bevor es eilt.</p>
+        <span class="foot">Diskret · generationenerprobt</span>
+      </article>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════ FÜR WEN ═══════════ -->
+<section id="fuerwen">
+  <div class="wrap">
+    <hr class="rule" aria-hidden="true">
+    <div class="reveal">
+      <p class="eyebrow">Für wen</p>
+      <h2>Drei Arten von Mandaten. Dieselbe Sorgfalt.</h2>
+    </div>
+    <div class="who">
+      <div class="reveal">
+        <span class="tag">KMU</span>
+        <h3>Unternehmen</h3>
+        <p>Vom Handwerksbetrieb bis zur Handelsfirma mit fünfzig Mitarbeitenden: Wir führen Ihre Zahlen so, dass Bank, Revisionsstelle und Verwaltungsrat dieselbe Sprache lesen.</p>
+        <ul>
+          <li>Buchführung &amp; Reporting</li>
+          <li>Abschluss &amp; Steuererklärung</li>
+          <li>Lohnwesen komplett</li>
+        </ul>
+      </div>
+      <div class="reveal">
+        <span class="tag">Selbständige</span>
+        <h3>Einzelfirmen &amp; Freiberufler</h3>
+        <p>Ärztin, Architekt, Beraterin: Sie verrechnen Ihre Zeit besser in Ihrem Fach als in der Buchhaltung. Wir halten den administrativen Teil bewusst klein.</p>
+        <ul>
+          <li>Milchbüchlein bis Bilanz</li>
+          <li>AHV-Anmeldung &amp; Beiträge</li>
+          <li>Steuern &amp; Vorsorgeplanung</li>
+        </ul>
+      </div>
+      <div class="reveal">
+        <span class="tag">Privatpersonen</span>
+        <h3>Private Steuerpflichtige</h3>
+        <p>Steuererklärung, Liegenschaften, Wertschriften, Erbteilungen: ruhig aufbereitet, fristgerecht eingereicht, mit einem Blick fürs steuerlich Vernünftige.</p>
+        <ul>
+          <li>Steuererklärung Kanton Zug</li>
+          <li>Liegenschaften &amp; Unterhalt</li>
+          <li>Vertretung gegenüber Behörden</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════ ZAHLEN & FRISTEN ═══════════ -->
+<section id="fristen">
+  <div class="wrap">
+    <hr class="rule" aria-hidden="true">
+    <div class="reveal">
+      <p class="eyebrow">Zahlen &amp; Fristen</p>
+      <h2>Was wir leisten — und wann es fällig ist.</h2>
+      <p class="lede">Verlässlichkeit lässt sich zählen. Und die wichtigsten Termine des Treuhandjahres stehen bei uns nicht im Kleingedruckten, sondern hier.</p>
+    </div>
+    <div class="kennzahlen reveal">
+      <div class="kz"><b class="num"><span class="count" data-target="240">240</span></b><span>betreute Mandate</span></div>
+      <div class="kz"><b class="num"><span class="count" data-target="3400">3'400</span></b><span>Lohnabrechnungen p. a.</span></div>
+      <div class="kz"><b class="num"><span class="count" data-target="98">98</span><span class="unit">%</span></b><span>Mandate verlängert</span></div>
+      <div class="kz"><b class="num"><span class="count" data-target="0">0</span></b><span>verpasste Fristen 2025</span></div>
+    </div>
+    <div class="reveal">
+      <p class="tl-head">Fristenkalender — die drei Fixpunkte</p>
+      <div class="timeline">
+        <div class="tl-line" aria-hidden="true">
+          <svg preserveAspectRatio="none" viewBox="0 0 100 2" id="tlSvg">
+            <line class="base" id="tlBase" x1="0" y1="1" x2="100" y2="1"/>
+            <line class="draw" id="tlDraw" x1="0" y1="1" x2="100" y2="1" pathLength="100" stroke-dasharray="100" stroke-dashoffset="100"/>
+          </svg>
+        </div>
+        <div class="tl-items">
+          <div class="tl">
+            <time class="num">30. Januar</time>
+            <h4>AHV-Lohndeklaration</h4>
+            <p>Die Lohnsummen des Vorjahres gehen an die Ausgleichskasse — bei uns abgestimmt mit Lohnausweisen und Buchhaltung, nicht daneben.</p>
+          </div>
+          <div class="tl">
+            <time class="num">30. April</time>
+            <h4>Steuererklärung Kanton Zug</h4>
+            <p>Ordentliche Einreichefrist für natürliche Personen. Wo nötig, holen wir die Verlängerung ein — bevor die Frist läuft, nicht danach.</p>
+          </div>
+          <div class="tl">
+            <time class="num">Quartal + 60 Tage</time>
+            <h4>MWST-Abrechnung</h4>
+            <p>Effektiv oder Saldosteuersatz: Jede Abrechnung ist mit der Finanzbuchhaltung verprobt, bevor sie an die ESTV geht.</p>
+          </div>
+        </div>
+      </div>
+      <p class="tl-note">Wir führen für jedes Mandat eine zentrale Fristenkontrolle. Sie werden erinnert, bevor es dringend wird — das ist der ganze Trick hinter der Null in der Statistik oben.</p>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════ TEAM ═══════════ -->
+<section id="team">
+  <div class="wrap">
+    <hr class="rule" aria-hidden="true">
+    <div class="reveal">
+      <p class="eyebrow">Team</p>
+      <h2>Zwei Partner. Persönlich haftbar, persönlich erreichbar.</h2>
+      <p class="lede">Bei uns betreut kein wechselndes Sachbearbeiter-Karussell Ihr Mandat. Sie kennen Ihre Ansprechperson — und sie kennt Ihre Zahlen.</p>
+    </div>
+    <div class="partners">
+      <div class="partner reveal">
+        <div class="mono" aria-hidden="true">MB</div>
+        <div>
+          <h3>Markus Brunner</h3>
+          <p class="role">dipl. Treuhandexperte · Partner &amp; Gründer</p>
+          <p>Führt die Firma seit 1998. Schwerpunkte: Abschlussberatung, Unternehmenssteuern, Nachfolgelösungen für Familienbetriebe im Kanton Zug.</p>
+        </div>
+      </div>
+      <div class="partner reveal">
+        <div class="mono" aria-hidden="true">CI</div>
+        <div>
+          <h3>Claudia Iten</h3>
+          <p class="role">dipl. Steuerexpertin · Partnerin</p>
+          <p>Seit 2011 im Haus, Partnerin seit 2017. Schwerpunkte: Steuerplanung für Private und Selbständige, Quellensteuer, Sozialversicherungen.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════ KONTAKT ═══════════ -->
+<section id="kontakt">
+  <div class="wrap">
+    <hr class="rule" aria-hidden="true">
+    <div class="reveal">
+      <p class="eyebrow">Kontakt</p>
+      <h2>Das Erstgespräch ist unverbindlich. Und kostenlos.</h2>
+      <p class="lede">Eine Stunde, Ihre Unterlagen, unser Blick darauf. Danach wissen Sie, woran Sie sind — ob Sie mit uns arbeiten oder nicht.</p>
+    </div>
+    <div class="kontakt-grid">
+      <div class="adresse reveal">
+        <div class="row"><span class="k">Adresse</span><span class="v">Baarerstrasse 88, 6302 Zug</span></div>
+        <div class="row"><span class="k">Telefon</span><span class="v num"><a href="tel:+41415527420">+41 41 552 74 20</a></span></div>
+        <div class="row"><span class="k">E-Mail</span><span class="v"><a href="mailto:kontakt@brunner-treuhand.ch">kontakt@brunner-treuhand.ch</a></span></div>
+        <div class="row"><span class="k">Bürozeiten</span><span class="v num">Mo–Fr, 08.00–12.00 / 13.30–17.30</span></div>
+        <figure class="buero-klein">
+          <img src="assets/buero.webp" width="1920" height="1080" loading="lazy" alt="Blick in die Besprechungsecke der Brunner Treuhand AG">
+          <figcaption>Unser Büro an der Baarerstrasse — fünf Gehminuten vom Bahnhof Zug.</figcaption>
+        </figure>
+      </div>
+      <form id="anfrage" class="reveal" novalidate>
+        <div class="form-row">
+          <div class="field">
+            <label for="f-name">Name</label>
+            <input id="f-name" name="name" type="text" autocomplete="name" required>
+          </div>
+          <div class="field">
+            <label for="f-mail">E-Mail</label>
+            <input id="f-mail" name="email" type="email" autocomplete="email" required>
+          </div>
+        </div>
+        <div class="field">
+          <label for="f-thema">Anliegen</label>
+          <select id="f-thema" name="thema">
+            <option>Buchführung &amp; Abschluss</option>
+            <option>Steuern</option>
+            <option>Lohnadministration</option>
+            <option>Firmengründung</option>
+            <option>Nachfolge</option>
+            <option>Anderes</option>
+          </select>
+        </div>
+        <div class="field">
+          <label for="f-msg">Nachricht</label>
+          <textarea id="f-msg" name="nachricht" placeholder="Worum geht es — und bis wann?"></textarea>
+        </div>
+        <button class="cta" type="submit">Erstgespräch anfragen <span class="arr" aria-hidden="true">&rarr;</span></button>
+        <p class="form-note">Demonstrations-Formular — es werden keine Daten übermittelt. Wir melden uns innert eines Arbeitstages.</p>
+        <p class="form-ok" id="formOk" role="status"><b>Besten Dank.</b> Ihre Anfrage ist notiert — Sie hören innert eines Arbeitstages von uns. (Demo: keine Daten übermittelt.)</p>
+      </form>
+    </div>
+  </div>
+</section>
+
+<footer>
+  <div class="wrap">
+    <span class="brand">Brunner Treuhand AG</span>
+    <span class="badge">Mitglied TREUHAND|SUISSE</span>
+    <nav>
+      <a href="#kontakt">Impressum</a>
+      <a href="#kontakt">Datenschutz</a>
+      <a href="/60-treuhand/guide/">guide &amp; prompt &rarr;</a>
+    </nav>
+    <span>Fiktives Unternehmen · FABLE/25 · Nº 60</span>
+  </div>
+</footer>
+
+<script>
+(function(){
+  "use strict";
+  const reduced=matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+  /* ───────── Swiss number format ───────── */
+  const fmt=(n,grouped)=>grouped?String(n).replace(/\B(?=(\d{3})+(?!\d))/g,"'"):String(n);
+
+  /* ───────── die saubere Zahl: kurzer, präziser Aufwärts-Tick ───────── */
+  const counters=document.querySelectorAll(".count");
+  counters.forEach(el=>{
+    const end=+el.dataset.target;
+    const grouped=el.dataset.grouped!=="0"&&end>=1000;
+    el.textContent=fmt(end,grouped); // Endstand als Default (no-JS / reduced)
+    el.dataset.grp=grouped?"1":"0";
+  });
+  if(!reduced){
+    const cio=new IntersectionObserver(es=>es.forEach(e=>{
+      if(!e.isIntersecting) return;
+      cio.unobserve(e.target);
+      const el=e.target, end=+el.dataset.target, grouped=el.dataset.grp==="1";
+      if(end===0){ el.textContent="0"; return; }
+      const t0=performance.now(), dur=900;
+      const start=Math.max(0,Math.floor(end*0.4)); // kurzer Tick, kein Nullstart-Drama
+      el.textContent=fmt(start,grouped);
+      (function step(t){
+        const k=Math.min(1,(t-t0)/dur), ease=1-Math.pow(1-k,3); // ease-out, kein Bounce
+        el.textContent=fmt(Math.round(start+(end-start)*ease),grouped);
+        if(k<1) requestAnimationFrame(step);
+      })(t0);
+    }),{threshold:.65});
+    counters.forEach(el=>cio.observe(el));
+  }
+
+  /* ───────── Bilanz-Linie: zeichnet sich beim Scrollen ───────── */
+  const rio=new IntersectionObserver(es=>es.forEach(e=>{
+    if(e.isIntersecting){e.target.classList.add("drawn");rio.unobserve(e.target);}
+  }),{threshold:0,rootMargin:"0px 0px -12% 0px"});
+  document.querySelectorAll(".rule").forEach(el=>rio.observe(el));
+
+  /* ───────── Reveals ───────── */
+  const io=new IntersectionObserver(es=>es.forEach(e=>{
+    if(e.isIntersecting){e.target.classList.add("in");io.unobserve(e.target);}
+  }),{threshold:.12});
+  document.querySelectorAll(".reveal").forEach(el=>io.observe(el));
+
+  /* ───────── Fristen-Linie: scrollgekoppelt gezeichnet ───────── */
+  const draw=document.getElementById("tlDraw");
+  const tlSection=document.getElementById("fristen");
+  const tlSvg=document.getElementById("tlSvg"), tlBase=document.getElementById("tlBase");
+  const mqVert=matchMedia("(max-width: 980px)");
+  function orient(){
+    const v=mqVert.matches;
+    tlSvg.setAttribute("viewBox",v?"0 0 2 100":"0 0 100 2");
+    [tlBase,draw].forEach(l=>{
+      l.setAttribute("x1","1");l.setAttribute("y1",v?"0":"1");
+      l.setAttribute("x2",v?"1":"100");l.setAttribute("y2",v?"100":"1");
+      if(!v){l.setAttribute("x1","0");l.setAttribute("y1","1");}
+    });
+  }
+  orient();
+  (mqVert.addEventListener?mqVert.addEventListener("change",orient):mqVert.addListener(orient));
+  if(reduced){
+    draw.setAttribute("stroke-dashoffset","0");
+  }else{
+    let ticking=false;
+    function update(){
+      ticking=false;
+      const r=tlSection.getBoundingClientRect();
+      const vh=innerHeight;
+      // 0 wenn Sektionsoberkante am unteren Rand, 1 wenn 65% durchlaufen
+      const p=Math.max(0,Math.min(1,(vh-r.top)/(vh+r.height*0.35)));
+      draw.setAttribute("stroke-dashoffset",String(100-100*p));
+    }
+    addEventListener("scroll",()=>{ if(!ticking){ticking=true;requestAnimationFrame(update);} },{passive:true});
+    update();
+  }
+
+  /* ───────── Formular-Mock ───────── */
+  const form=document.getElementById("anfrage"), ok=document.getElementById("formOk");
+  form.addEventListener("submit",e=>{
+    e.preventDefault();
+    ok.classList.add("show");
+    ok.scrollIntoView({block:"nearest",behavior:reduced?"auto":"smooth"});
+  });
+})();
+</script>
+</body>
+</html>

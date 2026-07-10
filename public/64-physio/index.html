@@ -1,0 +1,769 @@
+<!doctype html>
+<!--
+  physiowerk Luzern — Wieder in Bewegung.
+  FABLE/25 · site 64 · SWISS TEMPLATE wave · single-file showcase
+
+  CHANGELOG
+  PASS 1 — Full build: hell-regeneratives Physio-Template (Sage/Warmweiss/
+           Terracotta/Holz, Fraunces + Karla). Signature "Bewegungsbahn":
+           eine SVG-Bewegungsspur, die hinter dem Inhalt durch die ganze
+           Seite fliesst und sich beim Scrollen zeichnet; bei den sechs
+           Behandlungen wird sie zu minimalen Übungs-Piktogrammen, deren
+           Gelenke per CSS langsam zwischen zwei Posen morphen. Sektionen:
+           Hero (studio.webp, Krankenkassen-Hinweis), Behandlungen, Ablauf
+           (4 Schritte), Team (3 Monogramm-Profile), Selbstzahler & MTT-
+           Preise in CHF + Firmenangebote, Termin-Formular-Mock (Behandlung,
+           Wunschzeit, Verordnung ja/nein), Kontakt/Footer mit ÖV/Parkplatz.
+           Atmende Reveals (weiche, langsame Kurve), reduced-motion: alles
+           statisch, Piktogramme in Endpose, Bahn voll gezeichnet.
+           "← 25"-Pill, guide & prompt Link.
+-->
+<html lang="de-CH">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>physiowerk Luzern — Wieder in Bewegung.</title>
+<meta name="description" content="physiowerk Luzern — Physiotherapie, Manuelle Therapie, Sportphysio, Dry Needling, MTT und Domizilbehandlung. Krankenkassen-anerkannt, mitten in Luzern.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,420;9..144,520;9..144,560&family=Karla:ital,wght@0,400;0,500;0,600;0,700;1,400&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --sage:#9BB09A; --sage-deep:#7C947B; --sage-mist:#EDF1EB; --sage-line:#CDD8CB;
+    --paper:#FAF8F4; --terra:#C97B5A; --terra-deep:#B0603F;
+    --ink:#2E3230; --ink-soft:#5C635E; --wood:#D9C9B2; --wood-soft:#EFE7D9;
+    --disp:"Fraunces",Georgia,serif;
+    --body:"Karla",system-ui,sans-serif;
+    --breathe:cubic-bezier(.25,.7,.25,1);
+  }
+  *{margin:0;padding:0;box-sizing:border-box}
+  html{scroll-behavior:smooth}
+  body{
+    font-family:var(--body);background:var(--paper);color:var(--ink);
+    line-height:1.65;font-size:1.02rem;overflow-x:clip;
+  }
+  ::selection{background:var(--terra);color:var(--paper)}
+  img{max-width:100%;height:auto;display:block}
+  a{color:inherit}
+  .wrap{max-width:1120px;margin:0 auto;padding:0 clamp(1.15rem,4.5vw,2.5rem)}
+
+  /* ── fixed hub pill ─────────────────────────────── */
+  .pill{
+    position:fixed;top:.9rem;left:.9rem;z-index:60;
+    font-size:.78rem;font-weight:700;letter-spacing:.14em;text-decoration:none;
+    background:rgba(250,248,244,.86);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);
+    color:var(--ink);border:1px solid var(--sage-line);border-radius:99px;
+    padding:.42rem .85rem;transition:transform .5s var(--breathe),background .3s;
+  }
+  .pill:hover{transform:translateY(-2px);background:var(--paper)}
+
+  /* ── header ─────────────────────────────────────── */
+  header.top{
+    position:sticky;top:0;z-index:50;
+    background:rgba(250,248,244,.88);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);
+    border-bottom:1px solid rgba(205,216,203,.6);
+  }
+  .topbar{display:flex;align-items:center;gap:1.4rem;padding:.85rem 0}
+  .brand{font-family:var(--disp);font-weight:560;font-size:1.28rem;letter-spacing:.01em;text-decoration:none;margin-left:4.2rem}
+  .brand em{font-style:normal;color:var(--sage-deep)}
+  nav.main{margin-left:auto;display:flex;gap:1.5rem;font-size:.9rem;font-weight:600}
+  nav.main a{text-decoration:none;color:var(--ink-soft);transition:color .3s}
+  nav.main a:hover{color:var(--terra-deep)}
+  .cta{
+    display:inline-block;background:var(--terra);color:#FFF6F0;text-decoration:none;
+    font-weight:700;font-size:.92rem;letter-spacing:.02em;border-radius:99px;
+    padding:.62rem 1.35rem;transition:transform .5s var(--breathe),background .3s;
+  }
+  .cta:hover{background:var(--terra-deep);transform:translateY(-2px)}
+  .cta.small{padding:.5rem 1.1rem;font-size:.85rem}
+  @media(max-width:900px){nav.main{display:none}}
+  @media(max-width:560px){
+    .brand{margin-left:4.6rem;font-size:1.08rem}
+    .pill{top:.78rem;left:.75rem;padding:.36rem .7rem;font-size:.74rem}
+    .topbar{gap:.8rem}
+  }
+
+  /* ── Bewegungsbahn (page-long motion trail) ─────── */
+  .bahn-space{position:relative}
+  #bahn{
+    position:absolute;inset:0;width:100%;height:100%;
+    pointer-events:none;z-index:0;overflow:visible;
+  }
+  #bahn path{
+    fill:none;stroke:var(--sage);stroke-width:2.4;stroke-linecap:round;
+    vector-effect:non-scaling-stroke;opacity:.62;
+  }
+  .bahn-space>*{position:relative;z-index:1}
+
+  /* ── hero ───────────────────────────────────────── */
+  .hero{padding:clamp(2.2rem,6vw,4.5rem) 0 clamp(2.6rem,6vw,4.5rem)}
+  .hero-grid{display:grid;grid-template-columns:minmax(0,5fr) minmax(0,6fr);gap:clamp(1.6rem,4vw,3.5rem);align-items:center}
+  .kicker{
+    display:inline-flex;align-items:center;gap:.5rem;
+    font-size:.74rem;font-weight:700;letter-spacing:.3em;text-transform:uppercase;color:var(--sage-deep);
+  }
+  .kicker::before{content:"";width:2rem;height:2px;background:var(--sage);border-radius:2px}
+  h1{
+    font-family:var(--disp);font-weight:520;font-size:clamp(2.7rem,7.2vw,4.6rem);
+    line-height:1.02;letter-spacing:-.015em;margin:.75rem 0 1.1rem;
+  }
+  h1 .accent{color:var(--terra)}
+  h1,h2{text-wrap:balance}
+  a:focus-visible,button:focus-visible{outline:2px solid var(--terra);outline-offset:3px;border-radius:4px}
+  .cta:focus-visible,.pill:focus-visible{border-radius:99px}
+  .hero p.lead{max-width:30em;color:var(--ink-soft);font-size:1.08rem}
+  .hero-actions{display:flex;align-items:center;gap:1.1rem;flex-wrap:wrap;margin-top:1.7rem}
+  .kasse{
+    display:inline-flex;align-items:center;gap:.5rem;font-size:.86rem;font-weight:600;color:var(--sage-deep);
+  }
+  .kasse svg{flex:none}
+  .hero-fig{position:relative;border-radius:18px;overflow:hidden;box-shadow:0 24px 60px -28px rgba(46,50,48,.4)}
+  .hero-fig::after{content:"";position:absolute;inset:0;box-shadow:inset 0 0 0 1px rgba(46,50,48,.08);border-radius:18px}
+  .hero-fig img{width:100%;height:100%;object-fit:cover}
+  .hero-fig figcaption{
+    position:absolute;left:.9rem;bottom:.9rem;background:rgba(250,248,244,.9);
+    backdrop-filter:blur(6px);border-radius:10px;padding:.5rem .85rem;
+    font-size:.78rem;font-weight:600;color:var(--ink-soft);
+  }
+  @media(max-width:820px){
+    .hero-grid{grid-template-columns:1fr}
+    .hero-fig{order:-1}
+  }
+
+  /* ── sections ───────────────────────────────────── */
+  section{padding:clamp(3.2rem,8vw,6rem) 0}
+  .sec-head{max-width:38em;margin-bottom:clamp(1.8rem,4vw,3rem)}
+  h2{font-family:var(--disp);font-weight:520;font-size:clamp(1.9rem,4.6vw,2.9rem);line-height:1.1;letter-spacing:-.01em;margin:.6rem 0 .7rem}
+  .sec-head p{color:var(--ink-soft)}
+  .tinted{background:linear-gradient(180deg,var(--sage-mist),rgba(237,241,235,0))}
+
+  /* ── Behandlungen ───────────────────────────────── */
+  .treat-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:1.1rem}
+  @media(max-width:900px){.treat-grid{grid-template-columns:repeat(2,1fr)}}
+  @media(max-width:560px){.treat-grid{grid-template-columns:1fr}}
+  .treat{
+    background:#fff;border:1px solid var(--sage-line);border-radius:16px;
+    padding:1.5rem 1.4rem 1.4rem;display:flex;flex-direction:column;gap:.55rem;
+    transition:transform .7s var(--breathe),box-shadow .7s var(--breathe),border-color .4s;
+  }
+  .treat:hover{transform:translateY(-5px);box-shadow:0 20px 44px -26px rgba(46,50,48,.35);border-color:var(--sage)}
+  .treat h3{font-family:var(--disp);font-weight:560;font-size:1.24rem;letter-spacing:0}
+  .treat p{font-size:.93rem;color:var(--ink-soft)}
+  .treat .tag{font-size:.72rem;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:var(--terra)}
+
+  /* pictograms — minimal stick figures, joints morph between two poses */
+  .pikto{
+    width:64px;height:64px;flex:none;margin-bottom:.35rem;
+    background:var(--sage-mist);border-radius:50%;
+    display:grid;place-items:center;
+  }
+  .pikto svg{width:46px;height:46px;overflow:visible}
+  .pikto [stroke]{stroke:var(--ink);stroke-width:2.6;stroke-linecap:round;fill:none}
+  .pikto .kopf{fill:var(--ink);stroke:none}
+  .pikto .punkt{fill:var(--terra);stroke:none}
+  .pikto g{transform-box:view-box}
+  /* jede Animation endet in der Markup-Pose (Endpose) und atmet zurück */
+  @keyframes armheben{from{transform:rotate(96deg)}to{transform:rotate(0deg)}}
+  @keyframes beugen{from{transform:rotate(-30deg)}to{transform:rotate(0deg)}}
+  @keyframes schritt-v{from{transform:rotate(-38deg)}to{transform:rotate(0deg)}}
+  @keyframes schritt-h{from{transform:rotate(34deg)}to{transform:rotate(0deg)}}
+  @keyframes puls{0%{opacity:.25;transform:scale(.6)}100%{opacity:1;transform:scale(1)}}
+  @keyframes kniebeuge{from{transform:translateY(-7px)}to{transform:translateY(0)}}
+  @keyframes kniewinkel{from{transform:rotate(-24deg)}to{transform:rotate(0deg)}}
+  @keyframes kniewinkel-r{from{transform:rotate(24deg)}to{transform:rotate(0deg)}}
+  .pikto .anim{animation-duration:4.6s;animation-timing-function:var(--breathe);animation-iteration-count:infinite;animation-direction:alternate}
+
+  /* ── Ablauf ─────────────────────────────────────── */
+  .steps{display:grid;grid-template-columns:repeat(4,1fr);gap:1.1rem;counter-reset:step}
+  @media(max-width:900px){.steps{grid-template-columns:repeat(2,1fr)}}
+  @media(max-width:560px){.steps{grid-template-columns:1fr}}
+  .step{position:relative;padding:1.3rem 1.2rem 1.2rem;border-top:2px solid var(--wood);background:rgba(255,255,255,.5);border-radius:0 0 14px 14px;transition:border-color .5s,background .5s}
+  .step:hover{border-top-color:var(--terra);background:#fff}
+  .step .num{
+    font-family:var(--disp);font-weight:560;font-size:2.2rem;color:var(--sage-deep);line-height:1;
+  }
+  .step h3{font-size:1.04rem;font-weight:700;margin:.5rem 0 .3rem}
+  .step p{font-size:.9rem;color:var(--ink-soft)}
+  .step .pfeil{position:absolute;top:1.35rem;right:1rem;color:var(--wood);font-size:1.1rem}
+  .step:last-child .pfeil{display:none}
+
+  /* ── Team ───────────────────────────────────────── */
+  .team-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:1.1rem}
+  @media(max-width:820px){.team-grid{grid-template-columns:1fr}}
+  .member{
+    background:#fff;border:1px solid var(--sage-line);border-radius:16px;padding:1.6rem 1.4rem;
+    display:flex;flex-direction:column;gap:.4rem;
+  }
+  .mono{
+    width:72px;height:72px;border-radius:50%;display:grid;place-items:center;margin-bottom:.7rem;
+    font-family:var(--disp);font-weight:560;font-size:1.5rem;letter-spacing:.04em;
+    color:var(--paper);background:linear-gradient(140deg,var(--sage-deep),var(--sage));
+  }
+  .member:nth-child(2) .mono{background:linear-gradient(140deg,var(--terra-deep),var(--terra))}
+  .member:nth-child(3) .mono{background:linear-gradient(140deg,#B7A183,var(--wood))}
+  .member h3{font-family:var(--disp);font-weight:560;font-size:1.3rem}
+  .member .rolle{font-size:.82rem;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:var(--sage-deep)}
+  .member p{font-size:.92rem;color:var(--ink-soft)}
+  .member ul{list-style:none;margin-top:.5rem;display:flex;flex-wrap:wrap;gap:.4rem}
+  .member li{font-size:.78rem;font-weight:600;background:var(--sage-mist);border-radius:99px;padding:.22rem .7rem}
+
+  /* ── Preise ─────────────────────────────────────── */
+  .price-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:1.1rem;align-items:stretch}
+  @media(max-width:820px){.price-grid{grid-template-columns:1fr}}
+  .price{
+    background:#fff;border:1px solid var(--sage-line);border-radius:16px;padding:1.7rem 1.5rem;
+    display:flex;flex-direction:column;
+  }
+  .price.hi{border:2px solid var(--terra);position:relative}
+  .price.hi .beliebt{
+    position:absolute;top:-0.8rem;left:1.3rem;background:var(--terra);color:#FFF6F0;
+    font-size:.7rem;font-weight:700;letter-spacing:.16em;text-transform:uppercase;
+    border-radius:99px;padding:.24rem .8rem;
+  }
+  .price h3{font-size:1rem;font-weight:700;letter-spacing:.04em}
+  .price .chf{font-family:var(--disp);font-weight:560;font-size:2.5rem;line-height:1.15;margin:.5rem 0 .15rem}
+  .price .chf small{font-family:var(--body);font-size:.85rem;font-weight:600;color:var(--ink-soft)}
+  .price p{font-size:.9rem;color:var(--ink-soft)}
+  .price ul{list-style:none;margin:1rem 0 1.3rem;display:grid;gap:.45rem;font-size:.9rem}
+  .price li{display:flex;gap:.55rem;align-items:baseline}
+  .price li::before{content:"—";color:var(--sage-deep);font-weight:700}
+  .price .cta{margin-top:auto;text-align:center}
+  .firmen{
+    margin-top:1.4rem;background:var(--wood-soft);border-radius:16px;border:1px solid var(--wood);
+    padding:1.4rem 1.5rem;display:flex;gap:1.2rem;align-items:center;flex-wrap:wrap;justify-content:space-between;
+  }
+  .firmen p{max-width:44em;font-size:.94rem}
+  .firmen strong{font-family:var(--disp);font-weight:560;font-size:1.12rem;display:block;margin-bottom:.15rem}
+
+  /* ── Termin (Formular-Mock) ─────────────────────── */
+  .termin-grid{display:grid;grid-template-columns:minmax(0,4fr) minmax(0,7fr);gap:clamp(1.6rem,4vw,3.4rem)}
+  @media(max-width:820px){.termin-grid{grid-template-columns:1fr}}
+  form{display:grid;gap:1.15rem;background:#fff;border:1px solid var(--sage-line);border-radius:18px;padding:clamp(1.3rem,3vw,2rem)}
+  .feld{display:grid;gap:.4rem}
+  .feld>span{font-size:.82rem;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--ink-soft)}
+  input[type=text],input[type=tel],select,textarea{
+    font:inherit;color:var(--ink);background:var(--paper);
+    border:1px solid var(--sage-line);border-radius:10px;padding:.68rem .85rem;width:100%;
+  }
+  input:focus-visible,select:focus-visible,textarea:focus-visible,.chip input:focus-visible+span{
+    outline:2px solid var(--terra);outline-offset:1px;
+  }
+  .zwei{display:grid;grid-template-columns:1fr 1fr;gap:1.15rem}
+  @media(max-width:560px){.zwei{grid-template-columns:1fr}}
+  .chips{display:flex;flex-wrap:wrap;gap:.5rem}
+  .chip{position:relative;cursor:pointer}
+  .chip input{position:absolute;opacity:0;inset:0;cursor:pointer}
+  .chip span{
+    display:inline-block;font-size:.9rem;font-weight:600;border:1px solid var(--sage-line);
+    border-radius:99px;padding:.45rem 1.05rem;background:var(--paper);
+    transition:background .35s,border-color .35s,color .35s;
+  }
+  .chip input:checked+span{background:var(--sage-deep);border-color:var(--sage-deep);color:var(--paper)}
+  form button{
+    font:inherit;font-weight:700;letter-spacing:.02em;cursor:pointer;border:0;
+    background:var(--terra);color:#FFF6F0;border-radius:99px;padding:.85rem 1.6rem;
+    transition:background .3s,transform .5s var(--breathe);
+  }
+  form button:hover{background:var(--terra-deep);transform:translateY(-2px)}
+  .form-note{font-size:.82rem;color:var(--ink-soft)}
+  .bestaetigt{
+    display:none;background:var(--sage-mist);border:1px solid var(--sage);border-radius:12px;
+    padding:.9rem 1.1rem;font-size:.94rem;font-weight:600;color:var(--sage-deep);
+  }
+  .bestaetigt.zeigen{display:block}
+  .termin-info h3{font-family:var(--disp);font-weight:560;font-size:1.25rem;margin-bottom:.4rem}
+  .termin-info p{color:var(--ink-soft);font-size:.95rem;max-width:30em}
+  .termin-info .block{margin-top:1.4rem}
+
+  /* ── footer ─────────────────────────────────────── */
+  footer{background:var(--ink);color:#E9ECE9;padding:clamp(2.8rem,6vw,4.5rem) 0 2rem;margin-top:2rem}
+  .foot-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:2rem}
+  @media(max-width:820px){.foot-grid{grid-template-columns:1fr}}
+  footer h3{font-family:var(--disp);font-weight:560;font-size:1.15rem;margin-bottom:.6rem;color:#fff}
+  footer p,footer li{font-size:.92rem;color:rgba(233,236,233,.78)}
+  footer ul{list-style:none;display:grid;gap:.3rem}
+  footer a{color:#E9ECE9;text-decoration-color:rgba(233,236,233,.4)}
+  footer a:hover{color:var(--wood)}
+  .foot-bottom{
+    margin-top:2.6rem;padding-top:1.3rem;border-top:1px solid rgba(233,236,233,.15);
+    display:flex;flex-wrap:wrap;gap:1rem;justify-content:space-between;align-items:center;
+    font-size:.82rem;color:rgba(233,236,233,.55);
+  }
+  .foot-bottom a{color:rgba(233,236,233,.75)}
+
+  /* ── atmende Reveals ────────────────────────────── */
+  .rv{opacity:0;transform:translateY(26px) scale(.985);
+    transition:opacity 1.05s var(--breathe),transform 1.05s var(--breathe)}
+  .rv.in{opacity:1;transform:none}
+  .rv.d1{transition-delay:.08s}.rv.d2{transition-delay:.16s}.rv.d3{transition-delay:.24s}
+  .rv.d4{transition-delay:.32s}.rv.d5{transition-delay:.4s}
+
+  @media(prefers-reduced-motion:reduce){
+    html{scroll-behavior:auto}
+    .rv{opacity:1;transform:none;transition:none}
+    .pikto .anim{animation:none}
+    *,*::before,*::after{transition-duration:.01ms!important;animation-duration:.01ms!important}
+  }
+</style>
+</head>
+<body>
+
+<a class="pill" href="/">&larr; 25</a>
+
+<header class="top">
+  <div class="wrap topbar">
+    <a class="brand" href="#top">physio<em>werk</em></a>
+    <nav class="main" aria-label="Hauptnavigation">
+      <a href="#behandlungen">Behandlungen</a>
+      <a href="#ablauf">Ablauf</a>
+      <a href="#team">Team</a>
+      <a href="#preise">Training &amp; Preise</a>
+      <a href="#kontakt">Kontakt</a>
+    </nav>
+    <a class="cta small" href="#termin">Termin buchen</a>
+  </div>
+</header>
+
+<div class="bahn-space" id="top">
+  <!-- die Bewegungsbahn: eine Spur, die sich beim Scrollen zeichnet -->
+  <svg id="bahn" viewBox="0 0 1000 1000" preserveAspectRatio="none" aria-hidden="true" focusable="false">
+    <path id="bahnpfad" d="M -30 60
+      C 200 40, 340 120, 500 105
+      S 870 40, 1010 120
+      C 1060 160, 980 205, 860 215
+      S 380 195, 200 250
+      C 60 290, 40 340, 160 375
+      S 760 380, 900 430
+      C 1010 470, 990 520, 830 545
+      S 300 540, 140 590
+      C 20 630, 30 680, 190 705
+      S 800 690, 940 745
+      C 1030 785, 980 830, 820 850
+      S 320 845, 150 890
+      C 40 920, 60 970, 220 985"/>
+  </svg>
+
+  <!-- ═══════════ HERO ═══════════ -->
+  <section class="hero" aria-labelledby="hero-h">
+    <div class="wrap hero-grid">
+      <div>
+        <p class="kicker rv">Physiotherapie in Luzern</p>
+        <h1 id="hero-h" class="rv d1">Wieder in <span class="accent">Bewegung.</span></h1>
+        <p class="lead rv d2">Vom ersten Befund bis zum letzten Trainingssatz: Wir begleiten Sie ruhig, persönlich und mit einem klaren Plan zurück in Ihren Alltag — und darüber hinaus.</p>
+        <div class="hero-actions rv d3">
+          <a class="cta" href="#termin">Termin buchen</a>
+          <span class="kasse">
+            <svg width="18" height="18" viewBox="0 0 18 18" aria-hidden="true"><circle cx="9" cy="9" r="8" fill="none" stroke="#7C947B" stroke-width="1.6"/><path d="M5.4 9.3 8 11.8 12.8 6.4" fill="none" stroke="#7C947B" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            Krankenkassen-anerkannt
+          </span>
+        </div>
+      </div>
+      <figure class="hero-fig rv d2">
+        <img src="assets/studio.webp" alt="Heller Behandlungsraum im physiowerk Luzern: Therapieliege mit Terracotta-Frottee, salbeigrüne Wand, Trainingsbänder und Hanteln an heller Holzwand" width="1920" height="1072" fetchpriority="high" decoding="async">
+        <figcaption>Behandlungsraum 2 · physiowerk Luzern</figcaption>
+      </figure>
+    </div>
+  </section>
+
+  <!-- ═══════════ BEHANDLUNGEN ═══════════ -->
+  <section id="behandlungen" class="tinted" aria-labelledby="beh-h">
+    <div class="wrap">
+      <div class="sec-head rv">
+        <p class="kicker">Unsere Behandlungen</p>
+        <h2 id="beh-h">Sechs Wege, ein Ziel: Ihre Bewegung.</h2>
+        <p>Alle ärztlich verordneten Therapien werden über die Grundversicherung abgerechnet. Ohne Verordnung behandeln wir Sie gerne als Selbstzahlerin oder Selbstzahler.</p>
+      </div>
+      <div class="treat-grid">
+
+        <article class="treat rv">
+          <div class="pikto" aria-hidden="true">
+            <!-- Arm heben -->
+            <svg viewBox="0 0 64 64">
+              <circle class="kopf" cx="32" cy="12" r="5"/>
+              <path stroke="" d="M32 18 V40"/>
+              <path stroke="" d="M32 40 L24 58 M32 40 L40 58"/>
+              <g class="anim" style="transform-origin:32px 24px;animation-name:armheben">
+                <path stroke="" d="M32 24 L46 10"/>
+              </g>
+              <path stroke="" d="M32 24 L22 36"/>
+            </svg>
+          </div>
+          <p class="tag">Grundversicherung</p>
+          <h3>Physiotherapie</h3>
+          <p>Klassische Einzeltherapie nach Verletzung, Operation oder bei chronischen Beschwerden — Schritt für Schritt zurück zur vollen Funktion.</p>
+        </article>
+
+        <article class="treat rv d1">
+          <div class="pikto" aria-hidden="true">
+            <!-- Seitneigung / Mobilisation -->
+            <svg viewBox="0 0 64 64">
+              <g class="anim" style="transform-origin:32px 40px;animation-name:beugen">
+                <circle class="kopf" cx="32" cy="12" r="5"/>
+                <path stroke="" d="M32 18 V40"/>
+                <path stroke="" d="M32 26 L18 34 M32 26 L46 20"/>
+              </g>
+              <path stroke="" d="M32 40 L25 58 M32 40 L39 58"/>
+            </svg>
+          </div>
+          <p class="tag">Grundversicherung</p>
+          <h3>Manuelle Therapie</h3>
+          <p>Gezielte Mobilisation von Gelenken und Gewebe mit den Händen — löst Blockaden, lindert Schmerzen, gibt Beweglichkeit zurück.</p>
+        </article>
+
+        <article class="treat rv d2">
+          <div class="pikto" aria-hidden="true">
+            <!-- Laufen -->
+            <svg viewBox="0 0 64 64">
+              <circle class="kopf" cx="34" cy="11" r="5"/>
+              <path stroke="" d="M34 17 L31 38"/>
+              <path stroke="" d="M33 24 L44 30 M33 24 L21 28"/>
+              <g class="anim" style="transform-origin:31px 38px;animation-name:schritt-v">
+                <path stroke="" d="M31 38 L20 50 L16 58"/>
+              </g>
+              <g class="anim" style="transform-origin:31px 38px;animation-name:schritt-h">
+                <path stroke="" d="M31 38 L40 50 L46 56"/>
+              </g>
+            </svg>
+          </div>
+          <p class="tag">Sport &amp; Alltag</p>
+          <h3>Sportphysiotherapie</h3>
+          <p>Return-to-Sport nach Plan: Belastungsaufbau, Sprung- und Lauftests, Trainingssteuerung — bis Sie wieder wettkampffit sind.</p>
+        </article>
+
+        <article class="treat rv">
+          <div class="pikto" aria-hidden="true">
+            <!-- Dry Needling: Triggerpunkt pulsiert -->
+            <svg viewBox="0 0 64 64">
+              <circle class="kopf" cx="26" cy="12" r="5"/>
+              <path stroke="" d="M26 18 V40 M26 40 L19 58 M26 40 L33 58"/>
+              <path stroke="" d="M26 24 L38 32"/>
+              <path stroke="" d="M46 16 L39 30" stroke-width="1.8"/>
+              <circle class="punkt anim" cx="38" cy="32" r="3.4" style="transform-origin:38px 32px;animation-name:puls"/>
+            </svg>
+          </div>
+          <p class="tag">Zusatztechnik</p>
+          <h3>Dry Needling</h3>
+          <p>Feine Nadeln lösen verhärtete Triggerpunkte in der Muskulatur — eine wirksame Ergänzung bei hartnäckigen Verspannungen.</p>
+        </article>
+
+        <article class="treat rv d1">
+          <div class="pikto" aria-hidden="true">
+            <!-- Kniebeuge -->
+            <svg viewBox="0 0 64 64">
+              <g class="anim" style="transform-origin:32px 38px;animation-name:kniebeuge">
+                <circle class="kopf" cx="32" cy="10" r="5"/>
+                <path stroke="" d="M32 16 V38"/>
+                <path stroke="" d="M32 23 L20 27 M32 23 L44 27"/>
+                <path stroke="" d="M18 27 H22 M42 27 H46" stroke-width="3.4"/>
+              </g>
+              <g class="anim" style="transform-origin:32px 38px;animation-name:kniewinkel">
+                <path stroke="" d="M32 38 L24 48 L24 58"/>
+              </g>
+              <g class="anim" style="transform-origin:32px 38px;animation-name:kniewinkel-r">
+                <path stroke="" d="M32 38 L40 48 L40 58"/>
+              </g>
+            </svg>
+          </div>
+          <p class="tag">Selbstzahler-Abo</p>
+          <h3>MTT / Trainingstherapie</h3>
+          <p>Medizinische Trainingstherapie an Geräten — betreut von Ihrer Therapeutin, mit individuellem Programm für nachhaltige Kraft.</p>
+        </article>
+
+        <article class="treat rv d2">
+          <div class="pikto" aria-hidden="true">
+            <!-- Domizil: Gehen + Haus -->
+            <svg viewBox="0 0 64 64">
+              <path stroke="" d="M44 58 V44 L52 37 L60 44 V58 Z" stroke-width="2"/>
+              <circle class="kopf" cx="22" cy="13" r="5"/>
+              <path stroke="" d="M22 19 V38"/>
+              <path stroke="" d="M22 25 L13 32 M22 25 L31 31"/>
+              <g class="anim" style="transform-origin:22px 38px;animation-name:schritt-v">
+                <path stroke="" d="M22 38 L14 48 L13 58"/>
+              </g>
+              <g class="anim" style="transform-origin:22px 38px;animation-name:schritt-h">
+                <path stroke="" d="M22 38 L29 49 L33 57"/>
+              </g>
+            </svg>
+          </div>
+          <p class="tag">Bei Ihnen zuhause</p>
+          <h3>Domizilbehandlung</h3>
+          <p>Wenn der Weg zu uns nicht möglich ist, kommen wir zu Ihnen — in Luzern und Agglomeration, mit ärztlicher Verordnung.</p>
+        </article>
+
+      </div>
+    </div>
+  </section>
+
+  <!-- ═══════════ ABLAUF ═══════════ -->
+  <section id="ablauf" aria-labelledby="ablauf-h">
+    <div class="wrap">
+      <div class="sec-head rv">
+        <p class="kicker">So läuft es ab</p>
+        <h2 id="ablauf-h">In vier ruhigen Schritten zurück.</h2>
+        <p>Kein Papierkrieg, keine Umwege: Von der Verordnung bis zum selbstständigen Training führt eine klare Bahn.</p>
+      </div>
+      <div class="steps">
+        <div class="step rv">
+          <p class="num">01</p><span class="pfeil" aria-hidden="true">&rarr;</span>
+          <h3>Verordnung vom Arzt</h3>
+          <p>Ihre Ärztin oder Ihr Arzt stellt die Physiotherapie-Verordnung aus — damit übernimmt die Grundversicherung die Behandlung.</p>
+        </div>
+        <div class="step rv d1">
+          <p class="num">02</p><span class="pfeil" aria-hidden="true">&rarr;</span>
+          <h3>Erstbefund</h3>
+          <p>Beim ersten Termin nehmen wir uns Zeit: Anamnese, Untersuchung, gemeinsame Ziele. Sie wissen danach genau, woran wir arbeiten.</p>
+        </div>
+        <div class="step rv d2">
+          <p class="num">03</p><span class="pfeil" aria-hidden="true">&rarr;</span>
+          <h3>Behandlungsplan</h3>
+          <p>Therapie, Heimprogramm und Belastungsaufbau greifen ineinander — angepasst an Ihren Alltag, Ihre Arbeit, Ihren Sport.</p>
+        </div>
+        <div class="step rv d3">
+          <p class="num">04</p><span class="pfeil" aria-hidden="true">&rarr;</span>
+          <h3>Training</h3>
+          <p>Am Ende der Therapie steht der Übergang ins selbstständige Training — bei uns im MTT-Raum oder mit Ihrem Programm zuhause.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ═══════════ TEAM ═══════════ -->
+  <section id="team" class="tinted" aria-labelledby="team-h">
+    <div class="wrap">
+      <div class="sec-head rv">
+        <p class="kicker">Ihr Team</p>
+        <h2 id="team-h">Drei Menschen, die Bewegung ernst nehmen.</h2>
+        <p>Eidgenössisch anerkannte Physiotherapeutinnen und -therapeuten — mit Weiterbildungen, die zu Ihren Beschwerden passen.</p>
+      </div>
+      <div class="team-grid">
+        <article class="member rv">
+          <div class="mono" aria-hidden="true">LB</div>
+          <p class="rolle">Praxisleitung</p>
+          <h3>Lena Brunner</h3>
+          <p>MSc Physiotherapie · 14 Jahre Erfahrung. Führt Sie ruhig durch komplexe Reha-Verläufe — von der Hüftprothese bis zum Bandscheibenvorfall.</p>
+          <ul><li>Manuelle Therapie</li><li>Reha nach Operationen</li><li>Rückenschmerz</li></ul>
+        </article>
+        <article class="member rv d1">
+          <div class="mono" aria-hidden="true">DK</div>
+          <p class="rolle">Sportphysiotherapie</p>
+          <h3>Daniel Koch</h3>
+          <p>Sportphysiotherapeut ESP · betreut Athletinnen und Athleten vom Breitensport bis zur Nationalliga. Sein Feld: Return-to-Sport und Dry Needling.</p>
+          <ul><li>Sportphysio</li><li>Dry Needling</li><li>Lauftraining</li></ul>
+        </article>
+        <article class="member rv d2">
+          <div class="mono" aria-hidden="true">SF</div>
+          <p class="rolle">MTT &amp; Domizil</p>
+          <h3>Sofia Ferreira</h3>
+          <p>BSc Physiotherapie · leitet den Trainingsraum und die Domizilbehandlungen. Ihre Stärke: Menschen dort abholen, wo Bewegung schwerfällt.</p>
+          <ul><li>Trainingstherapie</li><li>Domizil</li><li>Sturzprävention</li></ul>
+        </article>
+      </div>
+    </div>
+  </section>
+
+  <!-- ═══════════ SELBSTZAHLER & TRAINING ═══════════ -->
+  <section id="preise" aria-labelledby="preise-h">
+    <div class="wrap">
+      <div class="sec-head rv">
+        <p class="kicker">Selbstzahler &amp; Training</p>
+        <h2 id="preise-h">Weitertrainieren, wenn die Therapie endet.</h2>
+        <p>Unser MTT-Raum steht Ihnen auch ohne Verordnung offen — betreut, in kleinen Gruppen, zu fairen Konditionen. Alle Preise in CHF, inkl. Eintrittsinstruktion.</p>
+      </div>
+      <div class="price-grid">
+        <article class="price rv">
+          <h3>Einzeleintritt</h3>
+          <p class="chf">CHF 28<small> / Eintritt</small></p>
+          <p>Zum Reinschnuppern oder für unregelmässige Wochen.</p>
+          <ul>
+            <li>Betreutes Training à 60 Min.</li>
+            <li>Persönliches Programm</li>
+            <li>Ohne Verpflichtung</li>
+          </ul>
+          <a class="cta" href="#termin">Probetraining</a>
+        </article>
+        <article class="price hi rv d1">
+          <span class="beliebt">Beliebt</span>
+          <h3>10er-Abo</h3>
+          <p class="chf">CHF 240<small> / 10 Eintritte</small></p>
+          <p>Der flexible Klassiker — 12 Monate gültig, übertragbar.</p>
+          <ul>
+            <li>10 &times; betreutes Training</li>
+            <li>Programm-Update alle 5 Besuche</li>
+            <li>CHF 24 pro Eintritt</li>
+          </ul>
+          <a class="cta" href="#termin">Abo lösen</a>
+        </article>
+        <article class="price rv d2">
+          <h3>Halbjahres-Abo</h3>
+          <p class="chf">CHF 690<small> / 6 Monate</small></p>
+          <p>Für alle, die Training zur Gewohnheit machen wollen.</p>
+          <ul>
+            <li>Unbegrenzt trainieren</li>
+            <li>2 Standort-Bestimmungen inklusive</li>
+            <li>Krafttest zu Beginn &amp; Ende</li>
+          </ul>
+          <a class="cta" href="#termin">Beratung buchen</a>
+        </article>
+      </div>
+      <div class="firmen rv">
+        <p><strong>Firmenangebote</strong>Gesunde Teams bewegen mehr: Wir bieten Firmen in Luzern ergonomische Arbeitsplatz-Checks, Rücken-Workshops und vergünstigte MTT-Abos für Mitarbeitende ab 5 Personen. Offerte auf Anfrage.</p>
+        <a class="cta" href="#termin">Offerte anfragen</a>
+      </div>
+    </div>
+  </section>
+
+  <!-- ═══════════ TERMIN ═══════════ -->
+  <section id="termin" class="tinted" aria-labelledby="termin-h">
+    <div class="wrap termin-grid">
+      <div class="termin-info rv">
+        <p class="kicker">Termin buchen</p>
+        <h2 id="termin-h">Der erste Schritt ist der kleinste.</h2>
+        <p>Sagen Sie uns kurz, worum es geht — wir melden uns innert eines Arbeitstages mit einem Terminvorschlag. Akute Fälle nehmen wir wenn immer möglich in derselben Woche.</p>
+        <div class="block">
+          <h3>Lieber direkt anrufen?</h3>
+          <p>Mo–Fr 07.30–12.00 / 13.30–18.00 Uhr<br><a href="tel:+41410000000">+41 41 XXX XX XX</a></p>
+        </div>
+      </div>
+      <form id="terminform" novalidate>
+        <div class="zwei">
+          <label class="feld"><span>Name</span>
+            <input type="text" name="name" autocomplete="name" placeholder="Vor- und Nachname">
+          </label>
+          <label class="feld"><span>Telefon</span>
+            <input type="tel" name="tel" autocomplete="tel" placeholder="z.&#8239;B. 079 000 00 00">
+          </label>
+        </div>
+        <label class="feld"><span>Behandlung</span>
+          <select name="behandlung">
+            <option>Physiotherapie</option>
+            <option>Manuelle Therapie</option>
+            <option>Sportphysiotherapie</option>
+            <option>Dry Needling</option>
+            <option>MTT / Trainingstherapie</option>
+            <option>Domizilbehandlung</option>
+            <option>Ich bin nicht sicher</option>
+          </select>
+        </label>
+        <div class="feld">
+          <span id="wz-label">Wunschzeit</span>
+          <div class="chips" role="radiogroup" aria-labelledby="wz-label">
+            <label class="chip"><input type="radio" name="wunschzeit" value="morgen" checked><span>Morgen</span></label>
+            <label class="chip"><input type="radio" name="wunschzeit" value="mittag"><span>Mittag</span></label>
+            <label class="chip"><input type="radio" name="wunschzeit" value="abend"><span>Abend</span></label>
+            <label class="chip"><input type="radio" name="wunschzeit" value="flexibel"><span>Flexibel</span></label>
+          </div>
+        </div>
+        <div class="feld">
+          <span id="vo-label">Ärztliche Verordnung vorhanden?</span>
+          <div class="chips" role="radiogroup" aria-labelledby="vo-label">
+            <label class="chip"><input type="radio" name="verordnung" value="ja" checked><span>Ja</span></label>
+            <label class="chip"><input type="radio" name="verordnung" value="nein"><span>Nein / noch nicht</span></label>
+          </div>
+        </div>
+        <label class="feld"><span>Anliegen (optional)</span>
+          <textarea name="nachricht" rows="3" placeholder="Kurz beschrieben: Was führt Sie zu uns?"></textarea>
+        </label>
+        <button type="submit">Anfrage senden</button>
+        <p class="bestaetigt" role="status" aria-live="polite" id="formok">Danke! Ihre Anfrage ist bei uns — wir melden uns innert eines Arbeitstages. <em>(Demo-Formular: Es wurden keine Daten übermittelt.)</em></p>
+        <p class="form-note">Demo-Template: Dieses Formular sendet keine Daten. Krankenkassen-anerkannte Behandlungen benötigen eine ärztliche Verordnung.</p>
+      </form>
+    </div>
+  </section>
+</div><!-- /bahn-space -->
+
+<!-- ═══════════ KONTAKT / FOOTER ═══════════ -->
+<footer id="kontakt">
+  <div class="wrap">
+    <div class="foot-grid">
+      <div>
+        <h3>physiowerk Luzern</h3>
+        <p>Bewegungspraxis für Therapie &amp; Training<br>
+        Habsburgerstrasse 41<br>6003 Luzern<br><br>
+        <a href="tel:+41410000000">+41 41 XXX XX XX</a><br>
+        <a href="mailto:hallo@physiowerk-luzern.ch">hallo@physiowerk-luzern.ch</a></p>
+      </div>
+      <div>
+        <h3>Öffnungszeiten</h3>
+        <ul>
+          <li>Mo–Fr &nbsp;07.30–12.00 / 13.30–18.00</li>
+          <li>Sa &nbsp;nach Vereinbarung</li>
+          <li>MTT-Raum: Mo–Fr bis 20.00</li>
+        </ul>
+      </div>
+      <div>
+        <h3>Anreise</h3>
+        <ul>
+          <li><strong>ÖV:</strong> Bus 1/2 bis «Kantonalbank», 3 Min. zu Fuss</li>
+          <li><strong>Parkplatz:</strong> Besucherparkplätze im Hof, blaue Zone in der Umgebung</li>
+          <li>Praxis rollstuhlgängig, Lift vorhanden</li>
+        </ul>
+      </div>
+    </div>
+    <div class="foot-bottom">
+      <p>© 2026 physiowerk Luzern — fiktives Template · <a href="#top">Impressum</a> · <a href="#top">Datenschutz</a></p>
+      <p>FABLE/25 · Nº 64 · <a href="/64-physio/guide/">guide &amp; prompt &rarr;</a></p>
+    </div>
+  </div>
+</footer>
+
+<script>
+(function(){
+  'use strict';
+  var reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+  /* ── atmende Reveals ── */
+  var els = document.querySelectorAll('.rv');
+  if(reduce || !('IntersectionObserver' in window)){
+    els.forEach(function(el){ el.classList.add('in'); });
+  } else {
+    var io = new IntersectionObserver(function(entries){
+      entries.forEach(function(e){
+        if(e.isIntersecting){ e.target.classList.add('in'); io.unobserve(e.target); }
+      });
+    },{threshold:.12,rootMargin:'0px 0px -6% 0px'});
+    els.forEach(function(el){ io.observe(el); });
+  }
+
+  /* ── Bewegungsbahn: zeichnet sich beim Scrollen ── */
+  var pfad = document.getElementById('bahnpfad');
+  var space = document.querySelector('.bahn-space');
+  if(pfad && space){
+    var len = pfad.getTotalLength();
+    if(reduce){
+      pfad.style.strokeDasharray = 'none';
+    } else {
+      pfad.style.strokeDasharray = len + ' ' + len;
+      pfad.style.strokeDashoffset = len;
+      var ticking = false;
+      var draw = function(){
+        ticking = false;
+        var r = space.getBoundingClientRect();
+        var vh = window.innerHeight;
+        /* Fortschritt: wie weit die Sektion durchs Viewport gewandert ist */
+        var p = (vh - r.top) / (r.height + vh * .55);
+        p = Math.max(0, Math.min(1, p));
+        pfad.style.strokeDashoffset = String(len * (1 - p));
+      };
+      var onScroll = function(){
+        if(!ticking){ ticking = true; requestAnimationFrame(draw); }
+      };
+      window.addEventListener('scroll', onScroll, {passive:true});
+      window.addEventListener('resize', onScroll, {passive:true});
+      draw();
+    }
+  }
+
+  /* ── Termin-Formular (Mock) ── */
+  var form = document.getElementById('terminform');
+  var ok = document.getElementById('formok');
+  if(form && ok){
+    form.addEventListener('submit', function(e){
+      e.preventDefault();
+      ok.classList.add('zeigen');
+      ok.scrollIntoView({behavior: reduce ? 'auto' : 'smooth', block:'nearest'});
+    });
+  }
+})();
+</script>
+</body>
+</html>

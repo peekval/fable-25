@@ -25,6 +25,14 @@
            legibility over the golden sky, arch footnote wraps cleanly at 390.
   PASS 5 — hero specular sun path redrawn as an elliptical radial (no hard
            rectangle edges), kicker holds one line on small screens.
+  PASS 6 — motion cleanliness pass: one easing system (--ease custom property,
+           all entrances .65s/24px, stagger 80ms, micro-interactions .25s),
+           ocean idle calmed ~25% (amplitude, wave speed, glitter flicker,
+           spray rate), ship's-log typing slowed to a maritime one-char/44ms
+           cadence, plank strips and hull-line draws given even stagger with
+           identical per-item windows, voyage/arch scroll scrubs damped via a
+           converging lerp loop (no per-pixel jumps on fast scroll), counters
+           1.9s -> 1.4s. Reduced-motion path unchanged.
 -->
 <html lang="en">
 <head>
@@ -37,6 +45,7 @@
 <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;1,300;1,400&family=IBM+Plex+Mono:wght@300;400&family=Crimson+Pro:ital,wght@0,300;0,400;1,300&display=swap" rel="stylesheet">
 <style>
 :root{
+  --ease:cubic-bezier(.22,.6,.2,1); /* single signature ease-out — every entrance uses it */
   --sea:#0E1B2A;
   --deep:#091320;
   --gold:#D8B77A;
@@ -76,7 +85,7 @@ body::after{
   text-decoration:none;color:var(--foam);
   background:rgba(9,19,32,.55);border:1px solid var(--hair);border-radius:999px;
   padding:.45rem 1rem;backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);
-  transition:background .35s,color .35s,border-color .35s;
+  transition:background .25s var(--ease),color .25s var(--ease),border-color .25s var(--ease);
 }
 .back:hover{background:var(--foam);color:var(--deep);border-color:var(--foam)}
 .wordmark{
@@ -91,7 +100,7 @@ body::after{
   text-decoration:none;color:var(--gold);
   background:rgba(9,19,32,.55);border:1px solid var(--line);border-radius:999px;
   padding:.45rem 1rem;backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);
-  transition:background .35s,color .35s;
+  transition:background .25s var(--ease),color .25s var(--ease);
 }
 .commission-pill:hover{background:var(--gold);color:var(--deep)}
 @media (max-width:640px){
@@ -118,9 +127,9 @@ p.lede{font-size:clamp(1.05rem,1.6vw,1.28rem);line-height:1.7;color:#c9cfd6;max-
 p.lede + p.lede{margin-top:1rem}
 
 /* reveal on scroll */
-.rv{opacity:0;transform:translateY(26px);transition:opacity 1s cubic-bezier(.22,.6,.2,1),transform 1s cubic-bezier(.22,.6,.2,1)}
+.rv{opacity:0;transform:translateY(24px);transition:opacity .65s var(--ease),transform .65s var(--ease)}
 .rv.in{opacity:1;transform:none}
-.rv.d1{transition-delay:.12s}.rv.d2{transition-delay:.24s}.rv.d3{transition-delay:.36s}
+.rv.d1{transition-delay:.08s}.rv.d2{transition-delay:.16s}.rv.d3{transition-delay:.24s}
 
 /* ---------- HERO ---------- */
 .hero{position:relative;height:100svh;min-height:600px;overflow:clip;background:var(--deep)}
@@ -369,7 +378,7 @@ p.lede + p.lede{margin-top:1rem}
 .btn{
   display:inline-block;text-decoration:none;border-radius:999px;
   font-family:"IBM Plex Mono",monospace;font-size:.8rem;letter-spacing:.16em;
-  padding:.95rem 2.1rem;transition:transform .35s,background .35s,color .35s,border-color .35s;
+  padding:.95rem 2.1rem;transition:transform .25s var(--ease),background .25s var(--ease),color .25s var(--ease),border-color .25s var(--ease);
 }
 .btn-gold{background:var(--gold);color:var(--deep);border:1px solid var(--gold)}
 .btn-gold:hover{transform:translateY(-2px);background:var(--foam);border-color:var(--foam)}
@@ -723,8 +732,8 @@ if(!PRM && canvas && canvas.getContext){
       rows.push({
         f:f,
         y: horizon + Math.pow(f,1.7)*(H-horizon)*1.04,
-        amp: lerp(1.2, mobile?26:34, Math.pow(f,1.5)),
-        sp:  lerp(0.35, 1.0, f),
+        amp: lerp(1.0, mobile?20:26, Math.pow(f,1.5)),
+        sp:  lerp(0.3, 0.85, f),
         ph:  Math.random()*Math.PI*2
       });
     }
@@ -745,10 +754,10 @@ if(!PRM && canvas && canvas.getContext){
 
   function waveY(x, row, t){
     var k = 0.9 + row.f*0.5;
-    var v = Math.sin(x*0.0062*k + t*0.8*row.sp + row.ph)*0.55
-          + Math.sin(x*0.0125*k - t*1.05*row.sp + row.ph*1.7)*0.28
-          + Math.sin(x*0.028*k  + t*1.7*row.sp)*0.12
-          + Math.sin(x*0.0031  + t*0.45)*0.35;
+    var v = Math.sin(x*0.0062*k + t*0.62*row.sp + row.ph)*0.55
+          + Math.sin(x*0.0125*k - t*0.82*row.sp + row.ph*1.7)*0.28
+          + Math.sin(x*0.028*k  + t*1.3*row.sp)*0.12
+          + Math.sin(x*0.0031  + t*0.35)*0.35;
     return v; /* roughly -1.3..1.3 */
   }
 
@@ -828,7 +837,7 @@ if(!PRM && canvas && canvas.getContext){
         if(vv>0.32){
           var yy = row.y + vv*row.amp;
           var prox = 1-Math.abs(gx-sunX)/glintW;
-          var a = prox*lerp(.35,.95,row.f)*(0.45+0.55*Math.sin(gx*13.7+t*3+row.ph*9));
+          var a = prox*lerp(.3,.85,row.f)*(0.45+0.55*Math.sin(gx*13.7+t*2.1+row.ph*9));
           if(a>0.06){
             ctx.strokeStyle = "rgba(240,203,138,"+a.toFixed(3)+")";
             ctx.beginPath();
@@ -840,7 +849,7 @@ if(!PRM && canvas && canvas.getContext){
       }
 
       /* spray at crests of near rows */
-      if(row.f>0.72 && spray.length< (mobile?36:80) && Math.random()<0.16){
+      if(row.f>0.72 && spray.length< (mobile?24:56) && Math.random()<0.10){
         var sx = Math.random()*W;
         var sv = waveY(sx,row,t);
         if(sv>0.85){
@@ -935,7 +944,7 @@ function tickTyping(){
   var busy = false;
   typing.forEach(function(l){
     if(l.started && !l.done){
-      l.n = Math.min(l.text.length, l.n + 2);
+      l.n = Math.min(l.text.length, l.n + 1);
       if(l.n >= l.text.length){ l.done = true; }
       renderLog(l); busy = true;
     }
@@ -951,11 +960,8 @@ function padClock(p){
   return (h<10?"0":"")+h+":"+(m<10?"0":"")+m;
 }
 
-function updateVoyage(){
+function applyVoyage(p){
   if(PRM || !voyage) return;
-  var rect = voyage.getBoundingClientRect();
-  var total = rect.height - window.innerHeight;
-  var p = clamp(-rect.top/Math.max(total,1), 0, 1);
   voyP = p;
 
   /* sky layers */
@@ -987,7 +993,7 @@ function updateVoyage(){
     if(!l.started && p >= l.at){ l.started = true; need = true; renderLog(l); }
   });
   if((need || typing.some(function(l){return l.started&&!l.done;})) && !typeTimer){
-    typeTimer = setInterval(tickTyping, 34);
+    typeTimer = setInterval(tickTyping, 44);
   }
 }
 
@@ -1065,17 +1071,15 @@ var PLANKS = 9;
 })();
 var planks = Array.prototype.slice.call(document.querySelectorAll(".plank"));
 
-function updateArch(){
+function applyArch(p){
   if(PRM || !arch) return;
-  var rect = arch.getBoundingClientRect();
-  var total = rect.height - window.innerHeight;
-  var p = clamp(-rect.top/Math.max(total,1), 0, 1);
 
   /* phase 1: 0-0.55 draw lines */
   var d = smooth(0.0,0.55,p);
   draws.forEach(function(path,i){
-    var stagger = i/(draws.length*1.6);
-    var lp = clamp((d-stagger)/(1-stagger),0,1);
+    /* even stagger, identical draw window for every line */
+    var st = i/draws.length*0.55;
+    var lp = clamp((d-st)/0.45,0,1);
     path.style.strokeDashoffset = (drawLens[i]*(1-lp)).toFixed(1);
   });
   archPct.textContent = (d<1 ? ("00"+Math.round(d*100)).slice(-3) : "100")+"%";
@@ -1084,8 +1088,8 @@ function updateArch(){
   var k = smooth(0.58,0.95,p);
   planks.forEach(function(pl,i){
     var order = (i%2===0)? i/2 : PLANKS - (i+1)/2;   // alternate from both edges
-    var st = order/PLANKS*0.7;
-    var lp = clamp((k-st)/(1-st),0,1);
+    var st = order/PLANKS*0.62;                      // even stagger …
+    var lp = clamp((k-st)/0.38,0,1);                 // … identical slide window per plank
     var e = 1-Math.pow(1-lp,3);
     pl.style.transform = "translateX("+((1-e)*(i%2? 101 : -101))+"%)";
     pl.style.opacity = lp>0? 1 : 0;
@@ -1113,7 +1117,7 @@ if(PRM){
   new IntersectionObserver(function(es,io){
     if(!es[0].isIntersecting || done) return;
     done = true; io.disconnect();
-    var t0 = performance.now(), dur = 1900;
+    var t0 = performance.now(), dur = 1400;
     (function step(now){
       var p = clamp((now-t0)/dur,0,1);
       var e = 1-Math.pow(1-p,4);
@@ -1127,19 +1131,37 @@ if(PRM){
 })();
 
 /* =========================================================
-   scroll driver
+   scroll driver — scrub targets are damped (lerped) so fast
+   scrolling never steps; the loop stops once converged
    ========================================================= */
-var ticking = false;
+function targetP(el){
+  var rect = el.getBoundingClientRect();
+  var total = rect.height - window.innerHeight;
+  return clamp(-rect.top/Math.max(total,1), 0, 1);
+}
+var voyC = 0, archC = 0, scrubRaf = 0;
+function scrubStep(){
+  scrubRaf = 0;
+  var past = hero.getBoundingClientRect().bottom < 80;
+  wordmark.classList.toggle("on", past);
+  if(PRM) return;
+  var vT = voyage ? targetP(voyage) : 0;
+  var aT = arch ? targetP(arch) : 0;
+  var again = false;
+  if(Math.abs(vT-voyC) > 0.0004){
+    voyC += (vT-voyC)*0.22;
+    if(Math.abs(vT-voyC) < 0.0004) voyC = vT;
+    applyVoyage(voyC); again = true;
+  }
+  if(Math.abs(aT-archC) > 0.0004){
+    archC += (aT-archC)*0.22;
+    if(Math.abs(aT-archC) < 0.0004) archC = aT;
+    applyArch(archC); again = true;
+  }
+  if(again) scrubRaf = requestAnimationFrame(scrubStep);
+}
 function onScroll(){
-  if(ticking) return;
-  ticking = true;
-  requestAnimationFrame(function(){
-    ticking = false;
-    var past = hero.getBoundingClientRect().bottom < 80;
-    wordmark.classList.toggle("on", past);
-    updateVoyage();
-    updateArch();
-  });
+  if(!scrubRaf) scrubRaf = requestAnimationFrame(scrubStep);
 }
 window.addEventListener("scroll", onScroll, {passive:true});
 window.addEventListener("resize", onScroll);

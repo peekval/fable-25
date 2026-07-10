@@ -3,8 +3,8 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>FABLE / 25 — one model, fifty-eight design languages</title>
-<meta name="description" content="58 fundamentally different websites, designed and built end-to-end by Fable. Every visual generated from code — shaders, 3D, canvas, SVG, CSS. Zero stock assets.">
+<title>FABLE / 25 — one model, sixty-four design languages</title>
+<meta name="description" content="64 fundamentally different websites, designed and built end-to-end by Fable. Every visual generated from code — shaders, 3D, canvas, SVG, CSS. Zero stock assets.">
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='6' fill='%230B0B0E'/%3E%3Ctext x='16' y='22' font-size='14' font-family='monospace' fill='%23F5F3EE' text-anchor='middle'%3E25%3C/text%3E%3C/svg%3E">
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;700&family=Instrument+Serif:ital@0;1&display=swap" rel="stylesheet">
@@ -51,6 +51,13 @@ footer p b{color:var(--ink);font-weight:500}
 .wavehead{grid-column:1/-1;display:flex;align-items:baseline;gap:16px;padding:34px 4px 10px;border-bottom:1px solid var(--line);margin-bottom:8px}
 .wavehead span{font-size:12px;letter-spacing:.3em;text-transform:uppercase;color:var(--ink)}
 .wavehead em{font-family:"Instrument Serif",serif;font-style:italic;color:var(--mut);font-size:15px}
+/* filters */
+.filters{display:flex;flex-wrap:wrap;gap:8px;padding:0 0 26px;position:sticky;top:0;z-index:40;background:linear-gradient(180deg,var(--bg) 78%,transparent);padding-top:14px;margin-top:-14px}
+.chip{font-family:"Space Grotesk",sans-serif;font-size:12px;letter-spacing:.08em;text-transform:uppercase;color:var(--mut);background:#101014;border:1px solid var(--line);border-radius:100px;padding:9px 16px;cursor:pointer;transition:color .25s,border-color .25s,background .25s}
+.chip:hover{color:var(--ink);border-color:rgba(245,243,238,.28)}
+.chip.on{color:var(--bg);background:var(--ink);border-color:var(--ink)}
+.chip:focus-visible{outline:2px solid var(--ink);outline-offset:2px}
+.empty{grid-column:1/-1;color:var(--mut);padding:40px 4px;font-weight:300}
 @media (prefers-reduced-motion:reduce){.sw{animation:none}.card{transition:none;transform:none;opacity:1}}
 @media (max-width:520px){.grid{grid-template-columns:1fr 1fr;gap:10px}.tile{height:110px}.name{font-size:15px}.tag{display:none}.tech{margin-top:8px;font-size:9px}.body{padding:12px 12px 14px}}
 </style>
@@ -58,17 +65,18 @@ footer p b{color:var(--ink);font-weight:500}
 <body>
 <div class="wrap">
 <header>
-  <div class="kick">A design capability study — 58 sites, zero stock assets</div>
-  <h1>One model. <em>Fifty-eight</em> design languages.</h1>
+  <div class="kick">A design capability study — 64 sites, zero stock assets</div>
+  <h1>One model. <em>Sixty-four</em> design languages.</h1>
   <p class="sub">Every site below is a complete, living landing page in a fundamentally different visual dialect — <b>built from code</b>: WebGL shaders, real-time 3D, canvas simulations, generative SVG, kinetic type. Zero stock assets — where a site carries imagery, it is generated and palette-locked to its design system. Each passed documented design-review iterations before shipping. Every site carries its own <b>/guide</b> with a copy-paste reproduction prompt.</p>
   <div class="meta-row">
-    <span><b>58</b>websites</span>
+    <span><b>64</b>websites</span>
     <span><b>120</b>iteration passes</span>
     <span><b>0</b>stock images</span>
     <span><b>1</b>author — Fable</span>
   </div>
 </header>
 
+<nav class="filters" id="filters" aria-label="Filter by direction"></nav>
 <main class="grid" id="grid"></main>
 
 <footer>
@@ -78,76 +86,106 @@ footer p b{color:var(--ink);font-weight:500}
 </div>
 <script>
 const SITES=[
-["01","01-mass","MASS","Brutalist type foundry — glyphs skew with your scroll velocity","kinetic typography",["#0A0A0A","#D8FF3E","#1c1c14"]],
-["02","02-lumen","LUMEN","Perfume house floating on a hand-written iridescent silk shader","raw webgl / glsl",["#0D0B14","#8B7BD8","#4ECDC4"]],
-["03","03-orbita","ORBITA","Watchmaker with a chrome gyroscope you orbit by scrolling","three.js 3d",["#0A0E1A","#C8CDD6","#B8934A"]],
-["04","04-phosphor","PHOSPHOR","Poetry zine inside a real curved CRT — type `help`","webgl crt shader",["#010401","#33FF66","#062b12"]],
-["05","05-sumi","SUMI 墨","Kyoto ink studio — brush strokes paint themselves as you scroll","canvas ink simulation",["#F5F0E6","#1A1815","#C73E2E"]],
-["06","06-grid","GRID°","Swiss journal where the grid itself is the hero — toggle it","typographic system",["#FAFAF8","#E63329","#111111"]],
-["07","07-parsec","PARSEC","Observatory under 800 stars that bend toward your cursor","particle physics",["#05070F","#6EE7F0","#C77DFF"]],
-["08","08-meridian","THE MERIDIAN","1928 deco hotel — gold dust drifts through lobby light","webgl volumetric light",["#0B3D2E","#D4AF6A","#F4EDDF"]],
-["09","09-veil","VEIL & SHADOW","Noir bureau in volumetric smoke — your cursor is the light","webgl fog shader",["#0C0C0E","#8A8A92","#A11D2A"]],
-["10","10-flora","FLORA/FAUNA","Botanical apothecary of morphing blobs and sloshing vials","organic svg morph",["#A8B5A0","#F7F3EC","#C4704F"]],
-["11","11-neon","ネオン MARKET","Cyberpunk night market — RGB-split glitch, holographic stalls","glitch / chromatic",["#07070C","#FF2E88","#00F0FF"]],
-["12","12-lost","MUSEUM OF LOST THINGS","Lost objects drift in a dust-lit 3D hall as you descend","webgl depth scene",["#E9E2D0","#5C1F1F","#9C7C46"]],
-["13","13-monsoon","MONSOON","A journal where each chapter is a working weather system","canvas weather sims",["#2B3440","#5C7A99","#E8C97D"]],
-["14","14-osc1","OSC-1","Analog synth with a real playable Web Audio oscilloscope","web audio api",["#17181C","#FF6B35","#7CFC9A"]],
-["15","15-bauhaus","FORM FOLGT","Bauhaus centenary — circle, square, triangle in choreography","geometric motion",["#F4F1EA","#D02E26","#F2B705"]],
-["16","16-mercvry","MERCVRY","Metal atelier with a ferrofluid metaball that follows you","canvas metaballs",["#101114","#DDE3EA","#4D5BFF"]],
-["17","17-riot","RIOT PAPER","Punk zine — torn paper, tape, stamps, photocopy jitter","collage css",["#F1EFE9","#E8281E","#F5E642"]],
-["18","18-boreal","BOREAL","Arctic expeditions under hand-coded aurora curtains","canvas aurora",["#0B1026","#6BFFB0","#9D7BFF"]],
-["19","19-axono","AXONO","A 3D axonometric tower assembles floor by floor on scroll","three.js ortho scene",["#F6F5F1","#2E5EAA","#FF6A5C"]],
-["20","20-silhouette","SILHOUETTE","A lookbook with no photographs — the type wears living silk","webgl cloth sim",["#EDEAE4","#161616","#B04A2F"]],
-["21","21-relay","DEEP RELAY","Mission control for an interstellar probe — live telemetry","hud / data motion",["#0A0C10","#FFB000","#3DFF8C"]],
-["22","22-fieldnotes","FIELD NOTES","An illustrator's Portugal sketchbook that draws itself","svg line drawing",["#F8F4EA","#2B4C7E","#D97D54"]],
-["23","23-void","VOID ATELIER","A raymarched monolith carved by absence — light crawls the voids","sdf raymarching",["#FFFFFF","#0D0D0D","#8a8a8a"]],
-["24","24-wobble","WOBBLE","Poke real soft-body 3D gummies — they squish, squint and fling","webgl soft-body jelly",["#FFF6E9","#FF9EC7","#A8E6CF"]],
-["25","25-seed","SEED","A generative gallery — every visit mints a new exhibition","seeded generative art",["#F5F5F2","#1C1C1C","#C73E2E"]],
-["26","26-voxelwerk","VOXELWERK","Game studio whose voxel island assembles itself around you","instanced 3d voxels",["#2A1E17","#E07856","#7FD8BE"]],
-["27","27-abyssal","ABYSSAL","One continuous dive to 4000m — jellyfish, boids, anglerfish","canvas deep-sea sims",["#030812","#3DF5FF","#8A5CFF"]],
-["28","28-pliage","PLIAGE","A 3D sheet of washi folds itself into a crane as you scroll","webgl origami",["#FBF9F4","#D9302F","#B8B2A6"]],
-["29","29-framerate","FRAME:RATE","Fly a cinematic dolly through a tunnel of floating film titles","3d scroll dolly",["#0B0A0A","#FFB454","#8E1F2F"]],
-["30","30-terranova","TERRA NOVA","Terraform a procedural planet from rust to living green","planet shaders",["#05060B","#B0552F","#4CAF6E"]],
-["31","31-velum","VELUM","A real-time velvet curtain you brush — then it opens","verlet cloth sim",["#0D0709","#7A1425","#C9A55C"]],
-["32","32-noneuclid","NON-EUCLID","Impossible architecture raymarched live in your browser","glsl raymarching",["#E8E4DA","#2B3A9E","#FF5C1F"]],
-["33","33-steep","STEEP","Tea steeps around the type, following your cursor","fluid dye advection",["#F6F1E7","#B7C9B1","#4A3728"]],
-["34","34-prisma","PRISMA","A kaleidoscope you play with your hands","polar-fold shader",["#0A090D","#9B4DCA","#F5C542"]],
-["35","35-thermik","THERMIK","An endless low-poly dawn flight over the Alps","procedural terrain",["#FFC9A3","#C9B8E8","#5A4A6E"]],
-["36","36-glyphwerk","GLYPHWERK","3D shapes rendered as living ASCII, lit by your cursor","software ascii renderer",["#F4F2EC","#2743E0","#1B1B1F"]],
-["37","37-arcanum","ARCANUM","True holo-foil cards — iridescence, sparkle and layer parallax","webgl foil shader",["#0E0B18","#C9A227","#8A5CFF"]],
-["38","38-magnitude","MAGNITUDE","One scroll from the cosmic web down to a single atom","infinite zoom",["#0D1024","#7B6CFF","#46E3E3"]],
-["39","39-caldera","CALDERA","Molten lava you can stoke — hot sauce with scoville gauges","domain-warped fbm",["#16120F","#FF5A1F","#D42B12"]],
-["40","40-somnium","SOMNIUM","A dreamscape that drifts like falling asleep","damped depth parallax",["#232152","#B9AEE0","#F5C9B0"]],
-["41","41-helios","HELIOS","The sun crosses the page — every shadow follows it","unified light system",["#F7F8F6","#FFB627","#1A3A5C"]],
-["42","42-silica","SILICA","An AI chip that assembles layer by layer as you scroll","exploded-die scrub",["#0B0D10","#8B7CF6","#B8FF29"]],
-["43","43-aviary","AVIARY","Drone dispatch over a living map — ride one delivery","canvas route plotting",["#EAF2F8","#1B2733","#FF6B2C"]],
-["44","44-kelvin","KELVIN","Scroll down to 10 millikelvin — the page cools with you","temperature-driven UI",["#FAFBFC","#C99B4C","#A78BFA"]],
-["45","45-torus","TORUS","Scrub a fusion ignition until Q crosses 1.0","plasma canvas",["#070A0F","#E24FBB","#FFB37A"]],
-["46","46-strata","STRATA","Scrolling is the elevator — floorplans draw at every stop","elevator scroll",["#101823","#C7A867","#F2EEE6"]],
-["47","47-alpenhof","ALPENHOF","Drag winter into summer — the whole page changes season","season divider theming",["#F6F2EA","#8A6845","#2E4237"]],
-["48","48-quartier","QUARTIER NORD","A masterplan builds itself in three phases","axonometric build-up",["#E5E3DE","#E85D2F","#2C5F8A"]],
-["49","49-maree","MAREE","Sail from golden hour into night — the log writes itself","living canvas ocean",["#0E1B2A","#D8B77A","#091320"]],
-["50","50-aurum","AURUM","Banknote guilloché engraves itself, then the vault unlocks","hypotrochoid engraving",["#17151A","#C2A14D","#2E2B33"]],
-["51","51-nocturne","NOCTURNE","Stage lights find each concert — the page breathes music","light choreography",["#100A0D","#5C1E2E","#C9A25E"]],
-["52","52-veloce","VELOCE","Ignition, then 0-100 in one scroll — snap into silence","acceleration scroll",["#0A0B0D","#2E52FF","#121317"]],
-["53","53-stratos","STRATOS","A living cabin window at 45,000 ft — pick your great circle","route ritual globe",["#EDE6DA","#1A2436","#D3B98A"]],
-["54","54-kuro","KURO","Eight courses out of black — a tasting menu you scroll","paced course moments",["#141210","#F3EEE4","#C25A3A"]],
-["55","55-cask","CASK Nº 9","The whisky ages 0-25 years as you scroll — angels included","liquid interpolation",["#1C1410","#B5651D","#E8A94E"]],
-["56","56-zenith","ZENITH","Scroll to 100 km — stars out, UI goes weightless at apogee","altitude-driven page",["#DCE6F0","#05070C","#E8B84A"]],
-["57","57-facet","FACET","A procedural brilliant with real dispersion — light, cut live","webgl gem dispersion",["#0B0B0D","#DCDEE3","#131316"]],
-["58","58-etoile","L'ÉTOILE","A sleeper train's window from dusk to dawn — tunnels included","parallax night journey",["#1A2233","#D9A554","#111826"]]
+["01","01-mass","MASS","Brutalist type foundry — glyphs skew with your scroll velocity","kinetic typography",["#0A0A0A","#D8FF3E","#1c1c14"],"studio"],
+["02","02-lumen","LUMEN","Perfume house floating on a hand-written iridescent silk shader","raw webgl / glsl",["#0D0B14","#8B7BD8","#4ECDC4"],"product"],
+["03","03-orbita","ORBITA","Watchmaker with a chrome gyroscope you orbit by scrolling","three.js 3d",["#0A0E1A","#C8CDD6","#B8934A"],"product"],
+["04","04-phosphor","PHOSPHOR","Poetry zine inside a real curved CRT — type `help`","webgl crt shader",["#010401","#33FF66","#062b12"],"culture"],
+["05","05-sumi","SUMI 墨","Kyoto ink studio — brush strokes paint themselves as you scroll","canvas ink simulation",["#F5F0E6","#1A1815","#C73E2E"],"studio"],
+["06","06-grid","GRID°","Swiss journal where the grid itself is the hero — toggle it","typographic system",["#FAFAF8","#E63329","#111111"],"culture"],
+["07","07-parsec","PARSEC","Observatory under 800 stars that bend toward your cursor","particle physics",["#05070F","#6EE7F0","#C77DFF"],"tech"],
+["08","08-meridian","THE MERIDIAN","1928 deco hotel — gold dust drifts through lobby light","webgl volumetric light",["#0B3D2E","#D4AF6A","#F4EDDF"],"travel"],
+["09","09-veil","VEIL & SHADOW","Noir bureau in volumetric smoke — your cursor is the light","webgl fog shader",["#0C0C0E","#8A8A92","#A11D2A"],"studio"],
+["10","10-flora","FLORA/FAUNA","Botanical apothecary of morphing blobs and sloshing vials","organic svg morph",["#A8B5A0","#F7F3EC","#C4704F"],"product"],
+["11","11-neon","ネオン MARKET","Cyberpunk night market — RGB-split glitch, holographic stalls","glitch / chromatic",["#07070C","#FF2E88","#00F0FF"],"food"],
+["12","12-lost","MUSEUM OF LOST THINGS","Lost objects drift in a dust-lit 3D hall as you descend","webgl depth scene",["#E9E2D0","#5C1F1F","#9C7C46"],"culture"],
+["13","13-monsoon","MONSOON","A journal where each chapter is a working weather system","canvas weather sims",["#2B3440","#5C7A99","#E8C97D"],"culture"],
+["14","14-osc1","OSC-1","Analog synth with a real playable Web Audio oscilloscope","web audio api",["#17181C","#FF6B35","#7CFC9A"],"product"],
+["15","15-bauhaus","FORM FOLGT","Bauhaus centenary — circle, square, triangle in choreography","geometric motion",["#F4F1EA","#D02E26","#F2B705"],"culture"],
+["16","16-mercvry","MERCVRY","Metal atelier with a ferrofluid metaball that follows you","canvas metaballs",["#101114","#DDE3EA","#4D5BFF"],"tech"],
+["17","17-riot","RIOT PAPER","Punk zine — torn paper, tape, stamps, photocopy jitter","collage css",["#F1EFE9","#E8281E","#F5E642"],"culture"],
+["18","18-boreal","BOREAL","Arctic expeditions under hand-coded aurora curtains","canvas aurora",["#0B1026","#6BFFB0","#9D7BFF"],"travel"],
+["19","19-axono","AXONO","A 3D axonometric tower assembles floor by floor on scroll","three.js ortho scene",["#F6F5F1","#2E5EAA","#FF6A5C"],"estate"],
+["20","20-silhouette","SILHOUETTE","A lookbook with no photographs — the type wears living silk","webgl cloth sim",["#EDEAE4","#161616","#B04A2F"],"product"],
+["21","21-relay","DEEP RELAY","Mission control for an interstellar probe — live telemetry","hud / data motion",["#0A0C10","#FFB000","#3DFF8C"],"tech"],
+["22","22-fieldnotes","FIELD NOTES","An illustrator's Portugal sketchbook that draws itself","svg line drawing",["#F8F4EA","#2B4C7E","#D97D54"],"travel"],
+["23","23-void","VOID ATELIER","A raymarched monolith carved by absence — light crawls the voids","sdf raymarching",["#FFFFFF","#0D0D0D","#8a8a8a"],"estate"],
+["24","24-wobble","WOBBLE","Poke real soft-body 3D gummies — they squish, squint and fling","webgl soft-body jelly",["#FFF6E9","#FF9EC7","#A8E6CF"],"product"],
+["25","25-seed","SEED","A generative gallery — every visit mints a new exhibition","seeded generative art",["#F5F5F2","#1C1C1C","#C73E2E"],"culture"],
+["26","26-voxelwerk","VOXELWERK","Game studio whose voxel island assembles itself around you","instanced 3d voxels",["#2A1E17","#E07856","#7FD8BE"],"tech"],
+["27","27-abyssal","ABYSSAL","One continuous dive to 4000m — jellyfish, boids, anglerfish","canvas deep-sea sims",["#030812","#3DF5FF","#8A5CFF"],"tech"],
+["28","28-pliage","PLIAGE","A 3D sheet of washi folds itself into a crane as you scroll","webgl origami",["#FBF9F4","#D9302F","#B8B2A6"],"studio"],
+["29","29-framerate","FRAME:RATE","Fly a cinematic dolly through a tunnel of floating film titles","3d scroll dolly",["#0B0A0A","#FFB454","#8E1F2F"],"culture"],
+["30","30-terranova","TERRA NOVA","Terraform a procedural planet from rust to living green","planet shaders",["#05060B","#B0552F","#4CAF6E"],"tech"],
+["31","31-velum","VELUM","A real-time velvet curtain you brush — then it opens","verlet cloth sim",["#0D0709","#7A1425","#C9A55C"],"culture"],
+["32","32-noneuclid","NON-EUCLID","Impossible architecture raymarched live in your browser","glsl raymarching",["#E8E4DA","#2B3A9E","#FF5C1F"],"culture"],
+["33","33-steep","STEEP","Tea steeps around the type, following your cursor","fluid dye advection",["#F6F1E7","#B7C9B1","#4A3728"],"food"],
+["34","34-prisma","PRISMA","A kaleidoscope you play with your hands","polar-fold shader",["#0A090D","#9B4DCA","#F5C542"],"culture"],
+["35","35-thermik","THERMIK","An endless low-poly dawn flight over the Alps","procedural terrain",["#FFC9A3","#C9B8E8","#5A4A6E"],"travel"],
+["36","36-glyphwerk","GLYPHWERK","3D shapes rendered as living ASCII, lit by your cursor","software ascii renderer",["#F4F2EC","#2743E0","#1B1B1F"],"studio"],
+["37","37-arcanum","ARCANUM","True holo-foil cards — iridescence, sparkle and layer parallax","webgl foil shader",["#0E0B18","#C9A227","#8A5CFF"],"product"],
+["38","38-magnitude","MAGNITUDE","One scroll from the cosmic web down to a single atom","infinite zoom",["#0D1024","#7B6CFF","#46E3E3"],"tech"],
+["39","39-caldera","CALDERA","Molten lava you can stoke — hot sauce with scoville gauges","domain-warped fbm",["#16120F","#FF5A1F","#D42B12"],"food"],
+["40","40-somnium","SOMNIUM","A dreamscape that drifts like falling asleep","damped depth parallax",["#232152","#B9AEE0","#F5C9B0"],"culture"],
+["41","41-helios","HELIOS","The sun crosses the page — every shadow follows it","unified light system",["#F7F8F6","#FFB627","#1A3A5C"],"tech"],
+["42","42-silica","SILICA","An AI chip that assembles layer by layer as you scroll","exploded-die scrub",["#0B0D10","#8B7CF6","#B8FF29"],"tech"],
+["43","43-aviary","AVIARY","Drone dispatch over a living map — ride one delivery","canvas route plotting",["#EAF2F8","#1B2733","#FF6B2C"],"tech"],
+["44","44-kelvin","KELVIN","Scroll down to 10 millikelvin — the page cools with you","temperature-driven UI",["#FAFBFC","#C99B4C","#A78BFA"],"tech"],
+["45","45-torus","TORUS","Scrub a fusion ignition until Q crosses 1.0","plasma canvas",["#070A0F","#E24FBB","#FFB37A"],"tech"],
+["46","46-strata","STRATA","Scrolling is the elevator — floorplans draw at every stop","elevator scroll",["#101823","#C7A867","#F2EEE6"],"estate"],
+["47","47-alpenhof","ALPENHOF","Drag winter into summer — the whole page changes season","season divider theming",["#F6F2EA","#8A6845","#2E4237"],"estate"],
+["48","48-quartier","QUARTIER NORD","A masterplan builds itself in three phases","axonometric build-up",["#E5E3DE","#E85D2F","#2C5F8A"],"estate"],
+["49","49-maree","MAREE","Sail from golden hour into night — the log writes itself","living canvas ocean",["#0E1B2A","#D8B77A","#091320"],"travel"],
+["50","50-aurum","AURUM","Banknote guilloché engraves itself, then the vault unlocks","hypotrochoid engraving",["#17151A","#C2A14D","#2E2B33"],"finance"],
+["51","51-nocturne","NOCTURNE","Stage lights find each concert — the page breathes music","light choreography",["#100A0D","#5C1E2E","#C9A25E"],"culture"],
+["52","52-veloce","VELOCE","Ignition, then 0-100 in one scroll — snap into silence","acceleration scroll",["#0A0B0D","#2E52FF","#121317"],"product"],
+["53","53-stratos","STRATOS","A living cabin window at 45,000 ft — pick your great circle","route ritual globe",["#EDE6DA","#1A2436","#D3B98A"],"travel"],
+["54","54-kuro","KURO","Eight courses out of black — a tasting menu you scroll","paced course moments",["#141210","#F3EEE4","#C25A3A"],"food"],
+["55","55-cask","CASK Nº 9","The whisky ages 0-25 years as you scroll — angels included","liquid interpolation",["#1C1410","#B5651D","#E8A94E"],"food"],
+["56","56-zenith","ZENITH","Scroll to 100 km — stars out, UI goes weightless at apogee","altitude-driven page",["#DCE6F0","#05070C","#E8B84A"],"travel"],
+["57","57-facet","FACET","A procedural brilliant with real dispersion — light, cut live","webgl gem dispersion",["#0B0B0D","#DCDEE3","#131316"],"product"],
+["58","58-etoile","L'ÉTOILE","A sleeper train's window from dusk to dawn — tunnels included","parallax night journey",["#1A2233","#D9A554","#111826"],"travel"],
+["59","59-praxis","PRAXIS AM LINDENPLATZ","Zahnarzt-Template — Lächeln-Linie, Termin-Flow, de-CH","swiss template · gesundheit",["#F5FBF8","#7FBFAE","#C8A778"],"swiss"],
+["60","60-treuhand","BRUNNER TREUHAND","Treuhand-Template — saubere Zahlen, Fristenkalender","swiss template · finanz",["#FAF9F6","#26374A","#B99A5B"],"swiss"],
+["61","61-kanzlei","STEINER & FREY","Advokatur-Template — der Paragraph zieht den roten Faden","swiss template · recht",["#F4EFE6","#5E2B25","#2F4536"],"swiss"],
+["62","62-gasthaus","ALPENBLICK","Bergbeiz-Template — Höhenlinien zeichnen den Wanderweg","swiss template · gastro",["#F7F2E8","#C6403B","#7FA8C9"],"swiss"],
+["63","63-schreinerei","SCHREINEREI FURRER","Handwerks-Template — Maserung & Schwalbenschwanz-Karten","swiss template · handwerk",["#F6F3ED","#A97C4F","#C24E32"],"swiss"],
+["64","64-physio","PHYSIOWERK","Physio-Template — die Bewegungsbahn fliesst durch die Seite","swiss template · gesundheit",["#FAF8F4","#9BB09A","#C97B5A"],"swiss"]
 ];
+const CATS=[
+  ["all","All"],
+  ["tech","Tech & Science"],
+  ["estate","Real Estate & Architecture"],
+  ["culture","Culture & Arts"],
+  ["food","Food & Drink"],
+  ["travel","Travel & Hospitality"],
+  ["product","Products & Brands"],
+  ["studio","Studios & Ateliers"],
+  ["finance","Finance"],
+  ["swiss","Swiss Templates"]
+];
+const WAVES={0:["Wave I","the twenty-five dialects"],25:["Wave II","the escalation — heavier 3D"],40:["Wave III","tech &amp; real estate — futuristic clean"],48:["Signature Collection","ten flagship builds — every technique at full depth"],58:["Wave V","Templates Schweiz — ready for real SMEs"]};
 const grid=document.getElementById('grid');
-grid.innerHTML=SITES.map(([n,slug,name,tag,tech,cols],i)=>{
-  const g=`linear-gradient(125deg, ${cols[0]} 0%, ${cols[1]} 55%, ${cols[2]||cols[0]} 100%)`;
-  const wave = i===0 ? `<div class="wavehead"><span>Wave I</span><em>the twenty-five dialects</em></div>`
-    : (i===25 ? `<div class="wavehead"><span>Wave II</span><em>the escalation — heavier 3D</em></div>`
-    : (i===40 ? `<div class="wavehead"><span>Wave III</span><em>tech &amp; real estate — futuristic clean</em></div>`
-    : (i===48 ? `<div class="wavehead"><span>Signature Collection</span><em>ten flagship builds — every technique at full depth</em></div>` : ``)));
-  return wave+`<a class="card" href="/${slug}/"><div class="tile"><div class="sw" style="--g:${g}"></div><span class="num">${n} / 58</span></div><div class="body"><div class="name">${name}<span class="arr">→</span></div><div class="tag">${tag}</div><div class="tech">${tech}</div></div></a>`;
-}).join('');
-const io=new IntersectionObserver(es=>es.forEach((e,)=>{if(e.isIntersecting){e.target.classList.add('in');io.unobserve(e.target)}}),{threshold:.08});
-document.querySelectorAll('.card').forEach((c,i)=>{c.style.transitionDelay=(i%4*60)+'ms';io.observe(c)});
+const bar=document.getElementById('filters');
+bar.innerHTML=CATS.map(([k,label])=>`<button class="chip${k==='all'?' on':''}" data-cat="${k}">${label}</button>`).join('');
+let io;
+function render(filter){
+  const rows=SITES.map((s,i)=>[s,i]).filter(([s])=>filter==='all'||s[6]===filter);
+  grid.innerHTML=rows.map(([[n,slug,name,tag,tech,cols],i])=>{
+    const g=`linear-gradient(125deg, ${cols[0]} 0%, ${cols[1]} 55%, ${cols[2]||cols[0]} 100%)`;
+    const wave=(filter==='all'&&WAVES[i])?`<div class="wavehead"><span>${WAVES[i][0]}</span><em>${WAVES[i][1]}</em></div>`:``;
+    return wave+`<a class="card" href="/${slug}/"><div class="tile"><div class="sw" style="--g:${g}"></div><span class="num">${n} / 64</span></div><div class="body"><div class="name">${name}<span class="arr">→</span></div><div class="tag">${tag}</div><div class="tech">${tech}</div></div></a>`;
+  }).join('')||`<p class="empty">Nothing here yet.</p>`;
+  if(io)io.disconnect();
+  io=new IntersectionObserver(es=>es.forEach(e=>{if(e.isIntersecting){e.target.classList.add('in');io.unobserve(e.target)}}),{threshold:.08});
+  document.querySelectorAll('.card').forEach((c,i)=>{c.style.transitionDelay=(i%4*60)+'ms';io.observe(c)});
+}
+bar.addEventListener('click',e=>{
+  const b=e.target.closest('.chip');if(!b)return;
+  bar.querySelectorAll('.chip').forEach(c=>c.classList.remove('on'));
+  b.classList.add('on');
+  render(b.dataset.cat);
+});
+render('all');
 </script>
 </body>
 </html>

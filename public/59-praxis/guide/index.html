@@ -1,0 +1,100 @@
+<!doctype html>
+<html lang="de-CH">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>PRAXIS — Guide &amp; Prompt</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,420;9..144,520;9..144,600&family=Karla:ital,wght@0,400;0,500;0,700;1,400&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --paper:#FBFAF7;--paper-2:#F3F1EA;--mint:#7FBFAE;--mint-deep:#4E9483;
+    --oak:#C8A778;--oak-deep:#A5854F;--ink:#2A2E32;--ink-60:#5C6369;--line:#E3E0D7;
+    --serif:"Fraunces",Georgia,serif;--sans:"Karla",system-ui,sans-serif;
+  }
+  *{margin:0;padding:0;box-sizing:border-box}
+  body{font-family:var(--sans);background:var(--paper);color:var(--ink);line-height:1.68}
+  ::selection{background:var(--mint);color:#fff}
+  .wrap{max-width:820px;margin:0 auto;padding:0 clamp(1.2rem,4vw,2rem)}
+  header{background:var(--ink);color:#EDEEEF;padding:4.2rem 0 3.4rem}
+  header .back{display:inline-block;font-size:.78rem;letter-spacing:.16em;text-transform:uppercase;
+    color:#EDEEEF;text-decoration:none;border:1px solid rgba(237,238,239,.35);
+    border-radius:99px;padding:.45rem .95rem;margin-bottom:2.2rem}
+  header .back:hover{background:rgba(237,238,239,.12)}
+  .eyebrow{font-size:.72rem;letter-spacing:.34em;text-transform:uppercase;font-weight:700;color:var(--mint)}
+  h1{font-family:var(--serif);font-weight:520;font-size:clamp(2.3rem,6vw,3.6rem);line-height:1.08;margin:.6rem 0 .8rem}
+  header p{max-width:38em;color:rgba(237,238,239,.82)}
+  .smile{display:block;width:200px;height:auto;margin:1rem 0 0;overflow:visible}
+  .smile path{fill:none;stroke:var(--mint);stroke-width:5;stroke-linecap:round}
+  main{padding:3.4rem 0 5rem}
+  h2{font-family:var(--serif);font-weight:600;font-size:1.8rem;margin:2.6rem 0 .8rem}
+  h2:first-child{margin-top:0}
+  p{max-width:46em}
+  p+p{margin-top:.8em}
+  em{color:var(--mint-deep);font-style:normal;font-weight:700}
+  code{font-family:ui-monospace,Menlo,monospace;font-size:.86em;background:var(--paper-2);padding:.1em .35em;border-radius:4px}
+  ol,ul{margin:.6em 0 .6em 1.3em;max-width:44em}
+  li{margin:.35em 0}
+  .swatches{display:flex;gap:.5rem;flex-wrap:wrap;margin:1rem 0}
+  .swatches span{width:3.2rem;height:3.2rem;border-radius:10px;display:inline-block;border:1px solid var(--line)}
+  pre{background:var(--ink);color:#E8ECEA;border-radius:10px;padding:1.4rem 1.5rem;overflow-x:auto;
+    font-family:ui-monospace,Menlo,monospace;font-size:.82rem;line-height:1.6;white-space:pre-wrap;margin:1rem 0 2rem}
+  footer{border-top:1px solid var(--line);padding:1.6rem 0 2.2rem;font-size:.85rem;color:var(--ink-60)}
+  footer a{color:var(--mint-deep)}
+</style>
+</head>
+<body>
+<header>
+  <div class="wrap">
+    <a class="back" href="/59-praxis/">← zurück zur Site</a>
+    <p class="eyebrow">FABLE/25 · Site 59 · Swiss Template Wave</p>
+    <h1>Zahnarztpraxis am Lindenplatz</h1>
+    <p>Ein praxistaugliches One-Pager-Template für eine Schweizer Zahnarztpraxis — hell, ruhig, vertrauensbildend. Fiktiv, aber so gebaut, dass eine echte KMU-Praxis es morgen übernehmen könnte.</p>
+    <svg class="smile" viewBox="0 0 240 44" aria-hidden="true"><path d="M6 10 C 70 46, 170 46, 234 10"/></svg>
+  </div>
+</header>
+
+<main>
+  <div class="wrap">
+    <h2>Template-Aufbau</h2>
+    <p>Das Template folgt einer klassischen Conversion-Dramaturgie: <em>Hero</em> mit einem einzigen Primär-CTA («Termin vereinbaren»), <em>Leistungen</em> als sechs Karten mit handgezeichneten Inline-SVG-Icons, <em>Praxis &amp; Team</em> mit drei fiktiven Personen, <em>Terminbuchung</em> als statisches Formular, <em>Praktisches</em> (Öffnungszeiten, Notfall, Krankenkassen), <em>Kontakt &amp; Anfahrt</em> mit stilisierter SVG-Quartierkarte statt einer echten Map-Einbettung, dunkler Footer mit Dummy-Rechtslinks.</p>
+    <p>Beim Team bewusst <em>keine Gesichtsbilder</em>: Initialen-Monogramme in weichen Verlaufskreisen wirken elegant, sind sofort austauschbar und ersparen dem Template Stockfoto-Peinlichkeit. Das Buchungsformular hat kein Backend — Submit wird per JS abgefangen und durch eine freundliche Bestätigung ersetzt, die mit Vornamen grüsst und den Wunschtermin de-CH-formatiert wiederholt.</p>
+    <p>Zurückhaltung als Qualitätsmerkmal: <em>eine</em> Easing-Kurve (<code>cubic-bezier(.33,.72,.28,1)</code>), kurze Reveals (Opacity + 18&nbsp;px translateY, einmalig via IntersectionObserver), keine Spielereien. <code>prefers-reduced-motion</code> rendert die Seite komplett statisch. Sämtliche Texte in de-CH — niemals ß, immer ss.</p>
+
+    <div class="swatches" aria-hidden="true">
+      <span style="background:#FBFAF7"></span>
+      <span style="background:#7FBFAE"></span>
+      <span style="background:#4E9483"></span>
+      <span style="background:#C8A778"></span>
+      <span style="background:#2A2E32"></span>
+    </div>
+    <p>Papierweiss <code>#FBFAF7</code>, Mint <code>#7FBFAE</code> (vertieft zu <code>#4E9483</code> für kontraststarke Buttons), warme Eiche <code>#C8A778</code>, Tinte <code>#2A2E32</code>. Schriften: <em>Fraunces</em> (weiche Serif mit optischer Grösse) für Headlines, <em>Karla</em> als humanistische Sans für den Lauftext.</p>
+
+    <h2>Das Signatur-Detail: die Lächeln-Linie</h2>
+    <p>Ein einziges wiederkehrendes Motiv: eine sanft geschwungene SVG-Kurve (<code>M6 10 C 70 46, 170 46, 234 10</code>, runde Linienenden), die ein Lächeln andeutet. Im Hero zeichnet sie sich per <code>stroke-dashoffset</code> unter der Headline; zwischen den Sektionen kehrt sie klein und eichenfarben als Divider wieder; nach dem Absenden der Terminanfrage zeichnet sie sich ein drittes Mal über der Bestätigung. Ein Detail, dreimal verwendet — das reicht.</p>
+
+    <h2>Asset-Pipeline</h2>
+    <p>Das einzige Foto (<code>assets/praxis.webp</code>, 1920×1080) entstand mit <em>Nano Banana 2 via Higgsfield MCP</em>: ein helles Schweizer Behandlungszimmer, mintfarbener Stuhl, Eichenwand, grosses Fenster mit Blick ins Grüne — Palette im Prompt festgeschrieben, damit Foto und CSS dieselbe Sprache sprechen. Danach mit <em>ffmpeg</em> (Lanczos) auf exakt 1920×1080 skaliert und als WebP encodiert (~120&nbsp;KB). Das Bild wird zweimal genutzt: im Hero mit <code>fetchpriority="high"</code>, in der Praxis-Sektion mit <code>loading="lazy"</code>.</p>
+
+    <h2>Repro-Prompt</h2>
+    <p>Der vollständige Prompt, um dieses Template nachzubauen:</p>
+    <pre id="prompt">Build a one-page website template for "Zahnarztpraxis am Lindenplatz", a fictional dental practice in Winterthur, Switzerland, as a single self-contained HTML file (Google Fonts only, no libraries; one local asset: assets/praxis.webp, 1920x1080). All copy in warm, professional Swiss High German — never ß, always ss. This is a conversion-oriented SME template: restraint is the quality bar.
+
+Design: bright, calm, trustworthy. Palette: soft paper white #FBFAF7, mint #7FBFAE (deepened to #4E9483 for accessible buttons and links), warm oak #C8A778 / #A5854F, ink #2A2E32, warm hairlines #E3E0D7. Fonts: Fraunces (soft optical-size serif, weights ~420-600) for headlines, Karla for friendly humanist body text. One easing curve — cubic-bezier(.33,.72,.28,1) — everywhere; reveals are IntersectionObserver-driven, opacity plus translateY(18px), fired once. prefers-reduced-motion renders everything static.
+
+Signature detail: a "Lächeln-Linie" — a single soft SVG smile curve (M6 10 C 70 46, 170 46, 234 10, round caps, mint) that draws itself under the hero headline via stroke-dashoffset, returns as a small oak divider curve between sections, and draws once more inside the booking confirmation.
+
+Generate the hero asset first: prompt Nano Banana 2 via the Higgsfield MCP for a bright Swiss dental treatment room — mint upholstered chair, warm oak wall panelling, large window onto a garden with hills, soft daylight, no people — then encode to 1920x1080 WebP with ffmpeg (lanczos).
+
+Sections: sticky top bar (brand, anchor nav, pill CTA that shortens to "Termin" under 520px); split hero (eyebrow, headline "Gesunde Zähne. Und ein Grund zu lächeln.", drawn smile line, lead, CTA "Termin vereinbaren" plus phone link, photo with rounded corners and a "Neue Patientinnen und Patienten willkommen" badge); Leistungen — six cards with hand-drawn inline-SVG line icons (Dentalhygiene, Füllungen, Wurzelbehandlung, Implantate, Bleaching, Kinderzahnmedizin), icon chips alternating mint and oak; Praxis &amp; Team — three fictional members with initials-monogram gradient circles instead of face photos, plus a lazy-loaded reuse of the photo beside an equipment paragraph (digital X-ray, SSO-compliant sterilisation); Terminbuchung — a static form (name, contact, date with min set to today, time preference, reason select, optional message) whose submit is intercepted by JS and swapped for a friendly confirmation that greets by first name and repeats the chosen date formatted de-CH, smile line drawing again; Praktisches — Öffnungszeiten table, emergency box with oak left border and a big phone number, SSO-tariff and Krankenkassen notes; Kontakt &amp; Anfahrt — address, phone +41 52 212 34 56, transit/parking/accessibility list, and a stylised SVG quarter map (no real map embed) with streets, building blocks, Lindenpark, a bus stop, a dashed Platz circle and a tooth-in-pin marker; dark footer with dummy Impressum/Datenschutz links.
+
+Hard requirements: real image dimensions with lazy loading below the fold, zero console errors from file://, no horizontal scroll at 390px, fixed "← 25" pill to the hub, footer link to the guide.</pre>
+
+    <footer>
+      <a href="/59-praxis/">← zurück zur Site</a> · <a href="/">FABLE/25 Übersicht</a>
+    </footer>
+  </div>
+</main>
+</body>
+</html>

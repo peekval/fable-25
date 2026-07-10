@@ -1,0 +1,91 @@
+<!doctype html>
+<html lang="de-CH">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Bergrestaurant Alpenblick — Guide &amp; Prompt</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght,SOFT@0,9..144,400..700,50;1,9..144,400,50&family=Karla:wght@300..700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --larch:#A97C4F;--larch-deep:#7E5A37;--sky:#7FA8C9;--red:#C6403B;
+    --cream:#F7F2E8;--pine:#3E5340;--pine-deep:#2F4032;--ink:#2B241C;
+    --disp:"Fraunces",Georgia,serif;--sans:"Karla",system-ui,sans-serif;
+  }
+  *{margin:0;padding:0;box-sizing:border-box}
+  body{font-family:var(--sans);background:var(--cream);color:var(--ink);line-height:1.65}
+  ::selection{background:var(--red);color:var(--cream)}
+  .wrap{max-width:820px;margin:0 auto;padding:0 clamp(1.2rem,4vw,2rem)}
+  header{background:var(--pine);color:var(--cream);padding:4.2rem 0 3.2rem}
+  header .back{display:inline-block;font-size:.8rem;letter-spacing:.16em;text-transform:uppercase;font-weight:700;
+    color:var(--cream);text-decoration:none;border:1px solid rgba(247,242,232,.35);
+    border-radius:99px;padding:.45rem .95rem;margin-bottom:2rem}
+  header .back:hover{background:rgba(247,242,232,.12)}
+  .eyebrow{font-size:.72rem;letter-spacing:.36em;text-transform:uppercase;font-weight:700;color:#E4736E}
+  h1{font-family:var(--disp);font-weight:600;font-size:clamp(2.2rem,6vw,3.4rem);line-height:1.06;margin:.6rem 0 .8rem}
+  header p{max-width:38em;color:rgba(247,242,232,.85)}
+  main{padding:3.4rem 0 5rem}
+  h2{font-family:var(--disp);font-weight:600;font-size:1.8rem;margin:2.5rem 0 .8rem}
+  h2:first-child{margin-top:0}
+  p{max-width:46em}
+  p+p{margin-top:.8em}
+  em{color:var(--larch-deep)}
+  code{font-family:ui-monospace,Menlo,monospace;font-size:.86em;background:#ECE3D1;padding:.1em .35em;border-radius:3px}
+  ul,ol{margin:.6em 0 .6em 1.3em;max-width:44em}
+  li{margin:.35em 0}
+  .swatches{display:flex;gap:.5rem;flex-wrap:wrap;margin:1rem 0}
+  .swatches span{width:3.2rem;height:3.2rem;border-radius:6px;display:inline-block;border:1px solid rgba(43,36,28,.14)}
+  pre{
+    background:var(--pine-deep);color:#EDE9DD;border-radius:8px;
+    padding:1.5rem 1.4rem;margin:1.2rem 0 0;white-space:pre-wrap;
+    font-family:ui-monospace,Menlo,monospace;font-size:.85rem;line-height:1.6;
+    overflow-x:auto;border-left:4px solid var(--red);
+  }
+  footer{border-top:1px solid #DDD2BE;padding:1.6rem 0 2.4rem;font-size:.85rem;color:#8B7B60}
+  footer a{color:var(--ink)}
+</style>
+</head>
+<body>
+<header>
+  <div class="wrap">
+    <a class="back" href="/62-gasthaus/">&larr; zurück zum Restaurant</a>
+    <p class="eyebrow">FABLE/25 · Nº 62 · Guide · Swiss-Template-Reihe</p>
+    <h1>Alpenblick — wie die Höhenlinie durch die Seite steigt</h1>
+    <p>Template-Aufbau des Bergrestaurant-Onepagers, das Höhenlinien-Motiv im Detail — und der vollständige Repro-Prompt.</p>
+  </div>
+</header>
+<main>
+  <div class="wrap">
+    <h2>1 · Template-Aufbau: eine Beiz, sieben Blöcke</h2>
+    <p>Das Template folgt der klassischen Gastro-Dramaturgie eines Schweizer KMU-Onepagers: <em>Hero</em> (Full-Bleed-Terrassenfoto, Name, Lagezeile, CTA „Tisch reservieren“) → <em>Speisekarte</em> (drei Karten: Rösti-Klassiker, Alpküche, Wild &amp; Saison, mit CHF-Preisen an gepunkteten Führungslinien) → <em>Terrasse &amp; Stube</em> (Stimmungs-Copy plus Öffnungszeiten als Sommer/Winter-Tabs) → <em>Anfahrt</em> (Wanderweg-Skizze) → <em>Events</em> → <em>Reservations-Mock</em> → <em>Footer</em> mit Impressum-Dummies. Farbwelt „Bergbeiz-warm“: Lärchenholz, Alpenhimmel, Karo-Rot, Rahm, Tanne; als Textil-Zitat zieht sich ein CSS-Gingham (zwei gekreuzte <code>repeating-linear-gradient</code>) als schmaler Zierstreifen über Menükarten und Event-Karten. Schriften: Fraunces (weiche SOFT-Achse, charaktervolle Displays und Preise) und Karla für den Lauftext.</p>
+
+    <h2>2 · Das Signature-Detail: die Höhenlinie</h2>
+    <p>Zwischen den Sektionen liegen fünf SVG-„Bänder“ mit topografischen Konturlinien. Jedes Band trägt neben zwei blassen Höhenlinien einen roten <em>Wegstück</em>-Pfad plus Wegpunkt-Label (Talstation Grund 1'034 m → Chäsweidli → Läger → Sunnegg → Alpenblick 1'642 m). Beim Laden misst JS jeden Pfad per <code>getTotalLength()</code> und versteckt ihn über <code>stroke-dasharray/-offset</code>; der globale Scroll-Fortschritt <code>p</code> wird in n Segmente geteilt, Band i zeichnet über <code>p·n−i</code> — die Seite selbst wird so zum Aufstieg. Ein fixierter <em>Höhenmeter-Ticker</em> (Pill unten rechts) interpoliert parallel 1'034→1'642 m mit Schweizer Tausender-Apostroph. Im Anfahrt-Block kehrt das Motiv als echte Wanderweg-Skizze wieder: ein Geländeprofil mit Höhenraster, darauf drei Routen — Gondelbahn (durchgezogen, 12 Min, mit Kabinen-Icons), Wanderweg Nr. 36 (gestrichelt, 1 h 20) und Bike-Route (gepunktet, 45 Min) — die per IntersectionObserver nacheinander einzeichnen; nach dem Draw wird das originale Dash-Muster restauriert. Dazu Legenden-Karten mit Zeiten und ein rot geränderter „Letzte Talfahrt“-Hinweis.</p>
+
+    <h2>3 · Ruhe &amp; Robustheit</h2>
+    <p>Animationen bleiben gemütlich: sanfte Reveals (Opacity + 22 px Translate), keine Parallaxe, keine Loops. <code>prefers-reduced-motion</code> schaltet alles statisch — Wege voll gezeichnet, Reveals sichtbar, Smooth-Scroll aus. Auf schmalen Screens wird die Skizze horizontal wischbar (<code>overflow-x:auto</code> im eigenen Container) statt unleserlich skaliert. Das Reservationsformular ist ein ehrlicher Mock: <code>preventDefault</code>, Bestätigungstext, Hinweis „keine Daten übermittelt“. Kein ß im ganzen Text — de-CH.</p>
+
+    <h2>4 · Das Asset</h2>
+    <p>Das Terrassenfoto entstand mit <strong>Nano Banana 2 via Higgsfield MCP</strong>: ein Prompt, der die Site-Palette (Karo-Rot, Rahm, Lärche, Alpenhimmel) und die Bildlogik der Seite verankert — Rösti mit Spiegelei auf kariertem Tischtuch im Vordergrund, Schweizer Fahne, Eiger-Mönch-Jungfrau-Panorama dahinter. Finales Encoding auf 1920×1080 WebP (~300 KB) mit <strong>ffmpeg</strong> (<code>scale … crop</code>, libwebp q 82); im Markup mit echten <code>width/height</code>-Attributen und <code>fetchpriority="high"</code>, da es das einzige, above-the-fold liegende Bild ist.</p>
+    <div class="swatches" aria-hidden="true">
+      <span style="background:#A97C4F"></span><span style="background:#7FA8C9"></span>
+      <span style="background:#C6403B"></span><span style="background:#F7F2E8"></span>
+      <span style="background:#3E5340"></span><span style="background:#2B241C"></span>
+    </div>
+
+    <h2>5 · Repro-Prompt</h2>
+    <pre id="prompt">Build a one-page website for Bergrestaurant Alpenblick, a fictional Swiss mountain restaurant above Grindelwald at 1'642 m ü. M., as a single self-contained HTML file (Google Fonts only, no libraries; the only local asset is assets/terrasse.webp, 1920×1080). This is a practical Swiss SME template with showcase-level polish. All copy in warm, down-to-earth Swiss German — de-CH, never use ß (gross, heiss, Grüsse) — with Swiss number formats (1'642 m ü. M., "CHF 24.50"). Aesthetic "Bergbeiz-warm": larch wood #A97C4F, alpine sky #7FA8C9, checked-tablecloth red #C6403B, cream #F7F2E8, pine #3E5340, ink #2B241C. Fonts: Fraunces (soft axis, characterful display headlines and prices) + Karla body. A CSS gingham strip (two crossed repeating-linear-gradients) trims the menu and event cards like a tablecloth. Animations stay calm and cosy: gentle intersection-observer reveals, nothing hectic.
+
+Generate the hero asset first with Nano Banana 2 via the Higgsfield MCP: sunny restaurant terrace at altitude, a Rösti with fried egg on a red-checked tablecloth in the foreground, Swiss flag, Eiger–Mönch–Jungfrau panorama behind; then encode to 1920×1080 WebP with ffmpeg.
+
+The signature detail is "die Höhenlinie": topographic contour bands (SVG) run between sections as a decorative ribbon, and together they draw the way up from the valley station (1'034 m) to the restaurant (1'642 m) as you scroll. Each band holds faint contour paths plus a red Wegstück path with a waypoint label (Talstation Grund 1'034 m, Chäsweidli 1'287 m, Läger 1'455 m, Sunnegg 1'588 m, arrival Alpenblick 1'642 m). JS measures each path with getTotalLength, hides it via stroke-dasharray/offset, and maps global scroll progress across the band sequence so segment i draws over its slice of the page. A fixed altitude-ticker pill (bottom right) counts 1'034→1'642 m with the Swiss apostrophe separator. In the Anfahrt section the motif becomes a real hiking sketch: a terrain profile with an elevation grid and three routes that draw in sequentially on view — Gondelbahn solid blue with cabin icons (12 Min), Wanderweg Nr. 36 dashed red (1 h 20, 608 Höhenmeter), Bike route dotted pine (45 Min) — plus legend cards and a red-bordered "Letzte Talfahrt" notice. On narrow screens the sketch scrolls horizontally in its own container.
+
+Sections: full-bleed hero (photo, name, "Sonnenterrasse mit Jungfrau-Blick", CTA "Tisch reservieren"), Speisekarte as three cards with dotted price leaders (Rösti Alpenblick — CHF 24.50, Älplermagronen, seasonal Wild), Terrasse &amp; Stube with Sommer/Winter opening-hours tabs, Anfahrt with the sketch, Events (Fondue-Abende, Sonnenaufgangs-Frühstück, private Anlässe), a reservation form mock (Datum, Personen, Terrasse/Stube radio, preventDefault success note), footer with +41 33 dummy numbers and Impressum placeholders. Fixed "← 25" pill, footer guide link. prefers-reduced-motion gets everything fully static with paths pre-drawn. Real image dimensions, zero console errors from file://, no horizontal document scroll at 390px.</pre>
+  </div>
+</main>
+<footer>
+  <div class="wrap">Bergrestaurant Alpenblick · FABLE/25 Nº 62 · <a href="/62-gasthaus/">zur Site</a> · <a href="/">zur Galerie</a></div>
+</footer>
+</body>
+</html>
