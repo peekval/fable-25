@@ -25,7 +25,7 @@
           own grid cells (6×4 background-position tiles snapping on in reading order, 34ms/cell,
           red hot-cell cursor, "passed for press" stamp on completion; lazy <img> with real
           1600×1074 dimensions stays the semantic content and is shown plain under
-          prefers-reduced-motion / no-JS). SEC. C "the grid re-divides" — a 340vh sticky study
+          prefers-reduced-motion / no-JS). SEC. C "the grid re-divides" — a 190vh sticky study
           whose internal grid hard-snaps through ÷1 ÷2 ÷3 ÷4 ÷6 ÷12 divisions as you scroll,
           modules and specimen text reflowing with zero tweening (static ÷12 state when motion
           is reduced). Grid toggle upgraded to "show construction": overlay columns now carry
@@ -275,7 +275,7 @@ a:focus-visible,button:focus-visible{outline:2px solid var(--red);outline-offset
 body.show-grid .plate-anno{display:block}
 
 /* ---------- SEC. C — grid morph ---------- */
-.morph{height:340vh;background:var(--paper)}
+.morph{height:190vh;background:var(--paper)}
 .morph-sticky{position:sticky;top:0;min-height:100vh;display:flex;flex-direction:column;justify-content:center;padding:clamp(48px,7vh,80px) 0}
 .morph .sec-head{margin-bottom:clamp(24px,4vh,44px)}
 .morph .cnt{font-variant-numeric:tabular-nums}
@@ -407,7 +407,7 @@ footer .shell>.g12{row-gap:48px}
   .plate-side{grid-column:1/5;margin-top:26px;flex-direction:row;flex-wrap:wrap;gap:14px 24px}
   .plate-side>div{flex:1 1 40%}
   .sec-head h2{min-width:0}
-  .morph{height:300vh}
+  .morph{height:180vh}
   .stage{height:clamp(220px,36vh,320px)}
   .stage[data-stage="6"] .m-txt{grid-column:6/13}
   .m-txt{padding:10px;font-size:10px}

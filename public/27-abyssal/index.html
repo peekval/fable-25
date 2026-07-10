@@ -218,7 +218,7 @@ footer .fine{font-family:'Space Mono',monospace;font-size:9px;letter-spacing:.14
   4. Canvas context created with alpha:false; composite state is always restored to source-over after glow batches.
   PASS 3 (polish & access):
   1. Anglerfish silhouette flip was inverted (mouth faced AWAY from the lure) — scale sign corrected, stalk root and mouth-lit positions recomputed to match.
-  2. Panel depth tags disagreed with the live HUD by up to 2x — scroll gaps rebalanced (40/60/90/340vh) so tagged depths land within ~10% of the meter, and a lone interstitial line marks the long dark fall at ~2,500 m.
+  2. Panel depth tags disagreed with the live HUD by up to 2x — scroll gaps rebalanced (40/60/90/190vh) so tagged depths land within ~10% of the meter, and a lone interstitial line marks the long dark fall at ~2,500 m.
   3. prefers-reduced-motion: full static painted-zone fallback (gradient + sparse fixed snow, no boids/jellies/rAF loop), scroll still updates the depth HUD; glow-mote alpha leak from preceding particles fixed.
   4. Anglerfish lure eases toward the cursor with a whip-lag stalk, clamps inside the viewport, and wanders on its own for touch devices; teeth/eye brightness scales with lure proximity.
   PASS 4 (generated ROV plates): two specimen observation figures added — a pulsing crown-jelly video loop (~2,300 m, IntersectionObserver play/pause, poster still, no autoplay under reduced motion) and a siphonophore plate (~3,100 m, lazy, real dimensions); black grounds + porthole falloff blend into the dive, dark-fall gaps rebalanced so plate depth labels track the HUD within ~10%.

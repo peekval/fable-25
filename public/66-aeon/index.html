@@ -26,7 +26,7 @@
   #grain{z-index:3;opacity:.07;mix-blend-mode:overlay;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='220' height='220'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='220' height='220' filter='url(%23n)' opacity='0.55'/%3E%3C/svg%3E")}
   #vig{z-index:2;background:radial-gradient(ellipse 120% 90% at 50% 42%,transparent 55%,rgba(2,2,6,.55) 100%);opacity:.5}
 
-  #space{height:1450vh}
+  #space{height:800vh}
 
   /* ——— chrome ——— */
   .back{position:fixed;top:18px;left:18px;z-index:20;display:inline-block;padding:7px 14px;border:1px solid var(--line);border-radius:999px;background:rgba(9,9,16,.55);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);text-decoration:none;font-size:12px;letter-spacing:.08em;transition:border-color .3s,background .3s}
@@ -823,7 +823,7 @@ start();
 
 <!-- ═══════════════ CHANGELOG ═══════════════
 PASS 1 (foundation):
-  1. One fixed canvas, 1450vh scroll spacer; scroll -> damped t -> era-space float with
+  1. One fixed canvas, 800vh scroll spacer; scroll -> damped t -> era-space float with
      30/40/30 hold-blend segments; ten era keyframes (Hadean..Red Giant) with every visual
      property (sky triplet, sun, water level, vegetation, snow, glacier, features 0..1)
      numerically interpolated, so transitions are true morphs (ocean recedes, forest rises),

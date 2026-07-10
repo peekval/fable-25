@@ -263,6 +263,16 @@ footer .fl{display:flex;gap:2rem;flex-wrap:wrap}
   .facts div{padding:.75rem .7rem}
   .hud{font-size:.56rem;padding:.55rem .8rem .65rem}
 }
+
+/* PROBE VII — scroll-scrubbed generated footage */
+.probe{margin:9vh auto 0;max-width:760px;border:1px solid rgba(237,240,246,.16);border-radius:8px;overflow:hidden;background:#05060A}
+.p-head{display:flex;justify-content:space-between;padding:10px 14px;border-bottom:1px solid rgba(237,240,246,.12);font-family:var(--mono,ui-monospace,monospace);font-size:10.5px;letter-spacing:.22em;color:#FFB37A;text-transform:uppercase}
+.p-stage{position:relative;aspect-ratio:16/9;background:#000}
+.p-stage canvas{width:100%;height:100%;display:block}
+.p-scan{position:absolute;inset:0;pointer-events:none;background:repeating-linear-gradient(0deg,rgba(255,255,255,.022) 0 1px,transparent 1px 3px);mix-blend-mode:screen}
+.probe figcaption{padding:12px 14px 14px;font-size:13px;line-height:1.6;color:rgba(237,240,246,.6)}
+.probe figcaption b{color:#EDF0F6;font-weight:500}
+@media (prefers-reduced-motion:reduce){.p-scan{display:none}}
 </style>
 </head>
 <body>
@@ -339,6 +349,16 @@ footer .fl{display:flex;gap:2rem;flex-wrap:wrap}
         <div class="b">← approaching · beamed · blue</div>
         <div class="r">receding · dimmed · red →</div>
       </div>
+
+      <!-- PROBE VII — generated approach footage, scrubbed by scroll -->
+      <figure class="probe" id="probe">
+        <div class="p-head"><span>PROBE VII · FINAL TRANSMISSION</span><span id="pFrame">FRAME 01/40</span></div>
+        <div class="p-stage"><canvas id="probeCv" width="960" height="540" aria-label="Recovered probe footage: approach to the black hole, scrubbed by your scroll"></canvas>
+          <div class="p-scan" aria-hidden="true"></div>
+        </div>
+        <figcaption>She fell before you did. Five seconds of footage survived the downlink —
+          <b>your scroll is her playhead.</b></figcaption>
+      </figure>
     </div>
   </section>
 
@@ -698,6 +718,45 @@ if(okGL){
 }
 
 onScroll();
+})();
+
+/* ---- PROBE VII scrub: generated Kling footage as a scroll-driven frame sequence ---- */
+(function(){
+  var cv=document.getElementById("probeCv"); if(!cv) return;
+  var ctx=cv.getContext("2d"), fig=document.getElementById("probe"), lbl=document.getElementById("pFrame");
+  var N=40, imgs=new Array(N), loaded=0, started=false, cur=-1, target=0, shown=0;
+  var RMq=matchMedia("(prefers-reduced-motion: reduce)").matches;
+  function load(){
+    if(started) return; started=true;
+    for(var i=0;i<N;i++)(function(i){
+      var im=new Image();
+      im.onload=function(){ imgs[i]=im; loaded++; if(RMq&&i===N-1) draw(N-1); if(!RMq&&loaded===1) draw(0); };
+      im.src="assets/seq/f"+String(i+1).padStart(2,"0")+".webp";
+    })(i);
+  }
+  function draw(i){
+    i=Math.max(0,Math.min(N-1,i));
+    if(i===cur||!imgs[i]) return;
+    cur=i; ctx.drawImage(imgs[i],0,0,cv.width,cv.height);
+    lbl.textContent="FRAME "+String(i+1).padStart(2,"0")+"/40";
+  }
+  /* Frames laden, sobald das Panel in die Naehe kommt */
+  if("IntersectionObserver" in window){
+    new IntersectionObserver(function(en,io){ if(en[0].isIntersecting){ load(); io.disconnect(); } },{rootMargin:"600px"}).observe(fig);
+  } else load();
+  if(RMq){ load(); return; } /* reduced motion: letzter Frame, kein Scrub */
+  function onScroll(){
+    var r=fig.getBoundingClientRect();
+    /* Scrub-Fenster: Panelmitte wandert von 85% -> 25% der Viewporthoehe */
+    var p=(innerHeight*0.85-(r.top+r.height/2))/(innerHeight*0.6);
+    target=Math.max(0,Math.min(1,p))*(N-1);
+  }
+  addEventListener("scroll",onScroll,{passive:true}); onScroll();
+  (function tick(){
+    shown+=(target-shown)*0.28;                 /* gedaempft, aber schnell — kein Nachzieh-Gummi */
+    if(Math.abs(target-shown)>0.01) draw(Math.round(shown));
+    requestAnimationFrame(tick);
+  })();
 })();
 </script>
 </body>

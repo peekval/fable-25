@@ -7,9 +7,9 @@
 <meta name="description" content="Auchenmor Distillery, Highlands. CASK No. 9 — a 25-year single malt that ages as you scroll. Peat smoke, amber light, and the angels' share.">
 <!--
   CHANGELOG
-  PASS 1 — Full build: smoke-canvas hero, 520vh aging scroll (SVG cask cutaway,
+  PASS 1 — Full build: smoke-canvas hero, 290vh aging scroll (SVG cask cutaway,
            liquid ramp new-make → mahogany, angel's share fill drop, vintage
-           tasting notes, ABV decay), dram light-raise reveal, 320vh warehouse
+           tasting notes, ABV decay), dram light-raise reveal, 180vh warehouse
            walk with stencil counter + wax seal, provenance footer.
            Reduced-motion = static 18-year state; canvases pause offscreen; DPR cap 2.
   PASS 2 — Design iteration: hero recomposed (taller wordmark, smoke seam rule),
@@ -112,7 +112,7 @@ body::after{
 @keyframes rise{to{opacity:1;transform:none}}
 
 /* ============ YEARS (aging scroll) ============ */
-#years{position:relative;height:540vh;background:var(--deep)}
+#years{position:relative;height:300vh;background:var(--deep)}
 .years-sticky{
   position:sticky;top:0;height:100svh;overflow:clip;
   display:grid;grid-template-columns:minmax(150px,1fr) auto minmax(220px,1.15fr);
@@ -229,7 +229,7 @@ body::after{
 .specs b{color:var(--cream);font-weight:500}
 
 /* ============ WAREHOUSE WALK ============ */
-#walk{position:relative;height:340vh;background:var(--deep)}
+#walk{position:relative;height:190vh;background:var(--deep)}
 .walk-sticky{position:sticky;top:0;height:100svh;overflow:clip;isolation:isolate}
 .walk-pan{position:absolute;inset:0;width:172%;height:100%;will-change:transform}
 .walk-pan img{width:100%;height:100%;object-fit:cover}
