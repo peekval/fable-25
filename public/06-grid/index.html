@@ -20,6 +20,18 @@
           shell padding, leaving gaps on >1440px viewports); decorative → arrows and the ● dot
           hidden from AT with aria-hidden; theme-color meta added; reduced-motion manifesto
           strip gets shell-aligned padding + momentum scrolling instead of a flush marquee.
+  PASS 4: "№07 in print" plate (SEC. B) — generated photo of the printed issue mounted on the
+          site grid with CSS crop marks + SVG registration marks; the photo assembles from its
+          own grid cells (6×4 background-position tiles snapping on in reading order, 34ms/cell,
+          red hot-cell cursor, "passed for press" stamp on completion; lazy <img> with real
+          1600×1074 dimensions stays the semantic content and is shown plain under
+          prefers-reduced-motion / no-JS). SEC. C "the grid re-divides" — a 340vh sticky study
+          whose internal grid hard-snaps through ÷1 ÷2 ÷3 ÷4 ÷6 ÷12 divisions as you scroll,
+          modules and specimen text reflowing with zero tweening (static ÷12 state when motion
+          is reduced). Grid toggle upgraded to "show construction": overlay columns now carry
+          counters (01–12), viewport corner crop marks appear, a fixed spec readout documents
+          shell/gutter/margins, and the plate annotates its own column span and ratio.
+          Verified file://, zero console/page errors; scrollWidth 390 @ 390px viewport. PASS.
 -->
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -196,6 +208,136 @@ a:focus-visible,button:focus-visible{outline:2px solid var(--red);outline-offset
 }
 .card:hover .arr{transform:translateX(8px)}
 
+/* ---------- SEC. B — №07 in print ---------- */
+.print{padding-top:clamp(72px,11vh,140px)}
+.print .g12{row-gap:0}
+.print-body{margin-top:clamp(28px,4vh,52px)}
+.plate{grid-column:1/9;position:relative;margin:0}
+.plate .frame{
+  position:relative;border:1px solid var(--ink);
+  background:
+    linear-gradient(var(--hair) 0 1px,transparent 1px) 0 0/100% 25%,
+    linear-gradient(90deg,var(--hair) 0 1px,transparent 1px) 0 0/16.6667% 100%,
+    var(--paper);
+}
+.plate img{display:block;width:100%;height:auto}
+.plate.pre img{opacity:0}
+.plate.pre.done img{opacity:1}
+.tiles{
+  position:absolute;inset:0;display:none;pointer-events:none;
+  grid-template-columns:repeat(6,1fr);grid-template-rows:repeat(4,1fr);
+}
+.plate.pre .tiles{display:grid}
+.plate.pre.done .tiles{display:none}
+.tiles i{background-repeat:no-repeat;opacity:0}
+.tiles i.on{opacity:1;background-size:600% 400%}
+.tiles i.hot{box-shadow:inset 0 0 0 2px var(--red)}
+/* crop marks — hairlines outside the trim, classic 4px gap */
+.cmark{position:absolute;width:14px;height:14px}
+.cmark::before,.cmark::after{content:"";position:absolute;background:var(--ink)}
+.cmark::before{width:14px;height:1px}
+.cmark::after{width:1px;height:14px}
+.cmark.tl{top:0;left:-18px}   .cmark.tl::before{top:0;left:0}
+.cmark.tl2{top:-18px;left:0}  .cmark.tl2::before{display:none} .cmark.tl2::after{left:0;top:0}
+.cmark.tl::after{display:none}
+.cmark.tr{top:0;right:-18px}  .cmark.tr::before{top:0;right:0} .cmark.tr::after{display:none}
+.cmark.tr2{top:-18px;right:0} .cmark.tr2::before{display:none} .cmark.tr2::after{right:0;top:0}
+.cmark.bl{bottom:0;left:-18px}   .cmark.bl::before{bottom:0;left:0} .cmark.bl::after{display:none}
+.cmark.bl2{bottom:-18px;left:0}  .cmark.bl2::before{display:none}  .cmark.bl2::after{left:0;bottom:0}
+.cmark.br{bottom:0;right:-18px}  .cmark.br::before{bottom:0;right:0} .cmark.br::after{display:none}
+.cmark.br2{bottom:-18px;right:0} .cmark.br2::before{display:none}   .cmark.br2::after{right:0;bottom:0}
+.reg{position:absolute;color:var(--ink)}
+.reg.rt{top:-19px;left:50%;transform:translateX(-50%)}
+.reg.rb{bottom:-19px;left:33.333%;transform:translateX(-50%)}
+.plate figcaption{
+  display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap;
+  padding-top:10px;font-size:10px;letter-spacing:.18em;text-transform:uppercase;
+}
+.plate figcaption .r{color:var(--red)}
+.stamp{
+  position:absolute;right:14px;bottom:14px;z-index:2;
+  font:700 10px/1 'Space Grotesk',sans-serif;letter-spacing:.2em;text-transform:uppercase;
+  color:var(--red);border:1.5px solid var(--red);padding:7px 10px;
+  background:rgba(250,250,248,.85);transform:rotate(-4deg);
+  opacity:0;transition:opacity .35s var(--ease) .25s;
+}
+.plate.done .stamp,.plate:not(.pre) .stamp{opacity:1}
+.plate-side{
+  grid-column:10/13;font-size:12px;line-height:1.8;letter-spacing:.03em;
+  display:flex;flex-direction:column;gap:18px;
+}
+.plate-side b{display:block;font-size:10px;letter-spacing:.18em;text-transform:uppercase;color:var(--red);margin-bottom:4px;font-weight:700}
+.plate-anno{
+  position:absolute;left:0;top:-42px;display:none;
+  font-size:10px;letter-spacing:.18em;text-transform:uppercase;color:var(--red);
+  white-space:nowrap;
+}
+body.show-grid .plate-anno{display:block}
+
+/* ---------- SEC. C — grid morph ---------- */
+.morph{height:340vh;background:var(--paper)}
+.morph-sticky{position:sticky;top:0;min-height:100vh;display:flex;flex-direction:column;justify-content:center;padding:clamp(48px,7vh,80px) 0}
+.morph .sec-head{margin-bottom:clamp(24px,4vh,44px)}
+.morph .cnt{font-variant-numeric:tabular-nums}
+.stage{
+  position:relative;border:2px solid var(--ink);
+  height:clamp(240px,44vh,420px);
+  display:grid;grid-template-rows:2fr 1fr 1.2fr;row-gap:0;
+  grid-template-columns:repeat(var(--n,12),1fr);
+  background-image:linear-gradient(90deg,var(--hair) 0 1px,transparent 1px);
+  background-size:calc(100%/var(--n,12)) 100%;
+}
+.stage>*{min-width:0}
+.m-ink{background:var(--ink);grid-row:1}
+.m-red{background:var(--red);grid-row:2}
+.m-txt{
+  grid-row:3;padding:12px 14px;overflow:hidden;
+  font-size:11px;line-height:1.7;letter-spacing:.04em;
+  border-top:1px solid var(--hair);border-left:1px solid var(--hair);
+}
+.m-txt b{display:block;font-size:9px;letter-spacing:.2em;text-transform:uppercase;color:var(--red);margin-bottom:4px;font-weight:700}
+.stage[data-stage="1"]{--n:1}  .stage[data-stage="1"] .m-ink{grid-column:1/-1}.stage[data-stage="1"] .m-red{grid-column:1/-1}.stage[data-stage="1"] .m-txt{grid-column:1/-1}
+.stage[data-stage="2"]{--n:2}  .stage[data-stage="2"] .m-ink{grid-column:1/2} .stage[data-stage="2"] .m-red{grid-column:2/3} .stage[data-stage="2"] .m-txt{grid-column:1/2}
+.stage[data-stage="3"]{--n:3}  .stage[data-stage="3"] .m-ink{grid-column:1/3} .stage[data-stage="3"] .m-red{grid-column:3/4} .stage[data-stage="3"] .m-txt{grid-column:2/4}
+.stage[data-stage="4"]{--n:4}  .stage[data-stage="4"] .m-ink{grid-column:2/4} .stage[data-stage="4"] .m-red{grid-column:1/2} .stage[data-stage="4"] .m-txt{grid-column:2/5}
+.stage[data-stage="5"]{--n:6}  .stage[data-stage="5"] .m-ink{grid-column:1/4} .stage[data-stage="5"] .m-red{grid-column:4/5} .stage[data-stage="5"] .m-txt{grid-column:3/7}
+.stage[data-stage="6"]{--n:12} .stage[data-stage="6"] .m-ink{grid-column:1/6} .stage[data-stage="6"] .m-red{grid-column:11/13}.stage[data-stage="6"] .m-txt{grid-column:6/11}
+.morph-tick{
+  display:flex;justify-content:space-between;padding-top:12px;
+  font-size:10px;letter-spacing:.2em;text-transform:uppercase;
+}
+.morph-tick span{color:var(--ink);opacity:.4}
+.morph-tick span.cur{color:var(--red);opacity:1;font-weight:700}
+@media (prefers-reduced-motion:reduce){
+  .morph{height:auto}
+  .morph-sticky{position:static;min-height:0}
+}
+
+/* ---------- show construction (grid-toggle superpower) ---------- */
+.gridlines .g12{counter-reset:gcol}
+.gridlines .col{counter-increment:gcol;position:relative}
+.gridlines .col::before{
+  content:counter(gcol,decimal-leading-zero);
+  position:absolute;top:64px;left:50%;transform:translateX(-50%);
+  font:700 9px/1 'Space Grotesk',sans-serif;letter-spacing:.15em;color:var(--red);
+}
+.construct{position:fixed;inset:0;z-index:55;pointer-events:none;display:none}
+body.show-grid .construct{display:block}
+.construct .vc{position:fixed;width:16px;height:16px}
+.construct .vc::before,.construct .vc::after{content:"";position:absolute;background:var(--red)}
+.construct .vc::before{width:16px;height:1px}
+.construct .vc::after{width:1px;height:16px}
+.construct .vc.a{top:6px;left:6px}      .construct .vc.a::before{top:0;left:0}   .construct .vc.a::after{top:0;left:0}
+.construct .vc.b{top:6px;right:6px}     .construct .vc.b::before{top:0;right:0}  .construct .vc.b::after{top:0;right:0}
+.construct .vc.c{bottom:6px;left:6px}   .construct .vc.c::before{bottom:0;left:0} .construct .vc.c::after{bottom:0;left:0}
+.construct .vc.d{bottom:6px;right:6px}  .construct .vc.d::before{bottom:0;right:0}.construct .vc.d::after{bottom:0;right:0}
+.construct .spec{
+  position:fixed;left:50%;bottom:12px;transform:translateX(-50%);
+  font:500 9px/1 'Space Grotesk',sans-serif;letter-spacing:.22em;text-transform:uppercase;
+  color:var(--red);background:var(--paper);border:1px solid var(--red);
+  padding:6px 12px;white-space:nowrap;
+}
+
 /* ---------- manifesto strip ---------- */
 .manifesto{
   margin-top:clamp(72px,12vh,140px);
@@ -261,6 +403,15 @@ footer .shell>.g12{row-gap:48px}
   .card .body{grid-column:1/5;order:2}
   .card .side{grid-column:2/5;flex-direction:row;align-items:baseline;gap:16px}
   .card .arr{display:none}
+  .plate{grid-column:1/5}
+  .plate-side{grid-column:1/5;margin-top:26px;flex-direction:row;flex-wrap:wrap;gap:14px 24px}
+  .plate-side>div{flex:1 1 40%}
+  .sec-head h2{min-width:0}
+  .morph{height:300vh}
+  .stage{height:clamp(220px,36vh,320px)}
+  .stage[data-stage="6"] .m-txt{grid-column:6/13}
+  .m-txt{padding:10px;font-size:10px}
+  .plate-anno{top:-38px}
   .colo-title{grid-column:1/5}
   .colo-col:nth-of-type(1),.colo-col:nth-of-type(3){grid-column:1/3}
   .colo-col:nth-of-type(2),.colo-col:nth-of-type(4){grid-column:3/5}
@@ -287,6 +438,11 @@ footer .shell>.g12{row-gap:48px}
     <div class="col"></div><div class="col"></div><div class="col"></div><div class="col"></div>
     <div class="col"></div><div class="col"></div><div class="col"></div><div class="col"></div>
   </div></div>
+</div>
+
+<div class="construct" aria-hidden="true">
+  <span class="vc a"></span><span class="vc b"></span><span class="vc c"></span><span class="vc d"></span>
+  <span class="spec">Construction — shell 1440 · 12 col · gut 24 · margins clamp(20, 4vw, 72)</span>
 </div>
 
 <!-- ============ MASTHEAD ============ -->
@@ -420,6 +576,87 @@ footer .shell>.g12{row-gap:48px}
   </article>
 </main>
 
+<!-- ============ SEC. B — №07 IN PRINT ============ -->
+<section class="print shell" aria-label="Issue №07 in print">
+  <div class="g12 sec-head rv">
+    <span class="no">SEC. B</span>
+    <h2>№07 in print</h2>
+    <span class="cnt">Plate 01 / offset / 3:2</span>
+  </div>
+
+  <div class="g12 print-body">
+    <figure class="plate" id="plate">
+      <span class="plate-anno">Plate 01 — col 01–08 · trim 1600 × 1074 · ratio 3∶2 · bleed 3 mm</span>
+      <div class="frame" id="plateFrame">
+        <span class="cmark tl" aria-hidden="true"></span><span class="cmark tl2" aria-hidden="true"></span>
+        <span class="cmark tr" aria-hidden="true"></span><span class="cmark tr2" aria-hidden="true"></span>
+        <span class="cmark bl" aria-hidden="true"></span><span class="cmark bl2" aria-hidden="true"></span>
+        <span class="cmark br" aria-hidden="true"></span><span class="cmark br2" aria-hidden="true"></span>
+        <svg class="reg rt" width="14" height="14" viewBox="0 0 14 14" fill="none" aria-hidden="true">
+          <circle cx="7" cy="7" r="4.5" stroke="currentColor"/>
+          <line x1="7" y1="0" x2="7" y2="14" stroke="currentColor"/>
+          <line x1="0" y1="7" x2="14" y2="7" stroke="currentColor"/>
+        </svg>
+        <svg class="reg rb" width="14" height="14" viewBox="0 0 14 14" fill="none" aria-hidden="true">
+          <circle cx="7" cy="7" r="4.5" stroke="currentColor"/>
+          <line x1="7" y1="0" x2="7" y2="14" stroke="currentColor"/>
+          <line x1="0" y1="7" x2="14" y2="7" stroke="currentColor"/>
+        </svg>
+        <img id="plateImg" src="assets/issue07.webp" alt="GRID° issue №07 printed and lying open on a white surface: a spread composed on the twelve-column grid with greeked columns of text, oversized folios and a single red rule" width="1600" height="1074" loading="lazy" decoding="async">
+        <div class="tiles" id="tiles" aria-hidden="true"></div>
+        <span class="stamp" aria-hidden="true">Passed for press</span>
+      </div>
+      <figcaption>
+        <span>Plate 01 — №07, first impression</span>
+        <span class="r">Offset · 150 lpi · Zürich</span>
+        <span>Assembled from 24 grid cells</span>
+      </figcaption>
+    </figure>
+
+    <aside class="plate-side rv">
+      <div>
+        <b>The proof</b>
+        Seven issues were laid out on this grid before one was printed on it. №07 came back from the
+        press in June — 96 pages, two inks, the same twelve columns you are reading now, finally at 150 lines per inch.
+      </div>
+      <div>
+        <b>Registration</b>
+        Crop and registration marks are drawn by the site itself, in CSS, on the same tracks as the
+        photograph. The page and the plate share one geometry; toggle the grid to see it annotated.
+      </div>
+      <div>
+        <b>Colours</b>
+        Paper #FAFAF8 · Ink #111111 · one red, #E63329 — matched between screen and press sheet.
+      </div>
+    </aside>
+  </div>
+</section>
+
+<!-- ============ SEC. C — GRID MORPH ============ -->
+<section class="morph" id="morph" aria-label="Study: the grid re-divides">
+  <div class="morph-sticky">
+    <div class="shell">
+      <div class="g12 sec-head">
+        <span class="no">SEC. C</span>
+        <h2>The grid re-divides</h2>
+        <span class="cnt" id="morphCnt">12 ÷ 12</span>
+      </div>
+      <div class="stage" id="stage" data-stage="6">
+        <div class="m-ink" aria-hidden="true"></div>
+        <div class="m-red" aria-hidden="true"></div>
+        <div class="m-txt">
+          <b>Specimen</b>
+          The measure changes; the argument does not. One field becomes two, two become three —
+          each division a decision, never a tween. Content answers to the columns, at every count.
+        </div>
+      </div>
+      <div class="morph-tick" id="morphTick" aria-hidden="true">
+        <span>÷ 1</span><span>÷ 2</span><span>÷ 3</span><span>÷ 4</span><span>÷ 6</span><span class="cur">÷ 12</span>
+      </div>
+    </div>
+  </div>
+</section>
+
 <!-- ============ MANIFESTO STRIP ============ -->
 <section class="manifesto" aria-label="Manifesto">
   <div class="strip" id="strip">
@@ -474,7 +711,7 @@ footer .shell>.g12{row-gap:48px}
       <div class="baseline rv">
         <span>GRID° №07</span>
         <span class="r">Summer 2026</span>
-        <span>Press G to toggle the grid</span>
+        <span>Press G to show construction</span>
         <span>Printed in 12 columns</span>
       </div>
     </div>
@@ -506,6 +743,83 @@ footer .shell>.g12{row-gap:48px}
       c.setAttribute('aria-hidden','true');
       strip.appendChild(c);
     });
+  }
+
+  /* SEC. B — plate assembles from its own grid cells (6×4, reading order) */
+  var plate = document.getElementById('plate');
+  var plateImg = document.getElementById('plateImg');
+  var tilesBox = document.getElementById('tiles');
+  var COLS = 6, ROWS = 4;
+  if(plate && !reduce && 'IntersectionObserver' in window){
+    plate.classList.add('pre');               /* img hidden, empty grid cells shown */
+    var tiles = [];
+    for(var r = 0; r < ROWS; r++){
+      for(var c = 0; c < COLS; c++){
+        var t = document.createElement('i');
+        t.dataset.pos = (c/(COLS-1)*100) + '% ' + (r/(ROWS-1)*100) + '%';
+        tilesBox.appendChild(t); tiles.push(t);
+      }
+    }
+    var started = false;
+    function assemble(){
+      if(started) return; started = true;
+      var i = 0, prev = null;
+      var tick = setInterval(function(){
+        if(i >= tiles.length){
+          clearInterval(tick);
+          if(prev) prev.classList.remove('hot');
+          setTimeout(function(){ plate.classList.add('done'); }, 140);
+          return;
+        }
+        var t = tiles[i++];
+        t.style.backgroundImage = 'url("' + plateImg.currentSrc + '")';
+        t.style.backgroundPosition = t.dataset.pos;
+        t.classList.add('on','hot');
+        if(prev) prev.classList.remove('hot');
+        prev = t;
+      }, 34);
+    }
+    var pio = new IntersectionObserver(function(entries){
+      entries.forEach(function(en){
+        if(!en.isIntersecting) return;
+        pio.unobserve(plate);
+        if(plateImg.complete && plateImg.naturalWidth > 0){ assemble(); }
+        else {
+          plateImg.addEventListener('load', assemble, {once:true});
+          plateImg.addEventListener('error', function(){ plate.classList.add('done'); }, {once:true});
+        }
+      });
+    }, {threshold:0.35});
+    pio.observe(plate);
+  }
+
+  /* SEC. C — scroll-driven grid morph: hard snaps through ÷1 ÷2 ÷3 ÷4 ÷6 ÷12 */
+  var morph = document.getElementById('morph');
+  var stage = document.getElementById('stage');
+  var morphCnt = document.getElementById('morphCnt');
+  var ticks = document.getElementById('morphTick');
+  if(morph && stage && !reduce){
+    var DIV = [1,2,3,4,6,12];
+    var cur = -1, raf = false;
+    var tickEls = Array.prototype.slice.call(ticks.children);
+    function setStage(s){
+      if(s === cur) return; cur = s;
+      stage.setAttribute('data-stage', String(s+1));
+      morphCnt.textContent = '12 ÷ ' + DIV[s];
+      tickEls.forEach(function(el,i){ el.classList.toggle('cur', i===s); });
+    }
+    function onScroll(){
+      raf = false;
+      var rect = morph.getBoundingClientRect();
+      var span = morph.offsetHeight - window.innerHeight;
+      if(span <= 0){ setStage(DIV.length-1); return; }
+      var p = Math.min(1, Math.max(0, -rect.top / span));
+      setStage(Math.min(DIV.length-1, Math.floor(p * DIV.length)));
+    }
+    window.addEventListener('scroll', function(){
+      if(!raf){ raf = true; requestAnimationFrame(onScroll); }
+    }, {passive:true});
+    onScroll();
   }
 
   /* scroll reveals — entries arriving in the same frame get a stagger */

@@ -75,6 +75,31 @@ footer{max-width:760px;margin:3.5rem auto 0;font-size:.8rem;color:var(--plum);op
     silhouette drifts ahead as a guide. Warm fog tuned to the exact horizon tone of the CSS sky
     gradient hides the recycling; on scroll the camera pitches up into the empty sky, the transparent
     canvas fades, and the page hands off seamlessly to CSS gradient sections styled as altitude bands.</p>
+    <p>The flight itself can be escalated on demand: a &laquo;Thermik sichtbar&raquo; toggle in the hero
+    (hover previews, click locks) fades in three columns of rising warm air — a few hundred additive
+    soft particles spiralling upward around world-anchored cores that drift with the terrain — and
+    while they're visible the camera rides the lift some 55 units higher, the paraglider's wing
+    flutters harder in the imagined gusts, and a small vario indicator bottom-left pulses faster with
+    the climb rate. Visual only, no sound; everything falls back to static states under
+    prefers-reduced-motion.</p>
+  </div>
+
+  <h2>Generated assets</h2>
+  <div class="card">
+    <p>Between the safety section and the tandem booking sits the page's single photographic breath —
+    a &laquo;Flugtagebuch&raquo; entry: a golden-hour shot looking up at a plum-and-snow paraglider
+    wing above dawn-lit alpine peaks, the sky running lavender to peach. The still was generated with
+    <strong>Nano&nbsp;Banana&nbsp;2</strong> (Higgsfield MCP, text-to-image, 2K), art-directed and
+    palette-locked to the site's exact colours — dawn peach #FFC9A3, lavender haze #C9B8E8, ridge plum
+    #5A4A6E, snow #FFF7F0 — then finished with <strong>ffmpeg</strong> into a ~50&nbsp;KB WebP at
+    1920&times;1072, served lazily with real dimensions.</p>
+    <p>It sits full-bleed, and the seam does the work: the photo is placed where the neighbouring
+    sections are both #FFC9A3, and top/bottom gradient scrims in that same peach dissolve its horizon
+    into the page sky so the photograph reads as part of the gradient, not a rectangle on it. The
+    reveal is a <em>cloud-wipe</em>: two layers of soft snow-tone gradient banks cover the frame and
+    drift across once when the section scrolls into view — like breaking out of a cloud layer into
+    clear morning air. A small monospace flight-data caption (Höhe, Steigen, Flugzeit) floats on the
+    lower scrim. Under prefers-reduced-motion the clouds never render and the photo is simply shown.</p>
   </div>
 
   <h2>Reproduction prompt</h2>
@@ -82,9 +107,13 @@ footer{max-width:760px;margin:3.5rem auto 0;font-size:.8rem;color:var(--plum);op
     <button class="copy-btn" id="copyBtn">Copy prompt</button>
     <div class="prompt" id="promptText">Build a one-page showcase site for "THERMIK", a fictional paragliding school in the Swiss Alps, with an infinite cinematic flight hero in three.js.
 
-Palette: dawn peach #FFC9A3, lavender haze #C9B8E8, ridge plum #5A4A6E, snow #FFF7F0, sky gradient from #B8A5DC at the top through #FFE3C2 to #FFC9A3 at the horizon. Fonts: Gabarito (bold friendly display) and Inter (body), via Google Fonts. No images.
+Palette: dawn peach #FFC9A3, lavender haze #C9B8E8, ridge plum #5A4A6E, snow #FFF7F0, sky gradient from #B8A5DC at the top through #FFE3C2 to #FFC9A3 at the horizon. Fonts: Gabarito (bold friendly display) and Inter (body), via Google Fonts. Exactly one image: a generated flight photograph described below.
 
 Hero: a low-poly terrain flythrough at dawn. Use a plane of roughly 120 by 80 segments (70 by 46 on mobile), heights from four octaves of layered value noise with a smooth valley carved down the centre. De-index the geometry and colour each face by altitude: dark plum valleys, lavender mid-slopes, peach sunlit faces, warm snow caps, with jittered band thresholds. Flat shading, one Lambert material, no shadows. Two tiles leapfrog toward the camera and regenerate from a continuous world-space noise offset for a seamless endless flight. Warm fog matching the sky gradient's horizon tone, a glowing low-poly sun disk unaffected by fog, gentle camera bob, banking on mouse, and a tiny plum paraglider silhouette drifting ahead. On scroll, pitch the camera up into the sky and fade the transparent canvas into matching CSS gradient sections.
+
+Escalate the flight on demand: a "Thermik sichtbar" pill button in the hero (hover previews, click locks, aria-pressed) fades in three columns of rising warm air — roughly 420 additive soft particles (240 on mobile) spiralling upward around world-anchored cores that drift with the terrain and recycle behind the fog. While active, the camera rides the lift about 55 units higher and the paraglider silhouette's wing gains a high-frequency cloth flutter. Add a vario bottom-left: a warm dot whose pulse rate follows the climb rate plus a monospace m/s readout with a German decimal comma — visual only, never sound. Both HUD elements fade out with the hero copy on scroll.
+
+Between the safety and tandem sections, add a full-bleed "Flugtagebuch" photograph: a golden-hour shot looking up at a plum-and-white paraglider wing above dawn-lit snowy alpine peaks under a lavender-to-peach sky — generate it with Nano Banana 2 (text-to-image, 2K) locked to the exact site palette, then convert with ffmpeg to a lightweight WebP (1920x1072), lazy-loaded with real width/height attributes. Place it where the neighbouring sections are both #FFC9A3 and dissolve its horizon into the page with top and bottom gradient scrims in that same peach. Reveal it with a cloud-wipe: two layers of soft blurred snow-tone gradient banks covering the frame drift across once when it scrolls into view, like flying out of a cloud layer. Caption it with small monospace flight data in German (Höhe, Steigen, Flugzeit) in frosted pills. Under prefers-reduced-motion: static terrain, no cloud-wipe (photo simply shown), static vario, thermals shown frozen without the camera ride.
 
 Sections styled as altitude bands: school intro with stats, three courses as ascending altitude tiers with prices, safety and instructors, tandem booking form, plum footer. Encouraging alpine copy, 60fps, pixel ratio capped at 2, static terrain under prefers-reduced-motion.</div>
   </div>

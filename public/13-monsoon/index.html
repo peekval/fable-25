@@ -32,6 +32,24 @@
       guarded the crossfade math against zero-height segments.
     - <noscript> fallback paints each section its own sky so the journal stays
       readable with scripting disabled.
+  PASS 4 (storm dynamics — lightning, wind, downpour scrub):
+    - LIGHTNING rebuilt: recursive branching bolt (jittered segments, up to 7
+      forks, vertical-bias steering) drawn glow+core; two-pulse sky flash via a
+      fixed #flash wash that momentarily brightens the whole palette; thunder
+      implied by a 300ms 2-3px rumble on the rain section, delayed 250-700ms
+      after the light. Strikes are rare (every 12-20s after an early first one).
+    - WIND: gust scheduler (every 8-15s) ramps a wind envelope that pushes the
+      rain visibly diagonal for ~2s and leans the chapter typography — per-letter
+      skew with spring return, staggered left-to-right; poem block sways too.
+    - DOWNPOUR SCRUB: rain intensity tracks scroll velocity — fast scrolling
+      raises drop count, speed and streak length; stillness decays back calm.
+    - Rejected (kept the piece focused): fog cursor-clearing hole.
+    - prefers-reduced-motion: no lightning, no rumble, no gust animation —
+      the calm still-frame path is untouched. stopSys() now blurs the rain
+      system (flash overlay + bolt reset) so nothing lingers offscreen.
+    PASS: file:// zero console/page errors at 1280 & 390; scrollWidth 390 <= 392;
+      rAF still gated by IntersectionObserver + visibilitychange; strike/gust
+      verified via window.__monsoon test hook screenshot.
 -->
 
 <meta name="description" content="Three weathers, recorded in ink and water. Rain, fog, and the golden clearing after.">
@@ -51,6 +69,9 @@
   ::selection{background:#E8C97D;color:#2B3440}
 
   #bg{position:fixed;inset:0;background:#2B3440;z-index:-1;will-change:background-color}
+
+  /* lightning sky-flash wash — opacity driven per-frame from the rain sim */
+  #flash{position:fixed;inset:0;background:#E9F2FC;opacity:0;pointer-events:none;z-index:45;will-change:opacity}
 
   /* ---------- fixed chrome ---------- */
   .back{
@@ -151,6 +172,29 @@
   .rain .poem p::first-letter{color:#C3D8EA}
   @media (min-width:960px){.rain .inner{margin-left:9vw}}
 
+  /* thunder rumble — 300ms, 2-3px, applied to the whole rain section */
+  @keyframes rumble{
+    0%,100%{transform:none}
+    18%{transform:translate(-2.5px,1.5px)}
+    38%{transform:translate(2px,-2px)}
+    58%{transform:translate(-2px,-1px)}
+    78%{transform:translate(1.5px,1.5px)}
+  }
+  /* wind gust — letters lean and spring back, staggered by --d */
+  .rain h2 span,.rain .label span{display:inline-block}
+  @keyframes lean{
+    0%{transform:none}
+    30%{transform:skewX(-9deg) translateX(-2.5px)}
+    62%{transform:skewX(3deg) translateX(1px)}
+    100%{transform:none}
+  }
+  @media (prefers-reduced-motion: no-preference){
+    .rain.rumble{animation:rumble .3s linear}
+    .rain.gusting h2 span,.rain.gusting .label span{animation:lean .9s cubic-bezier(.3,1.3,.5,1) var(--d,0ms) both}
+    .rain .poem p{transition:transform 1.5s cubic-bezier(.2,1.5,.4,1)}
+    .rain.gusting .poem p{transform:skewX(-2deg) translateX(-3px);transition:transform .6s cubic-bezier(.4,0,.6,1)}
+  }
+
   .fog{color:#2B3440}
   .fog .label,.fog h2{text-align:center}
   .fog .meta{text-align:center}
@@ -212,6 +256,7 @@
 
 <a class="back" href="/">←&nbsp;25</a>
 <div id="bg" aria-hidden="true"></div>
+<div id="flash" aria-hidden="true"></div>
 
 <div class="baro" aria-hidden="true">
   <svg viewBox="0 0 120 120">
@@ -300,17 +345,20 @@ function fit(canvas) {
 }
 
 /* ---------- RAIN ---------- */
-function Rain(canvas) {
+function Rain(canvas, fx) {
   let w = 0, h = 0, ctx = null;
   let buckets = [], splashes = [];
-  let flash = 0, rePulsed = true, nextFlash = rand(2.5, 6);
-  let bolt = null, boltA = 0;
+  let flash = 0, prevFlash = 0, rePulsed = true, nextFlash = rand(6, 10);
+  let bolts = null, boltA = 0;
+  let gustNext = rand(4, 8), gustAge = 99;
+  let intensity = 0;
   const WIND = -0.16;
 
   function resize(keep) {
     ({ w, h, ctx } = fit(canvas));
     if (keep && buckets.length) return;
-    const n = w < 640 ? 160 : 300;
+    // over-allocate ~40%: the downpour-scrub reserve only draws under fast scroll
+    const n = w < 640 ? 220 : 420;
     // three depth planes drawn as single batched paths (one stroke per plane)
     buckets = [
       { z: 0.45, arr: [] },
@@ -327,15 +375,31 @@ function Rain(canvas) {
     splashes = [];
   }
 
-  function makeBolt() {
-    const pts = [];
-    let x = rand(w * 0.2, w * 0.85), y = -10;
-    while (y < h * rand(0.4, 0.6)) {
+  // recursive branching bolt: jittered segments steered back toward vertical,
+  // forks peel off with decreasing width
+  function branchBolt(x, y, ang, remain, wd, out) {
+    const pts = [[x, y]];
+    while (remain > 0) {
+      const seg = rand(h * 0.025, h * 0.055);
+      ang += rand(-0.5, 0.5);
+      ang *= 0.8; // bias back toward vertical
+      x += Math.sin(ang) * seg * 1.7 + rand(-6, 6);
+      y += Math.cos(ang) * seg;
+      remain -= seg;
       pts.push([x, y]);
-      x += rand(-w * 0.03, w * 0.03);
-      y += rand(h * 0.04, h * 0.09);
+      if (wd > 1.1 && out.length < 7 && Math.random() < 0.3) {
+        branchBolt(x, y, ang + rand(0.5, 1.1) * (Math.random() < 0.5 ? -1 : 1),
+                   remain * rand(0.3, 0.6), wd * 0.55, out);
+      }
     }
-    return pts;
+    out.push({ pts, wd });
+  }
+
+  function makeBolts() {
+    const out = [];
+    branchBolt(rand(w * 0.18, w * 0.82), -20, rand(-0.15, 0.15),
+               h * rand(0.55, 0.8), 2.6, out);
+    return out;
   }
 
   function spawnSplash(x, gy) {
@@ -363,51 +427,77 @@ function Rain(canvas) {
     paintAtmo();
     const gy = h * 0.94;
 
-    // lightning schedule
+    // WIND — gust envelope: 0.7s attack, ~1.4s hold, 1.6s release
+    gustNext -= dt;
+    if (gustNext <= 0) { gustNext = rand(8, 15); gustAge = 0; fx.gust(); }
+    gustAge += dt;
+    let env = 0;
+    if (gustAge < 0.7) env = smooth(gustAge / 0.7);
+    else if (gustAge < 2.1) env = 1;
+    else if (gustAge < 3.7) env = 1 - smooth((gustAge - 2.1) / 1.6);
+    const wind = WIND - env * 0.38;
+
+    // DOWNPOUR SCRUB — intensity follows scroll velocity, decays when still
+    scrollVel *= Math.exp(-dt * 1.4);
+    intensity += (Math.min(1, scrollVel / 1600) - intensity) * (1 - Math.exp(-dt * 3.5));
+    const spdMul = 1 + intensity * 1.15 + env * 0.2;
+    const lenMul = 1 + intensity * 0.9;
+
+    // LIGHTNING — rare (12-20s), branching bolt + double-pulse sky flash,
+    // thunder rumble arrives a beat after the light
     nextFlash -= dt;
     if (nextFlash <= 0) {
       flash = 1;
       rePulsed = false;
-      nextFlash = rand(4.5, 9.5);
-      if (Math.random() < 0.5) { bolt = makeBolt(); boltA = 1; }
+      nextFlash = rand(12, 20);
+      bolts = makeBolts();
+      boltA = 1;
+      setTimeout(() => fx.rumble(), rand(250, 700));
     }
     if (flash > 0) {
       flash *= Math.exp(-dt * 9);
-      if (!rePulsed && flash < 0.35) { flash = 0.8; rePulsed = true; }
+      if (!rePulsed && flash < 0.35) { flash = 0.8; boltA = Math.max(boltA, 0.6); rePulsed = true; }
       if (flash < 0.02) flash = 0;
     }
+    if (flash > 0 || prevFlash > 0) fx.flash(flash);
+    prevFlash = flash;
 
-    // bolt
-    if (bolt && boltA > 0.03) {
+    // bolt — glow pass then hot core, per branch
+    if (bolts && boltA > 0.03) {
       ctx.lineJoin = 'round';
       ctx.lineCap = 'round';
-      ctx.strokeStyle = 'rgba(210,228,250,' + (boltA * 0.28).toFixed(3) + ')';
-      ctx.lineWidth = 5;
-      ctx.beginPath();
-      bolt.forEach((p, i) => i ? ctx.lineTo(p[0], p[1]) : ctx.moveTo(p[0], p[1]));
-      ctx.stroke();
-      ctx.strokeStyle = 'rgba(245,250,255,' + (boltA * 0.9).toFixed(3) + ')';
-      ctx.lineWidth = 1.4;
-      ctx.stroke();
-      boltA *= Math.exp(-dt * 7);
+      for (const bl of bolts) {
+        ctx.beginPath();
+        bl.pts.forEach((p, i) => i ? ctx.lineTo(p[0], p[1]) : ctx.moveTo(p[0], p[1]));
+        ctx.strokeStyle = 'rgba(190,214,248,' + (boltA * 0.25).toFixed(3) + ')';
+        ctx.lineWidth = bl.wd * 4;
+        ctx.stroke();
+        ctx.strokeStyle = 'rgba(250,252,255,' + (boltA * 0.95).toFixed(3) + ')';
+        ctx.lineWidth = bl.wd;
+        ctx.stroke();
+      }
+      boltA *= Math.exp(-dt * 6);
     }
 
-    // drops — one batched path per depth plane
+    // drops — one batched path per depth plane; the reserve tail of each
+    // bucket only draws as intensity rises
     ctx.lineCap = 'round';
     for (const b of buckets) {
-      ctx.strokeStyle = 'rgba(214,228,242,' + (0.12 + 0.26 * b.z + flash * 0.22).toFixed(3) + ')';
+      const active = Math.max(1, Math.round(b.arr.length * (0.68 + 0.32 * intensity)));
+      ctx.strokeStyle = 'rgba(214,228,242,' + (0.12 + 0.26 * b.z + flash * 0.22 + intensity * 0.08).toFixed(3) + ')';
       ctx.lineWidth = 0.7 + b.z * 0.9;
       ctx.beginPath();
-      for (const d of b.arr) {
-        d.y += d.spd * dt;
-        d.x += d.spd * WIND * dt;
+      for (let i = 0; i < active; i++) {
+        const d = b.arr[i];
+        d.y += d.spd * spdMul * dt;
+        d.x += d.spd * wind * dt;
         if (d.y > gy) {
           if (b.z > 0.74) spawnSplash(d.x, gy);
           d.y = rand(-90, -10);
           d.x = rand(-60, w + 60);
         }
         ctx.moveTo(d.x, d.y);
-        ctx.lineTo(d.x + WIND * d.len, d.y + d.len);
+        ctx.lineTo(d.x + wind * d.len * lenMul, d.y + d.len * lenMul);
       }
       ctx.stroke();
     }
@@ -437,14 +527,17 @@ function Rain(canvas) {
   }
 
   function still() {
+    // reduced motion: calm weather — baseline density, no lightning, no gust
     ctx.clearRect(0, 0, w, h);
     paintAtmo();
     ctx.lineCap = 'round';
     for (const b of buckets) {
+      const active = Math.round(b.arr.length * 0.68);
       ctx.strokeStyle = 'rgba(214,228,242,' + (0.12 + 0.26 * b.z).toFixed(3) + ')';
       ctx.lineWidth = 0.7 + b.z * 0.9;
       ctx.beginPath();
-      for (const d of b.arr) {
+      for (let i = 0; i < active; i++) {
+        const d = b.arr[i];
         ctx.moveTo(d.x, d.y);
         ctx.lineTo(d.x + WIND * d.len, d.y + d.len);
       }
@@ -455,7 +548,17 @@ function Rain(canvas) {
     for (let i = 0; i < 40; i++) ctx.fillRect(rand(0, w), gy - rand(0, 14), 1.6, 1.6);
   }
 
-  return { resize, frame, still };
+  // blur: called when the section leaves the viewport / tab hides,
+  // so no half-faded flash wash or bolt lingers
+  function blur() {
+    flash = 0; prevFlash = 0; boltA = 0;
+    fx.flash(0);
+  }
+
+  // test hook: force the next frame to strike
+  function strike() { nextFlash = 0; }
+
+  return { resize, frame, still, blur, strike };
 }
 
 /* ---------- FOG ---------- */
@@ -555,14 +658,61 @@ function Motes(canvas) {
   return { resize, frame, still };
 }
 
+/* ---------- scroll velocity (feeds the downpour scrub) ---------- */
+let scrollVel = 0, lastSY = scrollY, lastST = performance.now();
+addEventListener('scroll', () => {
+  const now = performance.now();
+  const dt = Math.max(16, now - lastST);
+  scrollVel = Math.min(3200, scrollVel * 0.7 + (Math.abs(scrollY - lastSY) / dt) * 1000 * 0.3);
+  lastSY = scrollY; lastST = now;
+}, { passive: true });
+
+/* ---------- rain side effects: sky flash, thunder rumble, typographic gust ---------- */
+const flashEl = document.getElementById('flash');
+function makeRainFx(sec) {
+  let rumT = 0, gusT = 0;
+  return {
+    flash(v) { flashEl.style.opacity = v > 0.02 ? (v * 0.42).toFixed(3) : '0'; },
+    rumble() {
+      if (REDUCED || document.hidden) return;
+      sec.classList.remove('rumble'); void sec.offsetWidth;
+      sec.classList.add('rumble');
+      clearTimeout(rumT); rumT = setTimeout(() => sec.classList.remove('rumble'), 400);
+    },
+    gust() {
+      if (REDUCED) return;
+      sec.classList.remove('gusting'); void sec.offsetWidth;
+      sec.classList.add('gusting');
+      clearTimeout(gusT); gusT = setTimeout(() => sec.classList.remove('gusting'), 2100);
+    }
+  };
+}
+
+/* split rain-chapter heading + label into letter spans for the gust lean */
+document.querySelectorAll('.rain h2, .rain .label').forEach(el => {
+  const txt = el.textContent;
+  el.textContent = '';
+  let i = 0;
+  for (const ch of txt) {
+    if (ch === ' ') { el.appendChild(document.createTextNode(' ')); continue; }
+    const sp = document.createElement('span');
+    sp.textContent = ch;
+    sp.style.setProperty('--d', (i * 26) + 'ms');
+    i++;
+    el.appendChild(sp);
+  }
+});
+
 /* ---------- system manager ---------- */
 const systems = [];
 document.querySelectorAll('[data-weather]').forEach(sec => {
   const canvas = sec.querySelector('canvas');
   const kind = sec.dataset.weather;
-  const api = kind === 'rain' ? Rain(canvas) : kind === 'fog' ? Fog(canvas) : Motes(canvas);
+  const api = kind === 'rain' ? Rain(canvas, makeRainFx(sec)) : kind === 'fog' ? Fog(canvas) : Motes(canvas);
   systems.push({ sec, api, raf: 0, last: 0, visible: false });
 });
+// test hook: lets automation force a lightning strike deterministically
+window.__monsoon = { strike() { systems.forEach(s => s.api.strike && s.api.strike()); } };
 
 function startSys(s) {
   if (REDUCED || s.raf) return;
@@ -577,6 +727,7 @@ function startSys(s) {
 }
 function stopSys(s) {
   if (s.raf) { cancelAnimationFrame(s.raf); s.raf = 0; }
+  if (s.api.blur) s.api.blur();
 }
 
 const io = new IntersectionObserver(entries => {

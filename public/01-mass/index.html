@@ -3,6 +3,7 @@
   PASS 1: fixed conflicting initial CSS transform on cursor blob (jumped on first frame); added blob scale-up over interactive targets (was a dead interaction); varied marquee row speeds 22s/30s (identical speeds felt mechanical); fixed vertical-rl section numbers misaligned by align-items:baseline; hid scroll-cue on short viewports where it overlapped hero-meta; fixed footer title crushed to 6rem on mobile breaking scale rhythm.
   PASS 2: fixed broken reveal animation on .face-row/.tier — their own transition shorthand overrode .reveal's opacity/transform transition so they popped in; added staggered reveal delays via per-property transition-delay (hover transitions stay instant); fixed light-strip artifact in glyph grid when last row is incomplete (gap-background trick replaced with per-cell hairline box-shadow); added :focus-visible styles and pointer cursors on interactive elements; set hero-title transform-origin left so kinetic stretch keeps a stable left edge.
   PASS 3: added idle guard to rAF loop — transform writes stop once scroll velocity settles (was recalculating styles every frame forever); added 100vh fallback before 100svh; fixed .face-row horizontal overflow at 390px (name+meta now stack); removed will-change from 40+ glyph elements (excess compositor layers); softened skew clamp 12°→10° for less cartoonish extremes.
+  PASS 4 (kinetic upgrade): hero wordmark now renders to a canvas slice-shear engine — pre-rendered offscreen buffers (true colours + all-acid ghost) redrawn as 44 horizontal slices whose offsets follow an underdamped spring driven by scroll velocity, with additive acid chromatic echoes above a force threshold; DOM wordmark kept as reduced-motion/no-font fallback (swap only happens after document.fonts resolves). Marquee bands fracture into per-glyph spans with sine-staggered translate/rotate above a velocity threshold, transforms cleared once settled. Glyph grid hover now detonates neighbours within radius 2.3 via per-cell underdamped springs with distance falloff. All three subsystems idle-guard (zero draws/writes when springs settle) and are gated by IntersectionObserver visibility; velocity resets on visibilitychange to avoid tab-return spikes. Verified: no console/page errors via file://, scrollWidth 390 -> 390, reduced-motion path unchanged (canvas never created).
 -->
 <html lang="en">
 <head>
@@ -100,7 +101,15 @@
     line-height:.82;letter-spacing:-.03em;
     will-change:transform;transform-origin:left center;
     user-select:none;
+    transition:opacity .35s;
   }
+  .hero-title.ghosted{opacity:0}
+  .hero-canvas{
+    position:absolute;inset:0;pointer-events:none;
+    opacity:0;transition:opacity .35s;
+  }
+  .hero-canvas.on{opacity:1}
+  .hero-meta{position:relative;z-index:2}
   .hero-title .row{display:block}
   .hero-title .outline{
     color:transparent;
@@ -137,7 +146,9 @@
     line-height:1.05;padding:0 .4em;
     display:inline-block;
   }
+  .marquee b{display:inline-block;font-weight:inherit;font-style:inherit}
   .marquee .hollow{color:transparent;-webkit-text-stroke:1.5px var(--bone)}
+  .marquee .hollow b{-webkit-text-stroke:1.5px var(--bone)}
   .marquee .lime{color:var(--acid)}
   @keyframes scroll-x{from{transform:translateX(0)}to{transform:translateX(-50%)}}
 
@@ -485,6 +496,140 @@
   const kinetic = document.getElementById("kinetic");
   const skewEls = document.querySelectorAll("[data-skew]");
   let lastY = scrollY, vel = 0, settled = false;
+  addEventListener("visibilitychange", () => { lastY = scrollY; vel = 0; }); // no velocity spike on tab return
+
+  /* ---------- visibility gating (skip canvas/fracture work offscreen) ---------- */
+  const hero = document.querySelector(".hero");
+  const band = document.querySelector(".marquee-band");
+  const seen = new Map([[hero, true], [band, false]]);
+  const vio = new IntersectionObserver(es => es.forEach(e => seen.set(e.target, e.isIntersecting)));
+  vio.observe(hero); vio.observe(band);
+
+  /* ---------- showpiece: canvas slice-shear wordmark ---------- */
+  // The wordmark is pre-rendered to two offscreen buffers (real colours + all-acid
+  // ghost). Each frame the visible canvas redraws it as ~44 horizontal slices whose
+  // x-offsets follow an underdamped spring driven by scroll velocity — the type
+  // whips like sheet metal under force, then settles elastically. At high force the
+  // acid ghost is composited additively at exaggerated offsets (chromatic echo).
+  let canvasOn = false, S = 0, Sv = 0, phase = 0, needsHeroDraw = false;
+  let W = 0, H = 0, dpr = 1, rowInfo = [], anchorY = 0;
+  const cvs = document.createElement("canvas");
+  cvs.className = "hero-canvas"; cvs.setAttribute("aria-hidden", "true");
+  const buf = document.createElement("canvas");
+  const ghost = document.createElement("canvas");
+  const hctx = cvs.getContext("2d"), bctx = buf.getContext("2d"), gctx = ghost.getContext("2d");
+
+  function renderBuffers(){
+    W = hero.clientWidth; H = hero.clientHeight;
+    dpr = Math.min(window.devicePixelRatio || 1, 1.5);
+    const hr = hero.getBoundingClientRect();
+    const fs = parseFloat(getComputedStyle(kinetic).fontSize);
+    for (const [c, ctx] of [[buf, bctx], [ghost, gctx]]) {
+      c.width = Math.max(1, W * dpr); c.height = Math.max(1, H * dpr);
+      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+      ctx.font = fs + "px 'Archivo Black', sans-serif";
+      ctx.textBaseline = "alphabetic";
+      try { ctx.letterSpacing = (-0.03 * fs).toFixed(2) + "px"; } catch (e) {}
+    }
+    const m = bctx.measureText("MASS");
+    const lift = ((m.actualBoundingBoxAscent || fs * 0.72) - (m.actualBoundingBoxDescent || 0)) / 2;
+    rowInfo = Array.from(kinetic.querySelectorAll(".row"), r => {
+      const rr = r.getBoundingClientRect();
+      return { x: rr.left - hr.left, y: rr.top - hr.top + rr.height / 2 + lift };
+    });
+    anchorY = (rowInfo[0].y + rowInfo[2].y) / 2;
+    bctx.fillStyle = "#F2F2EF";
+    bctx.fillText("MASS", rowInfo[0].x, rowInfo[0].y);
+    bctx.strokeStyle = "#F2F2EF"; bctx.lineWidth = 2.5;
+    bctx.strokeText("MASS", rowInfo[1].x, rowInfo[1].y);
+    bctx.fillStyle = "#D8FF3E";
+    bctx.fillText("MASS", rowInfo[2].x, rowInfo[2].y);
+    gctx.fillStyle = "#D8FF3E";
+    for (const r of rowInfo) gctx.fillText("MASS", r.x, r.y);
+    cvs.width = W * dpr; cvs.height = H * dpr;
+    cvs.style.width = W + "px"; cvs.style.height = H + "px";
+    hctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    needsHeroDraw = true;
+  }
+
+  function drawHero(){
+    hctx.clearRect(0, 0, W, H);
+    const stretch = 1 + Math.min(.22, Math.abs(S) * 0.0035);
+    const n = 44, sh = H / n;
+    const echo = Math.abs(S) > 6;
+    for (let i = 0; i < n; i++) {
+      const t = i / n;
+      const off = S * 0.55 * Math.sin(t * 6.5 + phase) + S * 0.9 * (t - 0.35);
+      const sy = i * sh;
+      const dy = (sy - anchorY) * stretch + anchorY;
+      const dh = sh * stretch + 0.75;
+      if (echo) {
+        hctx.globalCompositeOperation = "lighter";
+        hctx.globalAlpha = Math.min(.5, Math.abs(S) * 0.01);
+        hctx.drawImage(ghost, 0, sy * dpr, W * dpr, sh * dpr, off * 1.9, dy, W, dh);
+        hctx.globalAlpha = Math.min(.3, Math.abs(S) * 0.006);
+        hctx.drawImage(ghost, 0, sy * dpr, W * dpr, sh * dpr, -off * 0.8, dy, W, dh);
+        hctx.globalAlpha = 1;
+        hctx.globalCompositeOperation = "source-over";
+      }
+      hctx.drawImage(buf, 0, sy * dpr, W * dpr, sh * dpr, off, dy, W, dh);
+    }
+  }
+
+  if (hctx && bctx && gctx && document.fonts) {
+    document.fonts.load("400 120px 'Archivo Black'").then(() => document.fonts.ready).then(() => {
+      kinetic.style.transform = ""; // measure untransformed
+      hero.insertBefore(cvs, kinetic);
+      renderBuffers();
+      drawHero();
+      cvs.classList.add("on");
+      kinetic.classList.add("ghosted");
+      canvasOn = true;
+      let rT;
+      addEventListener("resize", () => {
+        clearTimeout(rT);
+        rT = setTimeout(() => { renderBuffers(); }, 150);
+      });
+    }).catch(() => {}); // font unavailable -> DOM wordmark keeps the old kinetic transform
+  }
+
+  /* ---------- marquee fracture: bands split into per-glyph <b> spans ---------- */
+  const mChars = [];
+  document.querySelectorAll(".marquee-inner span").forEach(sp => {
+    const txt = sp.textContent; sp.textContent = "";
+    for (const ch of txt) {
+      if (ch === " ") { sp.appendChild(document.createTextNode(" ")); continue; }
+      const b = document.createElement("b");
+      b.textContent = ch;
+      sp.appendChild(b);
+      mChars.push(b);
+    }
+  });
+  let fracAmp = 0, fracT = 0, fracOn = false;
+
+  /* ---------- glyph grid detonation: neighbors shoved with spring falloff ---------- */
+  const cells = Array.from(grid.children);
+  const gs = cells.map(() => ({ x: 0, y: 0, vx: 0, vy: 0 }));
+  const gActive = new Set();
+  cells.forEach((cell, idx) => {
+    cell.addEventListener("pointerenter", () => {
+      const cols = Math.max(1, Math.round(grid.clientWidth / cell.offsetWidth));
+      const r0 = Math.floor(idx / cols), c0 = idx % cols;
+      for (let r = r0 - 2; r <= r0 + 2; r++) {
+        for (let c = Math.max(0, c0 - 2); c <= Math.min(cols - 1, c0 + 2); c++) {
+          if (r < 0) continue;
+          const j = r * cols + c;
+          if (j === idx || j >= cells.length) continue;
+          const dr = r - r0, dc = c - c0, d = Math.hypot(dr, dc);
+          if (d > 2.3) continue;
+          const p = gs[j], k = (2.6 - d) * 9;
+          p.vx += (dc / d) * k;
+          p.vy += (dr / d) * k;
+          gActive.add(j);
+        }
+      }
+    });
+  });
 
   function loop(){
     // blob lerp
@@ -499,12 +644,62 @@
     const raw = y - lastY;
     lastY = y;
     vel += (raw - vel) * 0.1;
+
+    // canvas slice-shear spring (idles to zero draws when settled or hero offscreen)
+    if (canvasOn) {
+      const target = Math.max(-120, Math.min(120, vel * 2.2));
+      Sv += (target - S) * 0.085;
+      Sv *= 0.86;
+      S += Sv;
+      phase += vel * 0.015;
+      const live = Math.abs(S) > 0.08 || Math.abs(Sv) > 0.08;
+      if (!live) { S = 0; Sv = 0; }
+      if (seen.get(hero) && (live || needsHeroDraw)) { drawHero(); needsHeroDraw = false; }
+    }
+
     if (Math.abs(vel) > 0.02 || !settled) {
       const skew = Math.max(-10, Math.min(10, vel * 0.3));
-      const stretch = 1 + Math.min(.22, Math.abs(vel) * 0.0035);
-      kinetic.style.transform = `skewY(${skew * 0.25}deg) scaleY(${stretch})`;
+      if (!canvasOn) {
+        const stretch = 1 + Math.min(.22, Math.abs(vel) * 0.0035);
+        kinetic.style.transform = `skewY(${skew * 0.25}deg) scaleY(${stretch})`;
+      }
       for (const el of skewEls) el.style.transform = `skewX(${skew}deg)`;
       settled = Math.abs(vel) <= 0.02;
+    }
+
+    // marquee fracture at high velocity
+    const fracTarget = Math.min(26, Math.max(0, Math.abs(vel) - 16) * 0.5);
+    fracAmp += (fracTarget - fracAmp) * 0.12;
+    if (fracAmp > 0.15) {
+      if (seen.get(band)) {
+        fracT += 0.16 + Math.abs(vel) * 0.002;
+        for (let i = 0; i < mChars.length; i++) {
+          mChars[i].style.transform =
+            `translateY(${(Math.sin(i * 0.9 + fracT) * fracAmp).toFixed(2)}px) rotate(${(Math.sin(i * 1.7 + fracT * 1.3) * fracAmp * 0.3).toFixed(2)}deg)`;
+        }
+        fracOn = true;
+      }
+    } else if (fracOn) {
+      fracAmp = 0;
+      for (const c of mChars) c.style.transform = "";
+      fracOn = false;
+    }
+
+    // glyph detonation springs
+    if (gActive.size) {
+      for (const j of gActive) {
+        const p = gs[j];
+        p.vx -= p.x * 0.16; p.vy -= p.y * 0.16;
+        p.vx *= 0.84; p.vy *= 0.84;
+        p.x += p.vx; p.y += p.vy;
+        if (Math.abs(p.x) + Math.abs(p.y) + Math.abs(p.vx) + Math.abs(p.vy) < 0.08) {
+          p.x = p.y = p.vx = p.vy = 0;
+          cells[j].style.transform = "";
+          gActive.delete(j);
+        } else {
+          cells[j].style.transform = `translate(${p.x.toFixed(2)}px,${p.y.toFixed(2)}px)`;
+        }
+      }
     }
     requestAnimationFrame(loop);
   }

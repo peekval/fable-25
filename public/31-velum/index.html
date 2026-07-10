@@ -10,6 +10,7 @@
 <link href="https://fonts.googleapis.com/css2?family=Italiana&family=Cinzel:wght@400;600&family=Crimson+Pro:ital,wght@0,300;0,400;0,600;1,400&display=swap" rel="stylesheet">
 <!-- PASS 1 (cloth believability): 1) added static per-column fold modulation (sin-striped luminance) so the velvet reads as pleated even when the wind is calm, not as a flat red sheet; 2) replaced single-color quad fill with a 64-step precomputed palette (near-black -> crimson -> rose sheen) keyed to each quad's signed-area ratio, with the warm sheen only engaging above ratio 1.02 so highlights ride the crests of ripples; 3) added a second, faster sine octave to the wind field so the ripple stopped looking metronomic and started breathing; 4) stroked each quad with its own fill color at 1px to kill sub-pixel seams that made the cloth look like a tiled mosaic. -->
 <!-- PASS 2 (open choreography): 1) pins now release in a stagger wave from the inner edge outward (per-pin delay keyed to distance from the meeting line) so the curtain visibly PEELS open instead of sliding as a rigid block; 2) retimed to 2.1s cubic in-out and moved the stage-light bloom trigger from click-instant to 18% open, so light spills through the widening gap rather than flashing before it exists; 3) the title/ENTER overlay now fades 150ms late with an upward drift, so the lettering appears printed on the departing cloth; 4) gathered-stack width tuned from 12% to 7% of viewport so the revealed stage is framed, not cropped, and the resting stacks keep rippling in the wind. -->
+<!-- PASS 4 (stagecraft): 1) THE RAISING — pin targets now travel diagonally up-and-out with a per-column lift (inner edge rises highest) so the curtain swags UPWARD into raised legs instead of merely sliding apart; scrolling past 28% of the viewport also triggers the raise, so the house's namesake happens even without the button; retimed to 2.4s for the longer travel and the reduced-motion static paint now draws the raised hem heights per column. 2) HAND AT THE HEM — pointerdown in the lower half of the hero fires a radial billow impulse into the Verlet points (outward + upward, squared falloff, ~quarter-viewport radius), and ENTER adds its own center updraft so the raise begins on a breath of air. 3) LIGHTING RIG — a screen-blended footlight glow breathes under the hem (brightness keyframes, brighter once open), the followspot now tracks the CURSOR across the dark sections on hover devices (header-tracking kept as the touch fallback), section changes dip the house to black for ~130ms via a fixed overlay throttled to 1.5s, and a ghost light flickers quietly beside the director's note. Reduced motion: statically painted raised curtain, no followspot, no dips, no billow, no flicker. PASS: file:// load at 1280x800 and 390x844 — zero page errors, zero console errors, scrollWidth 390 at 390px. -->
 <!-- PASS 3 (mobile): 1) cloth grid capped at 20x14 total under 720px and DPR clamped to 2, holding the solver under budget on mid phones; 2) pointer-brush radius now scales with viewport width so a thumb disturbs a believable patch of cloth instead of one thread; 3) playbill gold-foil hover replaced by a slow always-on shimmer on touch/no-hover devices, and cards stack to one column with tightened padding; 4) hero display type moved to clamp() so VELUM never wraps or overflows at 320px, and the fixed back-link/spotlight sizes reduced. -->
 <style>
 :root{
@@ -90,6 +91,35 @@ a{color:var(--gold)}
   box-shadow:0 0 0 6px rgba(201,165,92,.12), 0 0 44px rgba(201,165,92,.35);
   outline:none;
 }
+/* ---------- FOOTLIGHTS (PASS 4.3) ---------- */
+.foots{
+  position:absolute;left:0;right:0;bottom:0;height:34%;z-index:3;pointer-events:none;
+  background:radial-gradient(130% 105% at 50% 102%, rgba(255,196,124,.30), rgba(230,140,86,.11) 46%, transparent 72%);
+  mix-blend-mode:screen;opacity:.6;transition:opacity 1.6s ease;
+  animation:footbreathe 6.4s ease-in-out infinite;
+}
+.hero.opening .foots{opacity:1}
+@keyframes footbreathe{0%,100%{filter:brightness(.72)}50%{filter:brightness(1.28)}}
+/* ---------- SCENE-CHANGE DIP (PASS 4.3) ---------- */
+.dip{
+  position:fixed;inset:0;z-index:55;background:#000;opacity:0;pointer-events:none;
+  transition:opacity .55s ease .05s;
+}
+.dip.on{opacity:.85;transition:opacity .11s ease-out}
+/* ---------- GHOST LIGHT (PASS 4.3) ---------- */
+.ghost{
+  position:absolute;top:-64px;right:9%;width:9px;height:9px;border-radius:50%;
+  background:#ffe9c0;
+  box-shadow:0 0 16px 5px rgba(255,224,166,.5), 0 0 54px 20px rgba(255,196,120,.14);
+  animation:ghostflick 8s linear infinite;
+}
+.ghost::after{content:"";position:absolute;left:4px;top:9px;width:1px;height:52px;
+  background:linear-gradient(rgba(201,165,92,.5),transparent)}
+@keyframes ghostflick{
+  0%,58%,62%,100%{opacity:.85}
+  59.5%{opacity:.28}
+  76%{opacity:.9}77%{opacity:.42}78.5%{opacity:.85}
+}
 /* ---------- SPOTLIGHT ---------- */
 .spot{
   position:fixed;z-index:5;pointer-events:none;width:640px;height:640px;
@@ -108,6 +138,9 @@ section h2{font-size:clamp(2.1rem,5.4vw,3.6rem);color:var(--cream);margin-bottom
 @media (prefers-reduced-motion:reduce){
   .reveal{opacity:1;transform:none;transition:none}
   .bloom,.veil{transition:none}
+  .foots{animation:none;opacity:.75}
+  .ghost{animation:none}
+  .dip{display:none}
 }
 /* velvet backdrop for program */
 .velvet{
@@ -211,6 +244,7 @@ footer nav a:hover{color:#f2dfae}
 
 <a class="back" href="/">←&nbsp;25</a>
 <div class="spot" id="spot" aria-hidden="true"></div>
+<div class="dip" id="dip" aria-hidden="true"></div>
 
 <!-- ================= HERO ================= -->
 <header class="hero" id="hero">
@@ -223,6 +257,7 @@ footer nav a:hover{color:#f2dfae}
   </div>
   <div class="bloom" aria-hidden="true"></div>
   <canvas id="curtain" aria-hidden="true"></canvas>
+  <div class="foots" aria-hidden="true"></div>
   <div class="veil" id="veil">
     <p class="smallcaps">Théâtre Velum · Est. within the old velvet mill</p>
     <h1>VELUM</h1>
@@ -311,6 +346,7 @@ footer nav a:hover{color:#f2dfae}
   <div class="rule reveal"><span class="smallcaps">Act III — Director's Note</span></div>
   <h2 id="note-h" class="reveal">On the subject of cloth</h2>
   <div class="note reveal">
+    <span class="ghost" aria-hidden="true"></span>
     <p>People ask why we spend a restoration budget on a curtain when the roof, frankly,
        negotiates with the rain. Here is the answer I give the board, and it is also true:
        the curtain is the only honest actor we employ. It does not interpret. It hangs,
@@ -404,7 +440,7 @@ var PAL=[];
 /* ---------- cloth ---------- */
 function Cloth(side){ // side: -1 left, +1 right
   this.side=side; this.px=[];this.py=[];this.ox=[];this.oy=[];this.pin=[];
-  this.spreadX=[];this.gatherX=[];this.delay=[];
+  this.spreadX=[];this.gatherX=[];this.delay=[];this.lift=[];
   this.cols=0;this.rows=0;this.restX=0;this.restY=0;this.restArea=1;
   this.fold=[]; // static per-column fold modulation (PASS 1.1)
 }
@@ -419,7 +455,7 @@ Cloth.prototype.build=function(cols,rows){
   this.restArea=this.restX*this.restY;
   var gW=Math.max(46,W*0.07); // gathered stack width (PASS 2.4)
   this.px.length=this.py.length=this.ox.length=this.oy.length=this.pin.length=0;
-  this.spreadX.length=this.gatherX.length=this.delay.length=this.fold.length=0;
+  this.spreadX.length=this.gatherX.length=this.delay.length=this.fold.length=this.lift.length=0;
   for(var i=0;i<cols;i++){
     var sx=x0+i*this.restX;
     this.spreadX.push(sx);
@@ -428,6 +464,7 @@ Cloth.prototype.build=function(cols,rows){
     var gx=(this.side<0)? (-8+ (i/(cols-1))*gW) : (W+8-((cols-1-i)/(cols-1))*gW);
     this.gatherX.push(gx);
     this.delay.push((1-k)*0.55); // inner edge (k=1) releases first (PASS 2.1)
+    this.lift.push(H*(0.38+0.46*k)); // PASS 4.1: inner edge raised highest -> diagonal swag
     this.fold.push(0.82+0.18*Math.sin(i*1.9+this.side*0.7)); // velvet pleat stripes
   }
   for(var j=0;j<rows;j++)for(i=0;i<cols;i++){
@@ -451,7 +488,7 @@ Cloth.prototype.step=function(dt){
     var t=openT<=0?0:Math.min(Math.max((openT-this.delay[i])/(1-0.55),0),1);
     var e=easeInOut(t);
     px[i]=this.spreadX[i]+(this.gatherX[i]-this.spreadX[i])*e;
-    py[i]=-6;
+    py[i]=-6-this.lift[i]*e; // PASS 4.1: the curtain actually RAISES, up and out
   }
   // integrate
   var brushR=mobile?Math.max(60,W*0.16):90, brushR2=brushR*brushR; // PASS 3.2
@@ -527,10 +564,11 @@ function paintStatic(gathered){
     for(var i=0;i<cols-1;i++){
       var x0=gathered?c.gatherX[i]:c.spreadX[i];
       var x1=gathered?c.gatherX[i+1]:c.spreadX[i+1];
+      var hem=gathered?Math.max(0,H*1.06-c.lift[i]-6):H; // PASS 4.1: raised hem heights
       var lum=(0.30+0.55*Math.abs(Math.sin(i*1.9)))*c.fold[i];
       var idx=Math.min(63,(lum*63)|0);
       ctx.fillStyle=PAL[idx];
-      ctx.fillRect(Math.min(x0,x1)-1,0,Math.abs(x1-x0)+2,H);
+      ctx.fillRect(Math.min(x0,x1)-1,0,Math.abs(x1-x0)+2,hem);
     }
   });
 }
@@ -559,9 +597,37 @@ function open(){
   opening=true;openStart=performance.now();
   enterBtn.setAttribute('aria-hidden','true');
   enterBtn.tabIndex=-1;
+  if(!reduced)billow(W/2,H*0.82,14); // PASS 4.2: the raise begins on a breath of air
   // bloom fires at 18% open (PASS 2.2) — handled in loop
 }
 enterBtn.addEventListener('click',open);
+// PASS 4.1: scrolling also raises the curtain — the namesake happens either way
+if(!reduced)window.addEventListener('scroll',function(){
+  if(!opening&&window.scrollY>innerHeight*0.28)open();
+},{passive:true});
+
+/* ---------- billow impulse at the hem (PASS 4.2) ---------- */
+function billow(cx,cy,power){
+  var R=mobile?Math.max(150,W*0.5):Math.max(220,W*0.24),R2=R*R;
+  [left,right].forEach(function(c){
+    var px=c.px,py=c.py,ox=c.ox,oy=c.oy,pin=c.pin;
+    for(var n=0;n<px.length;n++){
+      if(pin[n])continue;
+      var dx=px[n]-cx,dy=py[n]-cy,d2=dx*dx+dy*dy;
+      if(d2>=R2)continue;
+      var d=Math.sqrt(d2)||1,f=1-d2/R2;f*=f; // squared falloff
+      ox[n]-=(dx/d)*power*f;  // outward push (Verlet: shifting old pos adds velocity)
+      oy[n]+=power*0.85*f;    // upward lift
+    }
+  });
+}
+window.addEventListener('pointerdown',function(e){
+  if(reduced||!heroVis)return;
+  var r=canvas.getBoundingClientRect();
+  var nx=e.clientX-r.left,ny=e.clientY-r.top;
+  if(nx<-40||nx>W+40||ny<H*0.45||ny>H+60)return; // only the lower half: the hem
+  billow(nx,ny,mobile?15:24);
+},{passive:true});
 
 /* ---------- pointer ---------- */
 window.addEventListener('pointermove',function(e){
@@ -569,12 +635,15 @@ window.addEventListener('pointermove',function(e){
   var nx=e.clientX-r.left,ny=e.clientY-r.top;
   if(ptr.has){ptr.vx=nx-ptr.x;ptr.vy=ny-ptr.y}
   ptr.x=nx;ptr.y=ny;ptr.has=true;
+  ptr.cx=e.clientX;ptr.cy=e.clientY;ptr.hasClient=true; // PASS 4.3: followspot target
 },{passive:true});
+var canHover=window.matchMedia('(hover:hover)').matches;
 
 /* ---------- spotlight (driven by the same single rAF) ---------- */
 var spot=document.getElementById('spot');
 var heads=[].slice.call(document.querySelectorAll('section h2'));
 var sX=innerWidth/2,sY=-400,sO=0;
+var dip=document.getElementById('dip'),curHead=-1,lastDip=0; // PASS 4.3 scene dips
 
 /* ---------- reveal-on-scroll ---------- */
 var io=new IntersectionObserver(function(es){
@@ -597,22 +666,34 @@ if(reduced){
     requestAnimationFrame(loop);
     if(hidden)return;
     var dt=Math.min((now-last)/1000,0.1);last=now;
-    // spotlight tracks the section header nearest 32% viewport height
-    var best=null,bd=1e9,vh=innerHeight;
+    // spotlight: follows the cursor across the dark sections on hover devices,
+    // falls back to the section header nearest 32% viewport height (touch) (PASS 4.3)
+    var best=null,bi=-1,bd=1e9,vh=innerHeight;
     for(var i=0;i<heads.length;i++){
       var r=heads[i].getBoundingClientRect();
       if(r.bottom<-vh||r.top>2*vh)continue;
       var d=Math.abs(r.top+r.height/2-vh*0.32);
-      if(d<bd){bd=d;best=r}
+      if(d<bd){bd=d;best=r;bi=i}
+    }
+    // scene change: fast dip to black, lights up (PASS 4.3)
+    if(bi!==curHead){
+      if(curHead>-1&&bi>-1&&scrollY>vh*0.6&&now-lastDip>1500){
+        dip.classList.add('on');lastDip=now;
+        setTimeout(function(){dip.classList.remove('on')},130);
+      }
+      curHead=bi;
     }
     var tO=0,tX=sX,tY=sY;
-    if(best&&scrollY>vh*0.4){tO=0.9;tX=best.left+best.width*0.35;tY=best.top+best.height/2}
+    if(scrollY>vh*0.45){
+      if(canHover&&ptr.hasClient){tO=0.85;tX=ptr.cx;tY=ptr.cy}
+      else if(best){tO=0.9;tX=best.left+best.width*0.35;tY=best.top+best.height/2}
+    }
     sX+=(tX-sX)*0.08;sY+=(tY-sY)*0.08;sO+=(tO-sO)*0.06;
     spot.style.transform='translate('+sX+'px,'+sY+'px)';
     spot.style.opacity=sO.toFixed(3);
     if(!heroVis)return; // cloth work only while hero on screen
     if(opening&&openT<1){
-      openT=Math.min((now-openStart)/2100,1);
+      openT=Math.min((now-openStart)/2400,1); // PASS 4.1: retimed for the longer travel
       if(openT>0.18&&!hero.classList.contains('opening'))hero.classList.add('opening');
     }
     acc+=dt;var steps=0;

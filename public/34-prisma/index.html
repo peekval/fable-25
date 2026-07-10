@@ -23,6 +23,18 @@
   one curated still frame (t=47.0, seg locked) and pill presses do instant single-frame steps;
   contexts created with alpha:false + antialias:false and DPR hard-capped (hero 1.25, minis 1);
   IntersectionObserver margins widened so minis wake just before entering the viewport.
+  PASS 4 (generated archive plate + jewel-beam choreography): added a "Last Year" documentation
+  section built on a generated 2K installation photograph (Nano Banana 2 via Higgsfield MCP,
+  palette-locked to the four jewels over velvet, ffmpeg -> WebP). The photo reveals through a
+  prism-split — three feColorMatrix channel copies (R/G/B) screen-blended over black converge
+  from ±3.2% offsets as the section scrolls in, reassembling the full-colour frame — then drifts
+  on a slow Ken Burns (scale 1 -> 1.06) across the section's scroll life. The hero shader gained
+  a cursor-drawn beam: a white shaft follows the pointer angle and progressively disperses into
+  amethyst/sapphire/emerald/citrine with radius (a live prism), pressing brightens it to full,
+  and refraction flares bloom where the beam crosses the kaleidoscope's mirror seams. The hero
+  headline picks up a live dispersion fringe on hover. Reduced motion: converged static photo,
+  no drift, no beam, no fringe; image lazy-loaded with real dimensions; no horizontal overflow
+  at 390px (full-bleed stage uses width:100%, never 100vw).
 -->
 <style>
   :root{
@@ -93,6 +105,14 @@
     to  {filter:hue-rotate(360deg) drop-shadow(0 0 26px rgba(155,77,202,.5))}
   }
   @keyframes gradSlide{from{background-position:0% 50%}to{background-position:100% 50%}}
+  /* PASS 4: live dispersion fringe on hover — text-shadow ghosts peek out at glyph edges */
+  .hero-title{pointer-events:auto}
+  .hero-title span{display:inline-block}
+  .hero-title:hover span{animation:fringe 1.5s ease-in-out infinite alternate}
+  @keyframes fringe{
+    from{text-shadow:-6px 0 0 rgba(155,77,202,.75), 6px 0 0 rgba(46,107,214,.75), -2px 0 0 rgba(31,169,122,.55), 2px 0 0 rgba(245,197,66,.55)}
+    to  {text-shadow:-11px 0 0 rgba(155,77,202,.85), 11px 0 0 rgba(46,107,214,.85), -4px 0 0 rgba(31,169,122,.6), 4px 0 0 rgba(245,197,66,.6)}
+  }
   .hero-sub{
     margin-top:1.6rem;font-size:clamp(1rem,2.2vw,1.35rem);font-weight:300;
     color:var(--ink);max-width:34ch;margin-left:auto;margin-right:auto;
@@ -188,6 +208,30 @@
   .tag.em{color:var(--emerald);border:1px solid rgba(31,169,122,.45)}
   .tag.sa{color:var(--sapphire);border:1px solid rgba(46,107,214,.55)}
 
+  /* ---------- archive / last year (PASS 4) ---------- */
+  #archive{padding-left:0;padding-right:0}
+  #archive .wrap{padding-left:1.5rem;padding-right:1.5rem}
+  .archive-fig{margin:3.4rem 0 0}
+  .archive-stage{
+    /* defaults = converged full-colour photo (no-JS and reduced-motion state) */
+    --split:0; --kb:1;
+    position:relative;width:100%;aspect-ratio:1920/1072;
+    background:#000;overflow:hidden;isolation:isolate;
+  }
+  .archive-stage .kb{position:absolute;inset:0;background:#000;transform:scale(var(--kb));will-change:transform}
+  .archive-stage img{
+    position:absolute;inset:0;width:100%;height:100%;object-fit:cover;display:block;
+    mix-blend-mode:screen; /* pure channels don't overlap -> screen == additive == exact original */
+  }
+  .archive-stage .ch-r{filter:url(#chR);transform:translateX(calc(var(--split) * -3.2%))}
+  .archive-stage .ch-g{filter:url(#chG)}
+  .archive-stage .ch-b{filter:url(#chB);transform:translateX(calc(var(--split) * 3.2%))}
+  .archive-fig figcaption{
+    max-width:1080px;margin:1.2rem auto 0;padding:0 1.5rem;
+    font-size:.78rem;letter-spacing:.16em;text-transform:uppercase;color:var(--ink-dim);
+  }
+  .archive-fig figcaption b{color:var(--citrine);font-weight:600}
+
   /* ---------- artists ---------- */
   .lineup{margin-top:3rem;display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:1px;background:var(--hairline);border:1px solid var(--hairline);border-radius:14px;overflow:hidden}
   .artist{background:var(--velvet);padding:1.35rem 1.4rem;display:flex;align-items:baseline;gap:.8rem;transition:background .3s}
@@ -240,6 +284,9 @@
 
   @media (max-width:640px){
     section{padding:5rem 1.2rem}
+    #archive{padding-left:0;padding-right:0}
+    #archive .wrap{padding-left:1.2rem;padding-right:1.2rem}
+    .archive-fig figcaption{padding:0 1.2rem}
     .hero-hint{bottom:6.9rem;font-size:.62rem}
     .card-head{flex-direction:column;align-items:flex-start}
   }
@@ -247,6 +294,8 @@
     html{scroll-behavior:auto}
     *,*::before,*::after{animation-duration:.01ms !important;animation-iteration-count:1 !important;transition-duration:.01ms !important}
     .hero-title{filter:drop-shadow(0 0 26px rgba(155,77,202,.5))}
+    .hero-title:hover span{animation:none;text-shadow:none}
+    .archive-stage{--split:0;--kb:1} /* PASS 4: converged static photo, no drift */
   }
 </style>
 </head>
@@ -260,11 +309,11 @@
   <div class="hero-veil"></div>
   <div class="hero-inner">
     <p class="hero-kicker">Festival of Living Light</p>
-    <h1 class="hero-title">PRISMA</h1>
+    <h1 class="hero-title"><span>PRISMA</span></h1>
     <p class="hero-sub">Three nights inside a kaleidoscope the size of a turbine hall. You are holding the mirror.</p>
     <p class="hero-meta">12 — 14 March · Zürich-West</p>
   </div>
-  <p class="hero-hint">Move your cursor — the light follows your hand</p>
+  <p class="hero-hint">Move your cursor — press &amp; drag to draw a beam</p>
   <div class="segs" role="group" aria-label="Kaleidoscope symmetry">
     <span class="segs-label">Symmetry</span>
     <button type="button" data-n="6"  aria-pressed="false">6</button>
@@ -341,6 +390,37 @@
       </article>
     </div>
   </div>
+</section>
+
+<!-- ============ ARCHIVE / LAST YEAR (PASS 4) ============ -->
+<svg width="0" height="0" style="position:absolute" aria-hidden="true" focusable="false">
+  <filter id="chR" color-interpolation-filters="sRGB"><feColorMatrix type="matrix" values="1 0 0 0 0  0 0 0 0 0  0 0 0 0 0  0 0 0 1 0"/></filter>
+  <filter id="chG" color-interpolation-filters="sRGB"><feColorMatrix type="matrix" values="0 0 0 0 0  0 1 0 0 0  0 0 0 0 0  0 0 0 1 0"/></filter>
+  <filter id="chB" color-interpolation-filters="sRGB"><feColorMatrix type="matrix" values="0 0 0 0 0  0 0 0 0 0  0 0 1 0 0  0 0 0 1 0"/></filter>
+</svg>
+<section id="archive">
+  <div class="wrap">
+    <p class="eyebrow ci">Documentation · Last Year</p>
+    <h2>Last March, the light got out of the hall.</h2>
+    <p class="lede">
+      On closing night of the previous edition, four beams — one per jewel — were set loose on the
+      forecourt plaza as an unannounced prologue. <strong>No screens, no speakers, just fog, rain-slick
+      concrete and four colours standing in the air.</strong> Someone froze a single frame of it, and that
+      frame chose this year's palette. As you scroll, the photograph arrives the way the light did:
+      split into its channels, then converged.
+    </p>
+  </div>
+  <figure class="archive-fig">
+    <div class="archive-stage" id="prismStage">
+      <div class="kb">
+        <img class="ch-r" src="assets/installation.webp" width="1920" height="1072" loading="lazy" decoding="async"
+             alt="Night photograph of PRISMA's open-air prologue: amethyst, emerald, citrine and sapphire beams of light cutting through fog above a rain-slick plaza, visitors standing in silhouette.">
+        <img class="ch-g" src="assets/installation.webp" width="1920" height="1072" loading="lazy" decoding="async" alt="" aria-hidden="true">
+        <img class="ch-b" src="assets/installation.webp" width="1920" height="1072" loading="lazy" decoding="async" alt="" aria-hidden="true">
+      </div>
+    </div>
+    <figcaption><b>Turbinenhalle forecourt, closing night MMXXV</b> — the four-beam prologue that named this year's palette. Single frame from the festival documentation, unretouched.</figcaption>
+  </figure>
 </section>
 
 <!-- ============ ARTISTS ============ -->
@@ -439,6 +519,8 @@ var FRAG = [
 "uniform float uRot;",   // fold-axis rotation (mouse angle)
 "uniform float uZoom;",  // pattern zoom (mouse distance)
 "uniform float uSeed;",  // per-instance flavour
+"uniform float uBeam;",  // PASS 4: cursor beam strength 0..1
+"uniform float uBeamA;", // PASS 4: cursor beam angle (screen space, unfolded)
 "",
 "const vec3 VELVET   = vec3(0.039, 0.035, 0.051);",
 "const vec3 AMETHYST = vec3(0.608, 0.302, 0.792);",
@@ -460,6 +542,8 @@ var FRAG = [
 "  for(int i = 0; i < 5; i++){ v += a * noise(p); p = m * p; a *= 0.5; }",
 "  return v;",
 "}",
+"// PASS 4: gaussian lobe for the dispersed beam",
+"float lobe(float x, float w){ return exp(-(x * x) / (w * w)); }",
 "",
 "vec3 field(vec2 q, float t){",
 "  // PASS 1: drift slowed (0.12->0.07 etc) so the pattern breathes, not boils",
@@ -482,7 +566,8 @@ var FRAG = [
 "void main(){",
 "  vec2 uv = (gl_FragCoord.xy - 0.5 * uRes) / min(uRes.x, uRes.y);",
 "  float r = length(uv);",
-"  float a = atan(uv.y, uv.x) + uRot;",
+"  float a0 = atan(uv.y, uv.x);", // PASS 4: unfolded angle, kept for the cursor beam
+"  float a = a0 + uRot;",
 "  // --- the polar fold: N mirrored wedges ---",
 "  float wedge = TAU / uSeg;",
 "  a = mod(a, wedge);",
@@ -496,6 +581,19 @@ var FRAG = [
 "  // vignette + centre jewel glow",
 "  col *= 1.0 - smoothstep(0.55, 1.2, r) * 0.7;",
 "  col += mix(AMETHYST, SAPPHIRE, 0.5) * exp(-r * 3.5) * 0.30;",
+"  // PASS 4: cursor-drawn beam — white core near centre progressively disperses into the",
+"  // four jewels with radius (a live prism); flares where it crosses the mirror seams.",
+"  float db = mod(a0 - uBeamA + 3.14159265, TAU) - 3.14159265;",
+"  float spread = (0.05 + 0.24 * smoothstep(0.08, 0.95, r)) * (0.45 + 0.55 * uBeam);",
+"  float bw = 0.045 + 0.025 * r;",
+"  float shaft = smoothstep(1.25, 0.12, r) * uBeam;",
+"  vec3 beamCol = AMETHYST * lobe(db + 1.5 * spread, bw)",
+"               + SAPPHIRE * lobe(db + 0.5 * spread, bw)",
+"               + EMERALD  * lobe(db - 0.5 * spread, bw)",
+"               + CITRINE  * lobe(db - 1.5 * spread, bw);",
+"  col += beamCol * shaft * 0.85;",
+"  col += vec3(1.0, 0.98, 0.94) * lobe(db, 0.030) * smoothstep(0.7, 0.0, r) * uBeam;",
+"  col += vec3(1.0, 0.97, 0.90) * seam * lobe(db, 0.22) * uBeam * 0.6;",
 "  gl_FragColor = vec4(col, 1.0);",
 "}"
 ].join("\n");
@@ -551,13 +649,16 @@ function makeKaleido(canvas, opts){
     seg: opts.seg || 8, targetSeg: opts.seg || 8,
     rot: 0, targetRot: 0,
     zoom: opts.zoom || 1.45, targetZoom: opts.zoom || 1.45,
+    beam: 0, targetBeam: 0, beamA: 0, targetBeamA: 0,   // PASS 4: cursor beam
     u: {
       res:  gl.getUniformLocation(prog, "uRes"),
       time: gl.getUniformLocation(prog, "uTime"),
       seg:  gl.getUniformLocation(prog, "uSeg"),
       rot:  gl.getUniformLocation(prog, "uRot"),
       zoom: gl.getUniformLocation(prog, "uZoom"),
-      seed: gl.getUniformLocation(prog, "uSeed")
+      seed: gl.getUniformLocation(prog, "uSeed"),
+      beam: gl.getUniformLocation(prog, "uBeam"),
+      beamA: gl.getUniformLocation(prog, "uBeamA")
     },
     resize: function(){
       var dpr = Math.min(window.devicePixelRatio || 1, this.dprCap);
@@ -574,6 +675,8 @@ function makeKaleido(canvas, opts){
       this.seg  += (this.targetSeg  - this.seg)  * k;
       this.zoom += (this.targetZoom - this.zoom) * k;
       this.rot   = lerpAngle(this.rot, this.targetRot, k);
+      this.beam += (this.targetBeam - this.beam) * k;           // PASS 4
+      this.beamA = lerpAngle(this.beamA, this.targetBeamA, k);  // PASS 4
       var gl = this.gl, u = this.u;
       gl.uniform2f(u.res, this.canvas.width, this.canvas.height);
       gl.uniform1f(u.time, (t + this.tOff) * this.speed);
@@ -581,11 +684,14 @@ function makeKaleido(canvas, opts){
       gl.uniform1f(u.rot, this.rot);
       gl.uniform1f(u.zoom, this.zoom);
       gl.uniform1f(u.seed, this.seed);
+      gl.uniform1f(u.beam, this.beam);
+      gl.uniform1f(u.beamA, this.beamA);
       gl.drawArrays(gl.TRIANGLES, 0, 3);
     },
     still: function(){
       this.resize();
       this.seg = this.targetSeg; this.rot = this.targetRot; this.zoom = this.targetZoom;
+      this.beam = 0; this.targetBeam = 0; // PASS 4: reduced motion never shows the beam
       this.draw(STILL_T, 0);
     }
   };
@@ -672,12 +778,35 @@ if(hero && !reduced){ // PASS 3: reduced motion keeps the still truly still — 
     hero.targetRot = Math.atan2(dy, dx);
     var d = Math.min(1, Math.hypot(dx, dy));
     hero.targetZoom = 0.85 + d * 1.15;   // centre = zoomed in, edge = wide field
+    // PASS 4: the beam tracks the cursor angle (shader y is up, screen y is down)
+    hero.targetBeamA = Math.atan2(-dy, dx);
+    hero.targetBeam = beamDrag ? 1.0 : 0.45;
+  }, { passive: true });
+
+  // PASS 4: press & drag brightens the beam to full — a hand on the light
+  var beamDrag = false;
+  heroEl.addEventListener("pointerdown", function(e){
+    beamDrag = true;
+    lastPointer = performance.now();
+    var r = heroEl.getBoundingClientRect();
+    var dx = (e.clientX - (r.left + r.width  / 2)) / (r.width  / 2);
+    var dy = (e.clientY - (r.top  + r.height / 2)) / (r.height / 2);
+    hero.targetBeamA = Math.atan2(-dy, dx);
+    hero.targetBeam = 1.0;
+  }, { passive: true });
+  window.addEventListener("pointerup", function(){
+    beamDrag = false;
+    if(hero.targetBeam > 0.45) hero.targetBeam = 0.45;
   }, { passive: true });
 
   // PASS 2: idle drift — the mandala keeps turning slowly when the cursor rests
+  // PASS 4: the beam also fades out once the hand leaves the light
   if(!reduced){
     setInterval(function(){
-      if(performance.now() - lastPointer > 3000) hero.targetRot += 0.02;
+      if(performance.now() - lastPointer > 3000){
+        hero.targetRot += 0.02;
+        hero.targetBeam = 0;
+      }
     }, 90);
   }
 }
@@ -703,6 +832,37 @@ if(!reduced){
     autoIdx = (autoIdx + 1) % autoSeq.length;
     setSeg(autoSeq[autoIdx]);
   }, 9000);
+}
+
+/* ---------- PASS 4: archive prism-split + Ken Burns, driven by scroll ---------- */
+var stage = document.getElementById("prismStage");
+if(stage && !reduced){
+  var stageNear = false, stageRaf = null;
+  var stageUpdate = function(){
+    stageRaf = null;
+    var r = stage.getBoundingClientRect();
+    var vh = window.innerHeight || 1;
+    var p = (vh - r.top) / (vh + r.height);        // 0 = about to enter, 1 = fully scrolled past
+    p = Math.max(0, Math.min(1, p));
+    var split = Math.max(0, 1 - p / 0.35);         // channels converge over the first 35%
+    split *= split;                                 // ease-out on the convergence
+    stage.style.setProperty("--split", split.toFixed(4));
+    stage.style.setProperty("--kb", (1 + 0.06 * p).toFixed(4)); // Ken Burns 1 -> 1.06
+  };
+  var stageQueue = function(){
+    if(stageNear && !stageRaf) stageRaf = requestAnimationFrame(stageUpdate);
+  };
+  if("IntersectionObserver" in window){
+    new IntersectionObserver(function(entries){
+      stageNear = entries[0].isIntersecting;
+      if(stageNear) stageQueue();
+    }, { rootMargin: "160px 0px 160px 0px", threshold: 0 }).observe(stage);
+  } else {
+    stageNear = true;
+    stageQueue();
+  }
+  window.addEventListener("scroll", stageQueue, { passive: true });
+  window.addEventListener("resize", stageQueue, { passive: true });
 }
 
 /* ---------- go ---------- */

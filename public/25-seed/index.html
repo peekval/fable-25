@@ -17,6 +17,19 @@
   regenerate; keyboard R regenerates from anywhere (with kbd hint under the button); frames lift 5px
   with deepened shadow on hover (motion-safe); footer completed with seed + generator, anchor to
   "About the machine"; all hover/fade motion gated behind prefers-reduced-motion.
+  PASS 4 (alive & unique per visitor): exhibition now minted as "Edition #XXXX" (seed mod 10000) in the
+  fixed tag; every work carries its own 32-bit seed, printed on the plate caption; clicking a canvas or
+  its "Replant" plaque button retires that work's seed and regrows it stroke-by-stroke over ~2.5s
+  (150 rAF frames, target-step pacing so all four algorithms grow at the same tempo); growth pauses
+  when scrolled offscreen and resumes on return (IntersectionObserver + stored continuation); flow
+  field escalated - two-octave sin/cos field with a hidden eddy the strokes coil around, 1700 fine
+  mist particles with lifespans + 130 tapering ribbon strokes that occasionally drop ink seeds;
+  gallery spotlights quietly track the cursor (per-work --spot-x on the ::before, pointer:fine only,
+  1s eased lag); replanting dismantles that work's acquisition; certificates now per-work seeds.
+  Reduced motion: instant renders, no growth, no spotlight tracking. Guards kept: .gallery
+  overflow-x:clip, spotlight ::before still 150% wide.
+  PASS 4 VERIFY: file:// via headless chromium at 1280x800 + 390x844 - zero page errors, zero console
+  errors, scrollWidth 1280/390 (<=392 @390); mid-growth screenshot reviewed (strokes visibly growing).
 -->
 <html lang="en">
 <head>
@@ -122,9 +135,13 @@
   /* spotlight */
   .work::before{
     content:'';position:absolute;left:50%;top:-140px;
-    transform:translateX(-50%);
+    transform:translateX(calc(-50% + var(--spot-x, 0px)));
     width:150%;height:380px;pointer-events:none;z-index:0;
     background:radial-gradient(ellipse 40% 48% at 50% 0%, rgba(255,251,238,.72), rgba(255,251,238,0) 68%);
+    transition:transform 1s cubic-bezier(.22,1,.36,1);
+  }
+  @media (prefers-reduced-motion: reduce){
+    .work::before{transition:none;transform:translateX(-50%)}
   }
   .frame{
     position:relative;z-index:1;
@@ -148,7 +165,7 @@
     .frame{transition:none}
     .work:hover .frame{transform:none}
   }
-  .frame canvas{display:block;width:100%;height:auto;background:#EFEDE6}
+  .frame canvas{display:block;width:100%;height:auto;background:#EFEDE6;cursor:pointer}
   .label{
     position:relative;z-index:1;
     margin-top:26px;max-width:340px;
@@ -178,7 +195,8 @@
     transition:opacity .35s ease, transform .45s cubic-bezier(.34,1.56,.64,1);
   }
   .work.sold .dot{opacity:1;transform:scale(1)}
-  .label .acquire{
+  .label .acquire,
+  .label .replant{
     margin-top:13px;display:inline-block;
     font-family:var(--grot);font-size:10.5px;letter-spacing:.22em;
     text-transform:uppercase;color:var(--ink-soft);
@@ -186,7 +204,10 @@
     padding:0 0 3px;cursor:pointer;
     transition:color .25s ease, border-color .25s ease;
   }
-  .label .acquire:hover{color:var(--ink);border-color:var(--ink)}
+  .label .replant{margin-left:18px}
+  .work:nth-child(2) .label .replant{margin-left:0;margin-right:18px}
+  .label .acquire:hover,
+  .label .replant:hover{color:var(--ink);border-color:var(--ink)}
   .work.sold .acquire{
     font-family:var(--serif);font-style:italic;font-size:12.5px;
     text-transform:none;letter-spacing:.02em;
@@ -264,7 +285,7 @@
 <body>
 
 <a class="back" href="/">&larr;&nbsp;25</a>
-<div class="seed-tag" id="seedTag" aria-live="polite">Seed <b id="seedVal">—</b></div>
+<div class="seed-tag" id="seedTag" aria-live="polite">Edition <b id="edVal">—</b> &middot; Seed <b id="seedVal">—</b></div>
 
 <header class="hero">
   <p class="eyebrow">A Generative Gallery &middot; Edition of One</p>
@@ -283,7 +304,7 @@
       <div class="algo">Flow Field Study</div>
       <div class="medium" id="m0"></div>
       <div class="dims" id="d0"></div>
-      <button class="acquire" type="button">Acquire</button>
+      <button class="acquire" type="button">Acquire</button><button class="replant" type="button">Replant</button>
     </figcaption>
   </figure>
 
@@ -295,7 +316,7 @@
       <div class="algo">Recursive Colour Fields</div>
       <div class="medium" id="m1"></div>
       <div class="dims" id="d1"></div>
-      <button class="acquire" type="button">Acquire</button>
+      <button class="acquire" type="button">Acquire</button><button class="replant" type="button">Replant</button>
     </figcaption>
   </figure>
 
@@ -307,7 +328,7 @@
       <div class="algo">Concentric Meditation</div>
       <div class="medium" id="m2"></div>
       <div class="dims" id="d2"></div>
-      <button class="acquire" type="button">Acquire</button>
+      <button class="acquire" type="button">Acquire</button><button class="replant" type="button">Replant</button>
     </figcaption>
   </figure>
 
@@ -319,7 +340,7 @@
       <div class="algo">Orbital Scatter</div>
       <div class="medium" id="m3"></div>
       <div class="dims" id="d3"></div>
-      <button class="acquire" type="button">Acquire</button>
+      <button class="acquire" type="button">Acquire</button><button class="replant" type="button">Replant</button>
     </figcaption>
   </figure>
 
@@ -405,43 +426,84 @@
      Everything derives from R (seeded); nothing from Math.random. */
 
   function flowField(ctx, w, h, R, pal){
+    /* Escalated: two-octave vector field with a hidden eddy, three stroke voices —
+       fine mist (batched, mortal particles), tapering ribbons, and dropped ink seeds. */
     ctx.fillStyle = pal.paper; ctx.fillRect(0, 0, w, h);
-    var sc1 = (0.7 + R() * 1.9) * Math.PI * 2 / w;
-    var sc2 = (0.7 + R() * 1.9) * Math.PI * 2 / h;
-    var o1 = R() * Math.PI * 2, o2 = R() * Math.PI * 2;
-    var swirl = 1.6 + R() * 2.2, drift = R() * Math.PI * 2;
+    var TAU = Math.PI * 2;
+    var sc1 = (0.7 + R() * 1.6) * TAU / w, sc2 = (0.7 + R() * 1.6) * TAU / h;
+    var o1 = R() * TAU, o2 = R() * TAU;
+    var sc3 = (2.1 + R() * 2.3) * TAU / w, sc4 = (2.1 + R() * 2.3) * TAU / h;
+    var o3 = R() * TAU, o4 = R() * TAU;
+    var swirl = 1.5 + R() * 1.9, oct2 = 0.3 + R() * 0.45, drift = R() * TAU;
+    // a hidden eddy — strokes coil around it, quadratically stronger near the core
+    var ex = w * (0.28 + R() * 0.44), ey = h * (0.28 + R() * 0.44);
+    var espin = (R() < 0.5 ? -1 : 1) * (1.1 + R() * 1.4);
+    var erad = Math.min(w, h) * (0.26 + R() * 0.2);
     var cols = pal.colors;
     var mg = Math.min(w, h) * 0.055; // clean margin — the field stops before the mat
-    var groups = cols.map(function(c){ return { c:c, pts:[] }; });
-    var N = 2000;
-    function spawn(){ return { x: mg + R() * (w - 2 * mg), y: mg + R() * (h - 2 * mg) }; }
-    for (var i = 0; i < N; i++){
-      var gi = Math.min(cols.length - 1, Math.floor(Math.pow(R(), 1.7) * cols.length));
-      groups[gi].pts.push(spawn());
-    }
-    ctx.lineWidth = 0.85; ctx.lineCap = 'round';
-    var step = 0, steps = 150, speed = 1.35;
     function ang(x, y){
-      return Math.sin(x * sc1 + o1) * Math.cos(y * sc2 + o2) * Math.PI * swirl + drift;
+      var a = Math.sin(x * sc1 + o1) * Math.cos(y * sc2 + o2) * Math.PI * swirl
+            + Math.sin(x * sc3 + o3) * Math.cos(y * sc4 + o4) * Math.PI * oct2
+            + drift;
+      var dx = x - ex, dy = y - ey, d = Math.sqrt(dx * dx + dy * dy);
+      if (d < erad){ var e = 1 - d / erad; a += espin * e * e * Math.PI; }
+      return a;
     }
+    function spawn(){ return { x: mg + R() * (w - 2 * mg), y: mg + R() * (h - 2 * mg) }; }
+    // voice one: mist — many fine strokes, batched per colour, mortal
+    var mist = cols.map(function(c){ return { c:c, pts:[] }; });
+    for (var i = 0; i < 1700; i++){
+      var gi = Math.min(cols.length - 1, Math.floor(Math.pow(R(), 1.7) * cols.length));
+      var mp = spawn(); mp.life = 40 + R() * 110;
+      mist[gi].pts.push(mp);
+    }
+    // voice two: ribbons — fewer, wider, width tapers over each life
+    var ribbons = [];
+    for (var r = 0; r < 130; r++){
+      var rp = spawn();
+      ribbons.push({ x: rp.x, y: rp.y, life: 0,
+        c: cols[Math.min(cols.length - 1, Math.floor(Math.pow(R(), 1.2) * cols.length))],
+        span: 30 + R() * 50, wmax: 1.4 + R() * 1.6 });
+    }
+    ctx.lineCap = 'round';
+    var steps = 170, speed = 1.35;
     return { steps: steps, tick: function(){
-      step++;
-      for (var g = 0; g < groups.length; g++){
-        var grp = groups[g];
+      for (var g = 0; g < mist.length; g++){
+        var grp = mist[g];
         ctx.strokeStyle = grp.c;
-        ctx.globalAlpha = 0.065;
+        ctx.globalAlpha = 0.075;
+        ctx.lineWidth = 0.8;
         ctx.beginPath();
         for (var k = 0; k < grp.pts.length; k++){
           var p = grp.pts[k];
           var a = ang(p.x, p.y);
           var nx = p.x + Math.cos(a) * speed, ny = p.y + Math.sin(a) * speed;
           ctx.moveTo(p.x, p.y); ctx.lineTo(nx, ny);
-          p.x = nx; p.y = ny;
-          if (p.x < mg || p.x > w - mg || p.y < mg || p.y > h - mg){
-            var np = spawn(); p.x = np.x; p.y = np.y;
+          p.x = nx; p.y = ny; p.life--;
+          if (p.life <= 0 || p.x < mg || p.x > w - mg || p.y < mg || p.y > h - mg){
+            var np = spawn(); p.x = np.x; p.y = np.y; p.life = 40 + R() * 110;
           }
         }
         ctx.stroke();
+      }
+      for (var q = 0; q < ribbons.length; q++){
+        var rb = ribbons[q];
+        var t = Math.min(1, rb.life / rb.span);
+        var a2 = ang(rb.x, rb.y);
+        var nx2 = rb.x + Math.cos(a2) * 1.7, ny2 = rb.y + Math.sin(a2) * 1.7;
+        ctx.strokeStyle = rb.c; ctx.globalAlpha = 0.13;
+        ctx.lineWidth = 0.3 + rb.wmax * Math.sin(t * Math.PI);
+        ctx.beginPath(); ctx.moveTo(rb.x, rb.y); ctx.lineTo(nx2, ny2); ctx.stroke();
+        // voice three: an occasional ink seed dropped in the ribbon's wake
+        if (R() < 0.006){
+          ctx.globalAlpha = 0.5; ctx.fillStyle = cols[0];
+          ctx.beginPath(); ctx.arc(nx2, ny2, 0.8 + R() * 1.4, 0, TAU); ctx.fill();
+        }
+        rb.x = nx2; rb.y = ny2; rb.life++;
+        if (rb.life > rb.span || rb.x < mg || rb.x > w - mg || rb.y < mg || rb.y > h - mg){
+          var np2 = spawn(); rb.x = np2.x; rb.y = np2.y; rb.life = 0;
+          rb.span = 30 + R() * 50; rb.wmax = 1.4 + R() * 1.6;
+        }
       }
       ctx.globalAlpha = 1;
     }};
@@ -596,7 +658,7 @@
   /* ---------- pieces ---------- */
   var PIECES = [
     { cv:'cv0', t:'t0', m:'m0', d:'d0', algo: flowField,
-      medium: function(pal){ return 'Two thousand particles tracing a seeded vector field · palette “' + pal.name + '”'; } },
+      medium: function(pal){ return 'Mist, ribbons and dropped seeds on a two-octave vector field, coiled around a hidden eddy · palette “' + pal.name + '”'; } },
     { cv:'cv1', t:'t1', m:'m1', d:'d1', algo: colourFields,
       medium: function(pal){ return 'Recursive subdivision, soft-edged colour · palette “' + pal.name + '”'; } },
     { cv:'cv2', t:'t2', m:'m2', d:'d2', algo: concentric,
@@ -610,13 +672,11 @@
     p.pending = true;
     p.inView = false;
     p.raf = 0;
+    p.paused = null;
+    p.seed = 0;
   });
 
   var pal = null;
-
-  function pieceRng(i){
-    return counted(mulberry32((SEED ^ ((i + 1) * 0x9E3779B9)) >>> 0));
-  }
 
   function sizeCanvas(p){
     var cv = p.el;
@@ -628,29 +688,32 @@
     var ctx = cv.getContext('2d');
     ctx.setTransform(DPR, 0, 0, DPR, 0, 0);
     document.getElementById(p.d).textContent =
-      cv.width + ' × ' + cv.height + ' px · dimensions variable';
+      cv.width + ' × ' + cv.height + ' px · dimensions variable · seed ' + p.seed;
     return { ctx: ctx, w: cssW, h: cssH };
   }
 
   function renderPiece(p, animated){
     if (p.raf) { cancelAnimationFrame(p.raf); p.raf = 0; }
+    p.paused = null;
     p.pending = false;
     var s = sizeCanvas(p);
-    var R = pieceRng(p.index);
+    var R = counted(mulberry32(p.seed >>> 0));
     var st = p.algo(s.ctx, s.w, s.h, R, pal);
     if (!animated){
       for (var i = 0; i < st.steps; i++) st.tick();
       updateDecisions();
       return;
     }
-    var done = 0;
-    var perFrame = Math.max(1, Math.ceil(st.steps / 70)); // ~70 frames ≈ 1.2s
+    var done = 0, frame = 0, FRAMES = 150; // ~2.5s of organic growth
     (function loop(){
-      for (var k = 0; k < perFrame && done < st.steps; k++, done++) st.tick();
+      p.raf = 0;
+      if (!p.inView){ p.paused = loop; return; } // pause offscreen; observer resumes it
+      frame++;
+      var target = frame >= FRAMES ? st.steps : Math.round(st.steps * frame / FRAMES);
+      while (done < target){ st.tick(); done++; }
       if (done < st.steps){
         p.raf = requestAnimationFrame(loop);
       } else {
-        p.raf = 0;
         updateDecisions();
       }
     })();
@@ -666,6 +729,7 @@
     pal = PALETTES[Math.floor(R() * PALETTES.length)];
     var adjs = shuffled(ADJ, R), nouns = shuffled(NOUN, R);
     PIECES.forEach(function(p, i){
+      p.seed = (SEED ^ ((i + 1) * 0x9E3779B9)) >>> 0;
       p.title = adjs[i] + ' ' + nouns[i];
       document.getElementById(p.t).innerHTML =
         '“' + p.title + '” <span>&mdash; 2026</span>';
@@ -675,6 +739,7 @@
         'Generated artwork “' + p.title + '” — ' + p.medium(pal));
     });
     var seedStr = String(SEED);
+    document.getElementById('edVal').textContent = '#' + ('000' + (SEED % 10000)).slice(-4);
     document.getElementById('seedVal').textContent = seedStr;
     document.getElementById('seedInline').textContent = seedStr;
     document.getElementById('seedFoot').textContent = seedStr;
@@ -700,7 +765,10 @@
       var p = PIECES.filter(function(x){ return x.el === e.target; })[0];
       if (!p) return;
       p.inView = e.isIntersecting;
-      if (p.inView && p.pending) renderPiece(p, !reduced);
+      if (p.inView){
+        if (p.pending) renderPiece(p, !reduced);
+        else if (p.paused){ var f = p.paused; p.paused = null; p.raf = requestAnimationFrame(f); }
+      }
     });
   }, { rootMargin: '120px 0px' });
   PIECES.forEach(function(p){ io.observe(p.el); });
@@ -713,17 +781,53 @@
     btn.addEventListener('click', function(){
       if (work.classList.contains('sold')) return;
       work.classList.add('sold');
-      btn.textContent = 'Acquired · edition 1/1 · certificate ' + SEED + '-' + ROMAN[i] + '. Price: nothing. Duration: this visit.';
+      btn.textContent = 'Acquired · edition 1/1 · certificate ' + PIECES[i].seed + '-' + ROMAN[i] + '. Price: nothing. Duration: this visit.';
       btn.setAttribute('aria-disabled', 'true');
     });
   });
+  function resetAcquisition(work){
+    work.classList.remove('sold');
+    var btn = work.querySelector('.acquire');
+    btn.textContent = 'Acquire';
+    btn.removeAttribute('aria-disabled');
+  }
   function resetAcquisitions(){
-    WORKS.forEach(function(work){
-      work.classList.remove('sold');
-      var btn = work.querySelector('.acquire');
-      btn.textContent = 'Acquire';
-      btn.removeAttribute('aria-disabled');
-    });
+    WORKS.forEach(resetAcquisition);
+  }
+
+  /* ---------- replant: regrow one work under a fresh seed ---------- */
+  PIECES.forEach(function(p, i){
+    var work = WORKS[i];
+    function replant(){
+      p.seed = (p.seed ^ (Date.now() >>> 0) ^ ((Math.random() * 0xFFFFFFFF) >>> 0)) >>> 0;
+      resetAcquisition(work); // the certificate named the retired seed
+      p.el.setAttribute('aria-label',
+        'Generated artwork “' + p.title + '” — regrown under seed ' + p.seed);
+      renderPiece(p, !reduced);
+    }
+    work.querySelector('.replant').addEventListener('click', replant);
+    p.el.addEventListener('click', replant);
+    p.el.title = 'Replant — regrow this work under a new seed';
+  });
+
+  /* ---------- quiet spotlight-follow (pointer:fine, motion-safe) ---------- */
+  if (!reduced && window.matchMedia('(pointer: fine)').matches){
+    var spotRaf = 0, spotX = 0;
+    var applySpot = function(){
+      spotRaf = 0;
+      var vh = window.innerHeight;
+      for (var i = 0; i < WORKS.length; i++){
+        var r = WORKS[i].getBoundingClientRect();
+        if (r.bottom < -200 || r.top > vh + 200) continue;
+        var t = (spotX - (r.left + r.width / 2)) / Math.max(1, r.width);
+        t = Math.max(-0.5, Math.min(0.5, t));
+        WORKS[i].style.setProperty('--spot-x', (t * 56).toFixed(1) + 'px');
+      }
+    };
+    window.addEventListener('mousemove', function(e){
+      spotX = e.clientX;
+      if (!spotRaf) spotRaf = requestAnimationFrame(applySpot);
+    }, { passive: true });
   }
 
   /* ---------- regenerate ---------- */

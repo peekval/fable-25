@@ -103,24 +103,32 @@
 <main class="wrap">
   <p class="kicker">Projection booth · Technical notes</p>
   <h1>How FRAME<em>:</em>RATE<br>was built</h1>
-  <p class="sub">One HTML file, three.js from a CDN, two Google Fonts, zero images. Everything you fly through is text painted onto canvas textures and lit by fog.</p>
+  <p class="sub">One HTML file, three.js from a CDN, two Google Fonts, and a single generated frame of 16mm film. Everything else you fly through is text painted onto canvas textures and lit by fog.</p>
 
   <h2><span class="no">01</span>The rig</h2>
   <div class="prose">
     <p>The whole site is a <strong>scroll-driven cinematic dolly</strong>: the page scroll is mapped to a single progress value that pushes a camera rig down a long Z-corridor, smoothed with frame-rate-independent exponential damping so trackpads, wheels and touch all feel like the same weighted dolly. The festival's marquee words and stray projection vocabulary are flat planes carrying <strong>CanvasTexture-rendered Bebas Neue</strong>, scattered at drifted angles along the corridor beside thin white-bordered film frames with sprocket holes. As the camera approaches each section boundary, a double-smoothstep <strong>lock-on</strong> pulls that zone's title from its drifted pose into perfect flat alignment for reading, then dissolves it as you fly through. Fixed HTML content sections are synced to the same progress value and crossfade in narrow windows so exactly one is readable at a time. Depth comes from fog falloff, a cone of additive dust motes in the projector beam, amber lens-glow sprites, and a vignette that flickers at exactly 24 steps per second — celluloid breathing, not a strobe. Mouse X banks the rig slightly, but the banking is suppressed while a title is locked, so the frame is always level when you read.</p>
   </div>
 
-  <h2><span class="no">02</span>Reproduction prompt</h2>
+  <h2><span class="no">02</span>Generated assets</h2>
+  <div class="prose">
+    <p>The festival centrepiece — REEL 03, a frame enlargement from <strong>The Persistence of Vision</strong> — is the site's only image: <span class="a">assets/still-01.webp</span> (1400×940). It was generated with <strong>Nano Banana 2</strong> via the <strong>Higgsfield MCP</strong> at 2K from a 16mm-style prompt: a grained black-and-white film frame of a dancer mid-turn dissolving into multiple ghosted exposures, sprocket holes along the edge, and an amber light-leak bleeding in — palette-exact to the site (#0B0A0A, #F7F4EE, #FFB454, #8E1F2F). The output was downscaled and compressed to WebP with <strong>ffmpeg</strong> (~140&nbsp;KB, lazy-loaded with real dimensions).</p>
+    <p>On the page it is never shown as a plain photo — it gets a <strong>projection treatment</strong>: a soft conic-gradient projector beam above the frame, a burn-in <strong>strike-up</strong> reveal (the image blooms from overexposed white into the frame the first time the zone locks, like a projector lamp striking), a 24fps-stepped luminance flicker capped at 3%, and a sub-pixel gate-weave wobble. Globally, a changeover <strong>cue dot</strong> double-flashes in the top-right every ~25 seconds with a single faint frame of leader crosshair, and programme cards scrub a tiny sprocket filmstrip on hover. Under <span class="a">prefers-reduced-motion</span> the still is fully static: no flicker, no weave, no burn-in, no cue flashes.</p>
+  </div>
+
+  <h2><span class="no">03</span>Reproduction prompt</h2>
   <div class="promptbox">
     <div class="bar">
       <span>Prompt — paste into your agent</span>
       <button id="copybtn" type="button">Copy</button>
     </div>
-    <div id="prompt">Build a one-page website for FRAME:RATE, a fictional experimental film festival, as a single self-contained HTML file using three.js (UMD from a CDN) and Google Fonts only — no images. Palette: cinema black #0B0A0A background, projector white #F7F4EE text, amber lamp #FFB454 accents, deep curtain red #8E1F2F details. Type: Bebas Neue for huge marquee display words, Sora for body copy.
+    <div id="prompt">Build a one-page website for FRAME:RATE, a fictional experimental film festival, as a single self-contained HTML file using three.js (UMD from a CDN), Google Fonts, and exactly one generated image. Palette: cinema black #0B0A0A background, projector white #F7F4EE text, amber lamp #FFB454 accents, deep curtain red #8E1F2F details. Type: Bebas Neue for huge marquee display words, Sora for body copy.
 
 Signature technique: a scroll-driven cinematic dolly through 3D space. Render festival words and film titles as flat white planes using CanvasTexture text, scattered at drifted angles along a long Z-corridor, alongside thin white-bordered film-frame rectangles with sprocket holes. Map page scroll to camera Z with frame-rate-independent damped lerp; add slight banking on mouse X, fog for depth falloff, additive amber glow sprites, a cone of dust motes like a projector beam, and a very subtle vignette flickering at 24 steps per second. When the camera nears a section boundary, snap that zone's title into perfect flat alignment for reading (smoothstep lock-on), then fade it as the camera passes through.
 
-Sync fixed HTML overlay sections to camera zones, crossfading so one is readable at a time: hero, program of four fictional experimental films with clever loglines, venues, ticket passes, credits footer. Keep 60fps: planes and sprites only, device pixel ratio capped at 2, fewer particles on mobile, pause when the tab is hidden. For prefers-reduced-motion, serve a static poster layout with all content readable and no tunnel. Mood: late-night projection booth — patient, warm, reverent about light.</div>
+Generate one 2K film still with an image model (e.g. Nano Banana 2): a grained black-and-white 16mm frame of a dancer mid-turn with multiple-exposure ghosting, sprocket holes along the edge, and an amber light-leak, matching the palette exactly; compress to WebP with ffmpeg. Feature it in a dedicated "FEATURED" zone as a projected frame: a soft conic-gradient projector beam above it, a burn-in strike-up reveal (blooms from overexposed white into the image on first view, like a projector lamp striking), a 24fps-stepped luminance flicker capped at 3%, and a sub-pixel gate-weave wobble. Add an occasional reel-change moment every ~25 seconds — a changeover cue dot double-flashes top-right with one faint frame of leader crosshair (never a bright full-screen flash) — and a tiny sprocket filmstrip scrub on programme-card hover.
+
+Sync fixed HTML overlay sections to camera zones, crossfading so one is readable at a time: hero, program of four fictional experimental films with clever loglines, featured still, venues, ticket passes, credits footer. Keep 60fps: planes and sprites only, device pixel ratio capped at 2, fewer particles on mobile, pause when the tab is hidden. Give the image real width/height and lazy loading. For prefers-reduced-motion, serve a static poster layout with all content readable, the still fully static (no flicker, weave or burn-in), and no tunnel. Mood: late-night projection booth — patient, warm, reverent about light.</div>
   </div>
 
   <div class="links">

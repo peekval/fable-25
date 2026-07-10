@@ -63,6 +63,7 @@
     padding:1.8rem 1.8rem 1.6rem;
     box-shadow:0 30px 80px -50px rgba(155,77,202,.6), inset 0 0 40px rgba(10,9,13,.5);
   }
+  .promptbox.img::before{content:"Image Prompt"}
   .promptbox::before{
     content:"Reproduction Prompt";
     position:absolute;top:-.7rem;left:1.2rem;
@@ -112,11 +113,34 @@
     on tiny 120-pixel canvases, all fed by one shared requestAnimationFrame loop that gates every
     canvas by viewport visibility and pauses entirely on hidden tabs. Under reduced-motion the shader
     renders one curated still frame and the symmetry buttons step instantly instead of morphing.
+    A later pass wired a <strong>cursor-drawn beam</strong> into the same shader: a white shaft follows
+    the pointer angle in unfolded space and progressively disperses into the four jewel tones as it
+    travels outward — a live prism — brightening to full while pressed, with refraction flares blooming
+    wherever it crosses the kaleidoscope's mirror seams. The hero headline picks up a matching
+    dispersion fringe on hover, done with nothing but animated text-shadows peeking out at the glyph edges.
   </p>
+
+  <h2>Generated assets</h2>
+  <p>
+    The "Last Year" section is built around one generated photograph, <strong>installation.webp</strong>
+    (1920×1072): a night frame of four volumetric beams in fog over a reflective plaza. It was produced
+    with <strong>Nano Banana 2 via the Higgsfield MCP</strong> at 2K, palette-locked to the site's exact
+    hexes (velvet #0A090D, amethyst #9B4DCA, emerald #1FA97A, citrine #F5C542, sapphire #2E6BD6), then
+    converted to WebP with <strong>ffmpeg</strong> (~165&nbsp;KB). On the page it arrives through a
+    <strong>prism-split reveal</strong>: three copies of the image are reduced to pure R, G and B channels
+    with inline SVG feColorMatrix filters and screen-blended over black — since pure channels never
+    overlap, screen equals additive, so the converged stack reconstructs the exact original. Scroll
+    drives the channel offsets from ±3.2% to zero over the section's first third, then a slow Ken Burns
+    drift (scale 1&nbsp;→&nbsp;1.06) runs across the rest of its scroll life. Under reduced motion the
+    stack simply sits converged and still; the images are lazy-loaded with real dimensions.
+  </p>
+  <div class="promptbox img">
+    <p>Wide night photograph of an open-air light installation on a rain-slick concrete plaza: four huge volumetric beams of coloured light — violet amethyst #9B4DCA, emerald green #1FA97A, warm citrine gold #F5C542 and sapphire blue #2E6BD6 — rising diagonally through dense fog against a near-black #0A090D sky, beams mirrored in shallow puddles, a small crowd of visitors in silhouette inside the haze, no logos or text, cinematic long-exposure documentary style, 16:9, 2K.</p>
+  </div>
 
   <h2>Reproduce it</h2>
   <div class="promptbox">
-    <p id="prompt">Build a one-page festival site called PRISMA — a light-art and projection festival — as a single self-contained HTML file with a raw WebGL GLSL kaleidoscope hero, no libraries and no images. Palette: black velvet #0A090D background with jewel accents amethyst #9B4DCA, emerald #1FA97A, citrine #F5C542, sapphire #2E6BD6. Google Fonts: Monoton solely for the neon-deco hero word "PRISMA" (gradient-filled text with a slow animated hue-rotate), Outfit for everything else. Hero: full-viewport fragment shader that polar-folds the plane into N mirrored wedges (atan/mod/abs), where N is a float smoothly morphing between 6, 8 and 12 via pill buttons and a slow auto cycle; the wedge is filled with layered moving sine bands and fbm noise fields graded into the jewel palette over deep velvet shadows, citrine kept sparse as golden veins. Interaction: mouse angle rotates the fold axis, mouse distance from centre controls zoom, eased with frame-rate-independent smoothing and shortest-path angle interpolation. Sections: about with stat grid, three installation cards each showing a live 120px mini kaleidoscope (same shader, DPR 1, shared rAF loop, IntersectionObserver visibility gating, max three concurrent), an artists lineup grid, three ticket-night cards, footer. Cap hero DPR at 1.25 for 60fps. Honour prefers-reduced-motion with a frozen still frame and instant control steps. Copy should be electric but curated — a nocturnal turbine hall in Zürich, no lorem ipsum.</p>
+    <p id="prompt">Build a one-page festival site called PRISMA — a light-art and projection festival — as a single self-contained HTML file with a raw WebGL GLSL kaleidoscope hero, no libraries and no images. Palette: black velvet #0A090D background with jewel accents amethyst #9B4DCA, emerald #1FA97A, citrine #F5C542, sapphire #2E6BD6. Google Fonts: Monoton solely for the neon-deco hero word "PRISMA" (gradient-filled text with a slow animated hue-rotate), Outfit for everything else. Hero: full-viewport fragment shader that polar-folds the plane into N mirrored wedges (atan/mod/abs), where N is a float smoothly morphing between 6, 8 and 12 via pill buttons and a slow auto cycle; the wedge is filled with layered moving sine bands and fbm noise fields graded into the jewel palette over deep velvet shadows, citrine kept sparse as golden veins. Interaction: mouse angle rotates the fold axis, mouse distance from centre controls zoom, eased with frame-rate-independent smoothing and shortest-path angle interpolation; additionally a cursor-drawn white beam follows the pointer angle, progressively dispersing into the four jewel colours with radius like a live prism, brightening to full while the pointer is pressed and flaring where it crosses the mirror seams. The hero headline gains a live chromatic dispersion fringe on hover via animated text-shadows. Sections: about with stat grid, three installation cards each showing a live 120px mini kaleidoscope (same shader, DPR 1, shared rAF loop, IntersectionObserver visibility gating, max three concurrent), a "last year" documentation section built on a generated 16:9 night photograph of four palette-coloured light beams in fog over a reflective plaza (1920×1072 WebP, lazy, real dimensions) revealed through a prism-split — three copies reduced to pure R/G/B channels with inline SVG feColorMatrix filters, screen-blended over black, converging from ±3.2% offsets as the section scrolls in, then drifting on a slow Ken Burns scale 1→1.06 across the section's scroll life — an artists lineup grid, three ticket-night cards, footer. Cap hero DPR at 1.25 for 60fps. Honour prefers-reduced-motion with a frozen still frame, instant control steps, no beam, and a converged static photo with no drift. Copy should be electric but curated — a nocturnal turbine hall in Zürich, no lorem ipsum.</p>
   </div>
   <button class="copy" id="copyBtn" type="button">Copy prompt</button>
 

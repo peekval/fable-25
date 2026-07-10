@@ -15,6 +15,7 @@
 body{background:var(--paper);color:var(--ink);font-family:'Space Grotesk',sans-serif;font-size:16px;line-height:1.6;-webkit-font-smoothing:antialiased}
 ::selection{background:var(--red);color:var(--paper)}
 a{color:inherit}
+code{font-family:inherit;font-size:.94em;background:rgba(17,17,17,.06);padding:1px 4px}
 a:focus-visible{outline:2px solid var(--red);outline-offset:3px}
 .back{position:fixed;top:18px;left:18px;z-index:9;font-size:12px;letter-spacing:.08em;text-decoration:none;padding:6px 10px;border:1px solid var(--hair);background:var(--paper);transition:background .2s var(--ease),color .2s var(--ease)}
 .back:hover{background:var(--ink);color:var(--paper)}
@@ -25,6 +26,9 @@ h1 em{font-style:normal;color:transparent;-webkit-text-stroke:2px var(--ink)}
 h2{font-family:'Inter Tight',sans-serif;font-weight:800;text-transform:uppercase;letter-spacing:-.01em;font-size:22px;margin:56px 0 16px;display:flex;align-items:baseline;gap:12px}
 h2 .sec{font-family:'Space Grotesk',sans-serif;font-weight:400;font-size:11px;letter-spacing:.2em;color:var(--red)}
 p{font-size:15px;line-height:1.7;max-width:64ch;margin-bottom:12px}
+.assetbox{border:1px solid var(--hair);border-left:3px solid var(--red);margin-top:18px;padding:16px 18px}
+.assetbox .ab-head{font-size:10px;letter-spacing:.2em;text-transform:uppercase;color:var(--red);margin-bottom:10px;font-weight:700}
+.assetbox p{font-size:13.5px;line-height:1.75;max-width:none;margin:0}
 .lockbox{position:relative;border:2px solid var(--ink);margin-top:20px;background:var(--paper)}
 .lockbox .lb-head{display:flex;justify-content:space-between;font-size:10px;letter-spacing:.2em;text-transform:uppercase;padding:10px 16px;border-bottom:1px solid var(--hair)}
 .lockbox .lb-head span:last-child{color:var(--red)}
@@ -53,7 +57,15 @@ p{font-size:15px;line-height:1.7;max-width:64ch;margin-bottom:12px}
   <h2><span class="sec">SEC. A</span>The system</h2>
   <p>GRID° is one HTML file that practices what it preaches: every element — masthead, offset hero lines, essay index, colophon — is placed on a literal 12-column CSS grid with 24px gutters, and a fixed overlay of twelve translucent red columns can be toggled with a button or the G key to prove it. The hero stacks three uppercase Inter Tight headline lines that each begin on a different grid track, with one word rendered as a transparent stroke outline. The essay rows invert on hover using a ::before ink bar that scales up from zero height and bleeds the full viewport width with a negative-inset trick, flipping the type to paper white. A dark manifesto marquee loops seamlessly because JavaScript clones its slogans with aria-hidden, so screen readers hear each line once. Scroll reveals arrive through a single IntersectionObserver that assigns a 70ms stagger to elements entering in the same batch, and everything collapses to a four-column grid under 900px. The only colors on the page are paper, ink, and one red — applied, as the colophon says, surgically.</p>
 
-  <h2><span class="sec">SEC. B</span>Reproduction prompt</h2>
+  <h2><span class="sec">SEC. B</span>Generated assets</h2>
+  <p>The page carries exactly one photograph: <strong>assets/issue07.webp</strong> (1600×1074, 3∶2) — issue №07 finally physical, the printed journal lying open on a white surface with rigorous greeked columns and a single red rule. It was generated with <strong>Nano Banana 2</strong> (via the Higgsfield MCP, text-to-image at 2K) from a palette-locked prompt — paper #FAFAF8, ink #111111, one red #E63329, nothing else — then compressed to WebP with <strong>ffmpeg</strong>.</p>
+  <p>Its presentation is the point. The plate is mounted on the site's own 12-column grid inside CSS-drawn <strong>crop marks</strong> and SVG <strong>registration marks</strong>, and it does not fade in: it <strong>assembles from its own grid cells</strong>. The photo is sliced into a 6×4 matrix of tiles — each a plain element showing one cell of the image via <code>background-size:600% 400%</code> and a per-tile <code>background-position</code> — which snap on in reading order at 34ms per cell, a red-outlined "hot" cell marking the print head, ending on a rotated "passed for press" stamp. The semantic content stays an ordinary lazy-loaded <code>&lt;img&gt;</code> with real dimensions; under prefers-reduced-motion (or without JavaScript) the tiles never exist and the plate is simply there. Downstream, a 340vh sticky study hard-snaps the grid through ÷1 ÷2 ÷3 ÷4 ÷6 ÷12 divisions as you scroll, and the grid toggle now shows full construction: numbered columns, viewport crop marks, and a spec readout.</p>
+  <div class="assetbox">
+    <div class="ab-head">Asset repro prompt — Nano Banana 2 @ 2K</div>
+    <p>Editorial product photograph, top-down slightly angled: a printed Swiss design journal ("GRID°, №07") lying open on a seamless warm-white surface (#FAFAF8). The spread is a rigorous Müller-Brockmann 12-column layout — greeked body text in tight justified columns, one oversized sans-serif headline, small folios — printed in near-black ink (#111111) with exactly one vermilion-red vertical rule (#E63329). Matte uncoated paper, soft even studio light, faint natural page curl at one corner, no hands, no props, no other colors. 3:2, photorealistic, 150 lpi offset-print texture visible on close inspection.</p>
+  </div>
+
+  <h2><span class="sec">SEC. C</span>Reproduction prompt</h2>
   <div class="lockbox">
     <div class="lb-head"><span>PROMPT — GRID°</span><span>LOCKED</span></div>
     <div class="teaser">
@@ -73,6 +85,6 @@ p{font-size:15px;line-height:1.7;max-width:64ch;margin-bottom:12px}
     <a href="/">Index of all sites</a>
   </div>
 </main>
-<!-- PASS: lock-box teaser ends before word 50, fade gradient covers overflow, no full prompt text anywhere in this file; links /06-grid/, /shop/, / and Gumroad fable-06 verified; single-column layout is mobile-safe at 320px. -->
+<!-- PASS: lock-box teaser ends before word 50, fade gradient covers overflow, no full site prompt text anywhere in this file (the openly embedded prompt in SEC. B is the image-asset prompt only); links /06-grid/, /shop/, / and Gumroad fable-06 verified; single-column layout is mobile-safe at 320px. -->
 </body>
 </html>

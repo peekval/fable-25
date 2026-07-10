@@ -75,19 +75,29 @@ footer a:hover{color:#f2dfae}
      from its signed-area ratio against the rest shape — compressed quads darken into
      folds, stretched crests catch a warm sheen — layered over static per-column pleat
      stripes so the surface reads as velvet rather than rubber. The cursor acts as a hand:
-     points near the pointer inherit its velocity and the cloth swirls away from a brush.
-     On ENTER, the top pins glide toward the outer edges in a staggered wave from the
-     meeting line outward, so the curtain peels open in two gathering stacks while a
-     stage-light bloom spills through the widening gap; under prefers-reduced-motion the
-     curtain is already open and its folds are painted once, statically.</p>
+     points near the pointer inherit its velocity and the cloth swirls away from a brush,
+     and a click at the hem fires a radial billow impulse — an outward-plus-upward kick
+     with squared falloff written straight into the Verlet history, so the cloth whooshes
+     and settles on its own physics. On ENTER (or on scroll — the raise is the point of
+     the house), the top pins travel diagonally up and out along per-column lift targets,
+     inner edge highest and released first, so the curtain genuinely RAISES into two
+     swagged legs while a stage-light bloom spills through the widening gap. The lighting
+     is its own rig: screen-blended footlights breathe under the hem, a followspot tracks
+     the cursor across the dark sections (falling back to section headers on touch),
+     section changes dip the house to black for a tenth of a second like a scene change,
+     and a ghost light flickers beside the director's note. Under prefers-reduced-motion
+     the raised curtain is painted once, statically, with per-column hem heights — no
+     followspot, no dips, no flicker.</p>
 
   <div class="rule" style="margin-top:3.4rem"><span class="smallcaps">Reproduction prompt</span></div>
   <div class="promptbox">
     <p id="prompt">Build a single-file HTML showcase site for VELUM, an avant-garde theatre house. Palette: velvet crimson #7A1425, deep stage black #0D0709, gold trim #C9A55C, playbill cream #F0E8D8. Google Fonts: Italiana for theatrical display headings, Cinzel for letter-spaced small caps labels, Crimson Pro for literate body copy. No images, no libraries.
 
-The hero is a real-time cloth-simulation curtain on a 2D canvas: two halves, each a grid of points (about 30×20 total, capped near 20×14 on mobile) pinned along the top, integrated with Verlet physics under a fixed-timestep accumulator — gravity plus a gentle two-octave sine wind so the crimson cloth ripples. Solve structural distance constraints in two iterations per frame. Render each grid cell as a filled quad shaded by its area ratio versus rest shape (compressed folds darken, stretched crests gain a warm sheen), multiplied by static per-column pleat stripes for a velvet feel. The cursor brushes the cloth, pushing nearby points. A centered ENTER button opens the curtain: top pins animate outward in a staggered wave from the center line, gathering into narrow stacks at the edges while a golden stage-light bloom reveals the content beneath. Honor prefers-reduced-motion with a statically painted open curtain.
+The hero is a real-time cloth-simulation curtain on a 2D canvas: two halves, each a grid of points (about 30×20 total, capped near 20×14 on mobile) pinned along the top, integrated with Verlet physics under a fixed-timestep accumulator — gravity plus a gentle two-octave sine wind so the crimson cloth ripples. Solve structural distance constraints in two iterations per frame. Render each grid cell as a filled quad shaded by its area ratio versus rest shape (compressed folds darken, stretched crests gain a warm sheen), multiplied by static per-column pleat stripes for a velvet feel. The cursor is a hand: brushing the cloth pushes nearby points with its velocity, and a click at the hem fires a dramatic radial billow (outward + upward impulse with squared falloff into the Verlet history). A centered ENTER button — or simply scrolling — RAISES the curtain: top pins travel diagonally up and out along per-column lift targets in a staggered wave from the center line (inner edge lifted highest and released first), so the two halves swag upward into raised legs at the top corners while a golden stage-light bloom reveals the content beneath. Honor prefers-reduced-motion with a statically painted raised curtain (per-column hem heights).
 
-Below: a season section with three playbill-styled cards (cream, double-ruled frames, gold-foil gradient shimmer on hover), a history of the house, a director's note set as a framed letter, ticket tiers, and a footer. A soft spotlight follows scroll to illuminate section headers. Mood: crimson dark, hushed, ceremonial — the moment before the reveal.</p>
+Stage lighting: a screen-blended footlight glow breathes under the curtain hem, a soft followspot tracks the cursor across the dark sections below (falling back to section headers on touch devices), section transitions dip the page to black for about 130ms like a scene change, and a small ghost light flickers beside the director's note.
+
+Below: a season section with three playbill-styled cards (cream, double-ruled frames, gold-foil gradient shimmer on hover), a history of the house, a director's note set as a framed letter, ticket tiers, and a footer. Mood: crimson dark, hushed, ceremonial — the moment before the reveal.</p>
     <button class="copy" id="copy">Copy prompt</button>
   </div>
 

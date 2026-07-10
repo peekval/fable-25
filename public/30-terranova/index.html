@@ -36,6 +36,25 @@
       never cropped; hero panel stacks vertically, slider hit-area enlarged to 44px;
   (4) prefers-reduced-motion: rotation frozen, planet parked at 50% terraform, slider still
       functional with instant (undamped) steps, scroll no longer drives the morph.
+
+  PASS 4 — SOL 1147 SURFACE SURVEY:
+  (1) new full-bleed panorama section (03) between the phases and biosphere telemetry:
+      assets/surface.webp (1920x814, 21:9) — a generated ground-level photograph of the
+      half-terraformed surface from Ridge 7, framed as mission-archive material with an
+      8x4 survey grid overlay, corner registration brackets, crosshair, and mono
+      coordinate/timestamp HUD chips;
+  (2) reveal is a telemetry-scan: a glowing cyan scanline sweeps left to right in lockstep
+      with a linear clip-path wipe (both 1.86s, so the wipe edge never trails the beam);
+      the uncovered frame holds as heat-haze (blur 16px, oversaturated) until the scan
+      finishes, then settles into clarity over 1.2s; grid + HUD fade in only after the
+      scan completes; IntersectionObserver-triggered once;
+  (3) survey tape under the frame ticks O2 (in ppm so digits visibly count), surface temp
+      and pressure off the SAME damped terraform value as the planet uniforms — scrubbing
+      the timeline mid-scroll re-grades the readouts live;
+  (4) guards kept: img lazy-loaded with real width/height, object-fit cover crop under 700px,
+      prefers-reduced-motion gets the finished photograph (no scan, no blur, HUD visible),
+      DPR clamps and hidden-tab RAF pause untouched; sections renumbered 03->05.
+  PASS: zero console/page errors via file://, scrollWidth 1280 -> 1280, 390 -> 390.
 -->
 <style>
 :root{
@@ -208,6 +227,72 @@ h2{font-family:var(--disp);font-weight:400;font-size:clamp(1.4rem,3.6vw,2.5rem);
 .phase.active .ph-id{color:var(--cyan)}
 .phase.done .ph-id{color:var(--green)}
 .phases-note{margin-top:26px;font-size:.8rem;color:var(--bone-faint);letter-spacing:.04em}
+
+/* survey — SOL 1147 panorama */
+.mono{font-family:ui-monospace,'SF Mono','Cascadia Mono',Menlo,Consolas,monospace}
+.survey{padding-left:0;padding-right:0}
+.survey-head{padding:0 clamp(20px,6vw,96px)}
+.survey-lede{max-width:760px;color:var(--bone-dim);font-size:1.02rem;margin:-14px 0 clamp(30px,5vh,52px)}
+.survey-lede strong{color:var(--bone)}
+.pano{position:relative;overflow:hidden;margin:0;background:#080a10;
+  border-top:1px solid var(--line);border-bottom:1px solid var(--line)}
+.pano img{display:block;width:100%;height:auto;
+  clip-path:inset(0 100% 0 0);
+  filter:blur(16px) saturate(1.6) brightness(1.18)}
+.pano.in img{animation:panoWipe 1.86s linear .15s forwards, panoSettle 1.2s ease-out 2.05s forwards}
+@keyframes panoWipe{
+  from{clip-path:inset(0 100% 0 0)}
+  to{clip-path:inset(0 0 0 0)}
+}
+@keyframes panoSettle{
+  from{filter:blur(16px) saturate(1.6) brightness(1.18)}
+  to{filter:blur(0) saturate(1) brightness(1)}
+}
+.pano-scan{position:absolute;top:0;bottom:0;left:0;width:3px;opacity:0;pointer-events:none;
+  background:linear-gradient(180deg,transparent,var(--cyan) 18%,var(--cyan) 82%,transparent);
+  box-shadow:0 0 22px 4px rgba(127,212,232,.65),0 0 60px 14px rgba(127,212,232,.25)}
+.pano.in .pano-scan{animation:panoScan 1.86s linear .15s forwards}
+@keyframes panoScan{0%{left:0;opacity:1}92%{opacity:1}100%{left:100%;opacity:0}}
+.pano-grid{position:absolute;inset:0;pointer-events:none;opacity:0;transition:opacity .9s ease 2.5s;
+  background:
+    repeating-linear-gradient(90deg, rgba(127,212,232,.10) 0 1px, transparent 1px 12.5%),
+    repeating-linear-gradient(0deg, rgba(127,212,232,.10) 0 1px, transparent 1px 25%);
+  background-position:-1px -1px}
+.pano-grid::after{content:"";position:absolute;left:50%;top:50%;width:38px;height:38px;
+  transform:translate(-50%,-50%);
+  background:
+    linear-gradient(rgba(127,212,232,.55),rgba(127,212,232,.55)) 50% 0/1px 12px no-repeat,
+    linear-gradient(rgba(127,212,232,.55),rgba(127,212,232,.55)) 50% 100%/1px 12px no-repeat,
+    linear-gradient(rgba(127,212,232,.55),rgba(127,212,232,.55)) 0 50%/12px 1px no-repeat,
+    linear-gradient(rgba(127,212,232,.55),rgba(127,212,232,.55)) 100% 50%/12px 1px no-repeat}
+.pano-hud{position:absolute;inset:0;pointer-events:none;opacity:0;transition:opacity .9s ease 2.5s}
+.pano.in .pano-grid,.pano.in .pano-hud{opacity:1}
+.pano-hud span{position:absolute;font-size:.6rem;letter-spacing:.16em;color:rgba(237,235,228,.78);
+  text-transform:uppercase;background:rgba(5,6,11,.55);padding:5px 9px;white-space:nowrap}
+.pano-hud .tl{top:12px;left:14px}
+.pano-hud .tr{top:12px;right:14px}
+.pano-hud .bl{bottom:12px;left:14px}
+.pano-hud .br{bottom:12px;right:14px}
+.pano::before,.pano::after,.pano-hud::before,.pano-hud::after{content:"";position:absolute;width:22px;height:22px;
+  border:1px solid rgba(127,212,232,.5);pointer-events:none;z-index:2}
+.pano::before{top:8px;left:8px;border-right:none;border-bottom:none}
+.pano::after{top:8px;right:8px;border-left:none;border-bottom:none}
+.pano-hud::before{bottom:8px;left:8px;border-right:none;border-top:none}
+.pano-hud::after{bottom:8px;right:8px;border-left:none;border-top:none}
+.pano-tape{display:flex;flex-wrap:wrap;gap:6px 28px;justify-content:center;
+  padding:14px clamp(20px,6vw,96px) 0;font-size:.66rem;letter-spacing:.18em;
+  text-transform:uppercase;color:var(--bone-faint)}
+.pano-tape b{font-weight:400;color:var(--cyan);font-variant-numeric:tabular-nums}
+.pano-tape .live{color:var(--green)}
+@media (max-width:700px){
+  .pano img{height:min(68vh,480px);object-fit:cover;object-position:60% center}
+  .pano-hud .br,.pano-hud .tl{display:none}
+}
+@media (prefers-reduced-motion: reduce){
+  .pano img{animation:none !important;clip-path:none;filter:none}
+  .pano-scan{display:none}
+  .pano-grid,.pano-hud{opacity:1;transition:none}
+}
 
 /* biosphere */
 .bio-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:18px}
@@ -417,10 +502,41 @@ footer{position:relative;z-index:2;border-top:1px solid var(--line);
     </div>
   </section>
 
+  <!-- SOL 1147 SURVEY -->
+  <section class="sec survey" id="survey">
+    <div class="survey-head">
+      <div class="wrap">
+        <div class="sec-head reveal"><span class="sec-num">03</span><h2>SOL 1147 — FIRST SURFACE SURVEY</h2></div>
+        <p class="survey-lede reveal">Mid-Phase 04, Survey Unit 04 climbed Ridge 7 on the Meridian Plateau and looked back
+        the way it came. To the west, the rust Aurelia was born with. To the east, the first
+        <strong>pioneer green</strong> — cyanobacterial mats and lichen lines, four years old. One frame,
+        <strong>two hundred and eighty years</strong> of work.</p>
+      </div>
+    </div>
+    <figure class="pano reveal" id="pano">
+      <img src="assets/surface.webp" width="1920" height="814" loading="lazy" decoding="async"
+        alt="Panorama from a ridge on Aurelia: rust-red plains on the left giving way to young green growth under a cyan atmospheric haze, with a weather-station mast standing on the slope.">
+      <div class="pano-grid" aria-hidden="true"></div>
+      <div class="pano-hud" aria-hidden="true">
+        <span class="mono tl">TN-1 · AURELIA — SURVEY UNIT 04</span>
+        <span class="mono tr">SOL 1147 · 14:37:22 LMT</span>
+        <span class="mono bl">LAT −14.62° · LON +097.31° · RIDGE 7</span>
+        <span class="mono br">FRAME 0083 · 21:9 COMPOSITE · ARCHIVE GRADE</span>
+      </div>
+      <div class="pano-scan" aria-hidden="true"></div>
+    </figure>
+    <div class="pano-tape mono reveal" aria-label="Live surface readouts">
+      <span>O₂ <b id="sO2">2 000</b> PPM</span>
+      <span>SURFACE <b id="sTmp">−57</b> °C</span>
+      <span>PRESSURE <b id="sPrs">0.06</b> BAR</span>
+      <span class="live">● FEED LIVE — TRACKS THE SEQUENCE ABOVE</span>
+    </div>
+  </section>
+
   <!-- BIOSPHERE -->
   <section class="sec" id="biosphere">
     <div class="wrap">
-      <div class="sec-head reveal"><span class="sec-num">03</span><h2>BIOSPHERE TELEMETRY</h2></div>
+      <div class="sec-head reveal"><span class="sec-num">04</span><h2>BIOSPHERE TELEMETRY</h2></div>
       <div class="bio-grid">
         <div class="card bio b-cyan reveal"><div class="lab">Atmospheric pressure</div>
           <div class="val"><span id="bAtm">0.06</span><small> bar</small></div>
@@ -453,7 +569,7 @@ footer{position:relative;z-index:2;border-top:1px solid var(--line);
   <!-- JOIN -->
   <section class="sec" id="join">
     <div class="wrap">
-      <div class="sec-head reveal"><span class="sec-num">04</span><h2>JOIN THE PROGRAM</h2></div>
+      <div class="sec-head reveal"><span class="sec-num">05</span><h2>JOIN THE PROGRAM</h2></div>
       <div class="join-inner">
         <div class="reveal">
           <p class="join-lede">The Program employs <strong>11,400 people</strong> across four orbital yards and the
@@ -494,7 +610,7 @@ footer{position:relative;z-index:2;border-top:1px solid var(--line);
       <div class="brand">TERRA <span>NOVA</span> PROGRAM</div>
       <p>A speculative design concept. Aurelia, its telemetry, and the Program are fiction — the engineering
       spirit is not. The planet you scrolled past is generated live in your GPU: one icosphere, two shells,
-      and a great deal of noise.</p>
+      and a great deal of noise. The Sol 1147 photograph is generated too — no camera has ever stood on Aurelia.</p>
     </div>
     <nav>
       <a href="/30-terranova/guide/">How this was built →</a>
@@ -885,8 +1001,10 @@ var $ = function(id){ return document.getElementById(id); };
 var els = {
   pct: $('tfPct'), rAtm: $('rAtm'), rOce: $('rOce'), rTmp: $('rTmp'), rOxy: $('rOxy'),
   bAtm: $('bAtm'), bOce: $('bOce'), bOxy: $('bOxy'), bTmp: $('bTmp'), bCld: $('bCld'), bBio: $('bBio'),
-  pAtm: $('pAtm'), pOce: $('pOce'), pOxy: $('pOxy'), pTmp: $('pTmp'), pCld: $('pCld'), pBio: $('pBio')
+  pAtm: $('pAtm'), pOce: $('pOce'), pOxy: $('pOxy'), pTmp: $('pTmp'), pCld: $('pCld'), pBio: $('pBio'),
+  sO2: $('sO2'), sTmp: $('sTmp'), sPrs: $('sPrs')
 };
+function ppm(x){ return String(Math.round(x)).replace(/\B(?=(\d{3})+(?!\d))/g, ' '); }
 var phases = Array.prototype.slice.call(document.querySelectorAll('.phase'));
 
 function updateDOM(t){
@@ -913,6 +1031,10 @@ function updateDOM(t){
   els.pTmp.style.width = ((tmp+57)/69*100) + '%';
   els.pCld.style.width = (cld/62*100) + '%';
   els.pBio.style.width = (bio/2.6*100) + '%';
+  /* PASS 4: SOL 1147 survey tape — same damped t, O₂ in ppm so the digits visibly tick */
+  els.sO2.textContent = ppm(oxy * 10000);
+  els.sTmp.textContent = (tmp > 0 ? '+' : '−') + Math.abs(tmp).toFixed(1);
+  els.sPrs.textContent = atm.toFixed(2);
   document.body.classList.toggle('tf-high', t > 0.55);
   for(var i = 0; i < phases.length; i++){
     var a = parseFloat(phases[i].dataset.a), b = parseFloat(phases[i].dataset.b);

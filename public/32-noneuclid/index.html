@@ -27,6 +27,28 @@
   3. webglcontextlost/restored handlers rebuild program, buffers and uniforms instead of leaving a dead black hero.
   4. Selector buttons: aria-pressed state, focus-visible ring in signal orange, and full keyboard operability.
   5. Far plane tightened 12 -> 9 world units with early bail — ~8% fewer wasted marching steps per frame.
+
+  PASS 4 (impossible-geometry upgrade):
+  1. PENROSE MOMENT — new section 03 "THE PARADOX": a second, purely scroll-driven raymarch canvas renders three
+     mutually perpendicular beams that genuinely do not touch in 3D. The scroll position walks the camera along a
+     spherical path that passes exactly through the body-diagonal (1,1,1) viewpoint; both open beam-ends sit on the
+     camera ray through centre, so at the sweet spot the tribar visibly closes (near-orthographic camera, dist 16 /
+     focal 8.5, keeps the seam scale mismatch ~11%). Beams are tinted three separate materials when disjoint and fuse
+     into one bone/ultramarine material + orange rim flare as alignment approaches 1. easeInOutCubic on both path
+     segments gives zero angular velocity at the magic angle — the sweet spot is wide in scroll space and earned.
+  2. GRAVITY SHIFT — the same scroll path rolls the camera's up-vector from -63deg through 0 at the resolve to +72deg
+     past it, so "down" reorients with a slow vertiginous ease as the paradox breaks apart.
+  3. PORTAL GEOMETRY — hero shader now carries a floating doorway (sdBoxFrame at z=2.60): the ray/portal-plane
+     crossing is solved analytically before the march, and any ray passing inside the aperture marches a second world
+     beyond it — the same fractal field rotated 90deg and flipped upside-down, shaded ink-dark with ultramarine light
+     and orange rim, fog retargeted to near-black. Two spaces, one door, zero extra render targets.
+  4. Paradox canvas renders ONLY on scroll/resize/IO-entry (rAF-coalesced, no persistent loop); hero pause guards
+     unchanged. DPR stays pinned to 1 on both canvases; mobile compiles 48 steps at 0.55x. Tribar focal length
+     scales with canvas aspect so the closed triangle fits portrait frames without cropping.
+  5. prefers-reduced-motion: paradox track collapses to one static viewport rendered once at the RESOLVED angle,
+     roll locked to 0 (no gravity shift), captions replaced by the resolved caption only.
+  PASS: verified via file:// at 1280x800 and 390x844 — zero page errors, zero console errors, scrollWidth 390 @ 390;
+  paradox screenshotted at resolve angle (closed tribar) and broken apart (disjoint beams) and visually checked.
 -->
 <style>
   :root{
@@ -191,6 +213,40 @@
   .struct .view:hover{color:var(--signal);border-color:var(--signal)}
   .struct .view:focus-visible{outline:2px solid var(--signal);outline-offset:3px}
 
+  /* paradox / tribar */
+  .ptrack{position:relative;height:430vh}
+  @media(max-width:760px){.ptrack{height:340vh}}
+  .pstick{position:sticky;top:0;height:100svh;min-height:520px;padding:64px 0 14px}
+  .pstage{position:relative;height:100%;border:1px solid var(--ink);overflow:hidden;background:var(--bone)}
+  .pstage canvas{position:absolute;inset:0;width:100%;height:100%;display:block}
+  .phud{
+    position:absolute;top:14px;left:16px;right:16px;z-index:2;
+    display:flex;justify-content:space-between;gap:14px;flex-wrap:wrap;
+    font-family:var(--mono);font-size:10.5px;letter-spacing:.08em;pointer-events:none;
+  }
+  .phud b{font-weight:400;color:var(--ultra)}
+  #pstatus{color:var(--ink);opacity:.72;transition:color .2s}
+  #pstatus.resolved{color:var(--signal);opacity:1}
+  .pcap{
+    position:absolute;left:16px;bottom:44px;z-index:2;max-width:36ch;
+    font-family:var(--mono);font-size:clamp(11px,1.4vw,13px);line-height:1.9;
+    letter-spacing:.04em;opacity:0;pointer-events:none;
+  }
+  .pscroll{
+    position:absolute;right:16px;bottom:14px;z-index:2;
+    font-family:var(--mono);font-size:10px;letter-spacing:.3em;opacity:.5;pointer-events:none;
+  }
+  .pnogl{
+    position:absolute;inset:0;display:none;place-items:center;text-align:center;padding:24px;
+    font-family:var(--mono);font-size:13px;color:var(--ultra);
+    background:repeating-linear-gradient(45deg,transparent 0 18px,rgba(43,58,158,.06) 18px 19px),var(--bone);
+  }
+  @media(prefers-reduced-motion:reduce){
+    .ptrack{height:auto}
+    .pstick{position:static}
+    .pscroll{display:none}
+  }
+
   /* essay */
   .essay{background:var(--ink);color:var(--bone);margin:0 calc(-1 * clamp(20px,4vw,48px));padding-left:clamp(20px,4vw,48px);padding-right:clamp(20px,4vw,48px)}
   .essay .secnum{color:var(--signal)}
@@ -232,6 +288,7 @@
 <nav class="top" aria-label="Sections">
   <a href="#about">ABOUt</a>
   <a href="#structures">StRUCtURES</a>
+  <a href="#paradox">PARADOX</a>
   <a href="#essay">ESSAy</a>
   <a href="#visit">VISit</a>
 </nav>
@@ -262,6 +319,7 @@
         LIVE RENDER — SIGNED DIStANCE FIELD<br>
         FOLD ItERAtIONS <b>6</b> · MAX StEPS <b id="hudsteps">64</b><br>
         INtERNAL RES <b id="hudres">0.65×</b> · DPR <b>1.0</b><br>
+        PORtAL <b>ACtIVE</b> — tHE DOOR SHOWS ANOtHER SPACE<br>
         NO MESHES. NO tEXtURES. ONE FRAGMENt SHADER.
       </div>
     </div>
@@ -319,9 +377,45 @@
   </div>
 </section>
 
+<!-- ============ PARADOX / TRIBAR ============ -->
+<section id="paradox">
+  <p class="secnum">03 / tHE PARADOX — LIVE DEMONStRAtION</p>
+  <h2>the tribar: a structure that exists from exactly one place</h2>
+  <div class="cols">
+    <div>
+      <p class="lede">Commissioned for the forecourt: three straight beams, mutually perpendicular, that <em>never touch</em>. From every viewpoint but one they are exactly what they are. Scroll, and walk the gantry.</p>
+    </div>
+    <div class="side">
+      <p>After Oscar Reutersvärd (1934) and the Penroses (1958). The beams below are honest three-dimensional solids — no cut is hidden, no seam is faked, and the render is recomputed from your scroll position alone. The impossibility is supplied entirely by you, at the moment your line of sight closes the loop. The biennale considers this the cheapest structure it has ever exhibited: the visitor performs the load-bearing.</p>
+      <p>Be advised that the gantry does not agree with the ground about which way is down. This is a known property of the forecourt and not a fault.</p>
+      <p class="factline">
+        BEAMS <span>tHREE</span> · JOINtS <span>tWO</span><br>
+        CLOSURE <span>OBSERVER-SUPPLIED</span> · UP <span>NEGOtIABLE</span>
+      </p>
+    </div>
+  </div>
+</section>
+
+<div class="ptrack" id="ptrack">
+  <div class="pstick">
+    <div class="pstage" id="pstage">
+      <canvas id="pz" aria-label="Scroll-controlled render of a Penrose tribar: three disjoint beams that close into the impossible triangle at one viewing angle"></canvas>
+      <div class="pnogl" id="pnogl">WEBGL UNAVAILABLE —<br>IMAGINE tHREE BEAMS.<br>NOW LIE tO yOURSELF ABOUt tHEM.</div>
+      <div class="phud">
+        <span>VIEWING ALIGNMENt <b id="palign">00.0%</b></span>
+        <span id="pstatus">DISJOINt</span>
+      </div>
+      <p class="pcap" data-c="0">tHREE BEAMS. MUtUALLy PERPENDICULAR.<br>tHEy DO NOt tOUCH.</p>
+      <p class="pcap" data-c="1">FROM HERE — AND ONLy FROM HERE —<br>tHE tRIBAR CLOSES.</p>
+      <p class="pcap" data-c="2">PASt tHE SWEEt SPOt tHE PARADOX RELEASES ItS PARtS.<br>NOtE tHAt "DOWN" WENt WItH It.</p>
+      <p class="pscroll">SCROLL tO WALK tHE GANtRy</p>
+    </div>
+  </div>
+</div>
+
 <!-- ============ ESSAY ============ -->
 <section class="essay" id="essay">
-  <p class="secnum">03 / CURAtOR'S ESSAy — EXCERPt</p>
+  <p class="secnum">04 / CURAtOR'S ESSAy — EXCERPt</p>
   <h2>against the right angle</h2>
   <blockquote>
     "We ask architects to be honest about gravity and then punish them for being honest about <em>geometry</em>. The right angle is not a law of nature. It is a habit of the ruler."
@@ -336,7 +430,7 @@
 
 <!-- ============ VISIT ============ -->
 <section id="visit">
-  <p class="secnum">04 / VISItING</p>
+  <p class="secnum">05 / VISItING</p>
   <h2>the exhibition exists. the buildings do not.</h2>
   <div class="visit-grid">
     <div class="visit-cell">
@@ -436,11 +530,39 @@ float de(vec3 p){
   return (length(max(b, 0.0)) + min(max(b.x, max(b.y, b.z)), 0.0)) / k;
 }
 
-vec3 norm(vec3 p, float e){
+// ---- portal: one doorway, two spaces ----
+const vec3 PPOS = vec3(0.0, 0.42, 2.60);   // doorway centre (world A)
+const vec2 PAPT = vec2(0.40, 0.60);        // aperture half-extents
+
+float sdBoxFrame(vec3 p, vec3 b, float e){
+  p = abs(p) - b;
+  vec3 q = abs(p + e) - e;
+  return min(min(
+    length(max(vec3(p.x,q.y,q.z),0.0)) + min(max(p.x,max(q.y,q.z)),0.0),
+    length(max(vec3(q.x,p.y,q.z),0.0)) + min(max(q.x,max(p.y,q.z)),0.0)),
+    length(max(vec3(q.x,q.y,p.z),0.0)) + min(max(q.x,max(q.y,p.z)),0.0));
+}
+
+float gMat; // 0 = fractal A, 1 = door frame, 2 = fractal B (through the door)
+
+// world w: 0 = this space (fractal + door frame), 1 = the space through the door
+// (same field, rotated 90deg and hung upside-down — a different building, no extra uniforms)
+float map(vec3 p, float w){
+  if (w < 0.5){
+    float d = de(p);
+    float fr = sdBoxFrame(p - PPOS, vec3(PAPT.x + 0.06, PAPT.y + 0.06, 0.05), 0.03);
+    gMat = (fr < d) ? 1.0 : 0.0;
+    return min(d, fr);
+  }
+  gMat = 2.0;
+  return de(vec3(p.z, 0.8 - p.y, -p.x));
+}
+
+vec3 norm(vec3 p, float e, float w){
   vec2 h = vec2(1.0, -1.0) * e;
   return normalize(
-    h.xyy * de(p + h.xyy) + h.yyx * de(p + h.yyx) +
-    h.yxy * de(p + h.yxy) + h.xxx * de(p + h.xxx));
+    h.xyy * map(p + h.xyy, w) + h.yyx * map(p + h.yyx, w) +
+    h.yxy * map(p + h.yxy, w) + h.xxx * map(p + h.xxx, w));
 }
 
 void main(){
@@ -454,12 +576,22 @@ void main(){
   vec3 up = cross(rt, fw);
   vec3 rd = normalize(uv.x * rt + uv.y * up + 1.55 * fw);
 
+  // portal crossing solved analytically once, before the march
+  float pT = 1e9;
+  if (abs(rd.z) > 1e-4){
+    float tc = (PPOS.z - ro.z) / rd.z;
+    if (tc > 0.0){
+      vec2 hx = (ro + rd * tc).xy - PPOS.xy;
+      if (abs(hx.x) < PAPT.x && abs(hx.y) < PAPT.y) pT = tc;
+    }
+  }
+
   float t = 0.12;
   float st = 0.0;
   float hit = -1.0;
   for (int i = 0; i < STEPS; i++){
     vec3 pos = ro + rd * t;
-    float d = de(pos);
+    float d = map(pos, (t > pT) ? 1.0 : 0.0);
     float eps = 0.0006 + 0.0011 * t;      // distance-scaled epsilon = free LOD
     if (d < eps){ hit = t; break; }
     if (t > FAR) break;                    // early bail past far plane
@@ -468,9 +600,11 @@ void main(){
   }
 
   vec3 col;
+  float wf = (t > pT) ? 1.0 : 0.0;
   if (hit > 0.0){
     vec3 pos = ro + rd * t;
-    vec3 n = norm(pos, 0.0009 + 0.0011 * t);
+    vec3 n = norm(pos, 0.0009 + 0.0011 * t, wf);
+    map(pos, wf);                          // re-evaluate for gMat / gTrap at hit
     vec3 L = normalize(vec3(0.55, 0.85, -0.35));
     float dif = clamp(dot(n, L), 0.0, 1.0);
     float sky = clamp(0.5 + 0.5 * n.y, 0.0, 1.0);
@@ -479,22 +613,35 @@ void main(){
     float occ = clamp(1.0 - st / float(STEPS) * 1.25, 0.0, 1.0);
     occ = pow(occ, 1.4);
     float trap = clamp(gTrap * 2.2, 0.0, 1.0);
-
-    vec3 base = mix(ULTRA * 0.75, BONE * 0.96, dif * 0.62 + sky * 0.30);
-    base = mix(base, INK, (1.0 - occ) * 0.55);
-    base = mix(base, ULTRA, (1.0 - trap) * 0.22);
-
     float fre = pow(1.0 - abs(dot(n, -rd)), 5.0);
-    base += SIG * fre * occ * 0.16;        // thin signal-orange rim, kept quiet
 
-    col = base;
+    if (gMat > 1.5){
+      // through the door: ink-dark space, ultramarine light, louder rim
+      vec3 base = mix(INK * 2.4, ULTRA * 1.30, dif * 0.60 + sky * 0.30);
+      base = mix(base, INK * 0.8, (1.0 - occ) * 0.55);
+      base = mix(base, ULTRA * 1.5, (1.0 - trap) * 0.22);
+      base += SIG * fre * 0.38;
+      col = base;
+    } else if (gMat > 0.5){
+      // the door frame itself
+      col = mix(INK, SIG, fre * 0.55) + SIG * 0.08;
+    } else {
+      vec3 base = mix(ULTRA * 0.75, BONE * 0.96, dif * 0.62 + sky * 0.30);
+      base = mix(base, INK, (1.0 - occ) * 0.55);
+      base = mix(base, ULTRA, (1.0 - trap) * 0.22);
+      base += SIG * fre * occ * 0.16;      // thin signal-orange rim, kept quiet
+      col = base;
+    }
   } else {
-    col = BONE * (1.0 - 0.05 * length(uv)) - vec3(0.012, 0.008, 0.0) * uv.y;
+    col = (wf > 0.5)
+      ? INK * 1.4 + vec3(0.05, 0.045, 0.11) * (uv.y + 0.5)
+      : BONE * (1.0 - 0.05 * length(uv)) - vec3(0.012, 0.008, 0.0) * uv.y;
   }
 
-  // fog: quadratic falloff into bone so the page and the render share one air
+  // fog: quadratic falloff — into bone here, into near-dark through the door
+  vec3 fogC = (wf > 0.5) ? vec3(0.13, 0.13, 0.19) : BONE;
   float fog = 1.0 - exp(-0.030 * t * t);
-  col = mix(col, BONE, fog);
+  col = mix(col, fogC, fog);
 
   // ordered dither to break banding in the fog
   float dth = fract(sin(dot(gl_FragCoord.xy, vec2(12.9898, 78.233))) * 43758.5453);
@@ -669,6 +816,246 @@ void main(){
 
   setRunning();
   if (reduced) renderOnce();
+})();
+
+/* ============ THE PARADOX — scroll-resolved Penrose tribar ============ */
+(() => {
+  'use strict';
+  const stage = document.getElementById('pstage');
+  const track = document.getElementById('ptrack');
+  const cv = document.getElementById('pz');
+  if (!stage || !cv) return;
+  const reduced = matchMedia('(prefers-reduced-motion: reduce)').matches;
+  const mobile = matchMedia('(max-width: 760px)').matches || /Mobi|Android/i.test(navigator.userAgent);
+  const STEPS = mobile ? 48 : 64;
+  const RES = mobile ? 0.55 : 0.7;         // DPR pinned to 1, CSS upscales
+
+  const fail = () => { document.getElementById('pnogl').style.display = 'grid'; cv.remove(); };
+  const gl = cv.getContext('webgl', {antialias:false, alpha:false, depth:false, stencil:false});
+  if (!gl){ fail(); return; }
+
+  const VS = 'attribute vec2 aP;void main(){gl_Position=vec4(aP,0.,1.);}';
+  const FS = `
+precision highp float;
+uniform vec2 uRes;
+uniform vec3 uRo;
+uniform vec3 uFw;
+uniform vec3 uRt;
+uniform vec3 uUp;
+uniform float uAlign;
+uniform float uFocal;
+
+#define STEPS ${STEPS}
+#define DIST 16.0
+
+const vec3 BONE  = vec3(0.910, 0.894, 0.855);
+const vec3 INK   = vec3(0.078, 0.078, 0.102);
+const vec3 ULTRA = vec3(0.169, 0.227, 0.620);
+const vec3 SIG   = vec3(1.000, 0.361, 0.122);
+const float W = 0.085;
+
+float gM;
+float sdB(vec3 p, vec3 b){ vec3 q = abs(p) - b; return length(max(q,0.0)) + min(max(q.x,max(q.y,q.z)),0.0); }
+
+// Three beams in the unit-corner frame: open ends at (0,0,0) and (1,1,1) —
+// both sit on the camera ray when viewed along the body diagonal, so the
+// tribar closes from that direction and only that direction.
+float de(vec3 p){
+  vec3 q = p + vec3(0.5);
+  float a = sdB(q - vec3(0.5, 0.0, 0.0), vec3(0.5 + W, W, W)) - 0.012;
+  float b = sdB(q - vec3(1.0, 0.5, 0.0), vec3(W, 0.5 + W, W)) - 0.012;
+  float c = sdB(q - vec3(1.0, 1.0, 0.5), vec3(W, W, 0.5 + W)) - 0.012;
+  float d = min(a, min(b, c));
+  gM = (d == a) ? 0.0 : ((d == b) ? 1.0 : 2.0);
+  return d;
+}
+
+vec3 norm(vec3 p, float e){
+  vec2 h = vec2(1.0, -1.0) * e;
+  return normalize(
+    h.xyy * de(p + h.xyy) + h.yyx * de(p + h.yyx) +
+    h.yxy * de(p + h.yxy) + h.xxx * de(p + h.xxx));
+}
+
+void main(){
+  vec2 uv = (gl_FragCoord.xy - 0.5 * uRes) / uRes.y;
+  vec3 rd = normalize(uv.x * uRt + uv.y * uUp + uFocal * uFw);  // near-ortho: seam stays honest
+  vec3 ro = uRo;
+
+  float t = DIST - 3.0;
+  float st = 0.0;
+  float hit = -1.0;
+  for (int i = 0; i < STEPS; i++){
+    float d = de(ro + rd * t);
+    if (d < 0.002){ hit = t; break; }
+    if (t > DIST + 3.0) break;
+    t += d * 0.9;
+    st += 1.0;
+  }
+
+  vec3 col;
+  if (hit > 0.0){
+    vec3 pos = ro + rd * t;
+    vec3 n = norm(pos, 0.0022);
+    de(pos); float m = gM;
+    vec3 L = normalize(vec3(0.55, 0.85, -0.35));
+    float dif = clamp(dot(n, L), 0.0, 1.0);
+    float sky = clamp(0.5 + 0.5 * n.y, 0.0, 1.0);
+    float occ = pow(clamp(1.0 - st / float(STEPS) * 1.3, 0.0, 1.0), 1.3);
+    float fre = pow(1.0 - abs(dot(n, -rd)), 5.0);
+
+    // disjoint: three separate materials. resolved: one structure, one material.
+    vec3 tint = (m < 0.5) ? ULTRA : ((m < 1.5) ? vec3(0.30, 0.30, 0.36) : mix(ULTRA, SIG, 0.42));
+    vec3 disj = mix(tint * 0.55, BONE * 0.92, dif * 0.55 + sky * 0.28);
+    vec3 unif = mix(ULTRA * 0.72, BONE * 0.96, dif * 0.62 + sky * 0.30);
+    vec3 base = mix(disj, unif, uAlign);
+    base = mix(base, INK, (1.0 - occ) * 0.50);
+    base += SIG * fre * (0.10 + 0.75 * uAlign);   // rim flares as the paradox locks
+    col = base;
+  } else {
+    col = BONE * (1.0 - 0.05 * length(uv)) - vec3(0.012, 0.008, 0.0) * uv.y;
+    col -= vec3(0.05, 0.04, 0.02) * uAlign * length(uv);  // faint vignette at resolve
+  }
+
+  float tl = max(0.0, t - (DIST - 3.0));
+  float fog = 1.0 - exp(-0.028 * tl * tl);
+  col = mix(col, BONE, fog);
+
+  float dth = fract(sin(dot(gl_FragCoord.xy, vec2(12.9898, 78.233))) * 43758.5453);
+  col += (dth - 0.5) * (1.6 / 255.0);
+  gl_FragColor = vec4(col, 1.0);
+}`;
+
+  let prog, uni = {}, buf;
+  function build(){
+    const mk = (type, src) => {
+      const s = gl.createShader(type);
+      gl.shaderSource(s, src); gl.compileShader(s);
+      if (!gl.getShaderParameter(s, gl.COMPILE_STATUS)) throw gl.getShaderInfoLog(s);
+      return s;
+    };
+    prog = gl.createProgram();
+    gl.attachShader(prog, mk(gl.VERTEX_SHADER, VS));
+    gl.attachShader(prog, mk(gl.FRAGMENT_SHADER, FS));
+    gl.linkProgram(prog);
+    if (!gl.getProgramParameter(prog, gl.LINK_STATUS)) throw gl.getProgramInfoLog(prog);
+    gl.useProgram(prog);
+    buf = gl.createBuffer();
+    gl.bindBuffer(gl.ARRAY_BUFFER, buf);
+    gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([-1,-1, 3,-1, -1,3]), gl.STATIC_DRAW);
+    const loc = gl.getAttribLocation(prog, 'aP');
+    gl.enableVertexAttribArray(loc);
+    gl.vertexAttribPointer(loc, 2, gl.FLOAT, false, 0, 0);
+    ['uRes','uRo','uFw','uRt','uUp','uAlign','uFocal'].forEach(n => uni[n] = gl.getUniformLocation(prog, n));
+  }
+  try { build(); } catch(e){ fail(); return; }
+
+  function size(){
+    cv.width  = Math.max(2, Math.round(stage.clientWidth  * RES));
+    cv.height = Math.max(2, Math.round(stage.clientHeight * RES));
+    gl.viewport(0, 0, cv.width, cv.height);
+  }
+
+  // camera path: two easeInOutCubic legs meeting at the magic body-diagonal
+  // view (az 45deg, el 35.26deg). derivative = 0 at the joint, so the sweet
+  // spot is wide in scroll space — the "aha" is earned, then breaks again.
+  const PM = 0.56, D = 16.0, SW = 1.9;
+  const AM = Math.PI / 4, EM = Math.asin(1 / Math.sqrt(3));
+  const MAGIC = [1/Math.sqrt(3), 1/Math.sqrt(3), 1/Math.sqrt(3)];
+  const ease = x => x < 0.5 ? 4*x*x*x : 1 - Math.pow(-2*x + 2, 3) / 2;
+  const sm = (a, b, x) => { x = Math.min(1, Math.max(0, (x - a) / (b - a))); return x*x*(3 - 2*x); };
+
+  const alignEl = document.getElementById('palign');
+  const statusEl = document.getElementById('pstatus');
+  const caps = [...document.querySelectorAll('.pcap')];
+  let inView = false, visible = true, lastP = -1, queued = false;
+
+  function progress(){
+    const r = track.getBoundingClientRect();
+    const total = r.height - innerHeight;
+    return total > 40 ? Math.min(1, Math.max(0, -r.top / total)) : PM;
+  }
+
+  function draw(){
+    const p = reduced ? PM : progress();
+    let az, el, roll;
+    if (p <= PM){
+      const k = ease(p / PM);
+      az = AM - SW + SW * k;
+      el = -0.15 + (EM + 0.15) * k;
+      roll = -1.1 * (1 - k);                 // gravity shift: "up" rolls into place
+    } else {
+      const k = ease((p - PM) / (1 - PM));
+      az = AM + SW * k;
+      el = EM + (1.02 - EM) * k;
+      roll = 1.25 * k;                       // ...and past the resolve, away again
+    }
+    if (reduced) roll = 0;
+
+    const ce = Math.cos(el);
+    const dir = [ce * Math.cos(az), Math.sin(el), ce * Math.sin(az)];
+    const ro = dir.map(v => v * D);
+    const fw = dir.map(v => -v);
+    // basis with world-up, then roll about the view axis
+    let rt = [-fw[2], 0, fw[0]];             // cross(fw, (0,1,0))
+    const rl = Math.hypot(rt[0], rt[1], rt[2]) || 1;
+    rt = rt.map(v => v / rl);
+    const up = [                              // cross(rt, fw)
+      rt[1]*fw[2] - rt[2]*fw[1],
+      rt[2]*fw[0] - rt[0]*fw[2],
+      rt[0]*fw[1] - rt[1]*fw[0]];
+    const cr = Math.cos(roll), sr = Math.sin(roll);
+    const rt2 = rt.map((v, i) => v * cr + up[i] * sr);
+    const up2 = up.map((v, i) => v * cr - rt[i] * sr);
+
+    const dot = dir[0]*MAGIC[0] + dir[1]*MAGIC[1] + dir[2]*MAGIC[2];
+    const ang = Math.acos(Math.min(1, Math.max(-1, dot)));
+    const align = 1 - sm(0.0, 0.14, ang);
+
+    gl.uniform2f(uni.uRes, cv.width, cv.height);
+    gl.uniform3f(uni.uRo, ro[0], ro[1], ro[2]);
+    gl.uniform3f(uni.uFw, fw[0], fw[1], fw[2]);
+    gl.uniform3f(uni.uRt, rt2[0], rt2[1], rt2[2]);
+    gl.uniform3f(uni.uUp, up2[0], up2[1], up2[2]);
+    gl.uniform1f(uni.uAlign, align);
+    // fit the tribar inside the frame on any aspect (portrait crops otherwise)
+    gl.uniform1f(uni.uFocal, 8.5 * Math.min(1, (cv.width / cv.height) * 0.8));
+    gl.drawArrays(gl.TRIANGLES, 0, 3);
+
+    // readouts + captions
+    alignEl.textContent = Math.max(0, 100 * (1 - Math.min(1, ang / 1.9))).toFixed(1) + '%';
+    const res = ang < 0.03;
+    statusEl.textContent = res ? 'PARADOX RESOLVED' : (ang < 0.5 ? 'RESOLVING' : 'DISJOINt');
+    statusEl.classList.toggle('resolved', res);
+    const o = reduced
+      ? [0, 1, 0]
+      : [1 - sm(0.28, 0.42, p), sm(0.40, 0.50, p) * (1 - sm(0.62, 0.72, p)), sm(0.74, 0.84, p)];
+    caps.forEach((c, i) => c.style.opacity = o[i].toFixed(3));
+  }
+
+  // render ONLY on scroll / resize / entry — no persistent loop, idle cost zero
+  function onScroll(){
+    if (queued || !inView || !visible || reduced) return;
+    queued = true;
+    requestAnimationFrame(() => {
+      queued = false;
+      const p = progress();
+      if (p !== lastP){ lastP = p; draw(); }
+    });
+  }
+  addEventListener('scroll', onScroll, {passive: true});
+  addEventListener('resize', () => { size(); if (inView) draw(); });
+  document.addEventListener('visibilitychange', () => { visible = !document.hidden; });
+  new IntersectionObserver(es => {
+    inView = es[0].isIntersecting;
+    if (inView){ lastP = -1; draw(); }
+  }, {threshold: 0.01}).observe(track);
+
+  cv.addEventListener('webglcontextlost', e => e.preventDefault());
+  cv.addEventListener('webglcontextrestored', () => { build(); size(); draw(); });
+
+  size();
+  draw();
 })();
 </script>
 </body>

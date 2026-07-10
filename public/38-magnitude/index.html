@@ -113,6 +113,11 @@ body{
   will-change:transform,opacity;
 }
 .layer canvas,.layer svg{position:absolute;inset:0;width:100%;height:100%;display:block}
+#fx{
+  /* stationary effects canvas (dust + threshold shockwaves): never scaled,
+     never masked, viewport-sized — safe for the compositor by construction */
+  position:absolute;inset:0;width:100%;height:100%;z-index:2;pointer-events:none;
+}
 .layer .spinwrap{position:absolute;inset:0}
 .l-galaxy .spinwrap{animation:slowspin 400s linear infinite}
 .l-cell .pulse{position:absolute;inset:0;animation:pulse 7s ease-in-out infinite}
@@ -172,6 +177,11 @@ body.diving .hud{opacity:1}
 }
 .readout .r-num sup.tick{animation:ticknum .28s ease}
 @keyframes ticknum{0%{opacity:0;transform:translateY(-.15em)}100%{opacity:1;transform:translateY(-.5em)}}
+.readout.flash .r-num{animation:roFlash .55s ease}
+@keyframes roFlash{
+  0%{color:var(--accent);text-shadow:0 0 24px var(--accent),0 0 6px var(--accent)}
+  100%{color:var(--bone);text-shadow:0 0 0 rgba(0,0,0,0)}
+}
 .readout .r-unit{font-family:var(--serif);font-size:.6em;color:var(--bone-dim);margin-left:8px}
 .readout .r-world{
   font-size:11.5px;color:var(--bone-dim);margin-top:6px;letter-spacing:.04em;
@@ -230,6 +240,8 @@ footer a:hover{color:var(--cyan);border-color:var(--cyan)}
   .layer{transition:opacity .6s ease;-webkit-mask-image:none;mask-image:none}
   .hero-cue .line::after,.l-galaxy .spinwrap,.l-cell .pulse,.orbitspin{animation:none!important}
   .cap{transition:opacity .6s ease,border-left-color 1s ease}
+  #fx{display:none}
+  .readout.flash .r-num{animation:none}
 }
 </style>
 </head>
@@ -299,6 +311,8 @@ footer a:hover{color:var(--cyan);border-color:var(--cyan)}
       </svg>
     </div>
     </div><!-- /.lmask -->
+
+    <canvas id="fx" aria-hidden="true"></canvas>
 
     <!-- captions -->
     <aside class="cap" data-l="0">
@@ -489,6 +503,29 @@ function drawGalaxy(ctx,w,h){
     ctx.fillStyle = col;
     var s2 = core>.75 ? 1.7 : (rand(rs)>.9 ? 1.6 : 1);
     ctx.fillRect(x,y,s2,s2);
+  }
+  ctx.globalAlpha = 1;
+  // dust lanes — dark absorption streaks hugging the inner edge of each arm
+  var lanes = MOBILE ? 550 : 1100;
+  ctx.fillStyle = "#0A0D1E";
+  for(i=0;i<lanes;i++){
+    var lt = .16 + Math.pow(rand(rs), .85) * .8;
+    var lr = lt * R;
+    var la = (i % arms) * Math.PI;
+    var lth = la + lr*.011 - .07 + (rand(rs)-.5)*.09;
+    ctx.globalAlpha = .10 + rand(rs)*.18;
+    ctx.fillRect(gx + Math.cos(lth)*lr, gy + Math.sin(lth)*lr*.78,
+                 2 + rand(rs)*3, 1 + rand(rs)*2);
+  }
+  ctx.globalAlpha = 1;
+  // dense stellar bulge — tight cluster of old gold stars around the core
+  var bulge = MOBILE ? 260 : 520;
+  for(i=0;i<bulge;i++){
+    var br = Math.pow(rand(rs), 2.4) * R * .17;
+    var ba = rand(rs)*6.2832;
+    ctx.globalAlpha = .3 + rand(rs)*.6;
+    ctx.fillStyle = rand(rs) > .8 ? "#FFF3DA" : "#FFD27A";
+    ctx.fillRect(gx + Math.cos(ba)*br, gy + Math.sin(ba)*br*.82, 1, 1);
   }
   ctx.globalAlpha = 1;
   glowDot(ctx, gx, gy, R*.3, "#FFD27A", .5);
@@ -779,6 +816,93 @@ function setAccent(c){
   root.style.setProperty("--accent", c);
 }
 
+/* ============ fx canvas: cross-scale dust + threshold shockwaves ============
+   Everything here draws on ONE stationary, viewport-sized canvas above the
+   scaled layers — no masks, no filters, no transforms — so it can never
+   recreate the scale-18 rasterization blowup fixed in PASS 5. The rAF loop
+   self-terminates when scroll velocity has decayed and no ripples remain. */
+var fxCv = document.getElementById("fx");
+var fxCtx = null, fxW = 0, fxH = 0;
+function sizeFx(){
+  fxW = stage.clientWidth; fxH = stage.clientHeight;
+  fxCtx = setupCanvas(fxCv, fxW, fxH);
+}
+var MOTES = MOBILE ? 55 : 100;
+var motes = [], ripples = [];
+(function(){
+  for(var i=0;i<MOTES;i++) motes.push({
+    a: Math.random()*6.2832,        // radial direction from screen centre
+    d: Math.random(),               // 0..1 distance along that ray
+    sp: .6 + Math.random()*.9,
+    big: Math.random() > .86
+  });
+})();
+var fxOn = false, fxVel = 0, fxLastT = 0, fxLastSy = window.pageYOffset || 0;
+function fxKick(){
+  if(RM || fxOn || !fxCtx) return;
+  fxOn = true; fxLastT = 0;
+  requestAnimationFrame(fxFrame);
+}
+function fxFrame(now){
+  var dt = fxLastT ? Math.min((now - fxLastT)/16.67, 3) : 1;
+  fxLastT = now;
+  fxVel *= Math.pow(.9, dt);                       // idle decay
+  var drive = clamp(Math.abs(fxVel)/40, 0, 1);     // dust intensity 0..1
+  var cx = fxW/2, cy = fxH/2, maxR = Math.sqrt(cx*cx + cy*cy);
+  var diving = document.body.classList.contains("diving");
+  fxCtx.clearRect(0,0,fxW,fxH);
+  var live = false;
+  if(!document.hidden && diving && drive > .015){
+    live = true;
+    var dir = fxVel >= 0 ? 1 : -1;
+    fxCtx.fillStyle = "#EFECE6";
+    for(var i=0;i<MOTES;i++){
+      var m = motes[i];
+      m.d += dir * m.sp * drive * .012 * dt * (.25 + m.d); // accelerate outward
+      if(m.d > 1 || m.d < 0){ m.d -= dir; m.a = Math.random()*6.2832; }
+      var ease = m.d*m.d;                          // perspective: slow at centre
+      var x = cx + Math.cos(m.a)*ease*maxR;
+      var y = cy + Math.sin(m.a)*ease*maxR;
+      var sz = m.big ? 2 : 1;
+      var streak = sz * (1 + drive*6*m.d);         // elongate along the ray
+      fxCtx.globalAlpha = drive * (.1 + m.d*.45);
+      fxCtx.save();
+      fxCtx.translate(x,y); fxCtx.rotate(m.a);
+      fxCtx.fillRect(-streak/2, -sz/2, streak, sz);
+      fxCtx.restore();
+    }
+    fxCtx.globalAlpha = 1;
+  }
+  if(!document.hidden && ripples.length){
+    live = true;
+    for(var j=ripples.length-1;j>=0;j--){
+      var rp = ripples[j];
+      rp.r += (maxR*.018 + rp.r*.055) * dt;
+      var k = rp.r / (maxR*.92);
+      if(k >= 1){ ripples.splice(j,1); continue; }
+      fxCtx.globalAlpha = .45 * (1-k) * (1-k);
+      fxCtx.strokeStyle = rp.c;
+      fxCtx.lineWidth = 1.5 + 5*(1-k);
+      fxCtx.beginPath(); fxCtx.arc(cx,cy,rp.r,0,6.2832); fxCtx.stroke();
+    }
+    fxCtx.globalAlpha = 1;
+  }
+  if(live){ requestAnimationFrame(fxFrame); }
+  else { fxOn = false; fxLastT = 0; fxCtx.clearRect(0,0,fxW,fxH); }
+}
+var readoutEl = document.querySelector(".readout");
+function thresholdFX(){
+  if(RM) return;
+  // shockwave ripple in the level we just entered's accent colour
+  ripples.push({ r: Math.min(fxW,fxH)*.04, c: lastAcc || "#7B6CFF" });
+  if(ripples.length > 3) ripples.shift();
+  // half-second accent pulse of the readout
+  readoutEl.classList.remove("flash");
+  void readoutEl.offsetWidth;
+  readoutEl.classList.add("flash");
+  fxKick();
+}
+
 /* ============ main scroll loop ============ */
 var diveTop = 0, diveH = 0, vh = innerHeight;
 function measure(){
@@ -798,7 +922,8 @@ function update(){
 
   // HUD visibility
   var mid = sy + vh*.5;
-  document.body.classList.toggle("diving", mid > diveTop && mid < diveTop + diveH);
+  var isDiving = mid > diveTop && mid < diveTop + diveH;
+  document.body.classList.toggle("diving", isDiving);
 
   if(RM){
     // stepped mode: nearest level shown at scale 1, neighbours kept in DOM for fade
@@ -857,7 +982,18 @@ function update(){
   railFill.style.height = clamp(p/(N-1),0,1)*100 + "%";
   dots.forEach(function(d,i){ d.classList.toggle("on", p >= i - .04); });
 
-  lastCur = cur;
+  // dust: fold scroll delta into a decaying velocity, wake the fx loop
+  var dv = sy - fxLastSy; fxLastSy = sy;
+  if(isDiving){
+    fxVel = fxVel*.55 + dv*.45;
+    if(Math.abs(fxVel) > 2) fxKick();
+  } else { fxVel = 0; }
+
+  // threshold shockwave + readout pulse on every level handoff
+  if(cur !== lastCur){
+    if(lastCur !== -1 && isDiving) thresholdFX();
+    lastCur = cur;
+  }
 }
 
 var queued = false;
@@ -874,7 +1010,7 @@ addEventListener("resize", function(){
   rsT = setTimeout(function(){
     MOBILE = matchMedia("(max-width: 768px)").matches;
     NARROW = matchMedia("(max-width: 640px)").matches;
-    measure(); renderAll(); renderHero(); update();
+    measure(); renderAll(); renderHero(); sizeFx(); update();
   }, 180);
 });
 
@@ -904,7 +1040,7 @@ document.addEventListener("visibilitychange", function(){
 })();
 
 /* init */
-measure(); renderAll(); renderHero(); update();
+measure(); renderAll(); renderHero(); sizeFx(); update();
 addEventListener("load", function(){ measure(); update(); });
 })();
 </script>
@@ -953,5 +1089,19 @@ addEventListener("load", function(){ measure(); update(); });
         ~50k px and crashed the GPU process on real hardware.
      3. Faded-out layers (opacity <= .02) now switch to display:none instead of staying composited
         at scale ~16; canvas backing-store cap lowered 2800 -> 2200 px (~70 MB less at 4K). -->
+<!-- PASS 6 (deeper descent, GPU-safe by construction):
+     1. CROSS-SCALE DUST — a single stationary #fx canvas above the layers (viewport-sized, never
+        scaled/masked/filtered, so it cannot recreate the PASS 5 blowup) streams ~100 radial motes
+        outward from the zoom centre; their speed, brightness and streak length follow a decaying
+        scroll-velocity signal, so diving feels like falling inward, and the rAF loop self-stops
+        (and clears) when idle, hidden, or outside the dive.
+     2. SCALE-TRANSITION FLASH — every level handoff fires an expanding accent-coloured shockwave
+        ring on the same #fx canvas plus a half-second accent pulse (roFlash) of the 10^n readout:
+        a felt "crossing a threshold" beat at each of the six seams.
+     3. RICHER GALAXY — drawGalaxy adds dark dust-lane absorption streaks hugging the inner edge
+        of both spiral arms plus a ~520-star golden core bulge, all inside the existing draw
+        function and the 2200 px backing cap.
+     4. prefers-reduced-motion: stepped mode untouched — #fx is display:none, fxKick()/thresholdFX()
+        early-return, readout flash disabled. -->
 </body>
 </html>

@@ -41,6 +41,29 @@
   4. Resize handler debounced (150ms) and re-measures the glyph grid instead of
      stretching the bitmap; text ramp re-tuned (" .:-=+*#%@") after the blue highlight
      threshold at lum>0.78 washed out the '@' cores.
+
+  PASS 4 (upgrade — live code, glyph physics, text morph):
+  1. LIVE-CODE EXHIBIT (new section 02): a real 10-line phyllotaxis loop types itself
+     character-by-character while the adjacent canvas executes that exact loop — glyph
+     count grows quadratically with typing progress. When typing completes, the two
+     highlighted constants (GOLDEN, SIZE) sweep sinusoidally; the code display updates
+     the numbers live and the artwork responds, because the canvas reads the same
+     variables. Font strings cached at quarter-px so 900 ctx.font sets stay cheap.
+     Typing/oscillation only advances while the section intersects the viewport.
+  2. GLYPH PHYSICS headline: each hero letter wrapped in a span and spring-simulated
+     (semi-implicit Euler, exp damping, cursor repulsion within 130px). Letters drop
+     in scattered on load and reassemble; transforms only, no layout. Base positions
+     re-measured on resize and font load with transforms cleared. body overflow-x
+     clipped so flung letters never widen the page.
+  3. Hero morph gained a 4th target: the word "GLYPH", sampled from an offscreen text
+     raster into the same N-point Float32Array format (z-jittered slab, camera-facing
+     normals with deterministic tilt), so torus→sphere→cube→word is still a pure lerp.
+     Re-sampled once Archivo actually loads.
+  4. Reduced motion: letters static (transform:none !important), live-code section
+     shows the full snippet + one finished frame, no sweeping; caret hidden.
+  PASS: 0 pageerrors / 0 console errors via file:// at 1280 & 390; scrollWidth 390 @390;
+        canvases + demo + letter sim pause offscreen (IntersectionObserver) and on
+        visibilitychange; reduced-motion renders final states only.
 -->
 <style>
   :root{
@@ -59,6 +82,7 @@
     font-size:15px;
     line-height:1.6;
     -webkit-font-smoothing:antialiased;
+    overflow-x:hidden;
   }
   ::selection{background:var(--blue);color:var(--paper)}
   h1,h2,h3{font-family:'Archivo',sans-serif;font-weight:900;line-height:.95;letter-spacing:-.02em}
@@ -136,6 +160,31 @@
     pointer-events:none;
   }
   @media (prefers-reduced-motion: reduce){.stage .hint .motion-only{display:none}}
+
+  /* ---------- glyph physics headline (PASS 4.2) ---------- */
+  .hero h1 .ltr{display:inline-block;will-change:transform}
+  @media (prefers-reduced-motion: reduce){.hero h1 .ltr{transform:none !important}}
+
+  /* ---------- live-code exhibit (PASS 4.1) ---------- */
+  .live-grid{display:grid;grid-template-columns:1.05fr .95fr;gap:clamp(1.2rem,2.5vw,2rem);align-items:stretch}
+  @media(max-width:920px){.live-grid{grid-template-columns:1fr}}
+  .codepanel{border:2px solid var(--ink);background:var(--ink);color:var(--paper);display:flex;flex-direction:column;min-width:0}
+  .codehead{display:flex;justify-content:space-between;gap:1rem;align-items:baseline;border-bottom:1px solid rgba(244,242,236,.28);padding:.55rem .95rem;font-size:.66rem;letter-spacing:.14em;text-transform:uppercase}
+  .codehead .state{color:#9DACFF;text-align:right}
+  .codepanel pre{flex:1;margin:0;padding:1.1rem 1.15rem 1.3rem;font-family:'IBM Plex Mono',monospace;font-size:.78rem;line-height:1.8;overflow-x:auto;white-space:pre}
+  @media(max-width:720px){.codepanel pre{font-size:.7rem}}
+  #codeOut .kw{color:#9DACFF}
+  #codeOut .num{color:#C4CEFF;font-weight:600}
+  #codeOut .str{color:#D9C9FF}
+  #codeOut .cmt{color:rgba(244,242,236,.45)}
+  #codeOut .live{background:var(--blue);color:#fff;font-weight:600;padding:0 .18em;border-radius:1px}
+  .caret{display:inline-block;width:.55em;height:1.05em;background:var(--blue);vertical-align:text-bottom;animation:gwblink 1s steps(2,start) infinite}
+  @keyframes gwblink{50%{opacity:0}}
+  @media (prefers-reduced-motion: reduce){.caret{display:none;animation:none}}
+  .demo-stage{margin:0;display:flex;flex-direction:column}
+  .demo-stage canvas{flex:1}
+  .live-note{margin-top:1.6rem;font-size:.85rem;max-width:64ch;color:rgba(27,27,31,.85)}
+  .live-note b{color:var(--blue);font-weight:600}
 
   /* ---------- section scaffold ---------- */
   section{padding:clamp(4rem,9vh,7.5rem) 0}
@@ -227,6 +276,7 @@
 
 <header class="site" aria-label="Site">
   <a href="#philosophy">Philosophy</a>
+  <a href="#live">Live Code</a>
   <a href="#courses">Courses</a>
   <a href="#work">Student Work</a>
   <a href="#apply">Apply</a>
@@ -240,13 +290,13 @@
     <span class="rule" aria-hidden="true"></span>
     <span>Zürich — Est. 2019</span>
   </div>
-  <h1>Geometry,<br>set in <span class="b">type.</span></h1>
+  <h1 id="heroTitle">Geometry,<br>set in <span class="b">type.</span></h1>
 
   <div class="stage" id="stage">
     <span class="tag">Live — software rasterizer, no WebGL</span>
     <span class="shape-label" id="shapeLabel">Torus</span>
     <canvas id="hero-canvas" aria-hidden="true"></canvas>
-    <p class="visually-hidden">A rotating three-dimensional torus drawn entirely from monospace text characters, morphing into a sphere and a cube. Brighter surfaces use denser characters; the light follows the visitor's cursor.</p>
+    <p class="visually-hidden">A rotating three-dimensional torus drawn entirely from monospace text characters, morphing into a sphere, a cube and finally the word GLYPH. Brighter surfaces use denser characters; the light follows the visitor's cursor.</p>
     <div class="hint">
       <span class="motion-only">Your cursor is the light source</span>
       <span>Ramp&nbsp;·&nbsp;.:-=+*#%@</span>
@@ -281,9 +331,31 @@
   </div>
 </section>
 
+<!-- ================= LIVE CODE ================= -->
+<section id="live" class="wrap">
+  <div class="sec-head"><span class="no">02</span><h2>Ten lines, one artwork</h2></div>
+  <div class="live-grid">
+    <div class="codepanel">
+      <div class="codehead"><span>lesson-00.js</span><span class="state" id="liveState">· waiting</span></div>
+      <pre aria-hidden="true"><code id="codeOut"></code><span class="caret" id="liveCaret"></span></pre>
+      <p class="visually-hidden">A ten-line JavaScript loop that places nine hundred glyphs on a golden-angle spiral. The code types itself while the canvas beside it executes the loop; afterwards two constants sweep continuously and the artwork follows them.</p>
+    </div>
+    <div class="stage demo-stage">
+      <span class="tag">Output — running this exact loop</span>
+      <canvas id="demo-canvas" aria-hidden="true"></canvas>
+      <p class="visually-hidden">A spiral of monospace glyphs growing as the code is typed, then breathing as two constants oscillate.</p>
+      <div class="hint">
+        <span class="motion-only">The code writes itself · the canvas obeys</span>
+        <span>900 glyphs · phyllotaxis</span>
+      </div>
+    </div>
+  </div>
+  <p class="live-note">This is the whole pedagogy in one exhibit. The snippet is <b>real JavaScript</b>, not pseudocode — the canvas on the right is executing precisely that loop as it is typed. When the typing ends, watch the two highlighted constants begin to sweep: <b>change a number, change the artwork</b>. Fourteen weeks of Glyphwerk is that feedback loop, taken seriously.</p>
+</section>
+
 <!-- ================= COURSES ================= -->
 <section id="courses" class="wrap">
-  <div class="sec-head"><span class="no">02</span><h2>Three courses, one grid</h2></div>
+  <div class="sec-head"><span class="no">03</span><h2>Three courses, one grid</h2></div>
   <div class="courses">
 
     <article class="course">
@@ -342,7 +414,7 @@
 
 <!-- ================= STUDENT WORK ================= -->
 <section id="work" class="wrap">
-  <div class="sec-head"><span class="no">03</span><h2>From the studio floor</h2></div>
+  <div class="sec-head"><span class="no">04</span><h2>From the studio floor</h2></div>
   <div class="worklist">
     <div class="work">
       <span class="idx">W·01</span>
@@ -373,7 +445,7 @@
 
 <!-- ================= APPLY ================= -->
 <section id="apply" class="wrap">
-  <div class="sec-head"><span class="no">04</span><h2>Apply</h2></div>
+  <div class="sec-head"><span class="no">05</span><h2>Apply</h2></div>
   <div class="apply-grid">
     <div>
       <p class="big">No portfolio. No CV. Send us <em>one loop</em> you can't stop watching.</p>
@@ -401,6 +473,7 @@
     </div>
     <nav aria-label="Footer">
       <a href="#philosophy">Philosophy</a>
+      <a href="#live">Live Code</a>
       <a href="#courses">Courses</a>
       <a href="#work">Student Work</a>
       <a href="#apply">Apply</a>
@@ -527,6 +600,62 @@ function genCube(N){
   return a;
 }
 
+/* ---------- word sampler (PASS 4.3) ----------
+   Rasterizes a word on an offscreen canvas and turns the lit pixels into the
+   same [x,y,z,nx,ny,nz]*N flat format as the solids, so morphing stays a lerp.
+   Deterministic hash keeps the jitter stable across refills. */
+
+function ghash(i){ var x = Math.sin(i*127.1 + 311.7)*43758.5453; return x - Math.floor(x); }
+
+function fillWord(a, N, word, fontSpec){
+  var W = 260, H = 90;
+  var c = document.createElement("canvas");
+  c.width = W; c.height = H;
+  var g = c.getContext("2d", {willReadFrequently:true});
+  g.fillStyle = "#000"; g.fillRect(0,0,W,H);
+  g.fillStyle = "#fff";
+  g.font = fontSpec;
+  g.textAlign = "center"; g.textBaseline = "middle";
+  g.fillText(word, W/2, H/2 + 4);
+  var d = g.getImageData(0,0,W,H).data;
+  var pts = [];
+  for(var y=0; y<H; y+=2){
+    for(var x=0; x<W; x+=2){
+      if(d[(y*W+x)*4] > 120) pts.push(x, y);
+    }
+  }
+  var M = pts.length/2;
+  if(M < 24){ // font failed to draw — fall back to a flat ring so morph still works
+    for(var q=0; q<64; q++){ var an=q/64*Math.PI*2; pts.push(W/2+Math.cos(an)*80, H/2+Math.sin(an)*28); }
+    M = pts.length/2;
+  }
+  var minX=1e9,maxX=-1e9,minY=1e9,maxY=-1e9;
+  for(var p=0; p<M; p++){
+    var px=pts[p*2], py=pts[p*2+1];
+    if(px<minX)minX=px; if(px>maxX)maxX=px;
+    if(py<minY)minY=py; if(py>maxY)maxY=py;
+  }
+  var scale = 3.0/Math.max(1,(maxX-minX));       // world width 3.0 → fits 64-col grid
+  var cxm=(minX+maxX)/2, cym=(minY+maxY)/2;
+  for(var i=0;i<N;i++){
+    var j = (i % M)*2, o = i*6;
+    a[o]   = (pts[j]-cxm)*scale + (ghash(i)-0.5)*0.035;
+    a[o+1] = -(pts[j+1]-cym)*scale + (ghash(i+9000)-0.5)*0.035;
+    a[o+2] = (ghash(i+18000)-0.5)*0.14;          // shallow z slab
+    var nx = (ghash(i+27000)-0.5)*0.35,
+        ny = (ghash(i+36000)-0.5)*0.35,
+        nz = -1;   // front-facing: the word lights up as it turns to the camera
+    var il = 1/Math.sqrt(nx*nx+ny*ny+nz*nz);
+    a[o+3]=nx*il; a[o+4]=ny*il; a[o+5]=nz*il;
+  }
+}
+
+function genWord(N, word, fontSpec){
+  var a = new Float32Array(N*6);
+  fillWord(a, N, word, fontSpec);
+  return a;
+}
+
 /* ---------- renderer ---------- */
 
 function AsciiRenderer(canvas, opts){
@@ -545,6 +674,7 @@ function AsciiRenderer(canvas, opts){
   this.rotX = (opts.seed||0)*0.6;
   this.speed = opts.speed || 1;
   this.accent = opts.accent || false;  // draw everything blue (thumbnails)
+  this.faceIdx = (opts.faceIdx===undefined) ? -1 : opts.faceIdx; // PASS 4.3: shape that faces the camera
   this.active = true;
   this.onShape = opts.onShape || null;
   this.zbuf = null; this.lbuf = null;
@@ -587,8 +717,22 @@ AsciiRenderer.prototype.size = function(){
 function smooth(t){ return t*t*(3-2*t); }          // PASS 1.3
 
 AsciiRenderer.prototype.update = function(dt){
-  this.rotY += dt*0.55*this.speed;
-  this.rotX += dt*0.23*this.speed;
+  /* PASS 4.3 — while holding (or morphing into) the word shape, ease the
+     rotation to the nearest camera-facing multiple of 2π so it reads. */
+  var TAU = Math.PI*2, facing = false;
+  if(this.morphs && this.faceIdx >= 0){
+    var target = (this.shapeIdx+1) % this.shapes.length;
+    facing = (this.shapeIdx===this.faceIdx && this.phase < this.HOLD) ||
+             (target===this.faceIdx && this.phase >= this.HOLD);
+  }
+  if(facing){
+    var k = Math.min(1, dt*2.6);
+    this.rotY += (Math.round(this.rotY/TAU)*TAU - this.rotY)*k;
+    this.rotX += (Math.round(this.rotX/TAU)*TAU - this.rotX)*k;
+  } else {
+    this.rotY += dt*0.55*this.speed;
+    this.rotX += dt*0.23*this.speed;
+  }
   if(this.morphs){
     this.phase += dt;
     var cycle = this.HOLD + this.MORPH;
@@ -686,7 +830,8 @@ var HERO_N = MOBILE ? 1600 : 5800;      // PASS 2.5
 var MINI_N = 1400;
 
 // PASS 2.3 — point sets precomputed once
-var heroShapes = [genTorus(HERO_N), genSphere(HERO_N), genCube(HERO_N)];
+var WORD_FONT = "900 64px 'Archivo', Arial, sans-serif";
+var heroShapes = [genTorus(HERO_N), genSphere(HERO_N), genCube(HERO_N), genWord(HERO_N, "GLYPH", WORD_FONT)];
 var miniSets = {
   torus:  [genTorus(MINI_N)],
   sphere: [genSphere(MINI_N)],
@@ -694,12 +839,12 @@ var miniSets = {
 };
 
 var shapeLabel = document.getElementById("shapeLabel");
-var HERO_NAMES = ["Torus","Sphere","Cube"];
+var HERO_NAMES = ["Torus","Sphere","Cube","Glyph"];
 
 var renderers = [];
 var hero = new AsciiRenderer(document.getElementById("hero-canvas"), {
   hero:true, points:HERO_N, shapes:heroShapes, shapeNames:HERO_NAMES,
-  speed:1, seed:0.6,
+  speed:1, seed:0.6, faceIdx:3,
   onShape:function(next, current){ shapeLabel.textContent = current; }
 });
 renderers.push(hero);
@@ -713,11 +858,217 @@ for(var m=0;m<minis.length;m++){
   }));
 }
 
+/* ============================================================
+   PASS 4.1 — LIVE-CODE EXHIBIT
+   The snippet below is tokenized source that (a) types itself and
+   (b) is genuinely what render() executes each frame. GOLDEN and
+   SIZE are the live parameters that sweep after typing completes.
+   ============================================================ */
+
+var CODE_TOKENS = [
+  [["cmt","// phyllotaxis — every dot is a glyph"]],
+  [["kw","const"],["", " N = "],["num","900"],["", ", GOLDEN = "],["live","2.39996","golden"],["", ", SIZE = "],["live","0.85","size"],["", ";"]],
+  [["kw","for"],["", " ("],["kw","let"],["", " i = "],["num","0"],["", "; i < N; i++) {"]],
+  [["", "  "],["kw","const"],["", " a = i * GOLDEN + t * "],["num","0.4"],["", ";"]],
+  [["", "  "],["kw","const"],["", " r = "],["num","0.0148"],["", " * w * Math.sqrt(i);"]],
+  [["", "  "],["kw","const"],["", " s = SIZE * ("],["num","7"],["", " + "],["num","6"],["", " * Math.sin(i * "],["num","0.11"],["", " - t * "],["num","2"],["", "));"]],
+  [["", "  ctx.font = s + "],["str","\"px 'IBM Plex Mono'\""],["", ";"]],
+  [["", "  ctx.fillStyle = s > SIZE * "],["num","11.5"],["", " ? BLUE : INK;"]],
+  [["", "  ctx.fillText(RAMP["],["num","1"],["", " + i % "],["num","9"],["", "], cx + r*Math.cos(a), cy + r*Math.sin(a));"]],
+  [["", "}"]]
+];
+
+function escHTML(s){ return s.replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;"); }
+
+function LiveDemo(){
+  this.canvas = document.getElementById("demo-canvas");
+  this.ctx = this.canvas.getContext("2d", {alpha:false});
+  this.codeOut = document.getElementById("codeOut");
+  this.stateEl = document.getElementById("liveState");
+  this.caret = document.getElementById("liveCaret");
+  this.total = 0;
+  for(var l=0; l<CODE_TOKENS.length; l++){
+    for(var k=0; k<CODE_TOKENS[l].length; k++) this.total += CODE_TOKENS[l][k][1].length;
+    if(l < CODE_TOKENS.length-1) this.total += 1;   // newline
+  }
+  this.chars = 0; this.lastBudget = -1;
+  this.done = false; this.started = false;
+  this.t = 0; this.ot = 0;
+  this.pGolden = 2.39996; this.pSize = 0.85;
+  this.gEl = null; this.sEl = null;
+  this.fontCache = {};
+  this.active = true;
+  this.size();
+}
+
+LiveDemo.prototype.size = function(){
+  var box = this.canvas.parentElement.getBoundingClientRect();
+  var w = Math.max(160, Math.round(box.width));
+  this.canvas.width = w;
+  this.canvas.height = Math.round(Math.min(w*0.96, 560));
+};
+
+LiveDemo.prototype.renderCode = function(budget, final){
+  var html = "", remaining = budget;
+  for(var l=0; l<CODE_TOKENS.length && remaining>0; l++){
+    var line = CODE_TOKENS[l];
+    for(var k=0; k<line.length && remaining>0; k++){
+      var cls = line[k][0], txt = line[k][1], id = line[k][2];
+      var take = txt.length <= remaining ? txt : txt.slice(0, remaining);
+      remaining -= take.length;
+      if(cls){
+        html += "<span class=\""+cls+"\""+(final && id ? " id=\"lv-"+id+"\"" : "")+">"+escHTML(take)+"</span>";
+      } else html += escHTML(take);
+    }
+    if(l < CODE_TOKENS.length-1 && remaining>0){ html += "\n"; remaining -= 1; }
+  }
+  this.codeOut.innerHTML = html;
+  if(final){
+    this.gEl = document.getElementById("lv-golden");
+    this.sEl = document.getElementById("lv-size");
+  }
+};
+
+LiveDemo.prototype.update = function(dt){
+  if(!this.started){ this.started = true; this.stateEl.textContent = "· typing"; }
+  this.t += dt;
+  if(!this.done){
+    this.chars = Math.min(this.total, this.chars + dt*44);
+    var budget = this.chars|0;
+    if(budget !== this.lastBudget){ this.renderCode(budget, false); this.lastBudget = budget; }
+    if(this.chars >= this.total){
+      this.done = true;
+      this.renderCode(this.total, true);
+      this.caret.style.display = "none";
+      this.stateEl.textContent = "· constants sweeping";
+    }
+  } else {
+    this.ot += dt;
+    this.pGolden = 2.39996 + 0.13*Math.sin(this.ot*0.50);
+    this.pSize   = 0.85   + 0.32*Math.sin(this.ot*0.31 + 1.8);
+    if(this.gEl) this.gEl.textContent = this.pGolden.toFixed(5);
+    if(this.sEl) this.sEl.textContent = this.pSize.toFixed(2);
+  }
+};
+
+/* This is the typed snippet, executed. Only differences: glyphs appear in
+   step with typing progress, and font strings are cached per quarter-px. */
+LiveDemo.prototype.render = function(){
+  var ctx = this.ctx, w = this.canvas.width, h = this.canvas.height;
+  var cx = w/2, cy = h/2, t = this.t;
+  ctx.fillStyle = PAPER; ctx.fillRect(0,0,w,h);
+  var count = this.done ? 900 : Math.round(900 * Math.pow(this.chars/this.total, 2));
+  var GOLDEN = this.pGolden, SIZE = this.pSize;
+  for(var i=0; i<count; i++){
+    var a = i * GOLDEN + t * 0.4;
+    var r = 0.0148 * w * Math.sqrt(i);
+    var s = SIZE * (7 + 6 * Math.sin(i * 0.11 - t * 2));
+    if(s < 0.6) continue;
+    var key = (s*4)|0;
+    ctx.font = this.fontCache[key] || (this.fontCache[key] = (key/4)+"px 'IBM Plex Mono'");
+    ctx.fillStyle = s > SIZE * 11.5 ? BLUE : INK;
+    ctx.fillText(RAMP[1 + i % 9], cx + r*Math.cos(a), cy + r*Math.sin(a));
+  }
+};
+
+LiveDemo.prototype.staticFrame = function(){
+  this.chars = this.total; this.done = true; this.t = 2.4;
+  this.renderCode(this.total, true);
+  this.caret.style.display = "none";
+  this.stateEl.textContent = "· static (reduced motion)";
+  this.render();
+};
+
+var demo = new LiveDemo();
+if(!REDUCED) renderers.push(demo);
+
+/* ============================================================
+   PASS 4.2 — GLYPH PHYSICS HEADLINE
+   Each letter is a span on a soft spring; the cursor repels,
+   the spring reassembles. Duck-typed to the renderer interface
+   (canvas/active/size/update/render) so IO + rAF drive it too.
+   ============================================================ */
+
+var PMX = -9999, PMY = -9999;   // pointer, client coords
+
+function GlyphPhysics(h1){
+  this.canvas = h1;             // IO observes this element
+  this.active = true;
+  this.letters = [];
+  var self = this;
+  (function wrap(node){
+    var kids = Array.prototype.slice.call(node.childNodes);
+    for(var i=0;i<kids.length;i++){
+      var nd = kids[i];
+      if(nd.nodeType === 3){
+        var frag = document.createDocumentFragment();
+        var text = nd.nodeValue;
+        for(var c=0;c<text.length;c++){
+          if(text[c] === " " || text[c] === "\n"){ frag.appendChild(document.createTextNode(text[c])); continue; }
+          var sp = document.createElement("span");
+          sp.className = "ltr";
+          sp.textContent = text[c];
+          frag.appendChild(sp);
+          self.letters.push({el:sp, bx:0, by:0,
+            x:(Math.random()-0.5)*Math.min(420, window.innerWidth*0.55),
+            y:-60 - Math.random()*180, vx:0, vy:0});
+        }
+        node.replaceChild(frag, nd);
+      } else if(nd.nodeType === 1 && nd.tagName !== "BR"){
+        wrap(nd);
+      }
+    }
+  })(h1);
+  this.size();
+}
+
+GlyphPhysics.prototype.size = function(){
+  // measure home positions with transforms cleared
+  for(var i=0;i<this.letters.length;i++) this.letters[i].el.style.transform = "";
+  for(var j=0;j<this.letters.length;j++){
+    var L = this.letters[j], r = L.el.getBoundingClientRect();
+    L.bx = r.left + r.width/2 + window.scrollX;
+    L.by = r.top + r.height/2 + window.scrollY;
+  }
+};
+
+GlyphPhysics.prototype.update = function(dt){
+  var px = PMX + window.scrollX, py = PMY + window.scrollY;
+  var R = 130, K = 62, DAMP = Math.exp(-4.4*dt);
+  for(var i=0;i<this.letters.length;i++){
+    var L = this.letters[i];
+    var dx = (L.bx + L.x) - px, dy = (L.by + L.y) - py;
+    var d2 = dx*dx + dy*dy;
+    if(d2 < R*R && d2 > 0.01){
+      var d = Math.sqrt(d2), f = (1 - d/R) * 3200 * dt / d;
+      L.vx += dx*f; L.vy += dy*f;
+    }
+    L.vx += -L.x*K*dt; L.vy += -L.y*K*dt;
+    L.vx *= DAMP; L.vy *= DAMP;
+    L.x += L.vx*dt; L.y += L.vy*dt;
+  }
+};
+
+GlyphPhysics.prototype.render = function(){
+  for(var i=0;i<this.letters.length;i++){
+    var L = this.letters[i];
+    var rot = Math.max(-8, Math.min(8, L.vx*0.012));
+    L.el.style.transform = "translate("+L.x.toFixed(1)+"px,"+L.y.toFixed(1)+"px) rotate("+rot.toFixed(1)+"deg)";
+  }
+};
+
+var physics = null;
+if(!REDUCED){
+  physics = new GlyphPhysics(document.getElementById("heroTitle"));
+  renderers.push(physics);
+}
+
 /* light source follows the pointer (PASS 3.3: eased) */
 var targetLX=0.45, targetLY=0.55, LX=0.45, LY=0.55;
 window.addEventListener("pointermove", function(e){
   targetLX = (e.clientX/window.innerWidth)*2-1;
   targetLY = -((e.clientY/window.innerHeight)*2-1);
+  PMX = e.clientX; PMY = e.clientY;
 }, {passive:true});
 
 /* visibility management (PASS 2.4) */
@@ -742,7 +1093,7 @@ window.addEventListener("resize", function(){
   clearTimeout(rzT);
   rzT = setTimeout(function(){
     renderers.forEach(function(r){ r.size(); });
-    if(REDUCED) staticFrames();
+    if(REDUCED){ staticFrames(); demo.size(); demo.staticFrame(); }
   }, 150);
 });
 
@@ -770,8 +1121,9 @@ function staticFrames(){
 }
 
 if(REDUCED){
-  // PASS 3.1 — one lit frame, no loop
+  // PASS 3.1 — one lit frame, no loop; live-code shows the finished state
   staticFrames();
+  demo.staticFrame();
 } else {
   var last = performance.now();
   function loop(now){
@@ -791,8 +1143,9 @@ if(REDUCED){
 /* re-render once fonts are truly loaded so metrics are exact */
 if(document.fonts && document.fonts.ready){
   document.fonts.ready.then(function(){
+    fillWord(heroShapes[3], HERO_N, "GLYPH", WORD_FONT);  // PASS 4.3 — real Archivo
     renderers.forEach(function(r){ r.size(); });
-    if(REDUCED) staticFrames();
+    if(REDUCED){ staticFrames(); demo.size(); demo.staticFrame(); }
   });
 }
 

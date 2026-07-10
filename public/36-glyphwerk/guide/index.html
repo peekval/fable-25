@@ -18,6 +18,11 @@
           added decorative ASCII torus header as static text (no JS cost).
   PASS 3: focus-visible rings, aria-live on the copy confirmation,
           print styles (prompt box breaks cleanly), selection colors matched.
+  PASS 4: documented the upgrade — live-code exhibit (self-typing snippet driving
+          the canvas that executes it, then sweeping constants), glyph-physics
+          headline (spring-simulated letters), and the 4th morph target (the word
+          GLYPH sampled from an offscreen text raster). Repro prompt updated to
+          cover all three; word count label refreshed.
 -->
 <style>
   :root{--paper:#F4F2EC;--ink:#1B1B1F;--blue:#2743E0;--rule:rgba(27,27,31,.18)}
@@ -82,6 +87,8 @@
     <p>The spinning shapes on the GLYPHWERK site are not WebGL and not video — they are <b>text</b>, redrawn sixty times a second on a plain 2D canvas. A few thousand points are generated once for each solid (torus, lat/long sphere, cube grid), rotated with two rotation matrices, and pushed through a simple perspective <b>point projection</b> onto a character grid of roughly 110 by 55 cells, with a z-buffer keeping only the nearest point per cell.</p>
     <p>Each surviving point carries a surface normal; a single Lambert dot-product against a light vector — which follows the visitor's <b>cursor</b> — yields a brightness value, and that brightness indexes into the classic <b>luminance ramp</b> "&nbsp;.:-=+*#%@", so dense glyphs read as lit surface and sparse ones as shadow. The morphing happens because every shape has exactly the same point count: transitioning is a plain <b>lerp between point sets</b>, eased with smoothstep, normals re-normalized mid-flight.</p>
     <p>Speed comes from <b>row-string rendering</b>: instead of thousands of fillText calls, each grid row is assembled into one ink string and one blue-highlight string, so a full frame costs about a hundred draw calls. ASCII canvases run at device-pixel-ratio 1, offscreen renderers are paused by an IntersectionObserver, and prefers-reduced-motion collapses everything to a single lit still frame.</p>
+    <p>The morph cycle has a fourth target: the word <b>GLYPH</b> itself. It is sampled by rasterizing the word on an offscreen canvas, reading the pixels back, and emitting lit pixels in the same flat [x,y,z,nx,ny,nz] format as the solids (shallow z-jittered slab, camera-facing normals) — so torus→sphere→cube→word remains a pure lerp. While the word is held, the rotation eases to the nearest camera-facing multiple of 2π so it actually reads, then spins away again.</p>
+    <p>Two newer exhibits demonstrate the school's promise directly. The <b>live-code section</b> holds a real ten-line phyllotaxis loop that types itself character-by-character (tokenized source, innerHTML rebuilt per typed character) while the canvas beside it executes exactly that loop — glyph count grows with typing progress, and once typing finishes the two highlighted constants sweep sinusoidally, with the code display and the artwork reading the same live variables. And the hero headline is <b>glyph physics</b>: every letter is wrapped in a span on a soft spring (semi-implicit Euler, exponential damping); letters drop in scattered, reassemble, and scatter again from the cursor within a 130px radius — transforms only, re-measured on resize and font load.</p>
   </div>
 
   <div class="sec">
@@ -91,14 +98,18 @@
 
     <div class="promptbox">
       <div class="head">
-        <span>Prompt — ~230 words</span>
+        <span>Prompt — ~340 words</span>
         <button class="copy" id="copyBtn" type="button">Copy prompt</button>
       </div>
       <pre id="promptText">Build a single-file showcase website for "GLYPHWERK", a fictional Zürich school for creative coding, in a light Swiss-editorial style: newsprint background #F4F2EC, ink text #1B1B1F, international blue accent #2743E0. Google Fonts only: Archivo (black, uppercase editorial headings) and IBM Plex Mono (body, labels, and the artwork itself). No images, no libraries, no WebGL.
 
-Signature piece: a hero canvas showing real-time 3D rendered as ASCII text. Write a tiny software point projector on a 2D canvas: precompute equal-sized point sets (with normals) for a torus, a lat/long sphere, and a cube face grid; rotate them, perspective-project onto a ~110×55 character grid (~64×36 on mobile), z-buffer per cell, shade with a Lambert dot product against a light vector that follows the cursor, and map brightness to the ramp " .:-=+*#%@". Morph between the three solids every few seconds by lerping point sets with smoothstep. Render each frame as whole row strings (one ink layer, one blue highlight layer for the brightest cells) for 60fps; keep DPR at 1; pause offscreen canvases; show a static lit frame under prefers-reduced-motion.
+Signature piece: a hero canvas showing real-time 3D rendered as ASCII text. Write a tiny software point projector on a 2D canvas: precompute equal-sized point sets (with normals) for a torus, a lat/long sphere, and a cube face grid; rotate them, perspective-project onto a ~110×55 character grid (~64×36 on mobile), z-buffer per cell, shade with a Lambert dot product against a light vector that follows the cursor, and map brightness to the ramp " .:-=+*#%@". Morph between the shapes every few seconds by lerping point sets with smoothstep. Add a fourth morph target: the word "GLYPH", sampled by rasterizing the word on an offscreen canvas and converting lit pixels to the same point format (shallow z-jittered slab, camera-facing normals); while the word is held, ease the rotation to the nearest camera-facing angle so it reads. Render each frame as whole row strings (one ink layer, one blue highlight layer for the brightest cells) for 60fps; keep DPR at 1; pause offscreen canvases; show a static lit frame under prefers-reduced-motion.
 
-Sections: hero with big headline "Geometry, set in type."; a philosophy manifesto ("the renderer, not the framework"); three courses, each with a small live ASCII canvas (torus/sphere/cube in blue); a described student-work index; an apply section with semester terms; editorial footer. Sharp pedagogic copy throughout, thin blue rules, numbered sections, generous whitespace.</pre>
+Make the hero headline "Geometry, set in type." physical: wrap each letter in a span and spring-simulate it (soft spring to its home position, exponential damping, cursor repulsion within ~130px) so letters drop in scattered, reassemble, and scatter from the pointer — transforms only, static under reduced motion.
+
+Add a "live code" section: a dark code panel where a real ten-line phyllotaxis loop (900 glyphs placed at the golden angle 2.39996, size modulated by a sine, ramp characters as the marks) types itself character by character with a blinking caret, while the canvas next to it executes exactly that loop — glyph count growing with typing progress. When typing completes, two highlighted constants (GOLDEN and SIZE) sweep sinusoidally, the numbers updating live in the code as the artwork follows. Start only when scrolled into view; under reduced motion show the finished code and one final frame.
+
+Sections: hero; a philosophy manifesto ("the renderer, not the framework"); the live-code exhibit; three courses, each with a small live ASCII canvas (torus/sphere/cube in blue); a described student-work index; an apply section with semester terms; editorial footer. Sharp pedagogic copy throughout, thin blue rules, numbered sections, generous whitespace.</pre>
     </div>
     <p aria-live="polite" class="visuallyhidden" id="copyStatus" style="position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0)"></p>
   </div>

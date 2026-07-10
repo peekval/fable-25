@@ -38,6 +38,21 @@
          generous canvas padding so glyphs never touch the texture edge (no bleed when wrapped).
   - FIX: banking on mouse X fought the lock-on (word tilted while "flat"); banking amplitude is now
          scaled down by the strongest active lock factor, so locked titles are perfectly level.
+  PASS 4 (projected still + projection-booth drama):
+  - NEW: generated 16mm film still (assets/still-01.webp, 1400x940) integrated as a dedicated
+         REEL 03 "FEATURED" zone — presented as a projected frame: conic-gradient beam above,
+         burn-in strike-up reveal when the zone locks, 24fps-stepped luminance flicker capped at
+         3%, and sub-pixel gate-weave wobble on the frame gate.
+  - NEW: reel-change moment every ~25s — changeover cue dot double-flashes top-right and a faint
+         leader crosshair blips for a single frame (~5% line opacity, dark, never a bright flash).
+  - NEW: programme cards run a tiny sprocket filmstrip scrub along their left edge on hover.
+  - FIX: burn-in overlay initially rendered as a white card before the zone was reached; the still
+         now idles dark (projector off) and only strikes up on first lock of zone 2.
+  - A11Y: prefers-reduced-motion (and the no-WebGL static path) serves the frame fully static —
+         no flicker, no weave, no burn-in, no cue dot; flicker amplitude in normal mode never
+         exceeds 3% luminance and nothing full-screen ever flashes.
+  PASS: 0 pageerrors / 0 console errors via file:// at 1280x800 and 390x844; scrollWidth 390 @ 390;
+         img has width/height + loading="lazy"; reduced-motion verified static.
 -->
 <style>
   :root{
@@ -96,7 +111,7 @@
   #tc{position:fixed;right:26px;bottom:24px;color:rgba(247,244,238,.55);font-variant-numeric:tabular-nums}
 
   /* ---------- scroll spacer ---------- */
-  #spacer{height:760vh}
+  #spacer{height:950vh}  /* PASS 4: five corridor segments (was 760vh for four) */
 
   /* ---------- zones ---------- */
   .zone{
@@ -142,6 +157,82 @@
   .film h3{font-family:'Bebas Neue',sans-serif;font-weight:400;font-size:clamp(24px,2.6vw,34px);letter-spacing:.05em;line-height:1.02;max-width:85%}
   .film .meta{margin-top:8px;font-size:11px;letter-spacing:.2em;text-transform:uppercase;color:var(--amber)}
   .film p{margin-top:12px;font-size:13.5px;line-height:1.65;color:rgba(247,244,238,.72);max-width:44ch}
+  /* PASS 4: tiny filmstrip scrub along the card's left edge on hover */
+  .film::before{
+    content:'';position:absolute;left:0;top:-24px;bottom:-24px;width:13px;pointer-events:none;
+    background:repeating-linear-gradient(to bottom,transparent 0 5px,rgba(255,180,84,.4) 5px 13px,transparent 13px 24px);
+    opacity:0;transition:opacity .3s;
+  }
+  .film:hover::before{opacity:1;animation:scrub .45s linear infinite}
+  @keyframes scrub{to{transform:translateY(-24px)}}
+
+  /* ---------- PASS 4: featured projected frame ---------- */
+  #z2 .inner{text-align:center}
+  .projected{position:relative;margin:4px auto 0;width:min(700px,86vw,82vh)}
+  .beam{
+    position:absolute;left:50%;bottom:97%;width:130%;height:44vh;
+    transform:translateX(-50%);pointer-events:none;opacity:.85;filter:blur(7px);
+    background:conic-gradient(at 50% 0%,
+      transparent 163deg, rgba(255,180,84,.08) 171deg, rgba(255,230,190,.22) 180deg,
+      rgba(255,180,84,.08) 189deg, transparent 197deg);
+    animation:beamflick .42s steps(1) infinite;
+  }
+  @keyframes beamflick{
+    0%{opacity:.82}14%{opacity:.86}27%{opacity:.8}42%{opacity:.85}
+    55%{opacity:.83}68%{opacity:.87}81%{opacity:.81}100%{opacity:.84}
+  }
+  .gate{
+    position:relative;overflow:hidden;background:#000;
+    border:1px solid rgba(247,244,238,.14);
+    box-shadow:0 0 70px rgba(255,180,84,.10), 0 24px 60px rgba(0,0,0,.6);
+    animation:weave 7s ease-in-out infinite;
+  }
+  /* sub-pixel gate weave — the print never sits perfectly still in the gate */
+  @keyframes weave{
+    0%{transform:translate(0,0)}
+    17%{transform:translate(.35px,-.28px)}
+    38%{transform:translate(-.3px,.22px)}
+    57%{transform:translate(.18px,.34px)}
+    79%{transform:translate(-.34px,-.18px)}
+    100%{transform:translate(0,0)}
+  }
+  .gate img{display:block;width:100%;height:auto}
+  html:not(.static) .gate img{opacity:0}   /* projector off until the zone locks */
+  html:not(.static) .projected.struck .gate img{animation:strike 1.5s ease-out forwards}
+  @keyframes strike{                        /* blooms from overexposed white into the frame */
+    0%{opacity:0;filter:brightness(4) contrast(.3)}
+    16%{opacity:1;filter:brightness(5.5) contrast(.22)}
+    55%{opacity:1;filter:brightness(1.5) contrast(.85)}
+    100%{opacity:1;filter:brightness(1) contrast(1)}
+  }
+  .burn{position:absolute;inset:0;background:#fff;opacity:0;pointer-events:none}
+  html:not(.static) .projected.struck .burn{animation:burnout 1.5s ease-out forwards}
+  @keyframes burnout{0%{opacity:0}12%{opacity:.85}34%{opacity:.4}100%{opacity:0}}
+  /* 24fps-ish luminance flicker, capped at 3% */
+  .flick{position:absolute;inset:0;background:#fff;opacity:0;pointer-events:none;animation:flick .42s steps(1) infinite}
+  @keyframes flick{
+    0%{opacity:.012}12%{opacity:.03}24%{opacity:0}36%{opacity:.022}
+    52%{opacity:.008}64%{opacity:.028}78%{opacity:0}90%{opacity:.018}100%{opacity:.012}
+  }
+  .projected figcaption{margin-top:16px;font-size:11px;letter-spacing:.24em;text-transform:uppercase;color:rgba(247,244,238,.55);line-height:1.9}
+  .projected figcaption b{color:var(--amber);font-weight:400}
+
+  /* ---------- PASS 4: reel-change moment ---------- */
+  #cuedot{
+    position:fixed;top:58px;right:28px;width:11px;height:11px;border-radius:50%;
+    background:var(--amber);box-shadow:0 0 10px rgba(255,180,84,.8);
+    opacity:0;z-index:57;pointer-events:none;
+  }
+  #cuedot.on{animation:cue 1.3s steps(1) both}
+  @keyframes cue{0%{opacity:.9}18%{opacity:0}52%{opacity:.9}72%{opacity:0}100%{opacity:0}}
+  #leaderblip{
+    position:fixed;inset:0;z-index:4;pointer-events:none;opacity:0;
+    background:
+      radial-gradient(circle at 50% 50%, transparent 118px, rgba(247,244,238,.055) 119px, rgba(247,244,238,.055) 122px, transparent 123px),
+      linear-gradient(rgba(247,244,238,.045),rgba(247,244,238,.045)) 50% 50%/1px 300px no-repeat,
+      linear-gradient(rgba(247,244,238,.045),rgba(247,244,238,.045)) 50% 50%/300px 1px no-repeat;
+  }
+  #leaderblip.on{opacity:1}
 
   /* venues */
   .venues{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-top:8px}
@@ -175,7 +266,7 @@
   .pass.feature button:hover{color:var(--black)}
 
   /* credits */
-  #z4 .inner{text-align:center}
+  #z5 .inner{text-align:center}
   .credroll{margin-top:10px;font-size:13px;line-height:2.1;color:rgba(247,244,238,.7)}
   .credroll b{color:var(--white);font-weight:400;letter-spacing:.12em;text-transform:uppercase;font-size:11px;display:block;margin-top:14px;color:var(--amber)}
   .colophon{margin-top:34px;font-size:11px;letter-spacing:.18em;color:rgba(247,244,238,.42);text-transform:uppercase}
@@ -193,7 +284,10 @@
 
   /* ---------- static fallback (reduced motion / no WebGL) ---------- */
   html.static #stage,html.static #vignette,html.static #beamtint,
-  html.static #hud,html.static #progress,html.static #spacer,html.static .scrollhint{display:none}
+  html.static #hud,html.static #progress,html.static #spacer,html.static .scrollhint,
+  html.static .beam,html.static .flick,html.static .burn,
+  html.static #cuedot,html.static #leaderblip{display:none}
+  html.static .gate{animation:none}
   html.static .zone{
     position:relative;inset:auto;opacity:1;visibility:visible;pointer-events:auto;
     min-height:0;padding:80px 6vw;justify-content:flex-start;
@@ -207,6 +301,17 @@
   html.static .fallback-h2{
     display:block;font-family:'Bebas Neue',sans-serif;font-weight:400;
     font-size:clamp(40px,7vw,84px);letter-spacing:.05em;margin-bottom:20px;color:var(--white);
+  }
+
+  /* PASS 4: reduced motion — static frame, no flicker / weave / burn-in / cue flashes */
+  @media (prefers-reduced-motion:reduce){
+    .beam{animation:none}
+    .flick,.burn,#cuedot,#leaderblip{display:none}
+    .gate{animation:none}
+    html:not(.static) .gate img,
+    html:not(.static) .projected.struck .gate img{opacity:1!important;animation:none!important;filter:none!important}
+    .film:hover::before{animation:none}
+    .scrollhint{animation:none}
   }
 
   @media (max-width:900px){
@@ -226,6 +331,8 @@
 <div id="stage"></div>
 <div id="beamtint"></div>
 <div id="vignette"></div>
+<div id="leaderblip" aria-hidden="true"></div>
+<div id="cuedot" aria-hidden="true"></div>
 
 <div id="hud">
   <div id="progress"></div>
@@ -279,11 +386,29 @@
   </div>
 </section>
 
-<!-- ============ ZONE 2 · VENUES ============ -->
+<!-- ============ ZONE 2 · FEATURED STILL ============ -->
 <section class="zone" id="z2" data-zone="2">
   <div class="inner">
+    <h2 class="fallback-h2">Featured</h2>
+    <p class="kicker" style="justify-content:center">Reel 03 · Festival centrepiece</p>
+    <figure class="projected" id="projected">
+      <div class="beam" aria-hidden="true"></div>
+      <div class="gate">
+        <img src="assets/still-01.webp" width="1400" height="940" loading="lazy" decoding="async"
+             alt="Grained black-and-white 16mm film frame: a dancer mid-turn dissolving into multiple ghosted exposures, sprocket holes along the edge and an amber light-leak bleeding in from the side.">
+        <span class="burn" aria-hidden="true"></span>
+        <span class="flick" aria-hidden="true"></span>
+      </div>
+      <figcaption><b>The Persistence of Vision</b> · Q. Adeyemi · 35mm · 78 min<br>Frame enlargement, reel 4 — struck from the answer print</figcaption>
+    </figure>
+  </div>
+</section>
+
+<!-- ============ ZONE 3 · VENUES ============ -->
+<section class="zone" id="z3" data-zone="3">
+  <div class="inner">
     <h2 class="fallback-h2">Venues</h2>
-    <p class="kicker">Reel 03 · Three rooms, one beam</p>
+    <p class="kicker">Reel 04 · Three rooms, one beam</p>
     <div class="venues">
       <article class="venue">
         <h3>Lichtspiel Palast</h3>
@@ -304,11 +429,11 @@
   </div>
 </section>
 
-<!-- ============ ZONE 3 · TICKETS ============ -->
-<section class="zone" id="z3" data-zone="3">
+<!-- ============ ZONE 4 · TICKETS ============ -->
+<section class="zone" id="z4" data-zone="4">
   <div class="inner">
     <h2 class="fallback-h2">Tickets</h2>
-    <p class="kicker">Reel 04 · Admission</p>
+    <p class="kicker">Reel 05 · Admission</p>
     <div class="passes">
       <div class="pass">
         <h3>Single Screening</h3>
@@ -346,18 +471,18 @@
   </div>
 </section>
 
-<!-- ============ ZONE 4 · CREDITS ============ -->
-<section class="zone" id="z4" data-zone="4">
+<!-- ============ ZONE 5 · CREDITS ============ -->
+<section class="zone" id="z5" data-zone="5">
   <div class="inner">
     <h2 class="fallback-h2">Credits</h2>
-    <p class="kicker" style="justify-content:center">Reel 05 · End credits</p>
+    <p class="kicker" style="justify-content:center">Reel 06 · End credits</p>
     <div class="credroll">
       <b>Festival direction</b> Margarethe Roth
       <b>Program &amp; print traffic</b> Yusuf Okonkwo · Lena Baumgartner
       <b>Head projectionist</b> "Tante" Edith Schaub — 41 years at the lamphouse
       <b>Design &amp; type</b> Studio Zwischenbild, Basel
     </div>
-    <p class="colophon">FRAME:RATE 2026 · Bebas Neue &amp; Sora · Built with three.js · No images — only light</p>
+    <p class="colophon">FRAME:RATE 2026 · Bebas Neue &amp; Sora · Built with three.js · One frame of film — the rest is light</p>
     <div class="footlinks">
       <a href="/29-framerate/guide/" class="glow">How this site was built →</a>
       <a href="/">← Back to 25</a>
@@ -385,8 +510,8 @@
   /* ---------- constants ---------- */
   var BLACK = 0x0B0A0A, WHITE = '#F7F4EE', AMBER = 0xFFB454, RED = '#8E1F2F';
   var MOBILE = window.innerWidth < 768;
-  var ZONES = ['FRAME:RATE','PROGRAM','VENUES','TICKETS','CREDITS'];
-  var REELS = ['OVERTURE','PROGRAM','VENUES','TICKETS','END CREDITS'];
+  var ZONES = ['FRAME:RATE','PROGRAM','FEATURED','VENUES','TICKETS','CREDITS'];
+  var REELS = ['OVERTURE','PROGRAM','FEATURED STILL','VENUES','TICKETS','END CREDITS'];
   var SEG = 60;                       // metres of corridor per zone
   var PATH = SEG * (ZONES.length - 1);
   var CAM_START = 18;                 // far enough back that the hero marquee fits the frustum
@@ -666,6 +791,8 @@
   var tcEl = document.getElementById('tc');
   var vignEl = document.getElementById('vignette');
   var lastReel = -1;
+  var projectedEl = document.getElementById('projected');
+  var struck = false; // PASS 4: burn-in strike-up fires once, on first lock of the featured zone
 
   function pad2(n){ return n < 10 ? '0'+n : ''+n; }
 
@@ -687,6 +814,11 @@
       el.style.opacity = op.toFixed(3);
       el.style.transform = 'translateY(' + ((i - pz) * 46).toFixed(1) + 'px)';
       el.classList.toggle('live', op > 0.5); // PASS 2: pointer-events only when readable
+    }
+    // PASS 4: projector strikes up as the featured frame locks into view
+    if (!struck && Math.abs(pz - 2) < 0.3){
+      struck = true;
+      projectedEl.classList.add('struck');
     }
     // HUD
     progressEl.style.width = (prog * 100).toFixed(2) + '%';
@@ -776,6 +908,19 @@
     updateFlicker(dt);
     renderer.render(scene, camera);
   }
+
+  /* ---------- PASS 4: reel-change moment every ~25s ---------- */
+  var cueEl = document.getElementById('cuedot');
+  var leaderEl = document.getElementById('leaderblip');
+  setInterval(function(){
+    if (document.hidden) return;
+    // changeover cue dot double-flash + one frame of leader crosshair (faint, never bright)
+    cueEl.classList.remove('on');
+    void cueEl.offsetWidth; // restart the animation
+    cueEl.classList.add('on');
+    leaderEl.classList.add('on');
+    setTimeout(function(){ leaderEl.classList.remove('on'); }, 90);
+  }, 25000);
 
   /* ---------- pause when hidden (PASS 3) ---------- */
   document.addEventListener('visibilitychange', function(){

@@ -173,6 +173,45 @@
   .mov-list h3{font-size:18px;margin-bottom:6px}
   .mov-list p{font-size:14px;color:var(--silver-dim);max-width:52ch}
 
+  /* ---------- calibre plate ---------- */
+  .plate-sec{min-height:100vh;min-height:100svh;display:flex;align-items:center}
+  .plate-sec .wrap{width:100%}
+  .plate-sec .kicker{justify-content:center}
+  .plate-sec h2,.plate-sec p.lede{text-align:center}
+  .plate-sec p.lede{margin-left:auto;margin-right:auto}
+  .plate-stage{margin:64px auto 0;display:flex;flex-direction:column;align-items:center}
+  .plate{
+    position:relative;width:min(520px,100%);padding:16px;
+    border:1px solid var(--gold-30);background:var(--navy-2);
+    box-shadow:0 40px 90px rgba(0,0,0,.55);
+  }
+  .plate::before{content:"";position:absolute;inset:7px;border:1px solid var(--gold-15);pointer-events:none;z-index:3}
+  .plate img{display:block;width:100%;height:auto}
+  .plate-iris{
+    position:absolute;inset:16px;z-index:2;overflow:hidden;pointer-events:none;
+    background:rgba(10,14,26,.97);
+  }
+  .plate-hand{
+    position:absolute;left:50%;top:50%;width:1px;height:78%;
+    background:linear-gradient(var(--gold),rgba(184,147,74,0));
+    transform-origin:0 0;transform:rotate(180deg);
+  }
+  .plate-hand::before{
+    content:"";position:absolute;top:-3px;left:-3px;width:7px;height:7px;border-radius:50%;
+    background:var(--gold);box-shadow:0 0 12px var(--gold);
+  }
+  .plate-caption{
+    margin-top:20px;display:flex;align-items:center;justify-content:center;
+    gap:12px 22px;flex-wrap:wrap;text-align:center;
+    font-family:var(--mono);font-size:10px;letter-spacing:.22em;text-transform:uppercase;color:var(--silver-dim);
+  }
+  .plate-dial{display:inline-flex;line-height:0}
+  .plate-engrave{
+    margin-top:14px;font-family:var(--mono);font-size:10px;letter-spacing:.32em;
+    text-transform:uppercase;color:var(--gold);opacity:.85;text-align:center;
+  }
+  @media (prefers-reduced-motion: reduce){ .plate-iris{display:none} }
+
   /* ---------- specifications ---------- */
   .spec-panel{
     border:1px solid var(--gold-30);
@@ -213,7 +252,7 @@
     font-size:clamp(64px,12vw,150px);line-height:1;color:#EDEFF4;
     letter-spacing:.04em;
   }
-  .edition .count span{color:var(--gold)}
+  .edition .count .den{color:var(--gold)}
   .edition .of{font-family:var(--mono);font-size:12px;letter-spacing:.4em;text-transform:uppercase;color:var(--silver-dim);margin-top:18px}
   .edition p.lede{margin:36px auto 0}
   .edition-cta{
@@ -303,12 +342,12 @@
         </blockquote>
       </div>
       <div class="phil-stats reveal d2">
-        <div class="phil-stat"><div class="v num">312</div><div class="l">Components</div></div>
-        <div class="phil-stat"><div class="v num">89</div><div class="l">In carriage alone</div></div>
-        <div class="phil-stat"><div class="v num">1,340<sup>h</sup></div><div class="l">Hand-finishing</div></div>
-        <div class="phil-stat"><div class="v num">49</div><div class="l">Movements / year</div></div>
-        <div class="phil-stat"><div class="v num">&plusmn;0.8<sup>s/d</sup></div><div class="l">Observed rate</div></div>
-        <div class="phil-stat"><div class="v num">11<sup>mo</sup></div><div class="l">Bench to case</div></div>
+        <div class="phil-stat"><div class="v num"><span class="ticknum" data-target="312">312</span></div><div class="l">Components</div></div>
+        <div class="phil-stat"><div class="v num"><span class="ticknum" data-target="89">89</span></div><div class="l">In carriage alone</div></div>
+        <div class="phil-stat"><div class="v num"><span class="ticknum" data-target="1340" data-comma="1">1,340</span><sup>h</sup></div><div class="l">Hand-finishing</div></div>
+        <div class="phil-stat"><div class="v num"><span class="ticknum" data-target="49">49</span></div><div class="l">Movements / year</div></div>
+        <div class="phil-stat"><div class="v num">&plusmn;<span class="ticknum" data-target="0.8" data-dec="1">0.8</span><sup>s/d</sup></div><div class="l">Observed rate</div></div>
+        <div class="phil-stat"><div class="v num"><span class="ticknum" data-target="11">11</span><sup>mo</sup></div><div class="l">Bench to case</div></div>
       </div>
     </div>
   </div>
@@ -384,10 +423,40 @@
   </div>
 </section>
 
+<!-- ============ THE CALIBRE PLATE ============ -->
+<section class="plate-sec" id="calibre">
+  <div class="wrap">
+    <p class="kicker reveal">03 &mdash; The Calibre in Macro</p>
+    <h2 class="reveal d1">One rotation of the hand</h2>
+    <p class="lede reveal d2">Photographed at four-to-one magnification, bridge side. Skeletonised German-silver bridges, screws blued at 290&nbsp;&deg;C over an open flame, forty-three ruby jewels. The plate is uncovered the way a rate is read at the bench &mdash; one full sweep of the hand.</p>
+    <figure class="plate-stage reveal d2">
+      <div class="plate" id="plate">
+        <img src="assets/calibre.webp"
+             alt="Macro photograph of the skeletonised Calibre ORB-01: engraved bridges, blued screws and ruby jewels on a midnight-navy ground"
+             width="1400" height="1738" loading="lazy" decoding="async">
+        <div class="plate-iris" id="iris" aria-hidden="true"><div class="plate-hand" id="irisHand"></div></div>
+        <noscript><style>.plate-iris{display:none}</style></noscript>
+      </div>
+      <figcaption class="plate-caption">
+        <span>Plate I &mdash; Calibre ORB&#8209;01</span>
+        <span class="plate-dial" aria-hidden="true">
+          <svg width="18" height="18" viewBox="0 0 18 18" xmlns="http://www.w3.org/2000/svg">
+            <circle cx="9" cy="9" r="8" fill="none" stroke="#B8934A" stroke-opacity=".45" stroke-width="1"/>
+            <line id="tickHand" x1="9" y1="9" x2="9" y2="2.6" stroke="#B8934A" stroke-width="1.2" stroke-linecap="round"/>
+            <circle cx="9" cy="9" r="1" fill="#B8934A"/>
+          </svg>
+        </span>
+        <span class="num">25,200 vph &middot; 43 jewels</span>
+      </figcaption>
+      <p class="plate-engrave num">N&deg; 01 &mdash; hand-engraved &middot; atelier no. 1</p>
+    </figure>
+  </div>
+</section>
+
 <!-- ============ SPECIFICATIONS ============ -->
 <section id="specifications">
   <div class="wrap">
-    <p class="kicker reveal">03 &mdash; Specifications</p>
+    <p class="kicker reveal">04 &mdash; Specifications</p>
     <h2 class="reveal d1">The instrument panel</h2>
     <p class="lede reveal d2">Read the movement the way its makers do &mdash; as a set of tolerances, each one a promise.</p>
 
@@ -417,8 +486,8 @@
 <!-- ============ LIMITED EDITION ============ -->
 <section class="edition" id="edition">
   <div class="wrap">
-    <p class="kicker reveal" style="justify-content:center">04 &mdash; Limited Edition</p>
-    <div class="count num reveal d1">49<span>/49</span></div>
+    <p class="kicker reveal" style="justify-content:center">05 &mdash; Limited Edition</p>
+    <div class="count num reveal d1"><span class="ticknum" data-target="49">49</span><span class="den">/49</span></div>
     <p class="of reveal d1">Pieces &middot; worldwide &middot; ever</p>
     <p class="lede reveal d2">The first series of the ORB&#8209;01 is limited to forty-nine pieces &mdash; one for each movement the atelier can finish in a year. Each caseback is hand-engraved with its number, the finisher's initials, and the observatory rate it recorded on its final day of trial.</p>
     <a class="edition-cta reveal d3" href="mailto:atelier@orbita.watch?subject=ORB-01%20Allocation%20Enquiry">Request an audience</a>
@@ -438,6 +507,7 @@
       <nav class="foot-nav">
         <a href="#philosophy">Craft</a>
         <a href="#movement">Movement</a>
+        <a href="#calibre">The Calibre</a>
         <a href="#specifications">Specifications</a>
         <a href="#edition">Edition</a>
         <a href="/03-orbita/guide/">Guide &amp; Prompt →</a>
@@ -511,6 +581,88 @@
   buildGear("gearA", 150, 220, 24, 72, 62, 6, false);
   buildGear("gearB", 245, 280, 15, 46, 38, 5, false);
   buildGear("gearC", 302, 328, 10, 32, 25, 4, true);
+
+  /* ---------- calibre plate: aperture sweep (one rotation of the hand) ---------- */
+  var plate = document.getElementById("plate");
+  var iris = document.getElementById("iris");
+  var irisHand = document.getElementById("irisHand");
+  function setSweep(deg) {
+    if (deg >= 360) { iris.style.display = "none"; return; }
+    // conic mask sweeping clockwise from 12 o'clock, like a seconds hand
+    iris.style.background = "conic-gradient(from 0deg at 50% 50%, rgba(10,14,26,0) 0deg " +
+      deg.toFixed(2) + "deg, rgba(10,14,26,.97) " + deg.toFixed(2) + "deg 360deg)";
+    irisHand.style.transform = "rotate(" + (deg + 180).toFixed(2) + "deg)"; // hand element is drawn pointing at 6 o'clock
+  }
+  if (plate && iris && irisHand) {
+    if (reduceMotion || !("IntersectionObserver" in window)) {
+      iris.style.display = "none"; // fully open, static
+    } else {
+      setSweep(0);
+      var swept = false;
+      new IntersectionObserver(function(entries, obs){
+        if (!entries[0].isIntersecting || swept) return;
+        swept = true; obs.disconnect();
+        var dur = 3000, start = null;
+        function sweepFrame(now) {
+          if (start === null) start = now;
+          var p = Math.min((now - start) / dur, 1);
+          var e = p < 0.5 ? 2 * p * p : 1 - Math.pow(-2 * p + 2, 2) / 2; // easeInOutQuad
+          setSweep(e * 360);
+          if (p < 1) requestAnimationFrame(sweepFrame); // rAF self-pauses on hidden tabs
+        }
+        requestAnimationFrame(sweepFrame);
+      }, { threshold: 0.4 }).observe(plate);
+    }
+  }
+
+  /* ---------- mechanical snap counters ---------- */
+  var ticknums = document.querySelectorAll(".ticknum");
+  if (ticknums.length && !reduceMotion && "IntersectionObserver" in window) {
+    var fmtTick = function(el, v) {
+      var dec = parseInt(el.getAttribute("data-dec") || "0", 10);
+      var s = v.toFixed(dec);
+      if (el.hasAttribute("data-comma")) s = s.replace(/\B(?=(\d{3})+(?!\d))/g, ",");
+      el.textContent = s;
+    };
+    var tio = new IntersectionObserver(function(entries){
+      entries.forEach(function(en){
+        if (!en.isIntersecting) return;
+        tio.unobserve(en.target);
+        var el = en.target, target = parseFloat(el.getAttribute("data-target"));
+        var steps = 18, i = 0;
+        (function stepFn(){ // discrete steps at a fixed cadence: numbers snap, not glide
+          i++;
+          var p = i / steps;
+          fmtTick(el, target * (1 - Math.pow(1 - p, 3)));
+          if (i < steps) setTimeout(stepFn, 52);
+        })();
+      });
+    }, { threshold: 0.6 });
+    ticknums.forEach(function(el){ tio.observe(el); });
+  }
+
+  /* ---------- 6 Hz escapement dial (caption of the plate) ---------- */
+  var tickHand = document.getElementById("tickHand");
+  if (tickHand && !reduceMotion && "IntersectionObserver" in window) {
+    var dialOn = false, dialRaf = 0, lastBeat = -1;
+    var dialSvg = tickHand.ownerSVGElement;
+    function dialFrame(now) {
+      dialRaf = 0;
+      var beat = Math.floor(now / 1000 * 6); // 6 beats per second
+      if (beat !== lastBeat) {
+        lastBeat = beat;
+        tickHand.setAttribute("transform", "rotate(" + ((beat * 6) % 360) + " 9 9)"); // 6 deg per beat
+      }
+      if (dialOn && !document.hidden) dialRaf = requestAnimationFrame(dialFrame);
+    }
+    function dialStart() { if (!dialRaf && dialOn && !document.hidden) dialRaf = requestAnimationFrame(dialFrame); }
+    function dialStop() { if (dialRaf) { cancelAnimationFrame(dialRaf); dialRaf = 0; } }
+    new IntersectionObserver(function(en){
+      dialOn = en[0].isIntersecting;
+      dialOn ? dialStart() : dialStop();
+    }, { threshold: 0 }).observe(dialSvg);
+    document.addEventListener("visibilitychange", function(){ document.hidden ? dialStop() : dialStart(); });
+  }
 
   /* ---------- three.js hero ---------- */
   var canvas = document.getElementById("gl");
@@ -634,7 +786,16 @@
     ringMid.rotation.z = t * 0.07;
     ringInner.rotation.x = -t * 0.3;
     ringInner.rotation.z = t * 0.12;
-    core.rotation.y = t * 0.22;
+    // exploded gimbal: as the hero scrolls away the carriage disassembles —
+    // rings separate along their own axes, pivot caps travel out, core spins up
+    var ex = scrollCur * scrollCur; // ease-in so the resting state is calm
+    ringOuter.position.z = -ex * 2.6;
+    ringOuter.scale.setScalar(1 + ex * 0.24);
+    ringMid.position.y = ex * 1.6;
+    ringInner.position.z = ex * 2.2;
+    capTop.position.y = 3.1 + ex * 1.8;
+    capBot.position.y = -(3.1 + ex * 1.8);
+    core.rotation.y = t * 0.22 + ex * 2.2;
     core.rotation.x = Math.sin(t * 0.15) * 0.25;
 
     // dolly out + slight orbit as the user scrolls past the hero
@@ -643,6 +804,7 @@
     camera.position.y = 0.4 + scrollCur * 1.2;
     camera.lookAt(0, 0, 0);
     rig.rotation.y = scrollCur * 0.7;
+    rig.rotation.x = ex * 0.4;
 
     renderer.render(scene, camera);
     if (!paused() && !reduceMotion) rafId = requestAnimationFrame(frame);
@@ -705,6 +867,22 @@
      "Caliber" mixed with UK spellings — standardised on the trade's "Calibre" in meta, hero,
      headings, spec table and footer. (5) "Request an audience" CTA pointed at #top (a dead end)
      — now a mailto with a pre-filled allocation-enquiry subject. -->
+<!-- PASS 4: (1) New "Calibre in Macro" set piece — the generated calibre.webp macro plate
+     (1400×1738, lazy, explicit dimensions) presented as a lightbox plate and uncovered by an
+     aperture sweep: a conic-gradient mask driven by rAF, with a gold hand element rotating in
+     lockstep — one full rotation reveals the image; sweep fires once via IntersectionObserver,
+     rAF self-pauses on hidden tabs, iris removed entirely under reduced motion / no-JS / no-IO.
+     (2) Escalated hero: scroll-scrubbed exploded gimbal — rings separate along their own axes,
+     pivot caps travel outward, core spins up (eased quadratically so the rest state stays calm).
+     (3) Tick-precise micro-animation: stat and edition numerals advance in 18 discrete snaps at a
+     fixed 52 ms cadence (tabular nums, comma/decimal aware; static final values without JS or
+     under reduced motion). (4) A 6 Hz escapement dial in the plate caption ticks 6°/beat
+     (full turn in 10 s), gated by IntersectionObserver + visibilitychange so it never runs
+     offscreen. (5) Sections renumbered 03 Macro / 04 Specifications / 05 Limited Edition;
+     .count span colour selector scoped to .den so the animated numerator stays silver.
+     PASS: verified via headless Chromium at 1280×800 and 390×844 over file:// — zero page or
+     console errors, scrollWidth 390 at 390 viewport; iris mid-sweep and completed states
+     screenshot-checked; reduced-motion renders the plate fully open and a single hero frame. -->
 
 </body>
 </html>
