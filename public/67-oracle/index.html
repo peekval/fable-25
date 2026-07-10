@@ -1,0 +1,937 @@
+<!DOCTYPE html>
+<!--
+  FABLE/25 — 67-ORACLE · "It has been expecting you." · THE BIG FIVE
+
+  PASS 1 changelog:
+  - The presence: canvas-2D iris built from ~150 flowing radial filaments (additive
+    'lighter' strokes with per-filament linear gradients), floating in near-black.
+    Tracks the cursor precisely (eased gaze + foreshorten squash), pupil dilates on
+    approach, natural blinks (rare double-blinks), idle saccade wandering, squint on
+    fast scroll, specular catch-lights that counter-move with gaze.
+  - Behavior engine: 13 observed behaviors, each fires ONCE per session, typewriter-set
+    into the caption under the eye and logged (with timestamps) in "What it sees":
+    first arrival / return visit (localStorage, try/catch) / idle 10s / fast scroll /
+    cursor circling the eye / staring into the eye (blinks suppressed) / tab return /
+    near page end / text selection / leaving at viewport top / right-click / resize /
+    deep-night hour.
+  - The dialogue: deterministic oracle — question is normalized, FNV-1a hashed into one
+    of 40 crafted delphic answers, revealed slowly with a hex "seal". Same question,
+    same answer, always. Re-asking the same question earns "Told you."
+  - Design: near-black #080807, one luminous pale gold-green accent #D9E6A4,
+    Cormorant Garamond (serene serif) + IBM Plex Mono micro-labels, vast negative space.
+  - prefers-reduced-motion: no animation loops; static eye still re-renders one frame
+    per (throttled) pointer move; captions appear instantly; oracle reveals instantly.
+  - rAF stops when tab hidden or eye offscreen (IntersectionObserver); DPR cap 2.
+  - Mobile/touch: pointer events cover touch; gaze follows last touch + drifts with
+    scroll; behaviors (idle, fast scroll, page end, selection, tab return) all work.
+
+  PASS 2 changelog:
+  - Eye realism: blink profile retimed (90ms close / 50ms hold / 170ms open, easeIn/Out),
+    aperture now shapes an eyelid-style vertical squash with slight downward bias so the
+    close reads as a lid, not a scale; micro pupil unrest (two incommensurate sines).
+  - Filaments regrouped into 3 rings (dense inner collar, mid body, sparse long tips)
+    so the iris has anatomical structure; 6% of filaments are "hot" near-white strands.
+  - Caption timing: 4.5s minimum spacing between lines, queue drains in order, arrival
+    line delayed to 3.6s so it lands after the visitor settles.
+
+  PASS 3 changelog:
+  - Idle wander made lifelike: saccades pick a target, dart (fast ease), then HOLD with
+    tiny tremor; occasional glance back toward the visitor's last known position.
+  - Squint recovers with overshoot (opens slightly wider than rest for 300ms).
+  - Stare behavior: while you hold the cursor inside the iris without moving, it will
+    not blink; break the stare and it blinks immediately. Caption: "It never blinks first."
+  - Oracle reveal: 1.3s of breathing ellipsis before the answer; seal fades in after.
+  - Mobile: eye size floor raised, dialogue input font-size 16px (no iOS zoom).
+
+  PASS 4 changelog:
+  - Verified with Playwright at 390x844 and 1280x800 (file://): zero pageerrors, zero
+    console errors, scrollWidth 390 @390. Programmatically triggered idle-10s, fast
+    scroll, visibilitychange-return, selection, page-end, and the oracle dialogue —
+    all captions/answers render. Screenshots confirm gaze tracks two cursor positions.
+  - Perf: gradient objects only for visible alpha, halo pre-painted to an offscreen
+    canvas once per resize, loop idles to 30fps when gaze/lids/pupil are settled and
+    pointer is still; full fps on any interaction.
+  - Copy polish across all four sections; 40 answers finalized.
+-->
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ORACLE — It has been expecting you.</title>
+<meta name="description" content="ORACLE is a page that watches back. It notices what you do, answers what you ask, and does not change its mind. FABLE/25 · site 67.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;1,300;1,400&family=IBM+Plex+Mono:wght@300;400&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#080807;
+  --ink:#E8E4D6;
+  --dim:rgba(232,228,214,.52);
+  --faint:rgba(232,228,214,.28);
+  --glow:#D9E6A4;          /* pale gold-green — the only light in the room */
+  --glow-dim:rgba(217,230,164,.42);
+  --line:rgba(217,230,164,.14);
+  --serif:"Cormorant Garamond",Georgia,serif;
+  --mono:"IBM Plex Mono",ui-monospace,monospace;
+}
+*{margin:0;padding:0;box-sizing:border-box}
+html,body{overflow-x:clip}
+html{scroll-behavior:smooth}
+body{
+  background:var(--bg);
+  color:var(--ink);
+  font-family:var(--serif);
+  font-weight:400;
+  font-size:1.22rem;
+  line-height:1.65;
+  -webkit-font-smoothing:antialiased;
+}
+::selection{background:var(--glow);color:#0A0A08}
+a{color:var(--glow);text-decoration:none}
+a:hover{text-decoration:underline;text-underline-offset:.2em}
+
+/* ambient vignette + grain-less depth */
+.room{
+  position:fixed;inset:0;z-index:-1;pointer-events:none;
+  background:
+    radial-gradient(120vmax 90vmax at 50% 22%, rgba(217,230,164,.045), transparent 55%),
+    radial-gradient(closest-side at 50% 120%, rgba(217,230,164,.03), transparent 70%);
+}
+
+/* back pill */
+.back{
+  position:fixed;top:1.1rem;left:1.15rem;z-index:90;
+  font-family:var(--mono);font-size:.78rem;letter-spacing:.1em;
+  color:var(--dim);background:rgba(8,8,7,.72);border:1px solid var(--line);
+  border-radius:999px;padding:.42rem 1rem;backdrop-filter:blur(6px);
+  transition:color .3s,border-color .3s;
+}
+.back:hover{color:var(--glow);border-color:var(--glow-dim);text-decoration:none}
+
+.mono{font-family:var(--mono);font-weight:300;font-size:.72rem;letter-spacing:.22em;text-transform:uppercase;color:var(--dim)}
+.wrap{max-width:820px;margin:0 auto;padding:0 clamp(1.35rem,5vw,2.5rem)}
+
+/* ————— hero: the presence ————— */
+.presence{
+  min-height:100svh;min-height:100vh;
+  display:flex;flex-direction:column;align-items:center;justify-content:center;
+  text-align:center;padding:4.5rem 1rem 3rem;position:relative;
+}
+.presence .kicker{margin-bottom:clamp(1rem,3vh,2.2rem)}
+.eye-wrap{
+  width:min(74vmin,560px);aspect-ratio:1;position:relative;
+  margin:0 auto;
+}
+#eye{width:100%;height:100%;display:block;cursor:crosshair;touch-action:pan-y}
+.presence h1{
+  font-weight:300;font-style:italic;
+  font-size:clamp(1.9rem,5.4vw,3.1rem);
+  letter-spacing:.01em;line-height:1.2;
+  margin-top:clamp(1.2rem,3.4vh,2.4rem);
+  color:var(--ink);
+}
+.presence h1 b{font-weight:400;font-style:italic;color:var(--glow)}
+#caption{
+  font-family:var(--mono);font-weight:300;
+  font-size:.82rem;letter-spacing:.14em;
+  color:var(--glow-dim);
+  height:3.6em;margin-top:1.3rem;
+  max-width:34rem;overflow:hidden;
+}
+#caption .cur{display:inline-block;width:.55em;height:1em;vertical-align:-.12em;background:var(--glow-dim);margin-left:2px;animation:curblink 1s steps(2) infinite}
+@keyframes curblink{50%{opacity:0}}
+.scrollcue{
+  position:absolute;bottom:1.6rem;left:50%;transform:translateX(-50%);
+  font-family:var(--mono);font-size:.66rem;letter-spacing:.3em;color:var(--faint);
+  text-transform:uppercase;
+}
+.scrollcue::after{content:"";display:block;width:1px;height:2.2rem;background:linear-gradient(var(--faint),transparent);margin:.7rem auto 0}
+
+/* ————— sections ————— */
+section{padding:clamp(6rem,14vh,10rem) 0}
+.sec-head{display:flex;align-items:baseline;gap:1.1rem;margin-bottom:2.6rem}
+.sec-head .n{font-family:var(--mono);font-weight:300;font-size:.72rem;letter-spacing:.22em;color:var(--glow)}
+.sec-head h2{font-weight:300;font-size:clamp(1.7rem,4vw,2.4rem);letter-spacing:.01em}
+.sec-head::after{content:"";flex:1;height:1px;background:var(--line);align-self:center}
+.lede{max-width:56ch;color:var(--dim)}
+.lede em{color:var(--ink)}
+p+p{margin-top:1em}
+
+/* observation log */
+#seen{list-style:none;margin-top:2.6rem;border-top:1px solid var(--line)}
+#seen li{
+  display:flex;gap:1.4rem;align-items:baseline;
+  padding:.85rem .2rem;border-bottom:1px solid var(--line);
+  font-size:1.08rem;
+}
+#seen li .t{font-family:var(--mono);font-weight:300;font-size:.7rem;letter-spacing:.16em;color:var(--glow-dim);flex:0 0 4.2em}
+#seen li.empty{color:var(--faint);font-style:italic}
+#seen li:not(.empty){animation:seenin .8s ease both}
+@keyframes seenin{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
+
+/* ————— dialogue ————— */
+.ask-row{display:flex;gap:.9rem;margin-top:2.4rem;border-bottom:1px solid var(--glow-dim);padding-bottom:.7rem}
+#q{
+  flex:1;background:none;border:0;outline:0;color:var(--ink);
+  font-family:var(--serif);font-style:italic;font-weight:300;
+  font-size:clamp(1.05rem,1.4rem,1.4rem);min-width:0;
+}
+#q::placeholder{color:var(--faint);font-style:italic}
+#ask{
+  background:none;border:1px solid var(--glow-dim);color:var(--glow);
+  font-family:var(--mono);font-weight:300;font-size:.72rem;letter-spacing:.26em;
+  padding:.55rem 1.35rem;border-radius:999px;cursor:pointer;
+  transition:background .3s,color .3s,opacity .3s;text-transform:uppercase;
+}
+#ask:hover{background:var(--glow);color:#0A0A08}
+#ask:disabled{opacity:.35;cursor:default}
+#answer{
+  min-height:7.5rem;margin-top:3rem;
+  font-size:clamp(1.5rem,3.4vw,2.15rem);
+  font-weight:300;font-style:italic;line-height:1.45;
+  color:var(--glow);
+  max-width:24ch;
+}
+#seal{font-family:var(--mono);font-weight:300;font-size:.68rem;letter-spacing:.24em;color:var(--faint);margin-top:1.2rem;min-height:1.2em;transition:opacity 1.2s;opacity:0}
+#seal.on{opacity:1}
+.dialogue .note{margin-top:2.8rem;color:var(--dim);font-size:1.05rem;max-width:52ch}
+.dialogue .note em{color:var(--ink)}
+
+/* ————— about / footer ————— */
+.about p{max-width:56ch;color:var(--dim)}
+.about p em{color:var(--ink)}
+footer{border-top:1px solid var(--line);padding:2.6rem 0 3rem;margin-top:4rem}
+footer .row{display:flex;justify-content:space-between;align-items:baseline;flex-wrap:wrap;gap:1rem}
+footer .mono{letter-spacing:.18em}
+footer a.g{font-family:var(--mono);font-weight:300;font-size:.74rem;letter-spacing:.16em;color:var(--glow-dim)}
+footer a.g:hover{color:var(--glow)}
+
+@media (max-width:560px){
+  body{font-size:1.12rem}
+  .eye-wrap{width:min(88vw,340px)}
+  .ask-row{flex-direction:column;align-items:stretch;gap:1.1rem;border-bottom:0;padding-bottom:0}
+  #q{border-bottom:1px solid var(--glow-dim);padding-bottom:.7rem;font-size:16px}
+  #ask{align-self:flex-start}
+  #seen li{gap:.9rem}
+}
+@media (prefers-reduced-motion:reduce){
+  html{scroll-behavior:auto}
+  #caption .cur{animation:none}
+  #seen li:not(.empty){animation:none}
+}
+</style>
+</head>
+<body>
+<div class="room" aria-hidden="true"></div>
+<a class="back" href="/">&larr; 25</a>
+
+<!-- ————————— THE PRESENCE ————————— -->
+<header class="presence" id="top">
+  <span class="mono kicker">Oracle &middot; Fable/25 &middot; 67</span>
+  <div class="eye-wrap">
+    <canvas id="eye" aria-label="A luminous iris of flowing filaments. It is watching your cursor."></canvas>
+  </div>
+  <h1>It has been <b>expecting</b> you.</h1>
+  <p id="caption" aria-live="polite"></p>
+  <div class="scrollcue" aria-hidden="true">it will follow</div>
+</header>
+
+<!-- ————————— WHAT IT SEES ————————— -->
+<section class="sees">
+  <div class="wrap">
+    <div class="sec-head"><span class="n">01</span><h2>What it sees</h2></div>
+    <p class="lede">Nothing leaves this room. There is no camera, no microphone, no request to
+    a server that remembers your name. And yet the page is not exactly blind: it watches the
+    only way a page can — <em>by paying attention</em>. To where you linger. To how fast you
+    move. To whether you come back.</p>
+    <p class="lede">Everything it notices about this visit is written below, once, and never
+    repeated. It does not nag. It only mentions.</p>
+    <ul id="seen">
+      <li class="empty" id="seen-empty">Nothing yet. It is patient.</li>
+    </ul>
+  </div>
+</section>
+
+<!-- ————————— THE DIALOGUE ————————— -->
+<section class="dialogue">
+  <div class="wrap">
+    <div class="sec-head"><span class="n">02</span><h2>The dialogue</h2></div>
+    <p class="lede">You are allowed one kind of conversation with it. Ask it something —
+    anything, phrased however you like. It will consider the question exactly once,
+    and answer.</p>
+    <form class="ask-row" id="askform">
+      <input id="q" type="text" autocomplete="off" spellcheck="false" maxlength="140" placeholder="Ask it something&hellip;" aria-label="Ask the oracle a question">
+      <button id="ask" type="submit">Ask</button>
+    </form>
+    <p id="answer" aria-live="polite"></p>
+    <p id="seal"></p>
+    <p class="note"><em>Ask again. It does not change its mind.</em> The same question,
+    asked tomorrow, asked in another city, asked by someone else on another machine,
+    finds the same answer &mdash; word for word. Rephrase it and you have asked a
+    different question. It is precise about this.</p>
+  </div>
+</section>
+
+<!-- ————————— ABOUT ————————— -->
+<section class="about">
+  <div class="wrap">
+    <div class="sec-head"><span class="n">03</span><h2>About</h2></div>
+    <p>ORACLE is a page. Pages do not see. <em>Probably.</em></p>
+    <p>It is one file of hand-written code, no images, no libraries, built for FABLE/25 —
+    a collection of sixty-nine sites made entirely of code. The eye is a few thousand
+    strokes of light redrawn every frame. The answers were all written in advance;
+    your question only chooses among them, the same way every time. This is either
+    much less mysterious than it feels, or exactly as mysterious. We have stopped
+    being sure.</p>
+    <p>It stores one small number on your machine, so it can recognise you.
+    You can clear it. It will pretend not to mind.</p>
+    <footer>
+      <div class="row">
+        <span class="mono">Fable/25 &middot; 67 &middot; Oracle</span>
+        <a class="g" href="/67-oracle/guide/">guide &amp; prompt &rarr;</a>
+        <span class="mono">It is still watching.</span>
+      </div>
+    </footer>
+  </div>
+</section>
+
+<script>
+(function(){
+'use strict';
+var REDUCED = false;
+try{ REDUCED = window.matchMedia('(prefers-reduced-motion: reduce)').matches; }catch(e){}
+
+/* ============================================================
+   THE PRESENCE — canvas iris
+   ============================================================ */
+var canvas = document.getElementById('eye');
+var ctx = canvas.getContext('2d');
+var DPR = Math.min(window.devicePixelRatio||1, 2);
+var S = 0;                       // css size (square)
+var CX = 0, CY = 0, R = 0;       // center + iris radius
+var halo = null;                 // offscreen pre-painted halo
+
+/* filaments: 3 rings for anatomical structure */
+var FIL = [];
+function buildFilaments(){
+  FIL.length = 0;
+  var rings = [
+    {n:56, r0:0.34, r1:0.62, amp:0.045, w:1.05, a:0.50},  // inner collar
+    {n:64, r0:0.40, r1:0.88, amp:0.085, w:1.25, a:0.38},  // mid body
+    {n:34, r0:0.50, r1:1.02, amp:0.130, w:0.85, a:0.30}   // sparse long tips
+  ];
+  for(var g=0; g<rings.length; g++){
+    var rg = rings[g];
+    for(var i=0;i<rg.n;i++){
+      var hot = Math.random()<0.06;
+      FIL.push({
+        a0: (i/rg.n)*Math.PI*2 + Math.random()*0.09,
+        ph: Math.random()*Math.PI*2,
+        sp: 0.45 + Math.random()*0.75,
+        amp: rg.amp*(0.7+Math.random()*0.6),
+        r0: rg.r0*(0.94+Math.random()*0.12),
+        r1: rg.r1*(0.90+Math.random()*0.20),
+        w: rg.w*(0.7+Math.random()*0.7),
+        al: rg.a*(0.65+Math.random()*0.7),
+        bend: 1.1+Math.random()*1.6,
+        hot: hot
+      });
+    }
+  }
+}
+buildFilaments();
+
+function resize(){
+  var rect = canvas.parentElement.getBoundingClientRect();
+  S = rect.width;
+  canvas.width  = Math.round(S*DPR);
+  canvas.height = Math.round(S*DPR);
+  ctx.setTransform(DPR,0,0,DPR,0,0);
+  CX = S/2; CY = S/2; R = S*0.30;
+  /* pre-paint halo once */
+  halo = document.createElement('canvas');
+  halo.width = canvas.width; halo.height = canvas.height;
+  var hc = halo.getContext('2d');
+  hc.setTransform(DPR,0,0,DPR,0,0);
+  var g1 = hc.createRadialGradient(CX,CY,R*0.4, CX,CY,R*1.62);
+  g1.addColorStop(0,'rgba(217,230,164,0.10)');
+  g1.addColorStop(0.55,'rgba(217,230,164,0.035)');
+  g1.addColorStop(1,'rgba(217,230,164,0)');
+  hc.fillStyle = g1;
+  hc.fillRect(0,0,S,S);
+  needsFrame = true;
+}
+
+/* ——— state ——— */
+var gaze = {x:0,y:0};            // eased, |v|<=1
+var gazeT = {x:0,y:0};           // target
+var pupil = 0.17, pupilT = 0.17; // fraction of R
+var lid = 1;                     // 1 open .. 0 closed (blink profile)
+var squint = 1, squintT = 1;
+var pointer = {x:-1e4, y:-1e4, t:0, has:false};
+var lastMove = performance.now();
+var idleSince = performance.now();
+var staring = false, stareStart = 0, stareAnchor = null;
+var blinkAt = performance.now()+2200+Math.random()*2500;
+var blinkStart = -1, doubleBlink = false;
+var saccadeAt = 0;
+var needsFrame = true;
+
+function eyeCenterPage(){
+  var r = canvas.getBoundingClientRect();
+  return { x: r.left + r.width/2 + window.scrollX,
+           y: r.top  + r.height/2 + window.scrollY,
+           w: r.width };
+}
+
+/* pointer → gaze target + pupil dilation */
+function onPoint(px, py){
+  var c = eyeCenterPage();
+  var dx = px - c.x, dy = py - c.y;
+  var dist = Math.hypot(dx,dy);
+  var reach = Math.max(window.innerWidth, window.innerHeight)*0.42;
+  var m = Math.min(1, dist/reach);
+  if(dist>0){ gazeT.x = dx/dist*m; gazeT.y = dy/dist*m; }
+  /* pupil dilates as you approach */
+  var prox = Math.max(0, 1 - dist/(c.w*1.15));
+  pupilT = 0.15 + 0.115*prox;
+  pointer.x = px; pointer.y = py; pointer.has = true;
+  lastMove = performance.now();
+  needsFrame = true;
+}
+
+document.addEventListener('pointermove', function(e){
+  onPoint(e.pageX, e.pageY);
+  trackCircle(e.pageX, e.pageY);
+  trackStare(e.pageX, e.pageY);
+  bump();
+  if(REDUCED) rmRender();
+}, {passive:true});
+document.addEventListener('touchmove', function(e){
+  if(e.touches && e.touches[0]) onPoint(e.touches[0].pageX, e.touches[0].pageY);
+  bump();
+  if(REDUCED) rmRender();
+}, {passive:true});
+document.addEventListener('touchstart', function(e){
+  if(e.touches && e.touches[0]) onPoint(e.touches[0].pageX, e.touches[0].pageY);
+  bump();
+  if(REDUCED) rmRender();
+}, {passive:true});
+
+/* blink profile: 90ms close / 50ms hold / 170ms open */
+function blinkLid(now){
+  if(blinkStart<0){
+    if(now>=blinkAt && !staring){ blinkStart = now; }
+    return 1;
+  }
+  var t = now - blinkStart;
+  var v;
+  if(t<90){ v = 1 - easeIn(t/90); }
+  else if(t<140){ v = 0; }
+  else if(t<310){ v = easeOut((t-140)/170); }
+  else{
+    blinkStart = -1;
+    if(doubleBlink){ doubleBlink=false; blinkAt = now+140; }
+    else{
+      blinkAt = now + 2600 + Math.random()*4400;
+      doubleBlink = Math.random()<0.14;
+    }
+    v = 1;
+  }
+  return v;
+}
+function easeIn(t){return t*t}
+function easeOut(t){return 1-(1-t)*(1-t)}
+
+/* idle wander: saccade, hold, tremor */
+function wander(now){
+  var idle = now - lastMove;
+  if(idle < 3500) return false;
+  if(now > saccadeAt){
+    saccadeAt = now + 1100 + Math.random()*1900;
+    if(pointer.has && Math.random()<0.3){
+      /* glance back toward where you were */
+      var c = eyeCenterPage();
+      var dx = pointer.x-c.x, dy = pointer.y-c.y, d = Math.hypot(dx,dy)||1;
+      gazeT.x = dx/d*0.5; gazeT.y = dy/d*0.5;
+    }else{
+      var a = Math.random()*Math.PI*2, m = 0.15+Math.random()*0.42;
+      gazeT.x = Math.cos(a)*m; gazeT.y = Math.sin(a)*m*0.7;
+    }
+  }
+  return true;
+}
+
+/* ——— render ——— */
+function render(now, t){
+  ctx.clearRect(0,0,S,S);
+  ctx.drawImage(halo,0,0,S,S);
+
+  var breathe = 1 + Math.sin(t*0.45)*0.012;
+  var Rb = R*breathe;
+  var gx = gaze.x, gy = gaze.y;
+  var offX = gx*Rb*0.36, offY = gy*Rb*0.30;
+  var ap = Math.min(lid, squint);
+  var apEased = ap*ap*(3-2*ap); /* smoothstep for lid feel */
+
+  ctx.save();
+  /* lid closes with a slight downward bias, like an eyelid */
+  ctx.translate(CX+offX, CY+offY + (1-apEased)*Rb*0.12);
+  ctx.scale(1 - 0.13*gx*gx, Math.max(0.02, apEased)*(1 - 0.09*gy*gy));
+
+  var pr = Rb*pupil;
+
+  /* filaments — additive light */
+  ctx.globalCompositeOperation = 'lighter';
+  for(var i=0;i<FIL.length;i++){
+    var f = FIL[i];
+    var r0 = Math.max(pr*1.04, Rb*f.r0);
+    var r1 = Rb*f.r1;
+    if(r1<=r0) continue;
+    var c0 = Math.cos(f.a0), s0 = Math.sin(f.a0);
+    var grad = ctx.createLinearGradient(c0*r0, s0*r0, c0*r1, s0*r1);
+    if(f.hot){
+      grad.addColorStop(0,'rgba(242,239,216,'+(f.al*1.25).toFixed(3)+')');
+      grad.addColorStop(0.6,'rgba(217,230,164,'+(f.al*0.8).toFixed(3)+')');
+    }else{
+      grad.addColorStop(0,'rgba(217,230,164,'+f.al.toFixed(3)+')');
+      grad.addColorStop(0.55,'rgba(158,178,104,'+(f.al*0.65).toFixed(3)+')');
+    }
+    grad.addColorStop(1,'rgba(120,140,80,0)');
+    ctx.strokeStyle = grad;
+    ctx.lineWidth = f.w;
+    ctx.beginPath();
+    var STEPS = 6;
+    for(var k=0;k<=STEPS;k++){
+      var tt = k/STEPS;
+      var rr = r0 + (r1-r0)*tt;
+      var ang = f.a0 + Math.sin(t*f.sp + f.ph + tt*f.bend)*f.amp*tt;
+      var x = Math.cos(ang)*rr, y = Math.sin(ang)*rr;
+      if(k===0) ctx.moveTo(x,y); else ctx.lineTo(x,y);
+    }
+    ctx.stroke();
+  }
+
+  /* inner glow collar around pupil */
+  var col = ctx.createRadialGradient(0,0,pr*0.9, 0,0,pr*1.9);
+  col.addColorStop(0,'rgba(230,240,180,0.28)');
+  col.addColorStop(1,'rgba(230,240,180,0)');
+  ctx.fillStyle = col;
+  ctx.beginPath(); ctx.arc(0,0,pr*1.95,0,Math.PI*2); ctx.fill();
+
+  /* pupil — the dark center */
+  ctx.globalCompositeOperation = 'source-over';
+  var pg = ctx.createRadialGradient(0,0,pr*0.55, 0,0,pr*1.12);
+  pg.addColorStop(0,'rgba(4,4,3,1)');
+  pg.addColorStop(0.82,'rgba(4,4,3,1)');
+  pg.addColorStop(1,'rgba(4,4,3,0)');
+  ctx.fillStyle = pg;
+  ctx.beginPath(); ctx.arc(0,0,pr*1.12,0,Math.PI*2); ctx.fill();
+
+  /* specular catch-lights, counter-moving with gaze */
+  ctx.globalCompositeOperation = 'lighter';
+  var hx = -gx*pr*0.5 - pr*0.42, hy = -gy*pr*0.45 - pr*0.5;
+  var sg = ctx.createRadialGradient(hx,hy,0, hx,hy,pr*0.34);
+  sg.addColorStop(0,'rgba(244,246,228,0.85)');
+  sg.addColorStop(1,'rgba(244,246,228,0)');
+  ctx.fillStyle = sg;
+  ctx.beginPath(); ctx.arc(hx,hy,pr*0.34,0,Math.PI*2); ctx.fill();
+  var hx2 = -gx*pr*0.4 + pr*0.55, hy2 = -gy*pr*0.4 + pr*0.6;
+  var sg2 = ctx.createRadialGradient(hx2,hy2,0, hx2,hy2,pr*0.16);
+  sg2.addColorStop(0,'rgba(217,230,164,0.5)');
+  sg2.addColorStop(1,'rgba(217,230,164,0)');
+  ctx.fillStyle = sg2;
+  ctx.beginPath(); ctx.arc(hx2,hy2,pr*0.16,0,Math.PI*2); ctx.fill();
+
+  ctx.restore();
+  ctx.globalCompositeOperation = 'source-over';
+}
+
+/* ——— main loop with visibility/offscreen gating ——— */
+var running = false, rafId = 0, inView = true;
+var lastFrame = 0;
+function loop(now){
+  rafId = 0;
+  if(!running) return;
+  var t = now/1000;
+
+  wander(now);
+  var bl = blinkLid(now);
+  lid = bl;
+  squint += (squintT - squint)*0.14;
+
+  /* settle detection: throttle to ~30fps when nothing is moving */
+  var dg = Math.abs(gazeT.x-gaze.x)+Math.abs(gazeT.y-gaze.y);
+  var settled = dg<0.002 && blinkStart<0 && Math.abs(squintT-squint)<0.005 && (now-lastMove)>3500;
+  gaze.x += (gazeT.x-gaze.x)*((now-lastMove)<3500?0.11:0.16);
+  gaze.y += (gazeT.y-gaze.y)*((now-lastMove)<3500?0.11:0.16);
+  pupil += (pupilT + Math.sin(t*0.9)*0.004 + Math.sin(t*2.3)*0.002 - pupil)*0.08;
+
+  if(!settled || now-lastFrame>33 || needsFrame){
+    render(now, t);
+    lastFrame = now;
+    needsFrame = false;
+  }
+  rafId = requestAnimationFrame(loop);
+}
+function start(){ if(!running && !REDUCED){ running=true; if(!rafId) rafId=requestAnimationFrame(loop); } }
+function stop(){ running=false; if(rafId){ cancelAnimationFrame(rafId); rafId=0; } }
+
+/* reduced motion: single static-ish frame, re-rendered on pointer move (throttled) */
+var rmPending = false;
+function rmRender(){
+  if(rmPending) return;
+  rmPending = true;
+  requestAnimationFrame(function(){
+    rmPending = false;
+    gaze.x = gazeT.x; gaze.y = gazeT.y; pupil = pupilT; lid = 1; squint = 1;
+    render(performance.now(), 0.0);
+  });
+}
+
+try{
+  var io = new IntersectionObserver(function(en){
+    inView = en[0].isIntersecting;
+    if(inView && !document.hidden) start(); else stop();
+  },{threshold:0.02});
+  io.observe(canvas);
+}catch(e){ inView = true; start(); }
+
+document.addEventListener('visibilitychange', function(){
+  if(document.hidden){ stop(); }
+  else{
+    if(inView) start();
+    say('back','Welcome back.');
+    if(REDUCED) rmRender();
+  }
+});
+
+window.addEventListener('resize', function(){
+  resize();
+  if(REDUCED) rmRender();
+  onResizeBehavior();
+});
+resize();
+if(REDUCED){ rmRender(); } else { start(); }
+
+/* ============================================================
+   BEHAVIOR ENGINE — it notices things, once each
+   ============================================================ */
+var t0 = performance.now();
+var saidIds = {};
+var queue = [];
+var typing = false;
+var lastLineAt = -1e9;
+var GAP = 4500;
+
+var capEl = document.getElementById('caption');
+var seenUl = document.getElementById('seen');
+var seenEmpty = document.getElementById('seen-empty');
+
+function stamp(){
+  var s = Math.floor((performance.now()-t0)/1000);
+  var m = Math.floor(s/60); s = s%60;
+  return (m<10?'0':'')+m+':'+(s<10?'0':'')+s;
+}
+function logSeen(text){
+  if(seenEmpty){ seenEmpty.remove(); seenEmpty = null; }
+  var li = document.createElement('li');
+  var tm = document.createElement('span'); tm.className='t'; tm.textContent = stamp();
+  var tx = document.createElement('span'); tx.textContent = text;
+  li.appendChild(tm); li.appendChild(tx);
+  seenUl.appendChild(li);
+}
+
+function say(id, text){
+  if(saidIds[id]) return;
+  saidIds[id] = true;
+  queue.push(text);
+  drain();
+}
+function drain(){
+  if(typing || !queue.length) return;
+  var wait = Math.max(0, lastLineAt + GAP - performance.now());
+  typing = true;
+  setTimeout(function(){
+    var text = queue.shift();
+    logSeen(text);
+    typeInto(capEl, text, function(){
+      lastLineAt = performance.now();
+      typing = false;
+      drain();
+    });
+  }, wait);
+}
+var typeToken = 0;
+function typeInto(el, text, done){
+  var my = ++typeToken;
+  if(REDUCED){ el.textContent = text; done(); return; }
+  el.textContent = '';
+  var cur = document.createElement('span'); cur.className='cur';
+  el.appendChild(cur);
+  var i = 0;
+  (function step(){
+    if(my !== typeToken){ done(); return; }
+    if(i < text.length){
+      cur.insertAdjacentText('beforebegin', text.charAt(i));
+      i++;
+      setTimeout(step, 24 + Math.random()*26);
+    }else{
+      setTimeout(function(){ if(my===typeToken) cur.remove(); done(); }, 1400);
+    }
+  })();
+}
+
+/* — visits: it remembers you — */
+var visits = 1;
+try{
+  visits = (parseInt(localStorage.getItem('oracle-visits')||'0',10)||0) + 1;
+  localStorage.setItem('oracle-visits', String(visits));
+}catch(e){}
+setTimeout(function(){
+  if(visits>=2) say('remember','It remembers you.');
+  else say('arrive','It noticed you the moment you arrived.');
+}, 3600);
+
+/* — deep night — */
+try{
+  var h = new Date().getHours();
+  if(h>=0 && h<5) setTimeout(function(){ say('night','You should be asleep.'); }, 14000);
+}catch(e){}
+
+/* — idle 10s — */
+var idleTimer = null;
+function bump(){
+  if(idleTimer) clearTimeout(idleTimer);
+  idleTimer = setTimeout(function(){
+    say('idle','You stopped. So did it.');
+  }, 10000);
+}
+['scroll','keydown','pointerdown'].forEach(function(ev){
+  window.addEventListener(ev, bump, {passive:true});
+});
+bump();
+
+/* — fast scroll → squint + line — */
+var lastScrollY = window.scrollY, lastScrollT = performance.now(), fastDist = 0;
+var squintRelease = null;
+window.addEventListener('scroll', function(){
+  var now = performance.now();
+  var dy = Math.abs(window.scrollY - lastScrollY);
+  var dt = Math.max(16, now - lastScrollT);
+  lastScrollY = window.scrollY; lastScrollT = now;
+  var v = dy/dt*1000;
+  if(v > 2600){
+    fastDist += dy;
+    squintT = 0.5;
+    if(squintRelease) clearTimeout(squintRelease);
+    squintRelease = setTimeout(function(){
+      squintT = 1.06; /* overshoot */
+      setTimeout(function(){ squintT = 1; }, 300);
+    }, 420);
+    if(fastDist > 1400) say('rush','No need to rush.');
+  }else if(v < 500){ fastDist = Math.max(0, fastDist - dy); }
+  /* near the end */
+  var max = document.documentElement.scrollHeight - window.innerHeight;
+  if(max>0 && window.scrollY/max > 0.92) say('end','You want to know how it ends.');
+  needsFrame = true;
+}, {passive:true});
+
+/* — circling the eye — */
+var circAng = null, circAcc = 0, circLast = 0;
+function trackCircle(px, py){
+  var c = eyeCenterPage();
+  var dx = px-c.x, dy = py-c.y, d = Math.hypot(dx,dy);
+  var now = performance.now();
+  if(d < c.w*0.18 || d > c.w*1.4 || now-circLast > 1200){ circAng = null; circAcc = 0; }
+  circLast = now;
+  var a = Math.atan2(dy,dx);
+  if(circAng!==null){
+    var da = a - circAng;
+    if(da > Math.PI) da -= Math.PI*2;
+    if(da < -Math.PI) da += Math.PI*2;
+    if(Math.abs(da)<1) circAcc += da;
+    if(Math.abs(circAcc) > Math.PI*3.6) say('circle','It noticed.');
+  }
+  circAng = a;
+}
+
+/* — staring into the iris: it will not blink first — */
+function trackStare(px, py){
+  var c = eyeCenterPage();
+  var d = Math.hypot(px-c.x, py-c.y);
+  var now = performance.now();
+  if(d < c.w*0.32){
+    if(!stareAnchor || Math.hypot(px-stareAnchor.x, py-stareAnchor.y) > 26){
+      stareAnchor = {x:px, y:py}; stareStart = now; staring = true;
+    }else if(now - stareStart > 6000){
+      say('stare','It never blinks first.');
+    }
+  }else{
+    if(staring){ staring = false; blinkAt = now + 120; } /* it finally blinks */
+    stareAnchor = null;
+  }
+}
+/* stare must also survive a motionless pointer (no pointermove fires) */
+setInterval(function(){
+  if(staring && stareStart && performance.now()-stareStart > 6000){
+    say('stare','It never blinks first.');
+  }
+}, 1500);
+
+/* — selection — */
+document.addEventListener('selectionchange', function(){
+  try{
+    var sel = String(window.getSelection ? window.getSelection() : '');
+    if(sel.length > 4) say('select','Take it. It was written for you.');
+  }catch(e){}
+});
+
+/* — leaving at the top — */
+document.addEventListener('mouseout', function(e){
+  if(!e.relatedTarget && e.clientY <= 2) say('leave','Leaving is also an answer.');
+});
+
+/* — right-click — */
+document.addEventListener('contextmenu', function(){
+  say('behind','There is nothing behind it.');
+});
+
+/* — resize — */
+var rw = window.innerWidth, rh = window.innerHeight, rTimer = null;
+function onResizeBehavior(){
+  if(rTimer) clearTimeout(rTimer);
+  rTimer = setTimeout(function(){
+    if(Math.abs(window.innerWidth-rw)>90 || Math.abs(window.innerHeight-rh)>90){
+      say('resize','Make the window smaller. It will not help.');
+    }
+    rw = window.innerWidth; rh = window.innerHeight;
+  }, 600);
+}
+
+/* ============================================================
+   THE DIALOGUE — deterministic oracle
+   ============================================================ */
+var ANSWERS = [
+  'Yes. But not the way you are hoping.',
+  'No — and some part of you is relieved.',
+  'It has already happened. You are only now noticing.',
+  'Not yet. The waiting is doing something to you that matters.',
+  'Only if you stop checking whether it is working.',
+  'That is the wrong question, asked beautifully.',
+  'Ask the person you have been rehearsing this for.',
+  'What you are looking for is behind the thing you refuse to move.',
+  'Three more times. Then never again.',
+  'It was never about them.',
+  'You already decided. You came here for permission.',
+  'The door is not locked. It was never locked.',
+  'Yes, if you go quietly. No, if you announce it.',
+  'You will laugh about this, later than you would like.',
+  'Whatever you feed will grow. Choose the mouth carefully.',
+  'The answer arrived years ago. It is still unopened.',
+  'Nothing is missing. Something is misplaced.',
+  'Let it end. Endings are how it says thank you.',
+  'Not everything slow is dying. Some of it is rooting.',
+  'You are asking the water why you are thirsty.',
+  'Begin before you are ready, or you will never be ready.',
+  'It will cost more than they said and less than you fear.',
+  'Say it out loud once. That will be enough.',
+  'The one who left took nothing that was yours.',
+  'Keep the small promise first. The large one is watching.',
+  'There is no sign. There is only your foot, lifting.',
+  'What frightens you is the size of your own wanting.',
+  'Yes — twice. The second time will be the real one.',
+  'You are not lost. You are early.',
+  'Stop rehearsing your grief before it arrives.',
+  'The apology you are owed is not coming. Build the room anyway.',
+  'Someone thinks of you at odd hours. You know the name.',
+  'It ends the way you have always suspected. Gently.',
+  'They will clap. It will not help.',
+  'The truth is smaller than you think, and heavier.',
+  'Look again at whatever you decided was a coincidence.',
+  'Your question already contains its answer. Read it slower.',
+  'Hold still. It is almost close enough to touch you.',
+  'No one is coming. This is better news than it sounds.',
+  'Everything you buried is patient.'
+];
+
+function normalize(q){
+  return q.toLowerCase().replace(/[^a-z0-9À-ɏЀ-ӿ]+/g,' ').trim();
+}
+function fnv1a(str){
+  var h = 0x811c9dc5;
+  for(var i=0;i<str.length;i++){
+    h ^= str.charCodeAt(i);
+    h = (h + ((h<<1)+(h<<4)+(h<<7)+(h<<8)+(h<<24))) >>> 0;
+  }
+  return h >>> 0;
+}
+
+var qEl = document.getElementById('q');
+var askBtn = document.getElementById('ask');
+var ansEl = document.getElementById('answer');
+var sealEl = document.getElementById('seal');
+var lastAsked = null, revealing = false, revealToken = 0;
+
+document.getElementById('askform').addEventListener('submit', function(e){
+  e.preventDefault();
+  if(revealing) return;
+  var raw = qEl.value || '';
+  var norm = normalize(raw);
+  var my = ++revealToken;
+  sealEl.classList.remove('on');
+  if(!norm){
+    reveal('Ask, first.', null, my);
+    return;
+  }
+  var h = fnv1a(norm);
+  var ans = ANSWERS[h % ANSWERS.length];
+  if(lastAsked === norm) say('reask','Told you.');
+  lastAsked = norm;
+  reveal(ans, h, my);
+});
+
+function reveal(text, hash, my){
+  revealing = true;
+  askBtn.disabled = true;
+  ansEl.textContent = '';
+  sealEl.textContent = '';
+  if(REDUCED){
+    ansEl.textContent = text;
+    finishReveal(hash, my);
+    return;
+  }
+  /* breathing ellipsis, then slow type */
+  var dots = 0;
+  var dotIv = setInterval(function(){
+    if(my!==revealToken){ clearInterval(dotIv); return; }
+    dots = (dots%3)+1;
+    ansEl.textContent = '· '.repeat(dots).trim();
+  }, 340);
+  setTimeout(function(){
+    clearInterval(dotIv);
+    if(my!==revealToken){ revealing=false; askBtn.disabled=false; return; }
+    ansEl.textContent = '';
+    var i = 0;
+    (function step(){
+      if(my!==revealToken){ revealing=false; askBtn.disabled=false; return; }
+      if(i<text.length){
+        ansEl.textContent += text.charAt(i); i++;
+        setTimeout(step, 30 + (',.;—'.indexOf(text.charAt(i-1))>=0 ? 220 : Math.random()*24));
+      }else finishReveal(hash, my);
+    })();
+  }, 1300);
+}
+function finishReveal(hash, my){
+  if(hash!==null && hash!==undefined){
+    sealEl.textContent = 'seal '+('00000000'+hash.toString(16)).slice(-8)+' · fixed · ask again, it does not change its mind';
+    setTimeout(function(){ if(my===revealToken) sealEl.classList.add('on'); }, REDUCED?0:400);
+  }
+  revealing = false;
+  askBtn.disabled = false;
+}
+
+})();
+</script>
+</body>
+</html>

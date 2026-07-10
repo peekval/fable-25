@@ -1,0 +1,848 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>AEON — One valley. 4.6 billion years.</title>
+<meta name="description" content="A deep-time experience: the same valley, watched across the entire history of Earth, driven by scroll. Pure code — the landscape is painted live.">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' fill='%23090a12'/%3E%3Cpath d='M0 22 L8 12 L14 19 L21 8 L27 16 L32 13 L32 32 L0 32 Z' fill='%23c96b3a'/%3E%3Ccircle cx='24' cy='7' r='3' fill='%23ffd9a0'/%3E%3C/svg%3E">
+<style>
+  :root{
+    --ink:#e8e2d6; --dim:#9b937f; --line:rgba(232,226,214,.16);
+    --mono:"SF Mono",ui-monospace,"Cascadia Mono",Menlo,Consolas,monospace;
+    --serif:Didot,"Bodoni MT","Playfair Display",Georgia,"Times New Roman",serif;
+  }
+  *{margin:0;padding:0;box-sizing:border-box}
+  html{scrollbar-color:#5a5040 #0a0a10}
+  html,body{background:#07070c;color:var(--ink);overflow-x:clip}
+  body{font-family:var(--mono);font-size:13px;line-height:1.5;-webkit-font-smoothing:antialiased}
+  ::selection{background:#c96b3a;color:#0a0a10}
+  a{color:inherit}
+  button{font:inherit;color:inherit;background:none;border:0;cursor:pointer}
+
+  /* ——— the one continuous shot ——— */
+  #scene{position:fixed;inset:0;width:100%;height:100%;display:block;z-index:0}
+  #grain,#vig{position:fixed;inset:0;pointer-events:none}
+  #grain{z-index:3;opacity:.07;mix-blend-mode:overlay;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='220' height='220'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='220' height='220' filter='url(%23n)' opacity='0.55'/%3E%3C/svg%3E")}
+  #vig{z-index:2;background:radial-gradient(ellipse 120% 90% at 50% 42%,transparent 55%,rgba(2,2,6,.55) 100%);opacity:.5}
+
+  #space{height:1450vh}
+
+  /* ——— chrome ——— */
+  .back{position:fixed;top:18px;left:18px;z-index:20;display:inline-block;padding:7px 14px;border:1px solid var(--line);border-radius:999px;background:rgba(9,9,16,.55);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);text-decoration:none;font-size:12px;letter-spacing:.08em;transition:border-color .3s,background .3s}
+  .back:hover{border-color:rgba(232,226,214,.5);background:rgba(9,9,16,.8)}
+  #brand{position:fixed;top:24px;right:22px;z-index:20;font-size:11px;letter-spacing:.34em;color:var(--dim);text-transform:uppercase}
+
+  /* ——— title card ——— */
+  #hero{position:fixed;inset:0;z-index:10;display:grid;place-content:center;text-align:center;pointer-events:none;padding:0 24px}
+  #hero h1{font-family:var(--serif);font-weight:400;font-size:clamp(64px,14vw,168px);letter-spacing:.14em;text-indent:.14em;line-height:1;color:var(--ink);text-shadow:0 2px 60px rgba(0,0,0,.7)}
+  #hero p{margin-top:18px;font-size:clamp(12px,1.6vw,15px);letter-spacing:.28em;text-transform:uppercase;color:var(--dim)}
+  #hero .hint{margin-top:56px;font-size:11px;letter-spacing:.3em;color:var(--dim);animation:sink 2.6s ease-in-out infinite}
+  @keyframes sink{0%,100%{transform:translateY(0);opacity:.55}50%{transform:translateY(8px);opacity:1}}
+
+  /* ——— witness caption ——— */
+  #note{position:fixed;left:50%;bottom:118px;transform:translateX(-50%);z-index:12;max-width:560px;width:calc(100% - 48px);text-align:center;pointer-events:none;opacity:0;transition:none}
+  #note .rule{display:block;width:26px;height:1px;background:var(--ink);opacity:.4;margin:0 auto 12px}
+  #note em{font-family:var(--serif);font-style:italic;font-size:clamp(17px,2.4vw,23px);line-height:1.5;color:var(--ink);text-shadow:0 1px 30px rgba(0,0,0,.85)}
+
+  /* ——— the timeline instrument ——— */
+  #tl{position:fixed;left:0;right:0;bottom:0;z-index:15;padding:10px 18px 14px;background:linear-gradient(to top,rgba(5,5,10,.82),rgba(5,5,10,.45) 70%,transparent);user-select:none}
+  #tl-read{display:flex;justify-content:space-between;align-items:baseline;max-width:1080px;margin:0 auto 8px;font-size:12px;letter-spacing:.14em}
+  #tl-read b{font-weight:400;color:var(--ink)}
+  #tl-read span{color:var(--dim);font-size:10px;letter-spacing:.26em;text-transform:uppercase}
+  #strip{position:relative;height:34px;max-width:1080px;margin:0 auto}
+  #strip .axis{position:absolute;left:0;right:0;top:16px;height:1px;background:var(--line)}
+  #strip .tick{position:absolute;top:12px;width:1px;height:9px;background:rgba(232,226,214,.28)}
+  #strip .tick i{position:absolute;top:11px;left:50%;transform:translateX(-50%);font-style:normal;font-size:8px;letter-spacing:.06em;color:var(--dim);white-space:nowrap;opacity:.7}
+  #strip .era{position:absolute;top:9px;width:15px;height:15px;margin-left:-7.5px;border-radius:50%;padding:0}
+  #strip .era::after{content:"";position:absolute;inset:4px;border-radius:50%;background:var(--dim);transition:background .3s,transform .3s}
+  #strip .era:hover::after,#strip .era:focus-visible::after{background:var(--ink);transform:scale(1.5)}
+  #strip .era[aria-current="true"]::after{background:#e8a061;transform:scale(1.4)}
+  #strip .era:focus-visible{outline:1px solid var(--dim);outline-offset:2px}
+  #cursor{position:absolute;top:6px;width:1px;height:21px;background:#e8a061;box-shadow:0 0 8px rgba(232,160,97,.8)}
+  @media (max-width:768px){
+    #tl{padding:8px 12px 10px}
+    #strip .tick i{display:none}
+    #note{bottom:96px}
+  }
+
+  /* ——— footer ——— */
+  footer{position:relative;z-index:8;background:linear-gradient(#07070c,#050508);border-top:1px solid var(--line);padding:88px 24px 140px;text-align:center}
+  footer .f-title{font-family:var(--serif);font-size:clamp(30px,5vw,46px);letter-spacing:.16em;text-indent:.16em}
+  footer .f-sub{margin-top:14px;color:var(--dim);font-size:12px;letter-spacing:.2em;text-transform:uppercase}
+  footer .f-links{margin-top:44px;display:flex;gap:28px;justify-content:center;flex-wrap:wrap;font-size:12px;letter-spacing:.1em}
+  footer .f-links a{color:var(--dim);text-decoration:none;border-bottom:1px solid var(--line);padding-bottom:3px;transition:color .3s,border-color .3s}
+  footer .f-links a:hover{color:var(--ink);border-color:var(--ink)}
+  footer .f-note{margin-top:52px;color:#5c564a;font-size:10px;letter-spacing:.22em;text-transform:uppercase}
+
+  @media (prefers-reduced-motion:reduce){
+    #hero .hint{animation:none}
+  }
+</style>
+</head>
+<body>
+
+<canvas id="scene" aria-label="A painted valley morphing through 4.6 billion years of Earth history as you scroll: magma seas, primordial ocean, swamp forest, desert, dinosaur plains, ice age, campfire, city at dusk, rewilded ruins, and the red giant sun." role="img"></canvas>
+<div id="vig" aria-hidden="true"></div>
+<div id="grain" aria-hidden="true"></div>
+
+<header id="hero" aria-hidden="false">
+  <h1>AEON</h1>
+  <p>One valley &middot; 4.6 billion years</p>
+  <div class="hint">scroll through deep time &darr;</div>
+</header>
+
+<div id="note" aria-live="polite"><span class="rule"></span><em id="note-t"></em></div>
+
+<nav id="tl" aria-label="Deep time timeline">
+  <div id="tl-read"><b id="read">&minus;4.5&nbsp;Ga &middot; HADEAN</b><span>log&nbsp;time&nbsp;&mdash;&nbsp;click&nbsp;an&nbsp;era&nbsp;to&nbsp;travel</span></div>
+  <div id="strip"><div class="axis" aria-hidden="true"></div><div id="cursor" aria-hidden="true"></div></div>
+</nav>
+
+<a class="back" href="/">&larr;&nbsp;25</a>
+<div id="brand" aria-hidden="true">AEON</div>
+
+<div id="space" aria-hidden="true"></div>
+
+<footer>
+  <div class="f-title">AEON</div>
+  <div class="f-sub">The valley remains. Everything else is weather.</div>
+  <div class="f-links">
+    <a href="/66-aeon/guide/">How this site was built</a>
+    <a href="/">FABLE/25 index</a>
+  </div>
+  <div class="f-note">FABLE/25 &middot; site 66 &middot; no assets &mdash; every era painted live in canvas</div>
+</footer>
+
+<script>
+(function(){
+'use strict';
+
+/* ============ utilities ============ */
+var clamp=function(v,a,b){return v<a?a:v>b?b:v};
+var lerp=function(a,b,t){return a+(b-a)*t};
+var smooth=function(t){t=clamp(t,0,1);return t*t*(3-2*t)};
+var TAU=Math.PI*2;
+function mulberry(s){return function(){s|=0;s=s+0x6D2B79F5|0;var t=Math.imul(s^s>>>15,1|s);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296}}
+function col(c,a){return"rgba("+(c[0]|0)+","+(c[1]|0)+","+(c[2]|0)+","+(a===undefined?1:a)+")"}
+function mix(a,b,t){return[lerp(a[0],b[0],t),lerp(a[1],b[1],t),lerp(a[2],b[2],t)]}
+
+var RM=matchMedia("(prefers-reduced-motion: reduce)").matches;
+var MOBILE=matchMedia("(max-width: 768px)").matches;
+
+/* ============ the eras ============ */
+/* years: positive = years ago, negative = years in the future */
+var ERAS=[
+ {name:"HADEAN",       time:"−4.5 Ga", years:4.5e9,
+  cap:"Molten rock breathes. The valley has no name, and no witness.",
+  skyT:[6,5,12],skyM:[52,14,16],skyH:[128,34,16],hazeC:[90,22,12],haze:.55,
+  sun:{x:.74,y:.20,r:.030,c:[255,140,90],g:.35},stars:.75,meteor:1,lava:1,
+  water:0,waterC:[46,74,68],swamp:0,veg:0,vegC:[13,31,22],desert:0,snow:0,glacier:0,
+  volc:0,insect:0,sauro:0,fire:0,city:0,ruin:0,giant:0,
+  gnd:[38,12,9],rF:[26,11,13],rM:[19,9,11],rN:[9,4,6],breath:9},
+ {name:"ARCHEAN",      time:"−3.8 Ga", years:3.8e9,
+  cap:"The first rain falls for a million years. A sea learns to be still.",
+  skyT:[38,30,48],skyM:[118,74,52],skyH:[201,138,78],hazeC:[190,130,80],haze:.5,
+  sun:{x:.62,y:.30,r:.042,c:[255,217,160],g:.5},stars:.15,meteor:.08,lava:.05,
+  water:.86,waterC:[43,74,66],swamp:0,veg:0,vegC:[13,31,22],desert:0,snow:0,glacier:0,
+  volc:1,insect:0,sauro:0,fire:0,city:0,ruin:0,giant:0,
+  gnd:[47,26,20],rF:[43,25,25],rM:[30,17,18],rN:[13,7,8],breath:8},
+ {name:"CARBONIFEROUS",time:"−350 Ma", years:3.5e8,
+  cap:"Air thick as syrup. Dragonflies wide as your two hands.",
+  skyT:[32,52,58],skyM:[86,120,108],skyH:[172,196,150],hazeC:[150,175,135],haze:.6,
+  sun:{x:.55,y:.24,r:.038,c:[240,244,205],g:.35},stars:0,meteor:0,lava:0,
+  water:.16,waterC:[42,64,54],swamp:1,veg:1,vegC:[10,26,17],desert:0,snow:0,glacier:0,
+  volc:0,insect:1,sauro:0,fire:0,city:0,ruin:0,giant:0,
+  gnd:[24,36,25],rF:[42,60,50],rM:[24,38,29],rN:[8,14,9],breath:6.5},
+ {name:"PERMIAN",      time:"−260 Ma", years:2.6e8,
+  cap:"The sea is a rumor now. Wind files the ridge to a whisper.",
+  skyT:[96,66,52],skyM:[181,118,88],skyH:[233,177,128],hazeC:[220,165,115],haze:.4,
+  sun:{x:.5,y:.46,r:.046,c:[255,240,206],g:.55},stars:0,meteor:0,lava:0,
+  water:0,waterC:[42,64,54],swamp:0,veg:.02,vegC:[40,44,25],desert:1,snow:0,glacier:0,
+  volc:0,insect:0,sauro:0,fire:0,city:0,ruin:0,giant:0,
+  gnd:[142,79,50],rF:[120,64,45],rM:[92,46,33],rN:[43,20,14],breath:6},
+ {name:"CRETACEOUS",   time:"−90 Ma",  years:9e7,
+  cap:"Something enormous crosses the plain, unhurried. It has forever.",
+  skyT:[42,74,110],skyM:[125,158,194],skyH:[219,203,168],hazeC:[200,195,170],haze:.35,
+  sun:{x:.42,y:.28,r:.040,c:[255,248,222],g:.4},stars:0,meteor:0,lava:0,
+  water:.10,waterC:[92,116,120],swamp:0,veg:.7,vegC:[22,46,28],desert:0,snow:0,glacier:0,
+  volc:0,insect:.1,sauro:1,fire:0,city:0,ruin:0,giant:0,
+  gnd:[64,84,52],rF:[75,94,102],rM:[52,66,64],rN:[16,22,15],breath:5.5},
+ {name:"PLEISTOCENE",  time:"−20 ka",  years:2e4,
+  cap:"A mile of ice sits where the river slept. It is patient.",
+  skyT:[22,38,60],skyM:[81,112,143],skyH:[207,219,228],hazeC:[195,210,222],haze:.45,
+  sun:{x:.36,y:.40,r:.034,c:[236,242,250],g:.3},stars:.1,meteor:0,lava:0,
+  water:0,waterC:[92,116,120],swamp:0,veg:.04,vegC:[26,36,30],desert:0,snow:1,glacier:1,
+  volc:0,insect:0,sauro:0,fire:0,city:0,ruin:0,giant:0,
+  gnd:[132,150,164],rF:[104,124,146],rM:[76,92,110],rN:[26,32,42],breath:5},
+ {name:"HOLOCENE",     time:"−10 ka",  years:1e4,
+  cap:"A spark, held in cupped hands. The valley notices.",
+  skyT:[26,40,74],skyM:[104,86,116],skyH:[232,160,97],hazeC:[190,120,90],haze:.3,
+  sun:{x:.30,y:.55,r:.038,c:[255,196,130],g:.5},stars:.4,meteor:.03,lava:0,
+  water:.06,waterC:[60,66,80],swamp:0,veg:.5,vegC:[35,48,30],desert:0,snow:.15,glacier:0,
+  volc:0,insect:0,sauro:0,fire:1,city:0,ruin:0,giant:0,
+  gnd:[52,52,40],rF:[58,52,62],rM:[38,34,42],rN:[13,12,14],breath:4.5},
+ {name:"PRESENT",      time:"TODAY",        years:0,
+  cap:"Ten thousand windows. One of them is yours.",
+  skyT:[16,26,51],skyM:[61,66,102],skyH:[212,120,74],hazeC:[150,105,110],haze:.4,
+  sun:{x:.26,y:.66,r:.036,c:[255,170,110],g:.4},stars:.12,meteor:0,lava:0,
+  water:.05,waterC:[46,50,66],swamp:0,veg:.25,vegC:[26,34,26],desert:0,snow:.1,glacier:0,
+  volc:0,insect:0,sauro:0,fire:0,city:1,ruin:0,giant:0,
+  gnd:[30,32,44],rF:[45,46,66],rM:[30,30,46],rN:[10,10,16],breath:3.2},
+ {name:"+100,000 YR",  time:"+100 ka",      years:-1e5,
+  cap:"The grid dissolves into meadow. The valley keeps no grudges.",
+  skyT:[20,36,58],skyM:[88,118,120],skyH:[226,196,137],hazeC:[190,190,150],haze:.3,
+  sun:{x:.5,y:.32,r:.040,c:[255,240,210],g:.4},stars:.3,meteor:.02,lava:0,
+  water:.09,waterC:[70,96,92],swamp:.1,veg:.92,vegC:[18,40,26],desert:0,snow:.2,glacier:0,
+  volc:0,insect:.2,sauro:0,fire:0,city:0,ruin:1,giant:0,
+  gnd:[46,64,42],rF:[62,84,80],rM:[42,58,52],rN:[13,20,13],breath:5},
+ {name:"RED GIANT",    time:"+5 Ga",        years:-5e9,
+  cap:"The sun leans in close, an old friend, ending the story it began.",
+  skyT:[30,6,10],skyM:[92,18,17],skyH:[168,50,17],hazeC:[150,40,15],haze:.45,
+  sun:{x:.5,y:.60,r:.52,c:[255,96,50],g:.9},stars:.06,meteor:0,lava:.4,
+  water:0,waterC:[46,74,68],swamp:0,veg:0,vegC:[13,31,22],desert:.3,snow:0,glacier:0,
+  volc:0,insect:0,sauro:0,fire:0,city:0,ruin:.12,giant:1,
+  gnd:[26,8,9],rF:[36,10,11],rM:[24,7,9],rN:[10,3,4],breath:10}
+];
+var N=ERAS.length;
+
+/* numeric keys we interpolate directly */
+var NUMK=["haze","stars","meteor","lava","water","swamp","veg","desert","snow","glacier","volc","insect","sauro","fire","city","ruin","giant","breath"];
+var COLK=["skyT","skyM","skyH","hazeC","waterC","vegC","gnd","rF","rM","rN"];
+
+function eraAt(p){ /* p in [0, N-1] float -> blended param object */
+  var i=clamp(Math.floor(p),0,N-2), f=smooth(p-i), A=ERAS[i], B=ERAS[i+1], o={};
+  for(var k=0;k<NUMK.length;k++){var n=NUMK[k];o[n]=lerp(A[n],B[n],f)}
+  for(k=0;k<COLK.length;k++){var c=COLK[k];o[c]=mix(A[c],B[c],f)}
+  o.sun={x:lerp(A.sun.x,B.sun.x,f),y:lerp(A.sun.y,B.sun.y,f),r:lerp(A.sun.r,B.sun.r,f),
+         c:mix(A.sun.c,B.sun.c,f),g:lerp(A.sun.g,B.sun.g,f)};
+  return o;
+}
+
+/* ============ static geometry — the SAME valley forever ============ */
+var R=mulberry(660425);
+function makeRidge(n,oct,sharp,seedBump){
+  var ph=[],fr=[],am=[],a=1,f=1.7,i;
+  for(i=0;i<oct;i++){ph.push(R()*TAU);fr.push(f);am.push(a);a*=.55;f*=1.9}
+  var arr=new Float32Array(n+1);
+  for(var x=0;x<=n;x++){
+    var u=x/n,v=0;
+    for(i=0;i<oct;i++)v+=am[i]*Math.sin(u*fr[i]*TAU+ph[i]);
+    v=v*.5+.5;
+    if(sharp)v=1-Math.abs(v*2-1)*.85;
+    if(seedBump)v+=seedBump*Math.exp(-Math.pow((u-.68)/.055,2)); /* the landmark peak */
+    arr[x]=v;
+  }
+  /* dip toward the valley center so it always reads as a valley */
+  for(x=0;x<=n;x++){var u2=x/n;arr[x]*=(.55+.45*Math.min(1,Math.abs(u2-.47)*2.6))}
+  return arr;
+}
+var SEG=180;
+var farR=makeRidge(SEG,5,true,.55), midR=makeRidge(SEG,5,true,0), nearR=makeRidge(SEG,4,false,0);
+/* island / volcano peaks on the mid ridge */
+var PEAKS=[];
+(function(){for(var x=6;x<SEG-6;x++){if(midR[x]>midR[x-4]&&midR[x]>midR[x+4]&&midR[x]>.55)PEAKS.push(x/SEG)}
+ PEAKS=PEAKS.filter(function(_,i){return i%2===0}).slice(0,3);
+ if(PEAKS.length<3)PEAKS=[.22,.47,.78];})();
+
+/* scattered element seeds */
+function seeds(n,fn){var r=mulberry(97+n),a=[];for(var i=0;i<n;i++)a.push(fn(r,i));return a}
+var CNT={stars:MOBILE?70:150,win:MOBILE?150:280,blob:MOBILE?46:88,trunk:MOBILE?12:24,
+         ins:MOBILE?8:14,shim:MOBILE?8:16,crack:MOBILE?6:9,slab:MOBILE?8:13,grs:MOBILE?24:60};
+var STARS=seeds(CNT.stars,function(r){return{x:r(),y:r()*.9,s:.4+r()*1.3,tw:r()*TAU}});
+var WINS=seeds(CNT.win,function(r,i){var v=r();return{u:(r()*2-1)*(.92-.3*v),v:v,w:r(),cool:r()<.14,ph:r()*TAU}});
+var BLOBS=seeds(CNT.blob,function(r){return{x:r(),d:r(),s:.5+r(),k:r()}});
+var TRUNKS=seeds(CNT.trunk,function(r){return{x:.04+r()*.92,h:.6+r()*.7,d:r(),lean:(r()-.5)*.3}});
+var INSECTS=seeds(CNT.ins,function(r){return{x:.1+r()*.8,y:.5+r()*.35,ph:r()*TAU,sp:.5+r()}});
+var SHIM=seeds(CNT.shim,function(r){return{y:r(),x:r(),w:.05+r()*.2,ph:r()*TAU}});
+var CRACKS=seeds(CNT.crack,function(r){var pts=[],x=r(),y=1.02;for(var j=0;j<7;j++){pts.push([x,y]);x+=(r()-.5)*.13;y-=.06+r()*.075}return{p:pts,ph:r()*TAU}});
+var SLABS=seeds(CNT.slab,function(r){return{u:(r()*2-1)*.6,v:.25+r()*.7,w:.5+r(),h:.4+r()*1.2}});
+var GRASS=seeds(CNT.grs,function(r){return{x:r(),d:r(),ph:r()*TAU}});
+var BLINK_WIN=WINS[Math.min(137,WINS.length-1)];
+
+/* ============ canvas ============ */
+var cv=document.getElementById("scene"),ctx=cv.getContext("2d");
+var W=0,H=0,DPR=1,HOR=0;
+function resize(){
+  DPR=Math.min(window.devicePixelRatio||1,MOBILE?1.5:2);
+  W=window.innerWidth;H=window.innerHeight;
+  cv.width=Math.round(W*DPR);cv.height=Math.round(H*DPR);
+  ctx.setTransform(DPR,0,0,DPR,0,0);
+  HOR=H*.44;
+  dirty=true;
+}
+addEventListener("resize",resize,{passive:true});
+
+function ridgePath(arr,baseY,amp){
+  ctx.beginPath();ctx.moveTo(-2,H+2);
+  ctx.lineTo(-2,baseY-arr[0]*amp);
+  for(var x=1;x<=SEG;x++)ctx.lineTo(x/SEG*W,baseY-arr[x]*amp);
+  ctx.lineTo(W+2,H+2);ctx.closePath();
+}
+function ridgeTop(u,baseY,amp,arr){ /* y of ridge at horizontal u */
+  var x=clamp(u*SEG,0,SEG-1),i=Math.floor(x);
+  return baseY-lerp(arr[i],arr[i+1],x-i)*amp;
+}
+
+/* atmospheric perspective */
+function atmo(cl,P,amt){return mix(cl,P.skyH,amt*(.5+.5*P.haze))}
+
+/* ============ feature painters ============ */
+var meteors=[];
+function drawSky(P,t){
+  var g=ctx.createLinearGradient(0,0,0,HOR*1.25);
+  g.addColorStop(0,col(P.skyT));g.addColorStop(.55,col(P.skyM));g.addColorStop(1,col(P.skyH));
+  ctx.fillStyle=g;ctx.fillRect(0,0,W,HOR*1.25);
+  /* red-giant sky wash */
+  if(P.giant>0.01){
+    var rg=ctx.createRadialGradient(P.sun.x*W,P.sun.y*H,0,P.sun.x*W,P.sun.y*H,H*.95);
+    rg.addColorStop(0,col([255,110,50],.5*P.giant));rg.addColorStop(1,col([255,110,50],0));
+    ctx.fillStyle=rg;ctx.fillRect(0,0,W,H);
+  }
+}
+function drawStars(P,t){
+  if(P.stars<.02)return;
+  ctx.fillStyle=col([235,238,255]);
+  for(var i=0;i<STARS.length;i++){var s=STARS[i];
+    var a=P.stars*(.35+.65*Math.abs(Math.sin(t*.7+s.tw)));
+    if(s.y*HOR>HOR*.96)continue;
+    ctx.globalAlpha=a*.9;
+    ctx.fillRect(s.x*W,s.y*HOR,s.s,s.s);
+  }
+  ctx.globalAlpha=1;
+}
+function drawSun(P){
+  var sx=P.sun.x*W,sy=P.sun.y*H,sr=Math.max(2,P.sun.r*H);
+  var g=ctx.createRadialGradient(sx,sy,sr*.2,sx,sy,sr*4.2);
+  g.addColorStop(0,col(P.sun.c,.5*P.sun.g));g.addColorStop(1,col(P.sun.c,0));
+  ctx.fillStyle=g;ctx.fillRect(sx-sr*4.2,sy-sr*4.2,sr*8.4,sr*8.4);
+  var d=ctx.createRadialGradient(sx,sy,0,sx,sy,sr);
+  d.addColorStop(0,col(mix(P.sun.c,[255,255,255],.35)));
+  d.addColorStop(.75,col(P.sun.c));d.addColorStop(1,col(P.sun.c,.0));
+  ctx.fillStyle=d;ctx.beginPath();ctx.arc(sx,sy,sr,0,TAU);ctx.fill();
+  if(P.giant>0.01){ /* convection mottling + prominence arcs */
+    ctx.globalAlpha=.18*P.giant;ctx.strokeStyle=col([120,10,10]);
+    for(var i=0;i<5;i++){ctx.lineWidth=sr*.02;ctx.beginPath();
+      ctx.arc(sx,sy,sr*(.35+i*.14),i*1.2,i*1.2+2.2);ctx.stroke()}
+    ctx.globalAlpha=1;
+  }
+}
+function drawMeteors(P,t,dt){
+  if(RM)return;
+  if(P.meteor>.02&&meteors.length<4&&Math.random()<P.meteor*dt*1.4)
+    meteors.push({x:Math.random()*W,y:-20,vx:(Math.random()*.4+.25)*W*(Math.random()<.5?-1:1),vy:(Math.random()*.5+.55)*H,life:1});
+  for(var i=meteors.length-1;i>=0;i--){var m=meteors[i];
+    m.x+=m.vx*dt;m.y+=m.vy*dt;m.life-=dt*.9;
+    if(m.life<=0||m.y>HOR){meteors.splice(i,1);continue}
+    var lg=ctx.createLinearGradient(m.x,m.y,m.x-m.vx*.22,m.y-m.vy*.22);
+    lg.addColorStop(0,col([255,220,170],.9*m.life));lg.addColorStop(1,col([255,120,60],0));
+    ctx.strokeStyle=lg;ctx.lineWidth=1.6;ctx.beginPath();
+    ctx.moveTo(m.x,m.y);ctx.lineTo(m.x-m.vx*.22,m.y-m.vy*.22);ctx.stroke();
+  }
+}
+function drawHaze(P){
+  var g=ctx.createLinearGradient(0,HOR-H*.14,0,HOR+H*.1);
+  g.addColorStop(0,col(P.hazeC,0));g.addColorStop(.62,col(P.hazeC,.34*P.haze));g.addColorStop(1,col(P.hazeC,0));
+  ctx.fillStyle=g;ctx.fillRect(0,HOR-H*.14,W,H*.24);
+}
+function snowCap(arr,baseY,amp,P,line){
+  if(P.snow<.02)return;
+  ctx.save();ridgePath(arr,baseY,amp);ctx.clip();
+  var top=baseY-amp,capY=lerp(baseY,top,line);
+  var g=ctx.createLinearGradient(0,top,0,capY+amp*.35);
+  g.addColorStop(0,col([238,244,250],.95*P.snow));g.addColorStop(1,col([238,244,250],0));
+  ctx.fillStyle=g;ctx.fillRect(0,top-4,W,capY+amp*.4-top);
+  ctx.restore();
+}
+function drawWaterFill(P,t){
+  if(P.water<.22)return 0;
+  var top=lerp(H*.985,HOR+H*.015,smooth((P.water-.2)/.8));
+  var g=ctx.createLinearGradient(0,top,0,H);
+  var deep=mix(P.waterC,[8,10,14],.55);
+  g.addColorStop(0,col(mix(P.waterC,P.skyH,.5)));g.addColorStop(.25,col(P.waterC));g.addColorStop(1,col(deep));
+  ctx.fillStyle=g;ctx.fillRect(0,top,W,H-top);
+  /* sun column */
+  var sx=P.sun.x*W;
+  var rg=ctx.createLinearGradient(0,top,0,H);
+  rg.addColorStop(0,col(P.sun.c,.30));rg.addColorStop(1,col(P.sun.c,0));
+  ctx.fillStyle=rg;
+  ctx.fillRect(sx-W*.03,top,W*.06,H-top);
+  /* shimmer */
+  ctx.strokeStyle=col(mix(P.waterC,[255,255,255],.45));
+  for(var i=0;i<SHIM.length;i++){var s=SHIM[i];
+    var y=top+s.y*(H-top),off=RM?0:Math.sin(t*.8+s.ph)*8;
+    ctx.globalAlpha=.14;ctx.lineWidth=1;ctx.beginPath();
+    ctx.moveTo(s.x*W+off,y);ctx.lineTo(s.x*W+off+s.w*W,y);ctx.stroke();
+  }
+  ctx.globalAlpha=1;
+  return top;
+}
+function drawRiver(P,t){
+  if(P.water<.02||P.water>=.22)return;
+  var a=clamp(P.water/.16,0,1);
+  ctx.save();ctx.globalAlpha=a;
+  ctx.beginPath();
+  var x0=W*.47;
+  ctx.moveTo(x0,HOR+H*.035);
+  var pts=[[.05,.44,1.6],[.16,.55,4],[.3,.42,9],[.45,.58,17],[.62,.40,28],[.82,.55,44],[1.02,.46,60]];
+  for(var i=0;i<pts.length;i++){var p=pts[i];
+    ctx.lineTo(W*p[1]+Math.sin(i*2.7)*4,HOR+H*.035+(H-HOR-H*.02)*p[0]);}
+  ctx.strokeStyle=col(mix(P.waterC,P.skyH,.4));ctx.lineCap="round";ctx.lineJoin="round";
+  for(i=0;i<pts.length;i++){} /* single stroke w/ growing width imitation: layered strokes */
+  ctx.lineWidth=3;ctx.stroke();
+  ctx.save();ctx.beginPath();ctx.rect(0,HOR+(H-HOR)*.4,W,H);ctx.clip();ctx.lineWidth=14;ctx.stroke();ctx.restore();
+  ctx.save();ctx.beginPath();ctx.rect(0,HOR+(H-HOR)*.72,W,H);ctx.clip();ctx.lineWidth=34;ctx.stroke();ctx.restore();
+  ctx.restore();
+}
+function drawLava(P,t){
+  if(P.lava<.02)return;
+  var pulse=RM?.8:(.72+.28*Math.sin(t*1.3));
+  var g=ctx.createLinearGradient(0,H*.62,0,H);
+  g.addColorStop(0,col([255,80,20],0));g.addColorStop(1,col([255,90,25],.30*P.lava*pulse));
+  ctx.fillStyle=g;ctx.fillRect(0,H*.62,W,H*.38);
+  for(var i=0;i<CRACKS.length;i++){var c=CRACKS[i];
+    var a=P.lava*(RM?.85:(.6+.4*Math.sin(t*1.1+c.ph)));
+    ctx.lineCap="round";ctx.lineJoin="round";
+    for(var pass=0;pass<3;pass++){
+      ctx.beginPath();
+      for(var j=0;j<c.p.length;j++){
+        var px=c.p[j][0]*W,py=HOR+(H-HOR)*c.p[j][1];
+        if(py<HOR+H*.06)break;
+        j?ctx.lineTo(px,py):ctx.moveTo(px,py);
+      }
+      if(pass===0){ctx.strokeStyle=col([120,25,5],.5*a);ctx.lineWidth=7}
+      else if(pass===1){ctx.strokeStyle=col([255,90,25],.75*a);ctx.lineWidth=3}
+      else{ctx.strokeStyle=col([255,214,140],.9*a);ctx.lineWidth=1.1}
+      ctx.stroke();
+    }
+  }
+}
+function drawDesert(P){
+  if(P.desert<.02)return;
+  ctx.globalAlpha=P.desert;
+  var lite=mix(P.gnd,[255,225,170],.3),dark=mix(P.gnd,[30,10,8],.35);
+  for(var i=0;i<7;i++){
+    var y=HOR+(H-HOR)*(0.14+i*.13),r=W*(.5+i*.22);
+    ctx.fillStyle=col(i%2?lite:dark,.16);
+    ctx.beginPath();ctx.ellipse(W*(i%2?.3:.72),y+r*.94,r,r,0,Math.PI,TAU);ctx.fill();
+  }
+  ctx.globalAlpha=1;
+}
+function treeBlob(x,y,s,c,a){
+  ctx.fillStyle=col(c,a);
+  ctx.beginPath();
+  ctx.ellipse(x,y,s*1.5,s*.85,0,0,TAU);
+  ctx.ellipse(x-s*.9,y+s*.25,s*.8,s*.5,0,0,TAU);
+  ctx.ellipse(x+s*.95,y+s*.3,s*.75,s*.45,0,0,TAU);
+  ctx.fill();
+}
+function drawVeg(P,t){
+  if(P.veg<.02)return;
+  var n=Math.round(BLOBS.length*P.veg);
+  for(var i=0;i<n;i++){var b=BLOBS[i];
+    var d=b.d; /* 0 far .. 1 near */
+    var y=HOR+H*.045+d*d*(H-HOR-H*.1);
+    var s=(2+d*d*17)*(.6+.5*b.s)*(MOBILE?.85:1);
+    var c=mix(mix(P.vegC,P.skyH,(1-d)*.45),[0,0,0],d*.25);
+    treeBlob(b.x*W,y,s,c,.6+.4*d);
+  }
+  /* carboniferous canopy giants */
+  var ta=P.swamp*P.veg;
+  if(ta>.03){
+    var tn=Math.round(TRUNKS.length*clamp(ta,0,1));
+    for(i=0;i<tn;i++){var tr=TRUNKS[i];
+      var d2=tr.d,y0=HOR+H*.05+d2*d2*(H-HOR-H*.14);
+      var hgt=(H*.05+d2*d2*H*.17)*tr.h,x=tr.x*W;
+      var cc=mix(mix(P.vegC,P.skyH,(1-d2)*.5),[0,0,0],d2*.3);
+      ctx.strokeStyle=col(cc,.55+.45*d2);ctx.lineWidth=1+d2*3.4;
+      ctx.beginPath();ctx.moveTo(x,y0);
+      ctx.quadraticCurveTo(x+tr.lean*hgt,y0-hgt*.6,x+tr.lean*hgt*1.6,y0-hgt);
+      ctx.stroke();
+      var hx=x+tr.lean*hgt*1.6,hy=y0-hgt;
+      ctx.fillStyle=col(cc,.5+.5*d2);
+      for(var f=0;f<5;f++){var an=-Math.PI*.5+(f-2)*.5;
+        ctx.beginPath();ctx.ellipse(hx+Math.cos(an)*hgt*.16,hy+Math.sin(an)*hgt*.16,hgt*.13,hgt*.045,an,0,TAU);ctx.fill()}
+    }
+  }
+  /* grass tufts foreground */
+  if(P.veg>.2&&P.swamp<.5){
+    var ga=clamp((P.veg-.2)/.5,0,1)*.6;
+    ctx.strokeStyle=col(mix(P.vegC,[220,210,150],.3),ga);
+    for(i=0;i<GRASS.length;i++){var gr=GRASS[i];
+      var gy=H*(.8+gr.d*.16),gx=gr.x*W,sway=RM?0:Math.sin(t*1.4+gr.ph)*2;
+      ctx.lineWidth=1;ctx.beginPath();ctx.moveTo(gx,gy);
+      ctx.quadraticCurveTo(gx+sway,gy-7-gr.d*9,gx+sway*1.8+2,gy-11-gr.d*13);ctx.stroke();
+    }
+  }
+}
+function drawSwampMist(P,t){
+  if(P.swamp<.03)return;
+  for(var i=0;i<4;i++){
+    var y=HOR+(H-HOR)*(.25+i*.2),off=RM?0:Math.sin(t*.25+i*2)*W*.02;
+    var g=ctx.createLinearGradient(0,y-9,0,y+9);
+    g.addColorStop(0,col(P.hazeC,0));g.addColorStop(.5,col(P.hazeC,.12*P.swamp));g.addColorStop(1,col(P.hazeC,0));
+    ctx.fillStyle=g;ctx.fillRect(-W*.05+off,y-9,W*1.1,18);
+  }
+}
+function drawInsects(P,t){
+  if(P.insect<.03||RM)return;
+  ctx.fillStyle=col([20,26,20],.75*P.insect);
+  for(var i=0;i<INSECTS.length;i++){var s=INSECTS[i];
+    var x=s.x*W+Math.sin(t*s.sp+s.ph)*26+Math.sin(t*2.3*s.sp)*7;
+    var y=HOR+(H-HOR)*s.y+Math.cos(t*s.sp*1.7+s.ph)*14;
+    ctx.fillRect(x,y,2,1.1);
+  }
+}
+function drawGlacier(P,t){
+  if(P.glacier<.02)return;
+  var a=P.glacier;
+  var top=lerp(H,HOR+H*.03,smooth(a));
+  ctx.save();ctx.globalAlpha=Math.min(1,a*1.6);
+  var g=ctx.createLinearGradient(0,top,0,H);
+  g.addColorStop(0,col(mix([225,236,246],P.skyH,.25)));g.addColorStop(.5,col([196,214,230]));g.addColorStop(1,col([132,158,182]));
+  ctx.fillStyle=g;
+  ctx.beginPath();ctx.moveTo(0,H);ctx.lineTo(0,top+8);
+  for(var x=0;x<=SEG;x++)ctx.lineTo(x/SEG*W,top+Math.sin(x*.7)*3+nearR[x]*8);
+  ctx.lineTo(W,H);ctx.closePath();ctx.fill();
+  /* crevasses */
+  ctx.strokeStyle=col([90,120,150],.55);
+  for(var i=0;i<9;i++){
+    var cx=W*(.06+i*.11),cy=top+(H-top)*(.2+((i*37)%53)/100);
+    ctx.lineWidth=1;ctx.beginPath();
+    ctx.moveTo(cx,cy);ctx.quadraticCurveTo(cx+W*.04,cy+9,cx+W*.09,cy+5);ctx.stroke();
+  }
+  /* medial moraine */
+  ctx.strokeStyle=col([70,80,92],.4);ctx.lineWidth=3;
+  ctx.beginPath();ctx.moveTo(W*.46,top+6);ctx.quadraticCurveTo(W*.44,(top+H)/2,W*.5,H);ctx.stroke();
+  ctx.restore();
+}
+function drawSauro(P,t){
+  if(P.sauro<.03)return;
+  var a=P.sauro;
+  var x=W*(.30+.13*(RM?.5:(.5+.5*Math.sin(t*.05))));
+  var y=HOR+H*.075,s=H*.052;
+  var bob=RM?0:Math.sin(t*.6)*s*.03;
+  ctx.save();ctx.globalAlpha=a*.92;
+  ctx.fillStyle=col(mix(P.rM,[0,0,0],.35));
+  ctx.strokeStyle=col(mix(P.rM,[0,0,0],.35));
+  /* body */
+  ctx.beginPath();ctx.ellipse(x,y+bob,s*1.15,s*.5,0,0,TAU);ctx.fill();
+  /* legs */
+  ctx.lineWidth=s*.16;ctx.lineCap="round";
+  ctx.beginPath();ctx.moveTo(x-s*.6,y+s*.3);ctx.lineTo(x-s*.62,y+s*.95);
+  ctx.moveTo(x+s*.55,y+s*.3);ctx.lineTo(x+s*.6,y+s*.95);ctx.stroke();
+  /* neck + head */
+  var sway=RM?0:Math.sin(t*.35)*s*.25;
+  ctx.lineWidth=s*.22;
+  ctx.beginPath();ctx.moveTo(x+s*.9,y+bob-s*.1);
+  ctx.quadraticCurveTo(x+s*1.7,y-s*1.1,x+s*1.9+sway,y-s*1.9);
+  ctx.stroke();
+  ctx.beginPath();ctx.ellipse(x+s*1.98+sway,y-s*1.95,s*.2,s*.11,.35,0,TAU);ctx.fill();
+  /* tail */
+  ctx.lineWidth=s*.18;
+  ctx.beginPath();ctx.moveTo(x-s*.98,y+bob);
+  ctx.quadraticCurveTo(x-s*1.9,y+bob-s*.15,x-s*2.4,y+bob-s*.55);ctx.stroke();
+  ctx.restore();
+}
+function drawFire(P,t){
+  if(P.fire<.03)return;
+  var x=W*.435,y=H*.795,a=P.fire;
+  var fl=RM?1:(.75+.25*Math.sin(t*9)+.12*Math.sin(t*23));
+  var g=ctx.createRadialGradient(x,y,0,x,y,H*.06*fl);
+  g.addColorStop(0,col([255,180,90],.5*a));g.addColorStop(1,col([255,120,40],0));
+  ctx.fillStyle=g;ctx.beginPath();ctx.arc(x,y,H*.06*fl,0,TAU);ctx.fill();
+  ctx.fillStyle=col([255,205,120],.95*a);
+  ctx.beginPath();
+  ctx.moveTo(x-2.4,y+2);ctx.quadraticCurveTo(x-2.6,y-3.2*fl,x,y-6.4*fl);
+  ctx.quadraticCurveTo(x+2.8,y-3*fl,x+2.4,y+2);ctx.closePath();ctx.fill();
+  /* two watchers */
+  ctx.fillStyle=col([8,7,9],.8*a);
+  ctx.beginPath();ctx.ellipse(x-11,y+1,2.1,3.6,0,0,TAU);ctx.fill();
+  ctx.beginPath();ctx.ellipse(x+12,y+1.5,2.1,3.4,0,0,TAU);ctx.fill();
+  /* smoke */
+  if(!RM){ctx.fillStyle=col([160,150,140],.06*a);
+    for(var i=0;i<3;i++){var yy=(t*11+i*26)%80;
+      ctx.beginPath();ctx.arc(x+Math.sin((yy+i*9)*.11)*5,y-8-yy,2.5+yy*.1,0,TAU);ctx.fill()}}
+}
+function cityXY(wn){
+  var v=wn.v;
+  var x=W*.5+wn.u*W*.46;
+  var y=HOR+H*.045+v*v*(H-HOR-H*.13);
+  return[x,y,v];
+}
+function drawCity(P,t){
+  if(P.city<.03)return;
+  var a=P.city;
+  ctx.save();
+  /* street grid glow */
+  ctx.globalAlpha=a*.30;
+  ctx.strokeStyle=col([232,160,90]);ctx.lineWidth=.8;
+  var vx=W*.5,vy=HOR+H*.03;
+  for(var i=-5;i<=5;i++){
+    ctx.beginPath();ctx.moveTo(vx+i*W*.012,vy);
+    ctx.lineTo(vx+i*W*.115,H*.92);ctx.stroke();
+  }
+  for(i=0;i<6;i++){var yy=vy+Math.pow((i+1)/6,2)*(H*.86-vy);
+    var half=W*.06+Math.pow((i+1)/6,2)*W*.5;
+    ctx.beginPath();ctx.moveTo(vx-half,yy);ctx.lineTo(vx+half,yy);ctx.stroke();
+  }
+  /* haze dome */
+  var dg=ctx.createRadialGradient(vx,H*.62,0,vx,H*.62,W*.42);
+  dg.addColorStop(0,col([232,150,80],.10*a));dg.addColorStop(1,col([232,150,80],0));
+  ctx.globalAlpha=1;ctx.fillStyle=dg;ctx.fillRect(0,HOR,W,H-HOR);
+  /* windows */
+  for(i=0;i<WINS.length;i++){var wn=WINS[i];
+    if(wn===BLINK_WIN)continue;
+    var p2=cityXY(wn),x=p2[0],y=p2[1],v=p2[2];
+    var sz=.7+v*2.3;
+    var flick=RM?.8:(.55+.45*Math.abs(Math.sin(t*.4+wn.ph)));
+    ctx.globalAlpha=a*(.35+.65*v)*flick;
+    ctx.fillStyle=wn.cool?col([170,205,255]):col([255,196,120]);
+    ctx.fillRect(x,y,sz,sz*.8);
+  }
+  /* the visitor's window */
+  var bp=cityXY(BLINK_WIN),bx=bp[0],by=bp[1];
+  var cyc=RM?1:(Math.sin(t*1.9)>-.15?1:0);
+  ctx.globalAlpha=a*cyc;
+  ctx.fillStyle=col([255,240,210]);
+  ctx.fillRect(bx-1.4,by-1.4,4,3.4);
+  var bg=ctx.createRadialGradient(bx,by,0,bx,by,12);
+  bg.addColorStop(0,col([255,240,210],.5*cyc*a));bg.addColorStop(1,col([255,240,210],0));
+  ctx.fillStyle=bg;ctx.fillRect(bx-12,by-12,24,24);
+  ctx.restore();
+}
+function drawRuins(P){
+  if(P.ruin<.03)return;
+  var a=P.ruin;
+  ctx.save();
+  ctx.globalAlpha=a*.14;
+  ctx.strokeStyle=col([200,210,190]);ctx.lineWidth=.7;
+  var vx=W*.5,vy=HOR+H*.035;
+  for(var i=-4;i<=4;i+=2){
+    ctx.beginPath();ctx.moveTo(vx+i*W*.014,vy+6);ctx.lineTo(vx+i*W*.11,H*.9);ctx.stroke();
+  }
+  for(i=0;i<SLABS.length;i++){var s=SLABS[i];
+    var x=vx+s.u*W*.42,y=vy+s.v*s.v*(H*.85-vy);
+    var sc=.6+s.v*3,w=s.w*7*sc,h=s.h*8*sc;
+    ctx.globalAlpha=a*(.22+.3*s.v);
+    ctx.strokeStyle=col([180,195,175]);ctx.lineWidth=1;
+    ctx.strokeRect(x,y-h,w,h);
+    ctx.globalAlpha=a*.4*s.v;
+    ctx.fillStyle=col([60,90,55]);
+    ctx.fillRect(x,y-h*.3,w,h*.3);
+  }
+  ctx.restore();
+}
+function drawVolc(P,t){
+  if(P.volc<.03)return;
+  var baseY=HOR+H*.055,amp=H*.10;
+  for(var i=0;i<PEAKS.length;i++){var u=PEAKS[i];
+    var px=u*W,py=ridgeTop(u,baseY,amp,midR);
+    /* vent glow */
+    ctx.fillStyle=col([255,110,40],.55*P.volc*(RM?.8:(.6+.4*Math.sin(t*2+i*2.6))));
+    ctx.beginPath();ctx.arc(px,py+2,2.4,0,TAU);ctx.fill();
+    if(RM)continue;
+    for(var j=0;j<5;j++){
+      var yo=((t*9+j*22+i*31)%110);
+      var alpha=(1-yo/110)*.24*P.volc;
+      ctx.fillStyle=col([120,110,112],alpha);
+      ctx.beginPath();
+      ctx.arc(px+Math.sin((yo+j*13)*.07+i)*8,py-4-yo,3+yo*.13,0,TAU);ctx.fill();
+    }
+  }
+}
+
+/* ============ frame ============ */
+function render(p,t,dt){
+  var P=eraAt(p);
+  ctx.clearRect(0,0,W,H);
+  drawSky(P,t);
+  drawStars(P,t);
+  drawSun(P);
+  drawMeteors(P,t,dt);
+  /* far ridge */
+  ctx.fillStyle=col(atmo(P.rF,P,.5));
+  ridgePath(farR,HOR,H*.155);ctx.fill();
+  snowCap(farR,HOR,H*.155,P,.45);
+  /* mid ridge */
+  ctx.fillStyle=col(atmo(P.rM,P,.22));
+  ridgePath(midR,HOR+H*.055,H*.10);ctx.fill();
+  snowCap(midR,HOR+H*.055,H*.10,P,.3);
+  drawVolc(P,t);
+  /* valley floor */
+  var fg=ctx.createLinearGradient(0,HOR+H*.02,0,H);
+  fg.addColorStop(0,col(mix(P.gnd,P.skyH,.32)));fg.addColorStop(.5,col(P.gnd));
+  fg.addColorStop(1,col(mix(P.gnd,[0,0,0],.42)));
+  ctx.fillStyle=fg;ctx.fillRect(0,HOR+H*.02,W,H-HOR);
+  drawDesert(P);
+  drawLava(P,t);
+  drawRiver(P,t);
+  drawWaterFill(P,t);
+  drawGlacier(P,t);
+  drawRuins(P);
+  drawVeg(P,t);
+  drawSwampMist(P,t);
+  drawCity(P,t);
+  drawSauro(P,t);
+  drawInsects(P,t);
+  drawFire(P,t);
+  drawHaze(P);
+  /* foreground bank */
+  ctx.fillStyle=col(P.rN);
+  ridgePath(nearR,H*1.01,H*.09);ctx.fill();
+  return P;
+}
+
+/* ============ timeline instrument ============ */
+var strip=document.getElementById("strip"),cursor=document.getElementById("cursor"),
+    readEl=document.getElementById("read"),noteEl=document.getElementById("note"),
+    noteT=document.getElementById("note-t"),hero=document.getElementById("hero"),
+    vig=document.getElementById("vig"),grain=document.getElementById("grain");
+var PAST=.72,LP=Math.log10(4.6e9),LF=Math.log10(5e9+1);
+function posOf(years){ /* years: + past, - future, 0 present */
+  if(years>0)return PAST*(1-Math.log10(Math.max(years,1))/LP);
+  if(years<0)return PAST+(1-PAST)*Math.log10(-years+1)/LF;
+  return PAST;
+}
+var eraBtns=[];
+(function buildStrip(){
+  var frag=document.createDocumentFragment();
+  var tickVals=[4e9,1e9,1e8,1e7,1e6,1e5,1e4,1e3,-1e3,-1e6,-1e9];
+  var tickLbl={"4000000000":"−4 Ga","1000000000":"−1 Ga","100000000":"−100 Ma","1000000":"−1 Ma","10000":"−10 ka","-1000000":"+1 Ma","-1000000000":"+1 Ga"};
+  for(var i=0;i<tickVals.length;i++){
+    var d=document.createElement("div");d.className="tick";
+    d.style.left=(posOf(tickVals[i])*100)+"%";
+    var lbl=tickLbl[String(tickVals[i])];
+    if(lbl){var s=document.createElement("i");s.textContent=lbl;d.appendChild(s)}
+    frag.appendChild(d);
+  }
+  for(i=0;i<N;i++){(function(i){
+    var b=document.createElement("button");b.className="era";
+    b.style.left=(posOf(ERAS[i].years)*100)+"%";
+    b.setAttribute("aria-label",ERAS[i].name+" — "+ERAS[i].time);
+    b.title=ERAS[i].name+" · "+ERAS[i].time;
+    b.addEventListener("click",function(){travelTo(i)});
+    frag.appendChild(b);eraBtns.push(b);
+  })(i)}
+  strip.appendChild(frag);
+})();
+function fmtYears(y){
+  if(y===0)return"TODAY · 2026";
+  var sign=y>0?"−":"+",v=Math.abs(y);
+  if(v>=1e9)return sign+(v/1e9).toFixed(1).replace(/\.0$/,"")+" Ga";
+  if(v>=1e6)return sign+Math.round(v/1e6)+" Ma";
+  if(v>=1e3)return sign+Math.round(v/1e3)+" ka";
+  return sign+Math.round(v)+" yr";
+}
+function sl(y){return y===0?0:(y>0?1:-1)*Math.log10(Math.abs(y)+1)} /* signed log */
+function slInv(v){return v===0?0:(v>0?1:-1)*(Math.pow(10,Math.abs(v))-1)}
+
+/* ============ scroll drive ============ */
+var maxScroll=1,rawT=0,curT=0,dirty=true,lastEra=-1,noteEra=-1,noteVis=0;
+function measure(){maxScroll=Math.max(1,document.documentElement.scrollHeight-innerHeight)}
+addEventListener("scroll",function(){rawT=clamp(scrollY/maxScroll,0,1);dirty=true},{passive:true});
+addEventListener("resize",measure,{passive:true});
+addEventListener("load",measure);
+measure();resize();
+
+function eraPos(tt){ /* scroll t -> era-space float with holds */
+  var e=tt*(N-1),i=Math.floor(e),f=e-i;
+  if(i>=N-1)return N-1;
+  return i+smooth(clamp((f-.30)/.40,0,1));
+}
+function travelTo(i){
+  var target=i/(N-1)*maxScroll;
+  if(RM){scrollTo(0,target);return}
+  scrollTo({top:target,behavior:"smooth"});
+}
+
+var lastReadStr="",lastNote="";
+function updateUI(pe,tt){
+  /* readout: interpolate signed-log time */
+  var i=clamp(Math.floor(pe),0,N-2),f=pe-i;
+  var y=slInv(lerp(sl(ERAS[i].years),sl(ERAS[i+1].years),f));
+  if(Math.abs(pe-Math.round(pe))<.02)y=ERAS[Math.round(pe)].years;
+  var near=Math.round(pe);
+  var str=fmtYears(y)+" · "+ERAS[near].name;
+  if(str!==lastReadStr){readEl.textContent=str;lastReadStr=str}
+  cursor.style.left=(posOf(y)*100)+"%";
+  if(near!==lastEra){
+    for(var k=0;k<eraBtns.length;k++)eraBtns[k].setAttribute("aria-current",k===near?"true":"false");
+    lastEra=near;
+  }
+  /* caption */
+  var dist=Math.abs(pe-near);
+  var target=clamp(1-(dist-.12)/.14,0,1);
+  if(tt<.012)target=0; /* hero owns the first beat */
+  if(near!==noteEra&&target>.05){noteEra=near;noteT.textContent=ERAS[near].cap;lastNote=ERAS[near].cap}
+  noteVis=RM?target:lerp(noteVis,target,.12);
+  noteEl.style.opacity=noteVis.toFixed(3);
+  noteEl.style.transform="translateX(-50%) translateY("+((1-noteVis)*10).toFixed(1)+"px)";
+  /* hero */
+  var ho=clamp(1-tt*16,0,1);
+  hero.style.opacity=ho.toFixed(3);
+  hero.style.visibility=ho<.01?"hidden":"visible";
+}
+
+/* breathing grain + vignette */
+function breathe(P,t){
+  if(RM){vig.style.opacity=".5";grain.style.opacity=".07";return}
+  var ph=Math.sin(t*TAU/P.breath);
+  vig.style.opacity=(.44+.14*ph).toFixed(3);
+  grain.style.opacity=(.055+.03*ph).toFixed(3);
+}
+
+/* ============ loop ============ */
+var running=false,rafId=0,lastT=0,clock=0;
+function frame(now){
+  rafId=0;
+  var dt=Math.min(.05,(now-lastT)/1000||.016);lastT=now;
+  clock+=dt;
+  if(RM){curT=rawT}
+  else{curT+=(rawT-curT)*Math.min(1,dt*3.2);if(Math.abs(rawT-curT)<.00004)curT=rawT}
+  var pe=eraPos(curT);
+  if(RM)pe=Math.round(pe);
+  var P=render(pe,RM?100:clock,dt);
+  updateUI(pe,curT);
+  breathe(P,clock);
+  dirty=Math.abs(rawT-curT)>.00004;
+  if(running&&(!RM||dirty))rafId=requestAnimationFrame(frame);
+  else if(running&&RM)running=false; /* reduced motion: stills — stop until next scroll */
+}
+function start(){if(!running){running=true;lastT=performance.now();rafId=requestAnimationFrame(frame)}}
+function stop(){running=false;if(rafId){cancelAnimationFrame(rafId);rafId=0}}
+document.addEventListener("visibilitychange",function(){document.hidden?stop():start()});
+/* pause when canvas scrolled out of sight (footer overscroll on some UAs) */
+if("IntersectionObserver"in window){
+  new IntersectionObserver(function(en){en[0].isIntersecting?(!document.hidden&&start()):stop()}).observe(cv);
+}
+if(RM){addEventListener("scroll",function(){start()},{passive:true})}
+start();
+})();
+</script>
+
+<!-- ═══════════════ CHANGELOG ═══════════════
+PASS 1 (foundation):
+  1. One fixed canvas, 1450vh scroll spacer; scroll -> damped t -> era-space float with
+     30/40/30 hold-blend segments; ten era keyframes (Hadean..Red Giant) with every visual
+     property (sky triplet, sun, water level, vegetation, snow, glacier, features 0..1)
+     numerically interpolated, so transitions are true morphs (ocean recedes, forest rises),
+     never crossfades.
+  2. The SAME valley forever: three seeded sine-octave ridgelines generated once
+     (landmark peak at u=.68 on the far ridge), identical geometry in every era; only
+     palette + dressing change. Feature painters: lava cracks (3-layer stroke), meteors,
+     ocean fill w/ sun column + shimmer, volcano plumes on detected mid-ridge peaks,
+     canopy-giant trunks (Carboniferous), dune arcs, river ribbon, glacier w/ crevasses +
+     moraine, sauropod silhouette (swaying neck), campfire w/ two watchers + smoke,
+     city street-grid + 280 flickering windows + THE one blinking visitor window, ruins
+     grid + mossy slabs, red-giant sun (.52H radius) with convection arcs.
+  3. Timeline instrument: log-position mapping (72% past compressing toward present,
+     28% future), tick marks with labels, clickable era dots (smooth fast-travel),
+     amber cursor, signed-log interpolated readout ("-3.8 Ga · ARCHEAN").
+  4. Witness captions crossfade per era hold; hero card fades in first 6% of scroll.
+  5. Breathing: vignette+grain opacity oscillate with era-interpolated period 3.2s..10s.
+  6. Reduced motion: stills (era snapped), instant travel, rAF stops between scrolls.
+     DPR cap 2 (1.5 mobile), element counts roughly halved on <=768px, visibilitychange
+     + IntersectionObserver pause. -->
+</body>
+</html>

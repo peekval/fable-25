@@ -3,8 +3,8 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>FABLE / 25 — one model, sixty-four design languages</title>
-<meta name="description" content="64 fundamentally different websites, designed and built end-to-end by Fable. Every visual generated from code — shaders, 3D, canvas, SVG, CSS. Zero stock assets.">
+<title>FABLE / 25 — one model, sixty-nine design languages</title>
+<meta name="description" content="69 fundamentally different websites, designed and built end-to-end by Fable. Every visual generated from code — shaders, 3D, canvas, SVG, CSS. Zero stock assets.">
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='6' fill='%230B0B0E'/%3E%3Ctext x='16' y='22' font-size='14' font-family='monospace' fill='%23F5F3EE' text-anchor='middle'%3E25%3C/text%3E%3C/svg%3E">
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;700&family=Instrument+Serif:ital@0;1&display=swap" rel="stylesheet">
@@ -52,7 +52,8 @@ footer p b{color:var(--ink);font-weight:500}
 .wavehead span{font-size:12px;letter-spacing:.3em;text-transform:uppercase;color:var(--ink)}
 .wavehead em{font-family:"Instrument Serif",serif;font-style:italic;color:var(--mut);font-size:15px}
 /* filters */
-.filters{display:flex;flex-wrap:wrap;gap:8px;padding:0 0 26px;position:sticky;top:0;z-index:40;background:linear-gradient(180deg,var(--bg) 78%,transparent);padding-top:14px;margin-top:-14px}
+.filters{display:flex;flex-wrap:wrap;gap:8px;position:sticky;top:0;z-index:40;background:var(--bg);padding:14px 0 16px;margin-top:-14px;border-bottom:1px solid var(--line);box-shadow:0 18px 22px -20px rgba(0,0,0,.85)}
+.grid{padding-top:22px}
 .chip{font-family:"Space Grotesk",sans-serif;font-size:12px;letter-spacing:.08em;text-transform:uppercase;color:var(--mut);background:#101014;border:1px solid var(--line);border-radius:100px;padding:9px 16px;cursor:pointer;transition:color .25s,border-color .25s,background .25s}
 .chip:hover{color:var(--ink);border-color:rgba(245,243,238,.28)}
 .chip.on{color:var(--bg);background:var(--ink);border-color:var(--ink)}
@@ -65,11 +66,11 @@ footer p b{color:var(--ink);font-weight:500}
 <body>
 <div class="wrap">
 <header>
-  <div class="kick">A design capability study — 64 sites, zero stock assets</div>
-  <h1>One model. <em>Sixty-four</em> design languages.</h1>
+  <div class="kick">A design capability study — 69 sites, zero stock assets</div>
+  <h1>One model. <em>Sixty-nine</em> design languages.</h1>
   <p class="sub">Every site below is a complete, living landing page in a fundamentally different visual dialect — <b>built from code</b>: WebGL shaders, real-time 3D, canvas simulations, generative SVG, kinetic type. Zero stock assets — where a site carries imagery, it is generated and palette-locked to its design system. Each passed documented design-review iterations before shipping. Every site carries its own <b>/guide</b> with a copy-paste reproduction prompt.</p>
   <div class="meta-row">
-    <span><b>64</b>websites</span>
+    <span><b>69</b>websites</span>
     <span><b>120</b>iteration passes</span>
     <span><b>0</b>stock images</span>
     <span><b>1</b>author — Fable</span>
@@ -149,7 +150,12 @@ const SITES=[
 ["61","61-kanzlei","STEINER & FREY","Advokatur-Template — der Paragraph zieht den roten Faden","swiss template · recht",["#F4EFE6","#5E2B25","#2F4536"],"swiss"],
 ["62","62-gasthaus","ALPENBLICK","Bergbeiz-Template — Höhenlinien zeichnen den Wanderweg","swiss template · gastro",["#F7F2E8","#C6403B","#7FA8C9"],"swiss"],
 ["63","63-schreinerei","SCHREINEREI FURRER","Handwerks-Template — Maserung & Schwalbenschwanz-Karten","swiss template · handwerk",["#F6F3ED","#A97C4F","#C24E32"],"swiss"],
-["64","64-physio","PHYSIOWERK","Physio-Template — die Bewegungsbahn fliesst durch die Seite","swiss template · gesundheit",["#FAF8F4","#9BB09A","#C97B5A"],"swiss"]
+["64","64-physio","PHYSIOWERK","Physio-Template — die Bewegungsbahn fliesst durch die Seite","swiss template · gesundheit",["#FAF8F4","#9BB09A","#C97B5A"],"swiss"],
+["65","65-babel","BABEL","The infinite library — everything you type already has an address","procedural webgl corridor",["#0E0B08","#D9A554","#EFE6D2"],"bigfive"],
+["66","66-aeon","AEON","One valley, 4.6 billion years — one uncut scroll through deep time","era-morphing canvas",["#101418","#7FA8C9","#4CAF6E"],"bigfive"],
+["67","67-oracle","ORACLE","The page that watches back — it noticed you hesitating","behavior engine",["#0B0C09","#C9CFA0","#3A3D2E"],"bigfive"],
+["68","68-maestro","MAESTRO","Conduct a synthesized orchestra with your scroll","web audio orchestra",["#0D0B07","#C9A25E","#5C4A28"],"bigfive"],
+["69","69-singular","SINGULAR","Fall into a black hole — your clock freezes at the horizon","gravitational lensing",["#05060A","#FFB37A","#2E52FF"],"bigfive"]
 ];
 const CATS=[
   ["all","All"],
@@ -161,9 +167,10 @@ const CATS=[
   ["product","Products & Brands"],
   ["studio","Studios & Ateliers"],
   ["finance","Finance"],
-  ["swiss","Swiss Templates"]
+  ["swiss","Swiss Templates"],
+  ["bigfive","The Big Five"]
 ];
-const WAVES={0:["Wave I","the twenty-five dialects"],25:["Wave II","the escalation — heavier 3D"],40:["Wave III","tech &amp; real estate — futuristic clean"],48:["Signature Collection","ten flagship builds — every technique at full depth"],58:["Wave V","Templates Schweiz — ready for real SMEs"]};
+const WAVES={0:["Wave I","the twenty-five dialects"],25:["Wave II","the escalation — heavier 3D"],40:["Wave III","tech &amp; real estate — futuristic clean"],48:["Signature Collection","ten flagship builds — every technique at full depth"],58:["Wave V","Templates Schweiz — ready for real SMEs"],64:["The Big Five","five experiences beyond reason"]};
 const grid=document.getElementById('grid');
 const bar=document.getElementById('filters');
 bar.innerHTML=CATS.map(([k,label])=>`<button class="chip${k==='all'?' on':''}" data-cat="${k}">${label}</button>`).join('');
@@ -173,7 +180,7 @@ function render(filter){
   grid.innerHTML=rows.map(([[n,slug,name,tag,tech,cols],i])=>{
     const g=`linear-gradient(125deg, ${cols[0]} 0%, ${cols[1]} 55%, ${cols[2]||cols[0]} 100%)`;
     const wave=(filter==='all'&&WAVES[i])?`<div class="wavehead"><span>${WAVES[i][0]}</span><em>${WAVES[i][1]}</em></div>`:``;
-    return wave+`<a class="card" href="/${slug}/"><div class="tile"><div class="sw" style="--g:${g}"></div><span class="num">${n} / 64</span></div><div class="body"><div class="name">${name}<span class="arr">→</span></div><div class="tag">${tag}</div><div class="tech">${tech}</div></div></a>`;
+    return wave+`<a class="card" href="/${slug}/"><div class="tile"><div class="sw" style="--g:${g}"></div><span class="num">${n} / 69</span></div><div class="body"><div class="name">${name}<span class="arr">→</span></div><div class="tag">${tag}</div><div class="tech">${tech}</div></div></a>`;
   }).join('')||`<p class="empty">Nothing here yet.</p>`;
   if(io)io.disconnect();
   io=new IntersectionObserver(es=>es.forEach(e=>{if(e.isIntersecting){e.target.classList.add('in');io.unobserve(e.target)}}),{threshold:.08});
@@ -184,6 +191,10 @@ bar.addEventListener('click',e=>{
   bar.querySelectorAll('.chip').forEach(c=>c.classList.remove('on'));
   b.classList.add('on');
   render(b.dataset.cat);
+  // Scroll-Reset: das gefilterte Grid beginnt direkt unter der Leiste, nie mittendrin
+  // (Bar kann sticky kleben -> Ziel über die Grid-Oberkante berechnen, nicht über die Bar)
+  const target=grid.getBoundingClientRect().top+scrollY-bar.offsetHeight-10;
+  if(scrollY>target) scrollTo({top:Math.max(0,target),behavior:matchMedia("(prefers-reduced-motion: reduce)").matches?"auto":"smooth"});
 });
 render('all');
 </script>

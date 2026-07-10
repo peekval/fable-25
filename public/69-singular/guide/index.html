@@ -1,0 +1,34 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>SINGULAR — The last thing light does — Guide</title>
+<meta name="description" content="Techniques behind SINGULAR — The last thing light does, plus a copy-paste reproduction prompt.">
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{background:#05060A;color:#EDE9E0;font-family:Georgia,serif;line-height:1.7;-webkit-font-smoothing:antialiased}
+.wrap{max-width:760px;margin:0 auto;padding:110px 24px 90px}
+a.back{position:fixed;top:16px;left:16px;font-family:ui-monospace,monospace;font-size:13px;color:#EDE9E0;text-decoration:none;border:1px solid rgba(237,233,224,.25);padding:7px 14px;border-radius:999px;background:rgba(0,0,0,.35)}
+a.back:hover{border-color:#FFB37A;color:#FFB37A}
+.kick{font-family:ui-monospace,monospace;font-size:11px;letter-spacing:.34em;text-transform:uppercase;color:#FFB37A;margin-bottom:18px}
+h1{font-size:clamp(30px,5.5vw,46px);font-weight:400;line-height:1.15;margin-bottom:14px}
+.lede{color:rgba(237,233,224,.66);margin-bottom:54px;font-style:italic}
+section{margin-bottom:38px}
+h2{font-size:19px;font-weight:400;margin-bottom:10px;color:#FFB37A}
+h2 span{font-family:ui-monospace,monospace;font-size:12px;letter-spacing:.2em;opacity:.7;margin-right:10px}
+section p{color:rgba(237,233,224,.82);font-size:16px}
+.pbox{margin-top:60px;border:1px solid rgba(237,233,224,.18);border-radius:10px;overflow:hidden}
+.ph{display:flex;justify-content:space-between;align-items:center;padding:12px 16px;border-bottom:1px solid rgba(237,233,224,.14);font-family:ui-monospace,monospace;font-size:11px;letter-spacing:.24em;text-transform:uppercase;color:#FFB37A}
+.ph button{font-family:inherit;font-size:11px;letter-spacing:.14em;color:#05060A;background:#FFB37A;border:0;border-radius:999px;padding:6px 14px;cursor:pointer}
+pre{white-space:pre-wrap;padding:20px;font-family:ui-monospace,monospace;font-size:13px;line-height:1.75;color:rgba(237,233,224,.86)}
+</style></head><body>
+<a class="back" href="/69-singular/">← SINGULAR</a>
+<div class="wrap">
+<p class="kick">The Big Five · making-of</p>
+<h1>SINGULAR — The last thing light does</h1>
+<p class="lede">How this experience works — and the prompt that rebuilds it. All of it is code: no image or audio assets, everything procedural.</p>
+<section><h2><span>01</span> The hole</h2><p>A raw-WebGL fragment shader bends a procedural starfield around the shadow with a screen-space lensing field; the accretion disk is doppler-shifted — one side blazing blue-white, the other dim red — under a thin photon ring. Lean shader, reduced internal resolution, static-frame degrade on weak rasterizers.</p></section>
+<section><h2><span>02</span> The fall</h2><p>Scroll chapters approach: Orbit (calm facts) -> Approach (lensing intensifies) -> Spaghettification, where the typography itself stretches and tears apart with tidal force -> the horizon, where the screen swallows to black -> Beyond: a pure-white, perfectly still chapter. The contrast is the payoff.</p></section>
+<section><h2><span>03</span> Time dilation</h2><p>Two clocks run from the start: proper time keeps ticking, observer time slows and freezes at the horizon. 'To everyone watching, you never fell.'</p></section>
+<section><h2><span>04</span> Fallbacks</h2><p>No-WebGL gets an elegant canvas disk; reduced motion serves readable chapters with mild fixed stretch; the loop pauses offscreen and on hidden tabs.</p></section>
+<div class="pbox"><div class="ph"><span>Reproduction prompt</span><button onclick="navigator.clipboard&&navigator.clipboard.writeText(document.getElementById('prompt').textContent)">Copy</button></div>
+<pre id="prompt">Build a single-file black-hole experience called "SINGULAR — The last thing light does." Void black (#05060A), disk gradient white-blue -> amber-red (#FFB37A), monumental grotesque + mono. Hero: a raw-WebGL black hole — fragment shader with screen-space gravitational lensing warping a procedural starfield around the shadow, a doppler-shifted accretion disk (approaching side brighter and bluer, receding side dim red), and a thin photon ring; keep the shader lean, render at ~0.6x internal resolution, and degrade to a static rendered frame if frame times explode. Scroll is the fall, in chapters: ORBIT (safe distance; calm mono facts: mass, spin), APPROACH (lensing and disk grow), SPAGHETTIFICATION (headlines stretch vertically and letter-spacing tears words apart progressively with tidal force — legible until deliberately not), THE HORIZON (the screen swallows to black over one long beat) and BEYOND (a pure-white inverted chapter, perfectly still: "Inside, all directions point to the center."), ending on a single point. Run two clocks from the start: proper time ticks steadily while observer time slows and freezes at the horizon, with physics-poetic captions ("To everyone watching, you never fell."). prefers-reduced-motion: static hole, mild fixed type-stretch, all chapters readable. No-WebGL: elegant canvas/CSS disk. Pause offscreen/hidden; DPR cap 1.5; watch overflow during the stretch (clip it); no horizontal overflow at 390px; zero console errors.</pre></div>
+</div></body></html>

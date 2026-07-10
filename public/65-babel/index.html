@@ -1,0 +1,1322 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>BABEL — The Infinite Library</title>
+<meta name="description" content="BABEL, the infinite library. An endless lamplit corridor of hexagonal galleries that generates itself. All books. All of them.">
+<!--
+  CHANGELOG
+  PASS 1 (architecture): raw-WebGL hexagonal corridor (pointy-top hex profile: two vertical
+  shelf walls, two slanted shelf vaults, wood slants falling to a void below a railed walkway);
+  galleries recycle every 14m — an 11-segment window rebuilds its vertex buffer whenever the
+  camera crosses a boundary, so depth is a JS double and GL coordinates stay small (no float
+  precision death at gallery 24,000,000). Spine atlas: 4 procedural 2048x512 shelf variants
+  (seeded widths/heights/palette, gold foil bands, 7px gibberish titles, leaning books, gaps);
+  wood texture for walkway/ribs. Lamps at gallery centers are computed in the fragment shader
+  with mod(z,L) — one warm pool per gallery, no light uniforms. Catalogue: FNV-1a of anything
+  typed -> gallery/wall/shelf/book address; fast travel eases through thousands of galleries a
+  second and the found book contains the visitor's exact phrase inside its pseudo-language page.
+-->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Marcellus&family=EB+Garamond:ital,wght@0,400;0,500;1,400&family=IBM+Plex+Mono:wght@300;400&display=swap" rel="stylesheet">
+<style>
+:root{
+  --void:#070503;
+  --panel:#14100a;
+  --paper:#e9dfc8;
+  --ivory:#f2ead6;
+  --amber:#d9a45b;
+  --ember:#b4783a;
+  --dim:#8d7c62;
+  --faint:#5c5040;
+  --line:rgba(217,164,91,.16);
+  --line-soft:rgba(217,164,91,.09);
+  --e:cubic-bezier(.22,.61,.24,1);
+}
+*{margin:0;padding:0;box-sizing:border-box}
+html{scroll-behavior:smooth;background:var(--void)}
+@media (prefers-reduced-motion:reduce){html{scroll-behavior:auto}}
+body{
+  background:var(--void);color:var(--paper);
+  font-family:"EB Garamond",Georgia,serif;font-size:19px;line-height:1.75;
+  -webkit-font-smoothing:antialiased;overflow-x:hidden;
+}
+::selection{background:var(--amber);color:var(--void)}
+h1,h2,h3{font-family:"Marcellus",serif;font-weight:400}
+.mono{font-family:"IBM Plex Mono",monospace;font-weight:300}
+a{color:inherit}
+button{font:inherit;color:inherit;background:none;border:none;cursor:pointer}
+
+/* ---------- fixed chrome ---------- */
+.back{
+  position:fixed;top:1.1rem;left:1.2rem;z-index:120;
+  font-family:"IBM Plex Mono",monospace;font-size:.78rem;letter-spacing:.12em;
+  text-decoration:none;color:var(--paper);
+  background:rgba(7,5,3,.6);border:1px solid var(--line);border-radius:999px;
+  padding:.45rem 1rem;backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);
+  transition:background .35s,color .35s;
+}
+.back:hover{background:var(--amber);color:var(--void);border-color:var(--amber)}
+
+/* ---------- the passage ---------- */
+#passage{height:640vh;position:relative}
+.stage{
+  position:sticky;top:0;height:100vh;height:100svh;overflow:hidden;
+  background:var(--void);
+}
+.stage.fixed{position:fixed;inset:0;z-index:90;height:100vh;height:100svh}
+#gl,#flat{position:absolute;inset:0;width:100%;height:100%;display:block}
+#flat{display:none}
+.no-webgl #gl{display:none}
+.no-webgl #flat{display:block}
+.vig{ /* candle vignette + faint warm iris */
+  position:absolute;inset:0;pointer-events:none;z-index:3;
+  background:
+    radial-gradient(120% 100% at 50% 46%, rgba(0,0,0,0) 42%, rgba(4,2,1,.55) 78%, rgba(2,1,0,.92) 100%);
+}
+.woosh{
+  position:absolute;inset:-12%;pointer-events:none;z-index:4;opacity:0;
+  background:repeating-conic-gradient(from 0deg at 50% 47%,
+    rgba(233,223,200,.05) 0deg .5deg, transparent .5deg 6.3deg);
+  -webkit-mask-image:radial-gradient(60% 60% at 50% 47%, transparent 22%, #000 62%);
+          mask-image:radial-gradient(60% 60% at 50% 47%, transparent 22%, #000 62%);
+  transition:opacity .5s;
+}
+.travelling .woosh{opacity:1}
+@media (prefers-reduced-motion:no-preference){
+  .travelling .woosh{animation:woosh-spin 1.1s linear infinite}
+  @keyframes woosh-spin{to{transform:rotate(6.3deg)}}
+}
+
+/* hero words over the corridor */
+.hero-mark{
+  position:absolute;inset:0;z-index:5;pointer-events:none;
+  display:flex;flex-direction:column;align-items:center;justify-content:center;
+  text-align:center;padding:0 1.2rem;
+  transition:opacity .6s var(--e);
+}
+.hero-mark.gone{opacity:0}
+.hero-mark h1{
+  font-size:clamp(3.2rem,13vw,7.5rem);letter-spacing:clamp(.22em,3.4vw,.46em);
+  text-indent:clamp(.22em,3.4vw,.46em);color:var(--ivory);line-height:1.05;
+  text-shadow:0 0 60px rgba(217,164,91,.25);
+}
+.hero-mark .tag{
+  margin-top:.9rem;font-style:italic;font-size:clamp(1.05rem,2.6vw,1.35rem);color:var(--dim);letter-spacing:.05em;
+}
+.hero-mark .all{
+  margin-top:1.9rem;font-family:"IBM Plex Mono",monospace;font-size:.7rem;
+  letter-spacing:.42em;text-indent:.42em;text-transform:uppercase;color:var(--amber);
+}
+.cue{
+  position:absolute;bottom:1.5rem;left:50%;transform:translateX(-50%);z-index:6;
+  font-family:"IBM Plex Mono",monospace;font-size:.64rem;letter-spacing:.36em;text-indent:.36em;
+  color:var(--dim);text-transform:uppercase;pointer-events:none;transition:opacity .6s;
+}
+@media (prefers-reduced-motion:no-preference){
+  .cue{animation:cue 3.6s ease-in-out infinite}
+  @keyframes cue{0%,100%{opacity:.35}50%{opacity:.9}}
+}
+.cue.gone{opacity:0 !important;animation:none}
+
+/* HUD */
+.hud{
+  position:absolute;left:1.2rem;bottom:1.2rem;z-index:6;pointer-events:none;
+  font-family:"IBM Plex Mono",monospace;color:var(--dim);
+  opacity:0;transition:opacity .8s var(--e);
+}
+.hud.on{opacity:1}
+.hud .g{font-size:.82rem;letter-spacing:.18em;color:var(--ivory)}
+.hud .g b{color:var(--amber);font-weight:400}
+.hud .d{font-size:.64rem;letter-spacing:.26em;margin-top:.25rem;text-transform:lowercase;font-style:italic;
+  font-family:"EB Garamond",serif;font-size:.95rem;color:var(--dim)}
+.hint{
+  position:absolute;right:1.2rem;bottom:1.35rem;z-index:6;pointer-events:none;
+  font-family:"IBM Plex Mono",monospace;font-size:.62rem;letter-spacing:.3em;
+  text-transform:uppercase;color:var(--amber);opacity:0;transition:opacity .9s;
+  text-align:right;
+}
+.hint.on{opacity:.85}
+.return-pill{
+  position:absolute;top:1.1rem;right:1.2rem;z-index:8;display:none;
+  font-family:"IBM Plex Mono",monospace;font-size:.72rem;letter-spacing:.14em;
+  color:var(--paper);background:rgba(7,5,3,.6);border:1px solid var(--line);
+  border-radius:999px;padding:.45rem 1.1rem;
+  backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);
+  transition:background .35s,color .35s;
+}
+.return-pill:hover{background:var(--amber);color:var(--void)}
+.stage.fixed .return-pill{display:block}
+.travelcap{
+  position:absolute;left:50%;top:12%;transform:translateX(-50%);z-index:7;
+  font-family:"IBM Plex Mono",monospace;font-size:.66rem;letter-spacing:.34em;text-indent:.34em;
+  text-transform:uppercase;color:var(--amber);opacity:0;transition:opacity .5s;
+  white-space:nowrap;
+}
+.travelling .travelcap{opacity:.9}
+
+/* glowing book hotspots */
+.hot{
+  position:absolute;z-index:5;width:44px;height:44px;margin:-22px 0 0 -22px;
+  border-radius:50%;cursor:pointer;padding:0;
+  background:radial-gradient(circle, rgba(255,214,140,.5) 0%, rgba(255,190,100,.14) 42%, transparent 70%);
+}
+.hot::after{
+  content:"";position:absolute;inset:30%;border-radius:50%;
+  border:1px solid rgba(255,214,140,.55);
+}
+@media (prefers-reduced-motion:no-preference){
+  .hot{animation:breathe 2.6s ease-in-out infinite}
+  @keyframes breathe{0%,100%{transform:scale(.9);filter:brightness(.9)}50%{transform:scale(1.12);filter:brightness(1.25)}}
+}
+.hot:focus-visible{outline:1px solid var(--amber);outline-offset:4px}
+
+/* ---------- shared section shell ---------- */
+.sec{padding:7.5rem 1.4rem;position:relative;background:var(--void)}
+.inner{max-width:980px;margin:0 auto}
+.kicker{
+  font-family:"IBM Plex Mono",monospace;font-size:.66rem;letter-spacing:.42em;
+  text-transform:uppercase;color:var(--dim);margin-bottom:1.3rem;
+}
+.kicker::before{content:"";display:inline-block;width:2.2rem;height:1px;background:var(--line);vertical-align:middle;margin-right:1rem}
+.sec h2{
+  font-size:clamp(1.8rem,4.6vw,2.9rem);letter-spacing:.08em;
+  color:var(--ivory);margin-bottom:1.3rem;line-height:1.25;
+}
+.lede{max-width:33em;color:var(--dim);font-size:1.1rem}
+.lede em{color:var(--paper)}
+
+/* ---------- catalogue ---------- */
+#catalogue{background:linear-gradient(180deg,var(--void),#0b0805 40%,var(--void))}
+.consult{
+  margin-top:2.8rem;display:flex;gap:.7rem;flex-wrap:wrap;max-width:620px;
+}
+.consult input{
+  flex:1 1 260px;min-width:0;
+  font-family:"EB Garamond",serif;font-size:1.08rem;font-style:italic;
+  color:var(--ivory);background:rgba(20,16,10,.7);
+  border:1px solid var(--line);border-radius:2px;
+  padding:.95rem 1.15rem;outline:none;
+  transition:border-color .3s;
+}
+.consult input::placeholder{color:var(--faint)}
+.consult input:focus{border-color:rgba(217,164,91,.5)}
+.consult button{
+  font-family:"IBM Plex Mono",monospace;font-size:.72rem;letter-spacing:.3em;text-indent:.3em;
+  text-transform:uppercase;color:var(--void);background:var(--amber);
+  border:1px solid var(--amber);border-radius:2px;padding:.95rem 1.7rem;
+  transition:background .3s,color .3s;
+}
+.consult button:hover{background:var(--ivory);border-color:var(--ivory)}
+.cat-note{margin-top:1rem;font-style:italic;color:var(--faint);font-size:.98rem;max-width:34em}
+
+.card{
+  margin-top:2.6rem;max-width:620px;
+  background:linear-gradient(165deg,#181209,#100c07 70%);
+  border:1px solid var(--line);border-radius:3px;position:relative;
+  padding:1.8rem 1.9rem 1.7rem;
+  opacity:0;transform:translateY(14px);
+  transition:opacity .7s var(--e),transform .7s var(--e);
+  visibility:hidden;
+}
+.card.on{opacity:1;transform:none;visibility:visible}
+.card::before{content:"";position:absolute;inset:.5rem;border:1px solid var(--line-soft);pointer-events:none;border-radius:2px}
+.card::after{ /* punched catalogue hole */
+  content:"";position:absolute;left:50%;bottom:.85rem;width:14px;height:14px;margin-left:-7px;
+  border-radius:50%;border:1px solid var(--line);background:var(--void);
+}
+.card .row{display:flex;gap:1rem;align-items:baseline;flex-wrap:wrap;margin-bottom:.55rem}
+.card .lbl{
+  font-family:"IBM Plex Mono",monospace;font-size:.58rem;letter-spacing:.3em;
+  text-transform:uppercase;color:var(--faint);flex:0 0 5.4rem;
+}
+.card .val{font-size:1.05rem;color:var(--paper);word-break:break-word;min-width:0}
+.card .val.q{font-style:italic;color:var(--ivory)}
+.card .val.addr{font-family:"IBM Plex Mono",monospace;font-size:.82rem;letter-spacing:.08em;color:var(--amber)}
+.card .val.title{font-family:"Marcellus",serif;letter-spacing:.06em}
+.card .walk{
+  margin-top:1.2rem;display:inline-block;
+  font-family:"IBM Plex Mono",monospace;font-size:.7rem;letter-spacing:.3em;text-indent:.3em;
+  text-transform:uppercase;color:var(--amber);
+  border:1px solid rgba(217,164,91,.4);padding:.85rem 1.7rem;border-radius:2px;
+  transition:background .3s,color .3s;
+}
+.card .walk:hover{background:var(--amber);color:var(--void)}
+.card .never{
+  margin-top:1.15rem;margin-bottom:.4rem;font-size:.9rem;font-style:italic;color:var(--faint);
+}
+
+/* ---------- manifesto ---------- */
+#library .pull{
+  font-family:"Marcellus",serif;font-size:clamp(1.5rem,3.6vw,2.2rem);
+  color:var(--ivory);letter-spacing:.1em;margin:2.6rem 0 2.2rem;
+}
+#library .pull b{color:var(--amber);font-weight:400}
+.manif{max-width:36em;color:var(--dim)}
+.manif p{margin-bottom:1.3rem}
+.manif p em{color:var(--paper)}
+.manif p:first-child::first-letter{
+  font-family:"Marcellus",serif;font-size:3.1em;float:left;line-height:.82;
+  padding:.06em .12em 0 0;color:var(--amber);
+}
+
+/* ---------- colophon / footer ---------- */
+#colophon{padding-bottom:3rem}
+.facts{
+  display:flex;gap:2.4rem;flex-wrap:wrap;margin:2.4rem 0 3rem;
+}
+.facts div{min-width:8rem}
+.facts .n{font-family:"Marcellus",serif;font-size:1.7rem;color:var(--ivory);letter-spacing:.06em}
+.facts .l{font-family:"IBM Plex Mono",monospace;font-size:.6rem;letter-spacing:.3em;text-transform:uppercase;color:var(--faint);margin-top:.2rem}
+footer{border-top:1px solid var(--line-soft);padding:2.4rem 1.4rem 2.8rem;background:var(--void)}
+.foot{
+  max-width:980px;margin:0 auto;display:flex;flex-wrap:wrap;gap:1.2rem;
+  align-items:baseline;justify-content:space-between;
+}
+.foot .wordmark{font-family:"Marcellus",serif;letter-spacing:.5em;color:var(--dim);font-size:1rem}
+.foot a{
+  font-family:"IBM Plex Mono",monospace;font-size:.72rem;letter-spacing:.2em;
+  color:var(--dim);text-decoration:none;border-bottom:1px solid var(--line);padding-bottom:.15rem;
+  transition:color .35s,border-color .35s;
+}
+.foot a:hover{color:var(--ivory);border-color:var(--amber)}
+.foot .fict{font-size:.86rem;font-style:italic;color:var(--faint)}
+
+/* ---------- book overlay ---------- */
+.bookdim{
+  position:fixed;inset:0;z-index:200;display:none;
+  background:rgba(4,3,1,.82);
+  backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px);
+  overflow-y:auto;padding:4.5rem 1rem 3rem;
+}
+.bookdim.on{display:block}
+.page{
+  max-width:600px;margin:0 auto;position:relative;
+  background:
+    radial-gradient(120% 90% at 50% 0%, #241b10 0%, #191207 55%, #120d06 100%);
+  border:1px solid var(--line);border-radius:3px;
+  padding:clamp(1.6rem,5vw,3rem) clamp(1.3rem,5.5vw,3.2rem) 2.2rem;
+  box-shadow:0 30px 90px rgba(0,0,0,.75), 0 0 120px rgba(217,164,91,.06);
+  opacity:0;transform:translateY(16px);
+  transition:opacity .55s var(--e),transform .55s var(--e);
+}
+.bookdim.on .page{opacity:1;transform:none}
+@media (prefers-reduced-motion:reduce){.page{transition:none}}
+.page .addr{
+  font-family:"IBM Plex Mono",monospace;font-size:.62rem;letter-spacing:.26em;
+  text-transform:uppercase;color:var(--amber);margin-bottom:1rem;
+}
+.page h3{
+  font-size:clamp(1.35rem,3.4vw,1.8rem);letter-spacing:.1em;color:var(--ivory);
+  margin-bottom:1.6rem;line-height:1.3;
+}
+.page h3::after{content:"";display:block;width:3.2rem;height:1px;background:var(--line);margin-top:1.1rem}
+.page .body p{
+  color:#c9bda0;font-size:.98rem;line-height:1.95;text-align:justify;
+  -webkit-hyphens:auto;hyphens:auto;margin-bottom:1.15rem;
+}
+.page .foot-note{
+  margin-top:1.7rem;font-style:italic;font-size:.9rem;color:var(--faint);
+  border-top:1px solid var(--line-soft);padding-top:1.1rem;
+}
+.page .close{
+  position:absolute;top:.8rem;right:.9rem;
+  font-family:"IBM Plex Mono",monospace;font-size:.9rem;color:var(--dim);
+  padding:.4rem .6rem;transition:color .3s;
+}
+.page .close:hover{color:var(--ivory)}
+
+/* reveals */
+.rv{opacity:0;transform:translateY(20px);transition:opacity .7s var(--e),transform .7s var(--e)}
+.rv.in{opacity:1;transform:none}
+@media (prefers-reduced-motion:reduce){
+  .rv{opacity:1;transform:none;transition:none}
+  .hero-mark,.card,.hot{transition:none;animation:none}
+}
+@media (max-width:640px){
+  body{font-size:17.5px}
+  .sec{padding:5.5rem 1.2rem}
+  .hud{left:1rem;bottom:1rem}
+  .hint{display:none}
+  .facts{gap:1.6rem}
+}
+</style>
+</head>
+<body>
+
+<a class="back" href="/">←&nbsp;25</a>
+
+<!-- ================= THE PASSAGE ================= -->
+<section id="passage" aria-label="The passage — an endless walk through the library">
+  <div class="stage" id="stage">
+    <canvas id="gl" aria-hidden="true"></canvas>
+    <canvas id="flat" aria-hidden="true"></canvas>
+    <div class="vig" aria-hidden="true"></div>
+    <div class="woosh" aria-hidden="true"></div>
+
+    <div class="hero-mark" id="heroMark">
+      <h1>BABEL</h1>
+      <p class="tag">The infinite library</p>
+      <p class="all">All books · all of them</p>
+    </div>
+    <p class="cue" id="cue" aria-hidden="true">scroll to walk ↓</p>
+
+    <div class="hud" id="hud" aria-hidden="true">
+      <p class="g">GALLERY <b id="gNum">1</b></p>
+      <p class="d" id="gName">the vestibule</p>
+    </div>
+    <p class="hint" id="hint" aria-hidden="true">a book is glowing —<br>touch it</p>
+    <p class="travelcap" id="travelCap" aria-hidden="true">travelling…</p>
+    <button class="return-pill" id="returnPill" type="button">← return to the catalogue</button>
+  </div>
+</section>
+
+<!-- ================= THE CATALOGUE ================= -->
+<section class="sec" id="catalogue" aria-label="The catalogue">
+  <div class="inner">
+    <p class="kicker rv">The catalogue</p>
+    <h2 class="rv">Everything you can type<br>is already shelved.</h2>
+    <p class="lede rv">Write anything — a name, a fear, a grocery list. The library does not search. It has never needed to. It only <em>points.</em></p>
+
+    <form class="consult rv" id="consult">
+      <input id="query" type="text" maxlength="120" autocomplete="off" spellcheck="false"
+             placeholder="type anything…" aria-label="Consult the catalogue">
+      <button type="submit">consult</button>
+    </form>
+    <p class="cat-note rv">The catalogue cannot fail. The library contains every phrase — including that one.</p>
+
+    <div class="card" id="card" aria-live="polite">
+      <div class="row"><span class="lbl">subject</span><span class="val q" id="cSubject">—</span></div>
+      <div class="row"><span class="lbl">address</span><span class="val addr" id="cAddr">—</span></div>
+      <div class="row"><span class="lbl">volume</span><span class="val title" id="cTitle">—</span></div>
+      <p class="never" id="cNever">Filed before you thought of it.</p>
+      <button class="walk" id="walkBtn" type="button">walk there →</button>
+    </div>
+  </div>
+</section>
+
+<!-- ================= ON THE LIBRARY ================= -->
+<section class="sec" id="library" aria-label="On the library">
+  <div class="inner">
+    <p class="kicker rv">On the library</p>
+    <h2 class="rv">No one built it.</h2>
+    <p class="pull rv">All books. <b>All of them.</b></p>
+    <div class="manif">
+      <p class="rv">The library is total. Its shelves register every combination of every letter — everything sayable, in every language that exists and in every language that merely could.</p>
+      <p class="rv">Therefore it holds the true history of the future, the catalogue of the catalogue, your obituary with the date left wrong, and the same book ten thousand times with a single comma moved. Almost all of it is noise. <em>That is the price of all of it.</em></p>
+      <p class="rv">No one built the library. It is what happens when nothing is ever ruled out. We only added the lamps.</p>
+    </div>
+  </div>
+</section>
+
+<!-- ================= COLOPHON ================= -->
+<section class="sec" id="colophon" aria-label="Colophon">
+  <div class="inner">
+    <p class="kicker rv">Colophon</p>
+    <h2 class="rv">Arithmetic, shelved.</h2>
+    <p class="lede rv">There are no images here. No photographs of shelves, no recordings of dust. Every spine, every title, every page is <em>arithmetic</em> — seeded by its address and summoned the instant you look at it. Close the tab and the library goes on without you.</p>
+    <div class="facts rv">
+      <div><p class="n">0</p><p class="l">image assets</p></div>
+      <div><p class="n">1</p><p class="l">file</p></div>
+      <div><p class="n" id="factGal">2³²</p><p class="l">galleries addressed</p></div>
+      <div><p class="n">∞</p><p class="l">corridor</p></div>
+    </div>
+  </div>
+</section>
+
+<footer>
+  <div class="foot">
+    <span class="wordmark">BABEL</span>
+    <span class="fict">A fictional library, shelved for FABLE/25.</span>
+    <a href="/65-babel/guide/">guide &amp; prompt →</a>
+  </div>
+</footer>
+
+<!-- ================= BOOK OVERLAY ================= -->
+<div class="bookdim" id="bookDim" role="dialog" aria-modal="true" aria-label="An opened book">
+  <article class="page">
+    <button class="close" id="bookClose" type="button" aria-label="Close the book">✕</button>
+    <p class="addr" id="bAddr">—</p>
+    <h3 id="bTitle">—</h3>
+    <div class="body" id="bBody"></div>
+    <p class="foot-note">One sentence on this page is legible. It found you; you did not find it.</p>
+  </article>
+</div>
+
+<script>
+(function(){
+"use strict";
+var RM = window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+var clamp = function(v,a,b){ return v<a?a:v>b?b:v; };
+
+/* =====================================================
+   0 · SEEDS, HASHES, LANGUAGE
+   ===================================================== */
+function h32(n){ n=n|0; n=(n^61)^(n>>>16); n=(n+(n<<3))|0; n^=n>>>4; n=Math.imul(n,0x27d4eb2d); n^=n>>>15; return n>>>0; }
+function fnv(str){ var h=0x811c9dc5,i; for(i=0;i<str.length;i++){ h^=str.charCodeAt(i); h=Math.imul(h,0x01000193); } return h>>>0; }
+function rng(seed){ var a=seed>>>0; return function(){ a|=0; a=(a+0x6D2B79F5)|0; var t=Math.imul(a^(a>>>15),1|a); t=(t+Math.imul(t^(t>>>7),61|t))^t; return ((t^(t>>>14))>>>0)/4294967296; }; }
+function pick(r,arr){ return arr[(r()*arr.length)|0]; }
+
+var ON=["b","c","d","f","g","h","k","l","m","n","p","r","s","t","v","x","z","th","tl","hr","vr","ml","qu","ph","chr"];
+var VO=["a","e","i","o","u","a","e","o","ö","aë","ia","ou","y"];
+var CO=["","","","","n","r","s","x","l","m","th","n","r"];
+function word(r){
+  var n=1+(r()*3|0), w="", i;
+  for(i=0;i<n;i++) w+=pick(r,ON)+pick(r,VO)+(r()<0.4?pick(r,CO):"");
+  return w;
+}
+function cap(w){ return w.charAt(0).toUpperCase()+w.slice(1); }
+function titleFor(seed){
+  var r=rng(seed^0x5eed), n=1+(r()*3|0), out=[], i;
+  for(i=0;i<n;i++) out.push(cap(word(r)));
+  if(n===1 && r()<0.5) out.push(pick(r,["Uqbar","Orbis","Tertius","Hrönir","Mlö"]));
+  return out.join(" ");
+}
+function designation(g){
+  var r=rng(h32(g)^0xd351);
+  return word(r)+" "+word(r);
+}
+var LINES=[
+"The library will outlast the last reader of this sentence.",
+"Somewhere near, a book describes this exact moment, and gets it wrong.",
+"Every book you will ever love is already here, misfiled.",
+"To be legible, once, in all this noise, is enough.",
+"The shelves do not end; only the lamplight does.",
+"You were catalogued long before you arrived.",
+"Infinity is mostly shelving.",
+"The librarians died out; the books did not notice.",
+"Everything true is here, next to everything false, in identical bindings.",
+"This sentence is the only survivor of its book.",
+"Walk long enough and you will pass your own biography, unmarked.",
+"The library forgives nothing; it simply keeps everything.",
+"There is a book that is only your name, repeated until it means something.",
+"No page is blank; some are merely patient.",
+"The exit is also catalogued.",
+"Someone shelved the sound of rain here, phonetically.",
+"Order is a superstition the books permit us.",
+"Somewhere a shelf holds the day you were born, described exactly."
+];
+function sentence(r){
+  var n=4+(r()*8|0), out=[], i;
+  for(i=0;i<n;i++) out.push(word(r));
+  var s=cap(out.join(" "));
+  return s+(r()<0.16?"?":".");
+}
+function paragraph(r,nMin,nMax){
+  var n=nMin+((nMax-nMin)*r()|0), out=[], i;
+  for(i=0;i<n;i++) out.push(sentence(r));
+  return out;
+}
+/* a page of pseudo-language with one legible line (and optionally the visitor's phrase) */
+function bookPage(seed, phrase){
+  var r=rng(seed^0xb00c);
+  var paras=[paragraph(r,4,7),paragraph(r,4,8),paragraph(r,3,6)];
+  var line=LINES[(seed>>>3)%LINES.length];
+  var pi=(seed>>>6)%3, si=1+((seed>>>9)%(paras[pi].length-1));
+  paras[pi].splice(si,0,line);
+  if(phrase){
+    var pj=(pi+1)%3, sj=1+((seed>>>12)%(paras[pj].length-1));
+    paras[pj].splice(sj,0,cap(phrase)+(/[.!?…]$/.test(phrase)?"":"."));
+  }
+  return paras.map(function(p){ return p.join(" "); });
+}
+
+/* address for anything typed */
+var L=14;                       /* gallery length in meters */
+function addressOf(text){
+  var t=text.trim().replace(/\s+/g," ").toLowerCase();
+  var h=fnv(t), h2=h32(h^0xabcd);
+  return {
+    hash:h,
+    gallery: 1 + (((h%4294967)*997 + (h2%997))% 4294967296)%429496729 + (h2%7)*429496729, /* 1..~3e9 */
+    wall: 1 + (h2 & 3),
+    shelf: 1 + ((h2>>>2) % 5),
+    book: 1 + ((h2>>>5) % 32)
+  };
+}
+var ROMAN=["I","II","III","IV"];
+function fmtAddr(a){
+  return "Gallery "+a.gallery.toLocaleString("en-US")+" · Wall "+ROMAN[a.wall-1]+" · Shelf "+a.shelf+" · Book "+a.book;
+}
+
+/* =====================================================
+   1 · PROCEDURAL TEXTURES (canvas → GL)
+   ===================================================== */
+var PALETTE=[ /* muted leather hues: [h,s%,l%] */
+  [8,42,26],[18,46,24],[26,40,30],[352,38,22],[40,34,28],
+  [140,18,20],[200,22,22],[210,16,18],[46,40,34],[0,0,16],[24,30,20],[74,20,22]
+];
+function drawSpineRow(ctx, x0, y0, w, rowH, r){
+  /* one shelf row of books on a board */
+  var boardH=Math.max(6,rowH*0.09);
+  var yBoard=y0+rowH-boardH;
+  ctx.fillStyle="#1b1209"; ctx.fillRect(x0,yBoard,w,boardH);
+  ctx.fillStyle="rgba(233,214,170,.10)"; ctx.fillRect(x0,yBoard,w,1.4);
+  var x=x0+r()*8;
+  while(x<x0+w-6){
+    if(r()<0.055){ /* gap: dark slot */
+      var gw=6+r()*16;
+      ctx.fillStyle="rgba(0,0,0,.55)"; ctx.fillRect(x,y0+rowH*0.14,gw,rowH-boardH-rowH*0.14);
+      x+=gw; continue;
+    }
+    if(r()<0.06){ /* small horizontal stack */
+      var sw=20+r()*18, n=2+(r()*2|0), k;
+      for(k=0;k<n;k++){
+        var hh=7+r()*5, hue=PALETTE[(r()*PALETTE.length)|0];
+        ctx.fillStyle="hsl("+hue[0]+","+hue[1]+"%,"+(hue[2]+r()*6-3)+"%)";
+        ctx.fillRect(x,yBoard-(k+1)*hh-1,sw,hh-1);
+      }
+      x+=sw+2; continue;
+    }
+    var bw=7+r()*14;
+    var bh=rowH*(0.52+r()*0.36)-boardH;
+    var hu=PALETTE[(r()*PALETTE.length)|0];
+    var l=hu[2]+r()*8-4;
+    var lean=(r()<0.07)?(r()*6-3):0;
+    ctx.save();
+    ctx.translate(x+bw/2,yBoard);
+    if(lean) ctx.rotate(lean*0.03);
+    ctx.fillStyle="hsl("+hu[0]+","+hu[1]+"%,"+l+"%)";
+    ctx.fillRect(-bw/2,-bh,bw,bh);
+    /* edge shading + spine ridges */
+    ctx.fillStyle="rgba(0,0,0,.38)"; ctx.fillRect(bw/2-1.4,-bh,1.4,bh);
+    ctx.fillStyle="rgba(255,236,200,.14)"; ctx.fillRect(-bw/2,-bh,1.2,bh);
+    if(r()<0.8){ /* gold foil bands */
+      ctx.fillStyle="rgba(212,176,102,"+(0.35+r()*0.4)+")";
+      var by=-bh+3+r()*6;
+      ctx.fillRect(-bw/2+1,by,bw-2,1.1);
+      if(r()<0.6) ctx.fillRect(-bw/2+1,by+2.4,bw-2,0.8);
+      if(r()<0.5) ctx.fillRect(-bw/2+1,-6-r()*4,bw-2,1.0);
+    }
+    if(bw>10 && bh>46 && r()<0.6){ /* faint vertical title */
+      ctx.save();
+      ctx.rotate(-Math.PI/2);
+      ctx.font="7px Georgia,serif";
+      ctx.fillStyle="rgba(238,224,190,"+(0.3+r()*0.3)+")";
+      var t=titleFor((r()*4294967296)|0).slice(0,Math.max(3,(bh/8)|0));
+      ctx.fillText(t, 10, 2.5);
+      ctx.restore();
+    }
+    ctx.restore();
+    x+=bw+0.6;
+  }
+  /* AO: shadow under the shelf above */
+  var g=ctx.createLinearGradient(0,y0,0,y0+rowH*0.34);
+  g.addColorStop(0,"rgba(0,0,0,.66)"); g.addColorStop(1,"rgba(0,0,0,0)");
+  ctx.fillStyle=g; ctx.fillRect(x0,y0,w,rowH*0.34);
+}
+function makeShelfAtlas(){
+  var S=2048, c=document.createElement("canvas");
+  c.width=S; c.height=S;
+  var ctx=c.getContext("2d");
+  var v, ROWS=5, cellH=S/4;
+  for(v=0;v<4;v++){
+    var y0=v*cellH, r=rng(0x5AE1F+v*7919);
+    /* wall backing */
+    var g=ctx.createLinearGradient(0,y0,0,y0+cellH);
+    g.addColorStop(0,"#221709"); g.addColorStop(1,"#160e06");
+    ctx.fillStyle=g; ctx.fillRect(0,y0,S,cellH);
+    var rowH=cellH/ROWS, i;
+    for(i=0;i<ROWS;i++) drawSpineRow(ctx,0,y0+i*rowH,S,rowH,r);
+    /* vertical wooden uprights every ~1.16m */
+    ctx.fillStyle="rgba(14,9,4,.85)";
+    var k; for(k=0;k<=6;k++){ ctx.fillRect(k*(S/6)-4,y0,8,cellH); ctx.fillStyle="rgba(14,9,4,.85)"; }
+    ctx.fillStyle="rgba(233,214,170,.05)";
+    for(k=0;k<=6;k++) ctx.fillRect(k*(S/6)-4,y0,1,cellH);
+  }
+  return c;
+}
+function makeWoodTex(){
+  var S=512, c=document.createElement("canvas");
+  c.width=S; c.height=S;
+  var ctx=c.getContext("2d"), r=rng(0x0Dd);
+  ctx.fillStyle="#1c1207"; ctx.fillRect(0,0,S,S);
+  var i;
+  for(i=0;i<7;i++){ /* planks along v */
+    ctx.fillStyle="rgba(0,0,0,.5)"; ctx.fillRect(0,i*(S/7)-1,S,2);
+    ctx.fillStyle="rgba(233,214,170,.04)"; ctx.fillRect(0,i*(S/7)+1,S,1);
+  }
+  for(i=0;i<340;i++){ /* grain streaks */
+    var y=r()*S, len=30+r()*180, x=r()*S;
+    ctx.strokeStyle="rgba("+(r()<0.5?"0,0,0":"210,170,110")+","+(0.03+r()*0.05)+")";
+    ctx.lineWidth=0.8+r()*1.4;
+    ctx.beginPath(); ctx.moveTo(x,y); ctx.quadraticCurveTo(x+len/2,y+(r()*4-2),x+len,y+(r()*3-1.5)); ctx.stroke();
+  }
+  return c;
+}
+
+/* =====================================================
+   2 · THE CORRIDOR — raw WebGL
+   ===================================================== */
+var stage=document.getElementById("stage");
+var canvas=document.getElementById("gl");
+var gl=null;
+try{
+  gl=canvas.getContext("webgl",{alpha:false,antialias:true,depth:true}) ||
+     canvas.getContext("experimental-webgl",{alpha:false,antialias:true});
+}catch(e){ gl=null; }
+
+/* corridor constants (pointy-top hexagon) */
+var WX=3.118, WT=1.8, WB=-1.8, APY=3.6, BPY=-3.6, WALK=-1.55, HW=1.35, EYE=0.02;
+var LAMP_Y=2.15;
+var SEG_BACK=1, SEG_FWD=10;
+
+var depth=0, travelOffset=0, driftDepth=0, scrollDepth=0;
+var galleryNow=-1;
+var travelling=false, degraded=false, visible=true, hidden=false;
+var FORCE_LIVE=/[?&]live/.test(location.search);
+
+var hud=document.getElementById("hud"), gNum=document.getElementById("gNum"), gName=document.getElementById("gName");
+var heroMark=document.getElementById("heroMark"), cue=document.getElementById("cue");
+var hint=document.getElementById("hint");
+
+var renderFrame=null;   /* set by initGL — renderFrame(timeMs) draws one frame */
+var requestRedraw=function(){};
+
+if(!gl){
+  document.body.classList.add("no-webgl");
+}else{
+  initGL(); /* must run AFTER the declarations above — they would re-null its assignments */
+}
+
+function initGL(){
+  var VSQ =
+  "attribute vec3 aP;attribute vec2 aUV;attribute float aSh;"+
+  "uniform vec3 uCam;uniform float uF,uAsp;"+
+  "varying vec2 vUV;varying float vSh;varying vec3 vW;varying float vD;"+
+  "void main(){"+
+    "vec3 p=aP-uCam;"+
+    "vUV=aUV;vSh=aSh;vW=aP;vD=length(p);"+
+    "gl_Position=vec4(p.x*uF/uAsp,p.y*uF,p.z*1.0012-0.24,p.z);"+
+  "}";
+  var FSQ =
+  "precision mediump float;"+
+  "varying vec2 vUV;varying float vSh;varying vec3 vW;varying float vD;"+
+  "uniform sampler2D uTex;uniform float uL;uniform vec3 uCam;uniform float uFog;"+
+  "void main(){"+
+    "vec3 col=texture2D(uTex,vUV).rgb*vSh;"+
+    /* lamp at each gallery center: z=k*L+L/2 */
+    "float dz=mod(vW.z-uL*0.5,uL)-uL*0.5;"+
+    "float dx=vW.x, dy=vW.y-2.15;"+
+    "float d2=dx*dx+dy*dy+dz*dz;"+
+    "float li=1.75/(1.0+d2*0.16);"+
+    /* the next lamp too, so pools overlap softly */
+    "float dz2=uL-abs(dz);"+
+    "float d22=dx*dx+dy*dy+dz2*dz2;"+
+    "li+=1.75/(1.0+d22*0.16);"+
+    "vec3 warm=vec3(1.0,0.74,0.45);"+
+    "vec3 amb=vec3(0.085,0.07,0.058);"+
+    "col*=amb*2.0+warm*li;"+
+    /* void below the walkway swallows light */
+    "col*=mix(0.05,1.0,smoothstep(-3.55,-1.62,vW.y));"+
+    "col*=mix(0.55,1.0,smoothstep(3.6,2.2,vW.y));"+
+    "float f=1.0-exp(-vD*uFog);"+
+    "col=mix(col,vec3(0.016,0.010,0.006),f);"+
+    "gl_FragColor=vec4(col,1.0);"+
+  "}";
+  var VSG =
+  "attribute vec3 aP;attribute vec2 aUV;attribute vec4 aC;"+
+  "uniform vec3 uCam;uniform float uF,uAsp;"+
+  "varying vec2 vUV;varying vec4 vC;"+
+  "void main(){"+
+    "vec3 p=aP-uCam;"+
+    "vUV=aUV;vC=aC;"+
+    "gl_Position=vec4(p.x*uF/uAsp,p.y*uF,p.z*1.0012-0.24,p.z);"+
+  "}";
+  var FSG =
+  "precision mediump float;varying vec2 vUV;varying vec4 vC;"+
+  "void main(){"+
+    "float d=length(vUV-0.5)*2.0;"+
+    "float a=max(0.0,1.0-d);a*=a*a;"+
+    "gl_FragColor=vec4(vC.rgb*a*vC.a,1.0);"+
+  "}";
+  function mkProg(vs,fs){
+    function sh(t,s){ var o=gl.createShader(t); gl.shaderSource(o,s); gl.compileShader(o); return o; }
+    var p=gl.createProgram();
+    gl.attachShader(p,sh(gl.VERTEX_SHADER,vs));
+    gl.attachShader(p,sh(gl.FRAGMENT_SHADER,fs));
+    gl.linkProgram(p);
+    if(!gl.getProgramParameter(p,gl.LINK_STATUS)) return null;
+    return p;
+  }
+  var progQ=mkProg(VSQ,FSQ), progG=mkProg(VSG,FSG);
+  if(!progQ||!progG){ document.body.classList.add("no-webgl"); gl=null; initFlat(); return; }
+
+  var AQ={ aP:gl.getAttribLocation(progQ,"aP"), aUV:gl.getAttribLocation(progQ,"aUV"), aSh:gl.getAttribLocation(progQ,"aSh") };
+  var UQ={}; ["uCam","uF","uAsp","uTex","uL","uFog"].forEach(function(n){ UQ[n]=gl.getUniformLocation(progQ,n); });
+  var AG={ aP:gl.getAttribLocation(progG,"aP"), aUV:gl.getAttribLocation(progG,"aUV"), aC:gl.getAttribLocation(progG,"aC") };
+  var UG={}; ["uCam","uF","uAsp"].forEach(function(n){ UG[n]=gl.getUniformLocation(progG,n); });
+
+  function mkTex(cnv){
+    var t=gl.createTexture();
+    gl.bindTexture(gl.TEXTURE_2D,t);
+    gl.texImage2D(gl.TEXTURE_2D,0,gl.RGBA,gl.RGBA,gl.UNSIGNED_BYTE,cnv);
+    gl.generateMipmap(gl.TEXTURE_2D);
+    gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_MIN_FILTER,gl.LINEAR_MIPMAP_LINEAR);
+    gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_MAG_FILTER,gl.LINEAR);
+    gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_WRAP_S,gl.REPEAT);
+    gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_WRAP_T,gl.CLAMP_TO_EDGE);
+    return t;
+  }
+  var texShelf=mkTex(makeShelfAtlas());
+  var texWood=mkTex(makeWoodTex());
+
+  /* ---- geometry builders ---- */
+  var shelfArr=[], woodArr=[];
+  function quad(arr,p0,p1,p2,p3,uv0,uv1,uv2,uv3,sh){
+    /* p0..p3 CCW; two triangles */
+    function v(p,uv){ arr.push(p[0],p[1],p[2],uv[0],uv[1],sh); }
+    v(p0,uv0); v(p1,uv1); v(p2,uv2);
+    v(p0,uv0); v(p2,uv2); v(p3,uv3);
+  }
+  var PAD=3/2048; /* atlas bleed guard */
+  function cellUV(variant,u,vv){
+    /* u:0..1 across, vv:0..1 down within a 512px cell */
+    return [u, variant*0.25 + PAD + vv*(0.25-2*PAD)];
+  }
+  var windowG0=null;
+  function buildWindow(g0){
+    windowG0=g0;
+    shelfArr.length=0; woodArr.length=0;
+    var s,g,half;
+    for(g=g0-SEG_BACK; g<=g0+SEG_FWD; g++){
+      var z0=(g-g0)*L, z1=z0+L, zm=z0+L/2;
+      /* --- shelf walls (vertical) --- */
+      for(s=-1;s<=1;s+=2){
+        for(half=0;half<2;half++){
+          var v0=h32((g*4+ (s>0?0:1)*2 + half) ^ 0x51ab)%4;
+          var za=z0+half*L/2, zb=za+L/2, x=s*WX;
+          /* inward-facing */
+          if(s>0)
+            quad(shelfArr,[x,WB,zb],[x,WB,za],[x,WT,za],[x,WT,zb],
+              cellUV(v0,0,1),cellUV(v0,1,1),cellUV(v0,1,0),cellUV(v0,0,0),1.0);
+          else
+            quad(shelfArr,[x,WB,za],[x,WB,zb],[x,WT,zb],[x,WT,za],
+              cellUV(v0,0,1),cellUV(v0,1,1),cellUV(v0,1,0),cellUV(v0,0,0),1.0);
+        }
+        /* --- upper vault shelves (slanted) --- */
+        for(half=0;half<2;half++){
+          var v1=h32((g*4+ (s>0?0:1)*2 + half) ^ 0xcafe)%4;
+          var za2=z0+half*L/2, zb2=za2+L/2, xw=s*WX;
+          if(s>0)
+            quad(shelfArr,[xw,WT,zb2],[xw,WT,za2],[0,APY,za2],[0,APY,zb2],
+              cellUV(v1,0,1),cellUV(v1,1,1),cellUV(v1,1,0),cellUV(v1,0,0),0.52);
+          else
+            quad(shelfArr,[xw,WT,za2],[xw,WT,zb2],[0,APY,zb2],[0,APY,za2],
+              cellUV(v1,0,1),cellUV(v1,1,1),cellUV(v1,1,0),cellUV(v1,0,0),0.52);
+        }
+        /* --- lower slants to the void --- */
+        var xl=s*WX;
+        quad(woodArr,[xl,WB,z0],[xl,WB,z1],[0,BPY,z1],[0,BPY,z0],
+          [0,0],[2,0],[2,1],[0,1], s>0?0.5:0.5);
+      }
+      /* --- walkway --- */
+      quad(woodArr,[-HW,WALK,z0],[HW,WALK,z0],[HW,WALK,z1],[-HW,WALK,z1],
+        [0,0],[1,0],[1,2],[0,2],1.05);
+      /* fascia edges */
+      for(s=-1;s<=1;s+=2){
+        quad(woodArr,[s*HW,WALK,z0],[s*HW,WALK,z1],[s*HW,WALK-0.22,z1],[s*HW,WALK-0.22,z0],
+          [0,0],[2,0],[2,0.12],[0,0.12],0.42);
+      }
+      /* railing: one rail + posts */
+      for(s=-1;s<=1;s+=2){
+        var rx=s*(HW-0.04);
+        quad(woodArr,[rx,-0.78,z0],[rx,-0.78,z1],[rx,-0.72,z1],[rx,-0.72,z0],
+          [0,0],[2,0],[2,0.06],[0,0.06],0.85);
+        var k;
+        for(k=0;k<6;k++){
+          var pz=z0+ (k+0.5)*(L/6);
+          quad(woodArr,[rx,WALK,pz-0.025],[rx,WALK,pz+0.025],[rx,-0.78,pz+0.025],[rx,-0.78,pz-0.025],
+            [0,0],[0.04,0],[0.04,0.8],[0,0.8],0.62);
+        }
+      }
+      /* --- rib / arch frame at the gallery boundary z0 --- */
+      var prof=[[0,APY],[WX,WT],[WX,WB],[0,BPY],[-WX,WB],[-WX,WT]];
+      var IN=0.86, TH=0.18, e;
+      for(e=0;e<6;e++){
+        var a=prof[e], b=prof[(e+1)%6];
+        var ai=[a[0]*IN,a[1]*IN], bi=[b[0]*IN,b[1]*IN];
+        /* front annulus (faces the walker) */
+        quad(woodArr,[a[0],a[1],z0-TH],[b[0],b[1],z0-TH],[bi[0],bi[1],z0-TH],[ai[0],ai[1],z0-TH],
+          [0,0],[1,0],[1,0.25],[0,0.25],0.28);
+        /* inner tube */
+        quad(woodArr,[ai[0],ai[1],z0-TH],[bi[0],bi[1],z0-TH],[bi[0],bi[1],z0+TH],[ai[0],ai[1],z0+TH],
+          [0,0.3],[1,0.3],[1,0.42],[0,0.42],0.4);
+        /* back annulus */
+        quad(woodArr,[bi[0],bi[1],z0+TH],[b[0],b[1],z0+TH],[a[0],a[1],z0+TH],[ai[0],ai[1],z0+TH],
+          [1,0],[1,0.25],[0,0.25],[0,0],0.28);
+      }
+      /* lamp cord at gallery center */
+      quad(woodArr,[-0.014,2.32,zm],[0.014,2.32,zm],[0.014,3.5,zm],[-0.014,3.5,zm],
+        [0,0],[0.02,0],[0.02,0.8],[0,0.8],0.16);
+    }
+    upload(bufShelf,shelfArr); nShelf=shelfArr.length/6;
+    upload(bufWood,woodArr); nWood=woodArr.length/6;
+  }
+  var bufShelf=gl.createBuffer(), bufWood=gl.createBuffer(), bufGlow=gl.createBuffer();
+  var nShelf=0,nWood=0;
+  function upload(buf,arr){
+    gl.bindBuffer(gl.ARRAY_BUFFER,buf);
+    gl.bufferData(gl.ARRAY_BUFFER,new Float32Array(arr),gl.DYNAMIC_DRAW);
+  }
+
+  /* ---- sizing ---- */
+  var DPR=Math.min(window.devicePixelRatio||1,1.75);
+  var W=2,H=2;
+  function size(){
+    var r=canvas.getBoundingClientRect();
+    W=Math.max(2,Math.round(r.width*DPR)); H=Math.max(2,Math.round(r.height*DPR));
+    if(canvas.width!==W||canvas.height!==H){ canvas.width=W; canvas.height=H; }
+    gl.viewport(0,0,W,H);
+  }
+  size();
+  window.addEventListener("resize",function(){ size(); requestRedraw(); },{passive:true});
+
+  gl.enable(gl.DEPTH_TEST);
+  gl.clearColor(0.016,0.010,0.006,1);
+
+  /* ---- luminous books ---- */
+  function glowBookFor(g){
+    var h=h32(g^0x9b0b);
+    if(h%3!==0 && !(travelTarget && travelTarget.gallery===g)) return null;
+    return bookParams(g,h);
+  }
+  function bookParams(g,h){
+    var side=(h>>>2)&1?1:-1;
+    var row=(h>>>3)%5;
+    var frac=0.12+((h>>>6)%100)/100*0.72;
+    return {
+      g:g, side:side, row:row,
+      x:side*(WX-0.10),
+      y:WB+row*0.72+0.42,
+      z:frac, /* fraction of L within gallery */
+      seed:h32(g^0x77aa)
+    };
+  }
+  var travelTarget=null;
+
+  /* ---- glow pass buffer (lamps + luminous books + motes) ---- */
+  var glowArr=[];
+  function pushGlow(x,y,z,s,r,g2,b,a){
+    var uv=[[0,0],[1,0],[1,1],[0,0],[1,1],[0,1]];
+    var cx=[[-1,-1],[1,-1],[1,1],[-1,-1],[1,1],[-1,1]],i;
+    for(i=0;i<6;i++){
+      glowArr.push(x+cx[i][0]*s, y+cx[i][1]*s, z, uv[i][0],uv[i][1], r,g2,b,a);
+    }
+  }
+
+  var camX=0, camY=EYE, uFbase=1.32;
+  var speedSm=0;
+
+  renderFrame=function(tms){
+    var g0=Math.floor(depth/L);
+    if(windowG0===null||g0!==windowG0) buildWindow(g0);
+    var camZ=depth-g0*L;
+
+    /* sway + bob (scaled by walking speed, none under reduced motion) */
+    var sway=RM?0:Math.sin(depth*0.42)*0.10;
+    var bob=RM?0:Math.sin(depth*0.9)*0.028;
+    camX=sway; camY=EYE+bob;
+
+    var uF=uFbase/(1+clamp(speedSm*0.006,0,0.55));
+    var fog=0.035+clamp(speedSm*0.0004,0,0.03);
+
+    gl.clear(gl.COLOR_BUFFER_BIT|gl.DEPTH_BUFFER_BIT);
+
+    gl.useProgram(progQ);
+    gl.uniform3f(UQ.uCam,camX,camY,camZ);
+    gl.uniform1f(UQ.uF,uF);
+    gl.uniform1f(UQ.uAsp,W/H);
+    gl.uniform1f(UQ.uL,L);
+    gl.uniform1f(UQ.uFog,fog);
+    gl.uniform1i(UQ.uTex,0);
+    gl.activeTexture(gl.TEXTURE0);
+
+    function drawQ(buf,n,tex){
+      gl.bindTexture(gl.TEXTURE_2D,tex);
+      gl.bindBuffer(gl.ARRAY_BUFFER,buf);
+      gl.enableVertexAttribArray(AQ.aP);
+      gl.enableVertexAttribArray(AQ.aUV);
+      gl.enableVertexAttribArray(AQ.aSh);
+      gl.vertexAttribPointer(AQ.aP,3,gl.FLOAT,false,24,0);
+      gl.vertexAttribPointer(AQ.aUV,2,gl.FLOAT,false,24,12);
+      gl.vertexAttribPointer(AQ.aSh,1,gl.FLOAT,false,24,20);
+      gl.drawArrays(gl.TRIANGLES,0,n);
+    }
+    drawQ(bufShelf,nShelf,texShelf);
+    drawQ(bufWood,nWood,texWood);
+
+    /* ---- glow pass ---- */
+    glowArr.length=0;
+    var g,i;
+    var t=tms*0.001;
+    for(g=g0-SEG_BACK; g<=g0+SEG_FWD; g++){
+      var zl=(g-g0)*L+L/2;
+      if(zl-camZ>-2 && zl-camZ<95){
+        var fl=RM?1:(0.92+0.08*Math.sin(t*7+g*1.7)); /* candle flicker */
+        pushGlow(0,LAMP_Y,zl,0.42*fl,1.0,0.72,0.38,0.85);
+        pushGlow(0,LAMP_Y,zl,1.5,1.0,0.62,0.28,0.10);
+      }
+      var bk=glowBookFor(g);
+      if(bk){
+        var bz=(g-g0)*L+bk.z*L;
+        if(bz-camZ>0.5 && bz-camZ<70){
+          var pw=RM?1:(0.8+0.25*Math.sin(t*3.1+g));
+          pushGlow(bk.x,bk.y,bz,0.22*pw,1.0,0.80,0.42,0.8);
+          pushGlow(bk.x,bk.y,bz,0.75,1.0,0.70,0.30,0.14);
+        }
+      }
+      if(!RM){ /* dust motes */
+        var mr=rng(h32(g^0x0770));
+        for(i=0;i<7;i++){
+          var mx=(mr()*2-1)*2.2, my=-0.8+mr()*3, mz=(g-g0)*L+mr()*L;
+          my+=Math.sin(t*0.5+mr()*6.28)*0.15;
+          mx+=Math.sin(t*0.33+mr()*6.28)*0.1;
+          if(mz-camZ>0.4&&mz-camZ<26) pushGlow(mx,my,mz,0.016+mr()*0.02,1.0,0.85,0.6,0.5);
+        }
+      }
+    }
+    gl.useProgram(progG);
+    gl.uniform3f(UG.uCam,camX,camY,camZ);
+    gl.uniform1f(UG.uF,uF);
+    gl.uniform1f(UG.uAsp,W/H);
+    gl.enable(gl.BLEND);
+    gl.blendFunc(gl.ONE,gl.ONE);
+    gl.depthMask(false);
+    gl.bindBuffer(gl.ARRAY_BUFFER,bufGlow);
+    gl.bufferData(gl.ARRAY_BUFFER,new Float32Array(glowArr),gl.DYNAMIC_DRAW);
+    gl.enableVertexAttribArray(AG.aP);
+    gl.enableVertexAttribArray(AG.aUV);
+    gl.enableVertexAttribArray(AG.aC);
+    gl.vertexAttribPointer(AG.aP,3,gl.FLOAT,false,36,0);
+    gl.vertexAttribPointer(AG.aUV,2,gl.FLOAT,false,36,12);
+    gl.vertexAttribPointer(AG.aC,4,gl.FLOAT,false,36,20);
+    gl.drawArrays(gl.TRIANGLES,0,glowArr.length/9);
+    gl.depthMask(true);
+    gl.disable(gl.BLEND);
+
+    updateHotspots(g0,camZ,uF);
+  };
+
+  /* ---- HTML hotspots over glowing books ---- */
+  var hots=[], hi;
+  for(hi=0;hi<4;hi++){
+    var b=document.createElement("button");
+    b.className="hot"; b.type="button"; b.style.display="none";
+    b.setAttribute("aria-label","Open the glowing book");
+    stage.appendChild(b);
+    (function(btn){
+      btn.addEventListener("click",function(){
+        var d=btn._data; if(d) openBook(d.seed,d.addr,d.phrase);
+      });
+    })(b);
+    hots.push(b);
+  }
+  function updateHotspots(g0,camZ,uF){
+    var used=0, anyNear=false, g;
+    var asp=W/H, cw=canvas.clientWidth||1, chh=canvas.clientHeight||1;
+    for(g=g0; g<=g0+SEG_FWD && used<hots.length; g++){
+      var bk=glowBookFor(g);
+      if(!bk) continue;
+      var bz=(g-g0)*L+bk.z*L;
+      var pz=bz-camZ;
+      if(pz<0.8||pz>38) continue;
+      var px=(bk.x-camX)*uF/asp/pz, py=(bk.y-camY)*uF/pz;
+      if(px<-1.05||px>1.05||py<-1.05||py>1.05) continue;
+      var el=hots[used++];
+      el.style.display="block";
+      el.style.left=((px+1)/2*cw)+"px";
+      el.style.top=((1-py)/2*chh)+"px";
+      var sc=clamp(6/pz,0.35,1.6);
+      el.style.transform="scale("+sc+")";
+      var isTarget=travelTarget&&travelTarget.gallery===g;
+      el._data={
+        seed: isTarget? travelTarget.seed : bk.seed,
+        addr: isTarget? travelTarget.addrStr :
+          fmtAddr({gallery:g+1,wall:bk.side>0?1:3,shelf:bk.row+1,book:1+(bk.seed%32)}),
+        phrase: isTarget? travelTarget.phrase : null
+      };
+      if(pz<26) anyNear=true;
+    }
+    for(;used<hots.length;used++) hots[used].style.display="none";
+    if(!travelling) hint.classList.toggle("on",anyNear&&scrollDepth>4);
+  }
+
+  /* expose */
+  requestRedraw=function(){ if(RM||degraded) renderFrame(performance.now()); };
+
+  /* ---- main loop ---- */
+  var lastT=performance.now(), lastDepth=0;
+  var frames=0, fpsT0=0, warmup=true;
+  function loop(now){
+    if(RM) return;
+    if(visible&&!hidden||travelling){
+      var dt=Math.min(0.06,(now-lastT)/1000);
+      if(!travelling && visible && !degraded) driftDepth+=dt*0.14; /* the library breathes forward */
+      computeDepth();
+      var v=Math.abs(depth-lastDepth)/Math.max(dt,0.001);
+      speedSm+=(v-speedSm)*0.08;
+      lastDepth=depth;
+      renderFrame(now);
+      updateCounter();
+      frames++;
+      if(fpsT0===0) fpsT0=now;
+      if(!degraded&&!FORCE_LIVE&&now-fpsT0>3400){
+        var fps=frames/((now-fpsT0)/1000);
+        if(warmup){ warmup=false; frames=0; fpsT0=now; }
+        else if(fps<14){ degraded=true; } /* keep single-frame renders on scroll */
+        else { frames=0; fpsT0=now; }
+      }
+    }
+    lastT=now;
+    if(!degraded||travelling) requestAnimationFrame(loop);
+  }
+
+  if(RM){
+    computeDepth();
+    renderFrame(0);
+    updateCounter();
+    hud.classList.add("on");
+  }else{
+    if("IntersectionObserver" in window){
+      new IntersectionObserver(function(en){ visible=en[0].isIntersecting; },{threshold:0.01}).observe(stage);
+    }
+    document.addEventListener("visibilitychange",function(){
+      hidden=document.hidden;
+      if(!hidden){ lastT=performance.now(); if(degraded) requestRedraw(); }
+    });
+    requestAnimationFrame(loop);
+  }
+
+  /* degraded: still render on scroll, throttled */
+  var lastDegDraw=0;
+  window.addEventListener("scroll",function(){
+    if(degraded&&!RM){
+      var n=performance.now();
+      if(n-lastDegDraw>140){
+        lastDegDraw=n;
+        computeDepth(); renderFrame(n); updateCounter();
+      }
+    }
+  },{passive:true});
+
+  /* travel implementation lives below but needs renderFrame */
+  travelHook=function(target,phrase,addrStr){
+    var a=target;
+    var bp=bookParams(a.gallery-1,h32((a.gallery-1)^0x9b0b));
+    travelTarget={
+      gallery:a.gallery-1, seed:fnv(addrStr)^a.hash,
+      phrase:phrase, addrStr:addrStr,
+      bookZ:bp.z
+    };
+    var destDepth=(a.gallery-1)*L + bp.z*L - 7;
+    if(RM||degraded){
+      travelOffset=destDepth-scrollDepth-driftDepth;
+      computeDepth(); if(renderFrame) renderFrame(performance.now());
+      updateCounter();
+      enterTravelMode(true);
+      setTimeout(function(){ openBook(travelTarget.seed,addrStr,phrase); },350);
+      return;
+    }
+    enterTravelMode(false);
+    var from=depth, to=destDepth;
+    var dist=Math.abs(to-from);
+    var dur=Math.min(4200, 1400+Math.log10(dist+10)*420);
+    var t0=performance.now();
+    travelling=true;
+    document.getElementById("travelCap").textContent="travelling · "+addrStr.toLowerCase();
+    stage.classList.add("travelling");
+    function ease(x){ return x<0.5 ? 16*x*x*x*x*x : 1-Math.pow(-2*x+2,5)/2; }
+    (function anim(){
+      var p=clamp((performance.now()-t0)/dur,0,1);
+      var d=from+(to-from)*ease(p);
+      travelOffset=d-scrollDepth-driftDepth;
+      if(p<1){ requestAnimationFrame(anim); }
+      else{
+        travelling=false;
+        stage.classList.remove("travelling");
+        speedSm=0;
+        setTimeout(function(){ openBook(travelTarget.seed,addrStr,phrase); },650);
+      }
+    })();
+  };
+}
+
+/* =====================================================
+   3 · 2D FALLBACK — a generative shelf wall
+   ===================================================== */
+function initFlat(){
+  var c=document.getElementById("flat");
+  var ctx=c.getContext("2d");
+  var glowBook={x:0,y:0,w:0,h:0};
+  function draw(){
+    var dpr=Math.min(window.devicePixelRatio||1,1.5);
+    var w=stage.clientWidth,h=stage.clientHeight;
+    c.width=w*dpr; c.height=h*dpr;
+    ctx.setTransform(dpr,0,0,dpr,0,0);
+    var r=rng(0xF1a7);
+    ctx.fillStyle="#160e06"; ctx.fillRect(0,0,w,h);
+    var rows=Math.max(4,Math.round(h/150)), rowH=h/rows, i;
+    for(i=0;i<rows;i++) drawSpineRow(ctx,0,i*rowH,w,rowH,r);
+    /* lamp glow */
+    var lg=ctx.createRadialGradient(w/2,h*0.12,0,w/2,h*0.12,h*0.9);
+    lg.addColorStop(0,"rgba(255,190,110,.30)");
+    lg.addColorStop(0.5,"rgba(160,110,50,.10)");
+    lg.addColorStop(1,"rgba(0,0,0,0)");
+    ctx.fillStyle=lg; ctx.fillRect(0,0,w,h);
+    /* vignette */
+    var vg=ctx.createRadialGradient(w/2,h/2,h*0.2,w/2,h/2,Math.max(w,h)*0.75);
+    vg.addColorStop(0,"rgba(0,0,0,0)"); vg.addColorStop(1,"rgba(2,1,0,.8)");
+    ctx.fillStyle=vg; ctx.fillRect(0,0,w,h);
+    /* one glowing book */
+    var gr=rng(0x610b);
+    var gx=w*(0.2+gr()*0.6), gy=h*(0.3+gr()*0.4);
+    var gg=ctx.createRadialGradient(gx,gy,0,gx,gy,60);
+    gg.addColorStop(0,"rgba(255,214,140,.65)");
+    gg.addColorStop(0.5,"rgba(255,190,100,.18)");
+    gg.addColorStop(1,"rgba(0,0,0,0)");
+    ctx.fillStyle=gg; ctx.fillRect(gx-70,gy-70,140,140);
+    glowBook={x:gx,y:gy};
+    var hot=document.getElementById("flatHot");
+    if(!hot){
+      hot=document.createElement("button");
+      hot.id="flatHot"; hot.className="hot"; hot.type="button";
+      hot.setAttribute("aria-label","Open the glowing book");
+      stage.appendChild(hot);
+      hot.addEventListener("click",function(){
+        openBook(0x610b,fmtAddr({gallery:1,wall:2,shelf:3,book:17}),null);
+      });
+    }
+    hot.style.left=gx+"px"; hot.style.top=gy+"px";
+  }
+  draw();
+  window.addEventListener("resize",draw,{passive:true});
+  gNum.textContent="1"; gName.textContent="the vestibule · "+designation(0);
+  hud.classList.add("on");
+  travelHook=function(target,phrase,addrStr){
+    openBook(fnv(addrStr)^target.hash,addrStr,phrase);
+  };
+}
+if(document.body.classList.contains("no-webgl")) initFlat();
+
+/* =====================================================
+   4 · WALK: scroll → depth · counter · HUD
+   ===================================================== */
+var passage=document.getElementById("passage");
+var WALK_METERS=L*11.5;
+function computeDepth(){
+  var r=passage.getBoundingClientRect();
+  var vh=window.innerHeight||1;
+  var p=clamp(-r.top/Math.max(1,r.height-vh),0,1);
+  scrollDepth=p*WALK_METERS;
+  depth=Math.max(0,scrollDepth+driftDepth+travelOffset);
+  /* hero fades as the walk begins */
+  var gone=scrollDepth>5;
+  heroMark.classList.toggle("gone",gone);
+  cue.classList.toggle("gone",gone);
+  hud.classList.toggle("on",gone||RM);
+}
+function updateCounter(){
+  var g=Math.floor(depth/L)+1;
+  if(g!==galleryNow){
+    galleryNow=g;
+    gNum.textContent=g.toLocaleString("en-US");
+    gName.textContent=g===1?"the vestibule · "+designation(0):"“"+designation(g-1)+"”";
+  }
+}
+if(!gl){
+  window.addEventListener("scroll",function(){ computeDepth(); },{passive:true});
+  computeDepth();
+}
+
+/* travel mode: the stage detaches and fills the screen */
+var savedScroll=0;
+function enterTravelMode(){
+  if(stage.classList.contains("fixed")) return;
+  savedScroll=window.scrollY||window.pageYOffset||0;
+  stage.classList.add("fixed");
+  document.documentElement.style.overflow="hidden";
+}
+function exitTravelMode(){
+  if(!stage.classList.contains("fixed")) return;
+  stage.classList.remove("fixed");
+  document.documentElement.style.overflow="";
+  window.scrollTo(0,savedScroll);
+}
+document.getElementById("returnPill").addEventListener("click",function(){
+  closeBook(); exitTravelMode();
+});
+
+/* =====================================================
+   5 · THE CATALOGUE
+   ===================================================== */
+var travelHook=null; /* assigned by initGL/initFlat */
+var card=document.getElementById("card");
+var lastAddr=null,lastPhrase=null,lastAddrStr=null;
+document.getElementById("consult").addEventListener("submit",function(e){
+  e.preventDefault();
+  var q=document.getElementById("query").value.trim();
+  if(!q){ document.getElementById("query").focus(); return; }
+  var a=addressOf(q);
+  lastAddr=a; lastPhrase=q; lastAddrStr=fmtAddr(a);
+  document.getElementById("cSubject").textContent="“"+q+"”";
+  document.getElementById("cAddr").textContent=lastAddrStr;
+  document.getElementById("cTitle").textContent=titleFor(a.hash);
+  var NEVERS=["Filed before you thought of it.","The catalogue does not search. It remembers.","Shelved in advance. Everything is.","It was always going to be this shelf."];
+  document.getElementById("cNever").textContent=NEVERS[a.hash%NEVERS.length];
+  document.getElementById("walkBtn").textContent=document.body.classList.contains("no-webgl")?"open the book →":"walk there →";
+  card.classList.add("on");
+});
+document.getElementById("walkBtn").addEventListener("click",function(){
+  if(!lastAddr||!travelHook) return;
+  travelHook(lastAddr,lastPhrase,lastAddrStr);
+});
+
+/* =====================================================
+   6 · THE BOOK
+   ===================================================== */
+var dim=document.getElementById("bookDim");
+function openBook(seed,addrStr,phrase){
+  document.getElementById("bAddr").textContent=addrStr;
+  document.getElementById("bTitle").textContent=titleFor(seed);
+  var body=document.getElementById("bBody");
+  body.innerHTML="";
+  bookPage(seed,phrase).forEach(function(p){
+    var el=document.createElement("p");
+    el.textContent=p;
+    body.appendChild(el);
+  });
+  dim.classList.add("on");
+  document.getElementById("bookClose").focus();
+}
+function closeBook(){ dim.classList.remove("on"); }
+document.getElementById("bookClose").addEventListener("click",function(){
+  closeBook();
+});
+dim.addEventListener("click",function(e){ if(e.target===dim) closeBook(); });
+document.addEventListener("keydown",function(e){
+  if(e.key==="Escape"){
+    if(dim.classList.contains("on")) closeBook();
+    else exitTravelMode();
+  }
+});
+
+/* =====================================================
+   7 · REVEALS
+   ===================================================== */
+if("IntersectionObserver" in window){
+  var io=new IntersectionObserver(function(entries){
+    entries.forEach(function(en){
+      if(en.isIntersecting){ en.target.classList.add("in"); io.unobserve(en.target); }
+    });
+  },{threshold:0.15,rootMargin:"0px 0px -6% 0px"});
+  document.querySelectorAll(".rv").forEach(function(n){ io.observe(n); });
+}else{
+  document.querySelectorAll(".rv").forEach(function(n){ n.classList.add("in"); });
+}
+})();
+</script>
+</body>
+</html>

@@ -1,0 +1,920 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>MAESTRO — Conduct</title>
+<meta name="description" content="A generative Web-Audio orchestra you conduct by scrolling. Every sound synthesized live — nothing recorded.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;1,300;1,400&family=Inter:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#0b0a08;
+  --bg2:#141109;
+  --gold:#d8a94e;
+  --gold-hi:#f0d493;
+  --ivory:#f2ead8;
+  --dim:rgba(242,234,216,.55);
+  --faint:rgba(242,234,216,.28);
+  --line:rgba(216,169,78,.22);
+}
+*{margin:0;padding:0;box-sizing:border-box}
+html{scroll-behavior:smooth}
+@media (prefers-reduced-motion: reduce){html{scroll-behavior:auto}}
+body{
+  font-family:"Inter",system-ui,sans-serif;
+  background:var(--bg);
+  color:var(--ivory);
+  overflow-x:hidden;
+  -webkit-font-smoothing:antialiased;
+}
+::selection{background:var(--gold);color:#171207}
+h1,h2,.serif{font-family:"Cormorant Garamond",serif;font-weight:400}
+
+/* ---------- fixed canvas stage ---------- */
+#stage{
+  position:fixed;inset:0;width:100%;height:100%;
+  display:block;z-index:0;
+}
+
+/* ---------- chrome ---------- */
+.back{
+  position:fixed;top:1.1rem;left:1.1rem;z-index:40;
+  font-size:.82rem;letter-spacing:.1em;text-decoration:none;
+  color:var(--ivory);background:rgba(11,10,8,.6);
+  border:1px solid var(--line);border-radius:999px;
+  padding:.42rem .95rem;backdrop-filter:blur(6px);
+  transition:background .3s,color .3s;
+}
+.back:hover{background:var(--gold);color:#171207}
+#mute{
+  position:fixed;top:1.1rem;right:1.1rem;z-index:40;
+  font:inherit;font-size:.8rem;letter-spacing:.08em;cursor:pointer;
+  color:var(--ivory);background:rgba(11,10,8,.6);
+  border:1px solid var(--line);border-radius:999px;
+  padding:.42rem 1rem;backdrop-filter:blur(6px);
+  transition:background .3s,color .3s;
+}
+#mute:hover{border-color:var(--gold)}
+#mute[aria-pressed="true"]{color:var(--gold)}
+
+/* ---------- conductor HUD ---------- */
+#hud{
+  position:fixed;bottom:1.1rem;left:50%;transform:translateX(-50%);z-index:40;
+  display:flex;align-items:center;gap:.9rem;
+  font-size:.72rem;letter-spacing:.22em;text-transform:uppercase;
+  color:var(--dim);background:rgba(11,10,8,.55);
+  border:1px solid var(--line);border-radius:999px;
+  padding:.45rem 1.1rem;backdrop-filter:blur(6px);
+  opacity:0;transition:opacity .8s;pointer-events:none;
+  white-space:nowrap;max-width:92vw;
+}
+#hud.on{opacity:1}
+#hud .dyn{font-family:"Cormorant Garamond",serif;font-style:italic;font-size:1.05rem;
+  letter-spacing:.04em;text-transform:none;color:var(--gold-hi);min-width:2.2em;text-align:center}
+#hud .sep{width:1px;height:.9rem;background:var(--line)}
+
+/* ---------- score (content) ---------- */
+main{position:relative;z-index:10}
+section{
+  min-height:120vh;display:flex;flex-direction:column;
+  justify-content:center;padding:0 clamp(1.2rem,6vw,7rem);
+  pointer-events:none;
+}
+section > *{pointer-events:auto;max-width:34rem}
+.mvt{font-size:.72rem;letter-spacing:.34em;text-transform:uppercase;color:var(--gold);margin-bottom:1rem}
+section h2{font-size:clamp(1.9rem,4.5vw,3rem);font-weight:400;line-height:1.12;margin-bottom:1rem}
+section p{font-size:.98rem;font-weight:300;line-height:1.75;color:var(--dim)}
+section p em{color:var(--ivory);font-style:normal}
+.right{align-items:flex-end;text-align:right}
+.right > *{max-width:30rem}
+
+/* ---------- hero ---------- */
+#hero{min-height:100vh;align-items:center;text-align:center;justify-content:center}
+#hero > *{max-width:44rem}
+#hero .over{font-size:.75rem;letter-spacing:.42em;text-transform:uppercase;color:var(--gold);margin-bottom:1.4rem}
+#hero h1{font-size:clamp(3.2rem,11vw,7.5rem);letter-spacing:.12em;line-height:1;font-weight:300}
+#hero h1 span{color:var(--gold-hi)}
+#hero .tag{font-family:"Cormorant Garamond",serif;font-style:italic;font-size:clamp(1.15rem,2.4vw,1.5rem);
+  color:var(--dim);margin:1.3rem 0 2.6rem}
+#begin{
+  font:inherit;font-size:.85rem;letter-spacing:.3em;text-transform:uppercase;cursor:pointer;
+  color:#171207;background:var(--gold);border:1px solid var(--gold);
+  border-radius:999px;padding:1rem 2.6rem;
+  transition:background .3s,color .3s,box-shadow .5s;
+  box-shadow:0 0 0 rgba(216,169,78,0);
+}
+#begin:hover{box-shadow:0 0 34px rgba(216,169,78,.45)}
+#begin[disabled]{opacity:0;pointer-events:none;transition:opacity 1.2s}
+#hero .silent{display:block;margin-top:1.1rem;font-size:.72rem;letter-spacing:.14em;color:var(--faint)}
+#ready{
+  font-family:"Cormorant Garamond",serif;font-style:italic;font-size:1.1rem;color:var(--gold-hi);
+  opacity:0;transition:opacity 1.4s .4s;margin-top:-3.4rem;pointer-events:none;
+}
+#ready.on{opacity:1}
+
+/* ---------- coda ---------- */
+#coda{min-height:150vh;align-items:center;text-align:center}
+#coda > *{max-width:36rem}
+.perf{
+  border:1px solid var(--line);border-radius:14px;
+  background:rgba(11,10,8,.55);backdrop-filter:blur(6px);
+  padding:2rem 2.2rem;margin-top:2rem;
+}
+.perf h3{font-family:"Cormorant Garamond",serif;font-weight:400;font-size:1.5rem;margin-bottom:1.3rem;color:var(--gold-hi)}
+.stats{display:flex;justify-content:center;gap:2.4rem;flex-wrap:wrap}
+.stat b{display:block;font-family:"Cormorant Garamond",serif;font-weight:400;font-size:2.1rem;color:var(--ivory)}
+.stat span{font-size:.68rem;letter-spacing:.24em;text-transform:uppercase;color:var(--faint)}
+.bowline{font-family:"Cormorant Garamond",serif;font-style:italic;font-size:1.2rem;color:var(--dim);margin-top:2.2rem}
+
+/* ---------- footer ---------- */
+footer{
+  position:relative;z-index:10;padding:3rem clamp(1.2rem,6vw,7rem) 3.4rem;
+  border-top:1px solid var(--line);
+  display:flex;flex-wrap:wrap;gap:1rem 2.4rem;align-items:baseline;
+  font-size:.78rem;color:var(--faint);background:rgba(11,10,8,.7);
+}
+footer a{color:var(--dim);text-decoration:none;border-bottom:1px solid var(--line);padding-bottom:2px;transition:color .3s}
+footer a:hover{color:var(--gold)}
+footer .mark{font-family:"Cormorant Garamond",serif;font-size:1rem;letter-spacing:.2em;color:var(--dim)}
+
+@media (max-width:640px){
+  section{min-height:110vh}
+  #hud{gap:.6rem;padding:.4rem .9rem;font-size:.62rem}
+  .stats{gap:1.4rem}
+}
+@media (prefers-reduced-motion: reduce){
+  #begin,#begin:hover{box-shadow:none}
+}
+</style>
+</head>
+<body>
+
+<canvas id="stage" aria-hidden="true"></canvas>
+
+<a class="back" href="/">← 25</a>
+<button id="mute" aria-pressed="false" aria-label="Toggle sound">♪ sound off</button>
+
+<div id="hud" aria-hidden="true">
+  <span id="hud-mvt">Overture</span>
+  <span class="sep"></span>
+  <span class="dyn" id="hud-dyn">p</span>
+  <span class="sep"></span>
+  <span id="hud-bar">bar 1</span>
+</div>
+
+<main>
+  <section id="hero">
+    <p class="over">Fable /25 · № 68</p>
+    <h1>MAE<span>STRO</span></h1>
+    <p class="tag">A synthesized orchestra awaits your downbeat.<br>Scroll to conduct. Move to shape the phrase.</p>
+    <button id="begin">Begin</button>
+    <p id="ready">The orchestra is ready. Scroll — gently at first.</p>
+    <span class="silent">No recordings, no samples — every note is synthesized in your browser.<br>Prefer silence? Just scroll: the score plays on mute.</span>
+  </section>
+
+  <section id="mvt1">
+    <p class="mvt">Movement I</p>
+    <h2>The strings enter alone.</h2>
+    <p>Sixteen detuned voices breathing under one slow bow. Scroll <em>slowly</em> and they stay at piano; press forward and they swell. Stop entirely, and the orchestra holds its chord — waiting on your hands.</p>
+  </section>
+
+  <section id="mvt2" class="right">
+    <p class="mvt">Movement II</p>
+    <h2>The winds find the melody.</h2>
+    <p>A single reed voice threads chord tones above the strings, harp beneath. Raise your cursor — or your finger — and the vibrato deepens, the tone brightens. Lower it and the phrase turns inward.</p>
+  </section>
+
+  <section id="mvt3">
+    <p class="mvt">Movement III · Tutti</p>
+    <h2>Everything at once.</h2>
+    <p>Brass on the changes, timpani on the downbeats. This is where bold scrolling becomes <em>forte</em> — conduct with your whole arm. The limiter has your back; it will never blare.</p>
+  </section>
+
+  <section id="mvt4" class="right">
+    <p class="mvt">Movement IV</p>
+    <h2>Decrescendo.</h2>
+    <p>Let it fall away. The brass exits first, then the drums, then the winds thin to a whisper. What remains is what you started with — almost.</p>
+  </section>
+
+  <section id="mvt5">
+    <p class="mvt">Movement V</p>
+    <h2>A voice, alone.</h2>
+    <p>One wind line over plucked strings, piano e dolce. The quietest passage is the hardest to conduct: barely scroll. Barely breathe.</p>
+  </section>
+
+  <section id="coda">
+    <p class="mvt">Coda</p>
+    <h2>Lay down the baton.</h2>
+    <div class="perf" id="perf">
+      <h3>Your performance</h3>
+      <div class="stats">
+        <div class="stat"><b id="st-time">—</b><span>duration</span></div>
+        <div class="stat"><b id="st-bars">—</b><span>bars conducted</span></div>
+        <div class="stat"><b id="st-peak">—</b><span>peak dynamic</span></div>
+      </div>
+    </div>
+    <p class="bowline" id="bowline">The orchestra bows.</p>
+  </section>
+</main>
+
+<footer>
+  <span class="mark">MAESTRO</span>
+  <span>Every sound synthesized live in Web Audio. Nothing recorded, nothing sampled.</span>
+  <a href="/68-maestro/guide/">How this site was built</a>
+</footer>
+
+<script>
+(function(){
+"use strict";
+
+/* ============================================================
+   MAESTRO — a generative orchestra conducted by scroll.
+   Architecture:
+     · CONDUCTOR  — scroll/pointer state → section, dynamics, expression
+     · SCORE      — lookahead scheduler emitting note events (always runs
+                    logically; audio rendering is attached only after Begin)
+     · ORCHESTRA  — Web Audio synths per group, built lazily on Begin
+     · STAGE      — canvas score-streams driven by AnalyserNodes when audio
+                    is live, by a simulated envelope engine when silent
+   ============================================================ */
+
+var reduced = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+var $ = function(id){ return document.getElementById(id); };
+
+/* ---------------- harmony ---------------- */
+var TEMPO = 56;                          // BPM
+var BEAT = 60/TEMPO;                     // s
+var BAR = BEAT*4;
+var CHORD_BARS = 2;
+// D minor: i — VI — III — VII  (Dm, Bb, F, C)
+var PROG = [
+  {root:38, q:[0,3,7]},   // D2 minor
+  {root:34, q:[0,4,7]},   // Bb1 major
+  {root:41, q:[0,4,7]},   // F2 major
+  {root:36, q:[0,4,7]}    // C2 major
+];
+function mtof(m){ return 440*Math.pow(2,(m-69)/12); }
+function chordAt(bar){ return PROG[Math.floor(bar/CHORD_BARS)%PROG.length]; }
+
+/* ---------------- conductor state ---------------- */
+var C = {
+  frac:0, section:0,
+  dyn:0.42, dynTarget:0.42,       // dynamics 0.3..1
+  expr:0.5,                        // pointer height 0..1
+  vel:0, lastY:0, stillFor:0,      // scroll velocity & stillness
+  peakDyn:0.42,
+  began:false, muted:false, bowed:false
+};
+var SECTIONS = 7; // hero, I..V, coda
+// group mix per section: [strings, winds, brass, timpani, harp]
+var MIX = [
+  [0.55, 0.00, 0.00, 0.00, 0.00],  // 0 overture
+  [1.00, 0.00, 0.00, 0.00, 0.12],  // I strings
+  [0.90, 1.00, 0.00, 0.00, 0.55],  // II winds
+  [1.00, 0.90, 1.00, 1.00, 0.70],  // III tutti
+  [0.75, 0.55, 0.20, 0.25, 0.40],  // IV decrescendo
+  [0.16, 0.85, 0.00, 0.00, 0.60],  // V solo
+  [0.40, 0.00, 0.00, 0.00, 0.00]   // coda
+];
+var SEC_EDGE = [0, .10, .26, .42, .60, .74, .90]; // frac thresholds
+function sectionFor(f){
+  var s = 0;
+  for(var i=0;i<SEC_EDGE.length;i++) if(f>=SEC_EDGE[i]) s=i;
+  return s;
+}
+function mixNow(){
+  // smooth crossfade between section mixes near edges
+  var f = C.frac, s = C.section;
+  var m = MIX[s].slice();
+  var next = Math.min(s+1, SECTIONS-1);
+  var a = SEC_EDGE[next] || 1;
+  var span = 0.045;
+  if(next>s && f > a-span){
+    var t = Math.min(1,(f-(a-span))/span);
+    for(var i=0;i<5;i++) m[i] = m[i]*(1-t)+MIX[next][i]*t;
+  }
+  return m;
+}
+var DYN_MARK = [[.36,"pp"],[.46,"p"],[.58,"mp"],[.70,"mf"],[.84,"f"],[2,"ff"]];
+function dynLabel(d){ for(var i=0;i<DYN_MARK.length;i++) if(d<DYN_MARK[i][0]) return DYN_MARK[i][1]; return "ff"; }
+
+/* ---------------- score: generative scheduler ----------------
+   Emits events {when (perf ms), group, note, vel, dur}. When audio is live
+   it ALSO renders each event into the graph using ctx time. */
+var Score = {
+  running:false, startPerf:0, next16:0, i16:0,
+  windPrev:64, harpStep:0,
+  timer:null,
+  bars:function(){ return Math.floor(this.i16/16); },
+  start:function(){
+    if(this.running) return;
+    this.running = true;
+    this.startPerf = performance.now();
+    this.next16 = performance.now()/1000 + 0.1;
+    this.i16 = 0;
+    var self=this;
+    this.timer = setInterval(function(){ self.tick(); }, 30);
+  },
+  stop:function(){ this.running=false; clearInterval(this.timer); },
+  tick:function(){
+    var now = performance.now()/1000;
+    while(this.next16 < now + 0.18){
+      this.step(this.next16, this.i16);
+      this.next16 += BEAT/4;
+      this.i16++;
+    }
+  },
+  step:function(t, i){
+    var bar = Math.floor(i/16), beat = Math.floor((i%16)/4), sub = i%4;
+    var ch = chordAt(bar);
+    var mix = mixNow();
+    var dyn = C.dyn;
+    var still = C.stillFor > 1.6;         // conductor at rest → hold
+    var hum = function(r){ return (Math.random()-.5)*r; };
+
+    // STRINGS — pad re-voiced at each chord boundary
+    if(i % (16*CHORD_BARS) === 0 && mix[0] > 0.02){
+      var voices = [12, 19, 24, 24+ch.q[1]];
+      for(var v=0; v<voices.length; v++){
+        emit(t + hum(.02), "strings", ch.root+voices[v],
+             0.5+0.5*dyn, BAR*CHORD_BARS + 1.5);
+      }
+    }
+    // WINDS — one phrase note per half bar, chord tones, stepwise-ish
+    if(sub===0 && (beat===0||beat===2) && mix[1] > 0.04 && !still){
+      if(Math.random() < 0.82){
+        var opts = [], base = 62;
+        for(var o=0;o<ch.q.length;o++){
+          opts.push(ch.root+ch.q[o]+24, ch.root+ch.q[o]+36);
+        }
+        opts = opts.filter(function(n){ return n>=57 && n<=79; });
+        opts.sort(function(a,b){
+          return Math.abs(a-Score.windPrev)-Math.abs(b-Score.windPrev);
+        });
+        var pick = opts[Math.random()<0.6?0:(Math.random()<0.7?1:2)] || opts[0];
+        if(pick===this.windPrev && opts[1]) pick = opts[1];
+        this.windPrev = pick;
+        emit(t + hum(.03), "winds", pick, (0.4+0.6*dyn)*(0.8+Math.random()*0.2), BEAT*1.7);
+      }
+    }
+    // BRASS — swell on chord changes, only when loud enough
+    if(i % (16*CHORD_BARS) === 0 && mix[2] > 0.05 && dyn > 0.55 && !still){
+      emit(t, "brass", ch.root+24, dyn, BAR*0.9);
+      emit(t+0.02, "brass", ch.root+31, dyn*0.8, BAR*0.9);
+    }
+    // TIMPANI — downbeats, plus a soft pickup on beat 3 when forte
+    if(mix[3] > 0.05 && !still){
+      if(i%16===0) emit(t+hum(.012), "timpani", ch.root-12<26?ch.root:ch.root-12, dyn, 1);
+      if(i%16===8 && dyn>0.7) emit(t, "timpani", ch.root-12<26?ch.root:ch.root-12, dyn*0.5, 1);
+    }
+    // HARP — eighth-note arpeggio across two octaves
+    if(sub%2===0 && mix[4] > 0.04 && !still){
+      var pat = [0,1,2,0,1,2,1,0];
+      var stepI = this.harpStep++ % pat.length;
+      var oct = (stepI<4)?12:24;
+      if(Math.random() < 0.9){
+        emit(t + hum(.024), "harp", ch.root + ch.q[pat[stepI]] + oct + 12,
+             (0.35+0.55*dyn)*(0.75+Math.random()*0.25), 2);
+      }
+    }
+  }
+};
+
+/* event fan-out: visuals always, audio if live */
+function emit(when, group, note, vel, dur){
+  Stage.onEvent(when, group, note, vel, dur);
+  if(Orch.live) Orch.play(when, group, note, vel, dur);
+}
+
+/* ---------------- orchestra (lazy Web Audio) ---------------- */
+var Orch = {
+  live:false, ctx:null, groups:{}, master:null, comp:null,
+  vibLfo:null, vibGain:null, stringsFilter:null, windFilter:null,
+  init:function(){
+    if(this.live) return;
+    var AC = window.AudioContext || window.webkitAudioContext;
+    if(!AC) return;
+    var ctx = this.ctx = new AC();
+    // master chain: sum → compressor → master gain → out
+    this.comp = ctx.createDynamicsCompressor();
+    this.comp.threshold.value = -20; this.comp.knee.value = 18;
+    this.comp.ratio.value = 4; this.comp.attack.value = 0.01; this.comp.release.value = 0.3;
+    this.master = ctx.createGain();
+    this.master.gain.value = C.muted ? 0 : 0.0001;
+    this.comp.connect(this.master); this.master.connect(ctx.destination);
+
+    // simple FDN-ish reverb: cross-fed delays with damping
+    var rin = ctx.createGain(); rin.gain.value = 1;
+    var pre = ctx.createDelay(0.1); pre.delayTime.value = 0.02;
+    var d1 = ctx.createDelay(1), d2 = ctx.createDelay(1);
+    d1.delayTime.value = 0.297; d2.delayTime.value = 0.371;
+    var lp1 = ctx.createBiquadFilter(), lp2 = ctx.createBiquadFilter();
+    lp1.type=lp2.type="lowpass"; lp1.frequency.value=3400; lp2.frequency.value=2900;
+    var f1 = ctx.createGain(), f2 = ctx.createGain();
+    f1.gain.value = 0.52; f2.gain.value = 0.52;
+    var ret = ctx.createGain(); ret.gain.value = 0.42;
+    rin.connect(pre); pre.connect(d1); pre.connect(d2);
+    d1.connect(lp1); lp1.connect(f1); f1.connect(d2);
+    d2.connect(lp2); lp2.connect(f2); f2.connect(d1);
+    lp1.connect(ret); lp2.connect(ret); ret.connect(this.comp);
+    this.rev = rin;
+
+    // shared vibrato LFO (winds)
+    this.vibLfo = ctx.createOscillator(); this.vibLfo.frequency.value = 5.1;
+    this.vibGain = ctx.createGain(); this.vibGain.gain.value = 6;
+    this.vibLfo.connect(this.vibGain); this.vibLfo.start();
+
+    // per-group buses: gain → analyser → (dry + reverb send)
+    var self=this;
+    ["strings","winds","brass","timpani","harp"].forEach(function(name){
+      var g = ctx.createGain(); g.gain.value = 0;
+      var an = ctx.createAnalyser(); an.fftSize = 512;
+      var send = ctx.createGain();
+      send.gain.value = {strings:.5,winds:.55,brass:.35,timpani:.3,harp:.6}[name];
+      g.connect(an); an.connect(self.comp); an.connect(send); send.connect(self.rev);
+      self.groups[name] = {gain:g, an:an, buf:new Uint8Array(an.fftSize)};
+    });
+    // strings & winds tone filters live per-voice; expression modulates targets
+    this.live = true;
+    // gentle master fade-in
+    this.master.gain.setTargetAtTime(C.muted?0:0.5, ctx.currentTime, 0.8);
+  },
+  now:function(){ return this.ctx.currentTime; },
+  // convert perf-seconds → ctx time
+  at:function(perfT){
+    return this.ctx.currentTime + Math.max(0.005, perfT - performance.now()/1000);
+  },
+  setMix:function(mix, dyn){
+    if(!this.live) return;
+    var t = this.ctx.currentTime;
+    var names = ["strings","winds","brass","timpani","harp"];
+    // conductor at rest → keep pads, breathe
+    var breath = 1;
+    if(C.stillFor > 1.6){
+      breath = 0.75 + 0.25*Math.sin(performance.now()/1000*0.9);
+    }
+    for(var i=0;i<5;i++){
+      var v = mix[i]*(0.25+0.75*dyn);
+      if(names[i]==="strings") v *= breath;
+      this.groups[names[i]].gain.setTargetAtTime(Math.max(0.0001,v), t, 0.25);
+    }
+  },
+  setMuted:function(m){
+    if(!this.live) return;
+    this.master.gain.setTargetAtTime(m?0.0001:0.5, this.ctx.currentTime, 0.15);
+  },
+  level:function(name){
+    var g = this.groups[name];
+    g.an.getByteTimeDomainData(g.buf);
+    var s = 0;
+    for(var i=0;i<g.buf.length;i+=4){ var d=(g.buf[i]-128)/128; s += d*d; }
+    return Math.sqrt(s/(g.buf.length/4));
+  },
+  play:function(when, group, note, vel, dur){
+    var t = this.at(when), ctx = this.ctx, out = this.groups[group].gain;
+    var f = mtof(note);
+    if(group==="strings") this.strings(t,f,vel,dur,out);
+    else if(group==="winds") this.winds(t,f,vel,dur,out);
+    else if(group==="brass") this.brass(t,f,vel,dur,out);
+    else if(group==="timpani") this.timpani(t,f,vel,out);
+    else if(group==="harp") this.harp(t,f,vel,out);
+  },
+  strings:function(t,f,vel,dur,out){
+    var ctx=this.ctx;
+    var lp=ctx.createBiquadFilter(); lp.type="lowpass";
+    lp.frequency.value = 700 + 2600*C.expr*vel; lp.Q.value=0.4;
+    var env=ctx.createGain(); env.gain.setValueAtTime(0.0001,t);
+    var peak = 0.05*vel;
+    env.gain.linearRampToValueAtTime(peak, t+1.5);
+    env.gain.setValueAtTime(peak, t+dur-2.2);
+    env.gain.linearRampToValueAtTime(0.0001, t+dur);
+    lp.connect(env); env.connect(out);
+    [-7,0,6].forEach(function(cents){
+      var o=ctx.createOscillator(); o.type="sawtooth";
+      o.frequency.value=f; o.detune.value=cents+(Math.random()-.5)*3;
+      o.connect(lp); o.start(t); o.stop(t+dur+0.1);
+      o.onended=function(){ o.disconnect(); };
+    });
+    setTimeout(function(){ env.disconnect(); lp.disconnect(); },(t-ctx.currentTime+dur+0.4)*1000);
+  },
+  winds:function(t,f,vel,dur,out){
+    var ctx=this.ctx;
+    var o=ctx.createOscillator(); o.type="triangle"; o.frequency.value=f;
+    this.vibGain.connect(o.detune);
+    this.vibGain.gain.setTargetAtTime(2+16*C.expr, t, 0.3);
+    var lp=ctx.createBiquadFilter(); lp.type="lowpass";
+    lp.frequency.value = 1100 + 2400*C.expr; lp.Q.value=1.2;
+    var env=ctx.createGain(); env.gain.setValueAtTime(0.0001,t);
+    var peak=0.16*vel;
+    env.gain.linearRampToValueAtTime(peak,t+0.3);
+    env.gain.setValueAtTime(peak,t+dur-0.5);
+    env.gain.linearRampToValueAtTime(0.0001,t+dur);
+    o.connect(lp); lp.connect(env); env.connect(out);
+    o.start(t); o.stop(t+dur+0.1);
+    var vg=this.vibGain;
+    o.onended=function(){ try{vg.disconnect(o.detune);}catch(e){} o.disconnect(); env.disconnect(); lp.disconnect(); };
+  },
+  brass:function(t,f,vel,dur,out){
+    var ctx=this.ctx;
+    var o=ctx.createOscillator(); o.type="sawtooth"; o.frequency.value=f;
+    var lp=ctx.createBiquadFilter(); lp.type="lowpass"; lp.Q.value=1.5;
+    lp.frequency.setValueAtTime(500,t);
+    lp.frequency.linearRampToValueAtTime(900+2200*vel, t+0.25);
+    lp.frequency.setTargetAtTime(800, t+dur*0.5, dur*0.3);
+    var env=ctx.createGain(); env.gain.setValueAtTime(0.0001,t);
+    var peak=0.12*vel;
+    env.gain.linearRampToValueAtTime(peak,t+0.09);
+    env.gain.setTargetAtTime(peak*0.55, t+0.2, 0.4);
+    env.gain.setValueAtTime(peak*0.5, t+dur-0.8);
+    env.gain.linearRampToValueAtTime(0.0001, t+dur);
+    o.connect(lp); lp.connect(env); env.connect(out);
+    o.start(t); o.stop(t+dur+0.1);
+    o.onended=function(){ o.disconnect(); env.disconnect(); lp.disconnect(); };
+  },
+  timpani:function(t,f,vel,out){
+    var ctx=this.ctx;
+    // membrane: sine drop
+    var o=ctx.createOscillator(); o.type="sine";
+    o.frequency.setValueAtTime(f*1.7,t);
+    o.frequency.exponentialRampToValueAtTime(f, t+0.09);
+    var env=ctx.createGain();
+    env.gain.setValueAtTime(0.6*vel, t);
+    env.gain.exponentialRampToValueAtTime(0.0001, t+0.7);
+    o.connect(env); env.connect(out);
+    o.start(t); o.stop(t+0.8);
+    o.onended=function(){ o.disconnect(); env.disconnect(); };
+    // mallet: filtered noise burst
+    var len = Math.floor(ctx.sampleRate*0.1);
+    var buf = ctx.createBuffer(1,len,ctx.sampleRate);
+    var d = buf.getChannelData(0);
+    for(var i=0;i<len;i++) d[i]=(Math.random()*2-1)*(1-i/len);
+    var n=ctx.createBufferSource(); n.buffer=buf;
+    var bp=ctx.createBiquadFilter(); bp.type="bandpass"; bp.frequency.value=f*3; bp.Q.value=1;
+    var ng=ctx.createGain(); ng.gain.value=0.25*vel;
+    n.connect(bp); bp.connect(ng); ng.connect(out);
+    n.start(t);
+    n.onended=function(){ n.disconnect(); ng.disconnect(); bp.disconnect(); };
+  },
+  harp:function(t,f,vel,out){
+    var ctx=this.ctx;
+    var env=ctx.createGain();
+    env.gain.setValueAtTime(0.0001,t);
+    env.gain.linearRampToValueAtTime(0.20*vel, t+0.006);
+    env.gain.exponentialRampToValueAtTime(0.0001, t+1.9);
+    env.connect(out);
+    var o1=ctx.createOscillator(); o1.type="sine"; o1.frequency.value=f;
+    var o2=ctx.createOscillator(); o2.type="sine"; o2.frequency.value=f*2;
+    var g2=ctx.createGain(); g2.gain.value=0.28;
+    var o3=ctx.createOscillator(); o3.type="triangle"; o3.frequency.value=f;
+    var g3=ctx.createGain(); g3.gain.value=0.2;
+    o1.connect(env); o2.connect(g2); g2.connect(env); o3.connect(g3); g3.connect(env);
+    [o1,o2,o3].forEach(function(o){ o.start(t); o.stop(t+2); });
+    o1.onended=function(){ o1.disconnect(); o2.disconnect(); o3.disconnect(); env.disconnect(); g2.disconnect(); g3.disconnect(); };
+  },
+  finale:function(){
+    // Picardy third — final D major chord, strings only
+    if(!this.live) return;
+    var t = this.ctx.currentTime + 0.1;
+    var self=this;
+    [50,54,57,62,66].forEach(function(n,i){
+      self.strings(t + i*0.06, mtof(n), 0.7, 12, self.groups.strings.gain);
+    });
+    this.groups.strings.gain.setTargetAtTime(0.6, t, 0.5);
+  }
+};
+
+/* ---------------- stage (canvas visuals) ---------------- */
+var Stage = {
+  cv:null, cx:null, W:0, H:0, dpr:1,
+  rings:[], sparks:[], events:[],
+  sim:{strings:0, winds:0, brass:0, timpani:0, harp:0},
+  lv:{strings:0, winds:0, brass:0, timpani:0, harp:0},
+  bowT:-1, lastFrame:0, phase:0,
+  init:function(){
+    this.cv = $("stage"); this.cx = this.cv.getContext("2d");
+    var self=this;
+    var rs=function(){
+      self.dpr = Math.min(window.devicePixelRatio||1, 2);
+      self.W = window.innerWidth; self.H = window.innerHeight;
+      self.cv.width = self.W*self.dpr; self.cv.height = self.H*self.dpr;
+      self.cx.setTransform(self.dpr,0,0,self.dpr,0,0);
+      if(reduced) self.draw(performance.now());
+    };
+    window.addEventListener("resize", rs); rs();
+  },
+  onEvent:function(when, group, note, vel){
+    this.events.push({when:when, group:group, note:note, vel:vel});
+  },
+  consume:function(nowS){
+    var e;
+    for(var i=this.events.length-1;i>=0;i--){
+      e=this.events[i];
+      if(e.when <= nowS){
+        this.events.splice(i,1);
+        this.trigger(e);
+      } else if(e.when > nowS + 2){ this.events.splice(i,1); }
+    }
+  },
+  trigger:function(e){
+    var mix = mixNow();
+    if(e.group==="timpani"){
+      this.sim.timpani = Math.min(1, this.sim.timpani + e.vel);
+      if(!reduced) this.rings.push({r:0, v:e.vel, a:1});
+    } else if(e.group==="harp"){
+      this.sim.harp = Math.min(1, this.sim.harp + e.vel*0.8);
+      if(!reduced) this.sparks.push({
+        x:this.W*(0.2+0.6*Math.random()),
+        y:this.H*(0.24+0.14*Math.random()),
+        a:1, v:e.vel, note:e.note
+      });
+    } else if(e.group==="winds"){
+      this.sim.winds = Math.min(1, this.sim.winds*0.5 + e.vel*0.75);
+    } else if(e.group==="brass"){
+      this.sim.brass = Math.min(1, this.sim.brass + e.vel);
+    } else if(e.group==="strings"){
+      this.sim.strings = Math.max(this.sim.strings, 0.15);
+    }
+  },
+  levels:function(dt){
+    var mix = mixNow(), dyn = C.dyn;
+    var audio = Orch.live && !C.muted;
+    var names=["strings","winds","brass","timpani","harp"];
+    var cal={strings:5.5, winds:5, brass:6, timpani:4.5, harp:6};
+    for(var i=0;i<5;i++){
+      var n=names[i], target;
+      if(audio){
+        target = Math.min(1, Orch.level(n)*cal[n]);
+      } else {
+        // simulated envelopes decay; strings follow mix directly
+        var dec = {strings:0.4, winds:0.9, brass:1.4, timpani:2.6, harp:3.2}[n];
+        this.sim[n] = Math.max(0, this.sim[n] - dec*dt);
+        if(n==="strings"){
+          var breath = C.stillFor>1.6 ? (0.8+0.2*Math.sin(performance.now()/1000*0.9)) : 1;
+          this.sim[n] = Math.max(this.sim[n], mix[0]*(0.25+0.75*dyn)*breath*0.8);
+        }
+        target = Math.min(1, this.sim[n]*(0.3+0.7*mix[i]));
+      }
+      this.lv[n] += (target - this.lv[n]) * Math.min(1, dt*(target>this.lv[n]?10:4));
+    }
+  },
+  draw:function(now){
+    var cx=this.cx, W=this.W, H=this.H, lv=this.lv;
+    var nowS = now/1000;
+    this.consume(nowS);
+    var dt = Math.min(0.1, (now-this.lastFrame)/1000 || 0.016);
+    this.lastFrame = now;
+    this.levels(dt);
+    if(!reduced) this.phase += dt*(0.6 + C.dyn*1.6);
+
+    cx.clearRect(0,0,W,H);
+    // faint stage vignette
+    var vg = cx.createRadialGradient(W/2,H*0.55,H*0.1, W/2,H*0.55, H*0.9);
+    vg.addColorStop(0,"rgba(30,24,12,.35)");
+    vg.addColorStop(1,"rgba(0,0,0,0)");
+    cx.fillStyle=vg; cx.fillRect(0,0,W,H);
+
+    // bow (coda): streams dip
+    var dip = 0;
+    if(this.bowT>=0){
+      var bt = Math.min(1,(nowS-this.bowT)/2.6);
+      dip = Math.sin(Math.min(1,bt)*Math.PI) * H*0.06;
+    }
+
+    /* STRINGS — long bow-lines */
+    var nLines = 5;
+    for(var i=0;i<nLines;i++){
+      var yBase = H*(0.30+0.09*i) + dip*(1+i*0.15);
+      var amp = (reduced?2:(3+lv.strings*22)) * (1 - Math.abs(i-2)*0.14);
+      var alpha = 0.10 + lv.strings*0.75;
+      this.stream(cx, W*0.06, W*0.94, yBase, amp, this.phase + i*1.7, i,
+        "rgba(216,169,78,", alpha, 1 + lv.strings*1.8);
+    }
+
+    /* BRASS — warm glow band */
+    if(lv.brass>0.02){
+      var by = H*0.72 + dip;
+      var bg = cx.createLinearGradient(0,by-40,0,by+40);
+      bg.addColorStop(0,"rgba(216,120,50,0)");
+      bg.addColorStop(0.5,"rgba(222,140,60,"+(lv.brass*0.30)+")");
+      bg.addColorStop(1,"rgba(216,120,50,0)");
+      cx.fillStyle=bg; cx.fillRect(W*0.04,by-40,W*0.92,80);
+      // fanfare strokes
+      cx.strokeStyle="rgba(240,190,110,"+(lv.brass*0.7)+")";
+      cx.lineWidth=2;
+      for(var b=0;b<3;b++){
+        cx.beginPath();
+        cx.moveTo(W*(0.2+0.25*b), by-8+b*8);
+        cx.lineTo(W*(0.2+0.25*b)+W*0.1+lv.brass*40, by-8+b*8);
+        cx.stroke();
+      }
+    }
+
+    /* WINDS — breath curls */
+    if(lv.winds>0.02){
+      var wy = H*0.20 + dip*0.6;
+      for(var wgi=0; wgi<2; wgi++){
+        var cxp = W*(0.62+0.2*wgi), ampW = lv.winds;
+        cx.strokeStyle = "rgba(190,214,222,"+(ampW*0.8)+")";
+        cx.lineWidth = 1.4;
+        cx.beginPath();
+        var turns = 2.6, pts = 60;
+        for(var p=0;p<=pts;p++){
+          var tt = p/pts;
+          var ang = tt*Math.PI*2*turns + (reduced?0:this.phase*0.8) + wgi*2;
+          var rr = 4 + tt*30*(0.4+ampW);
+          var px = cxp + Math.cos(ang)*rr + tt*40;
+          var py = wy + Math.sin(ang)*rr*0.6 - tt*26;
+          if(p===0) cx.moveTo(px,py); else cx.lineTo(px,py);
+        }
+        cx.stroke();
+      }
+    }
+
+    /* TIMPANI — expanding rings */
+    for(var r=this.rings.length-1;r>=0;r--){
+      var rg=this.rings[r];
+      rg.r += dt*(H*0.35)*(0.5+rg.v); rg.a -= dt*0.8;
+      if(rg.a<=0){ this.rings.splice(r,1); continue; }
+      cx.strokeStyle="rgba(216,169,78,"+(rg.a*0.5*rg.v)+")";
+      cx.lineWidth = 1.5+rg.v*2;
+      cx.beginPath();
+      cx.arc(W*0.5, H*0.86+dip, rg.r, 0, Math.PI*2);
+      cx.stroke();
+    }
+
+    /* HARP — falling sparkles */
+    for(var s=this.sparks.length-1;s>=0;s--){
+      var sp=this.sparks[s];
+      sp.y += dt*26; sp.a -= dt*0.9;
+      if(sp.a<=0){ this.sparks.splice(s,1); continue; }
+      cx.fillStyle="rgba(240,212,147,"+(sp.a*0.9)+")";
+      cx.beginPath();
+      cx.arc(sp.x, sp.y+dip*0.4, 1.2+sp.v*1.6, 0, Math.PI*2);
+      cx.fill();
+    }
+  },
+  stream:function(cx, x0, x1, y, amp, ph, idx, col, alpha, w){
+    // glow pass + core pass
+    var steps = reduced ? 2 : 48;
+    for(var pass=0; pass<2; pass++){
+      cx.strokeStyle = col + (pass===0 ? alpha*0.22 : alpha) + ")";
+      cx.lineWidth = pass===0 ? w*4 : w;
+      cx.beginPath();
+      for(var p=0;p<=steps;p++){
+        var t=p/steps, x=x0+(x1-x0)*t;
+        var yy = y + (reduced?0:Math.sin(t*7+ph)*amp*Math.sin(t*Math.PI));
+        if(p===0) cx.moveTo(x,yy); else cx.lineTo(x,yy);
+      }
+      cx.stroke();
+    }
+  }
+};
+
+/* ---------------- conductor loop ---------------- */
+var perfStats = {shown:false};
+var rafId = 0, running=false;
+
+function frame(now){
+  rafId = requestAnimationFrame(frame);
+  var dt = 1/60;
+  // scroll → section & dynamics
+  var doc = document.documentElement;
+  var max = Math.max(1, doc.scrollHeight - window.innerHeight);
+  var y = window.scrollY || doc.scrollTop || 0;
+  C.frac = Math.min(1, y/max);
+  C.section = sectionFor(C.frac);
+  var v = Math.abs(y - C.lastY); C.lastY = y;
+  C.vel = C.vel*0.9 + v*0.1;
+  if(v < 0.5) C.stillFor += dt; else C.stillFor = 0;
+  C.dynTarget = Math.min(1, 0.35 + C.vel*0.055);
+  C.dyn += (C.dynTarget - C.dyn)*(C.dynTarget>C.dyn ? 0.06 : 0.012);
+  if(C.began && C.section>0 && C.dyn > C.peakDyn) C.peakDyn = C.dyn;
+
+  if(Orch.live) Orch.setMix(mixNow(), C.dyn);
+  Stage.draw(now);
+  updateHud();
+
+  // coda
+  if(C.frac > 0.90 && !C.bowed && (C.began || C.frac>0.93)){
+    C.bowed = true;
+    Stage.bowT = now/1000 + 0.5;
+    if(Orch.live){
+      ["winds","brass","timpani","harp"].forEach(function(n){
+        Orch.groups[n].gain.setTargetAtTime(0.0001, Orch.ctx.currentTime, 0.8);
+      });
+      Orch.finale();
+    }
+    showStats();
+  }
+}
+
+function updateHud(){
+  var names=["Overture","I · Strings","II · Winds","III · Tutti","IV · Decrescendo","V · Solo","Coda"];
+  $("hud-mvt").textContent = names[C.section];
+  $("hud-dyn").textContent = C.stillFor>1.6 ? "ten." : dynLabel(C.dyn);
+  $("hud-bar").textContent = "bar " + (Score.running ? (Score.bars()+1) : 1);
+}
+
+function showStats(){
+  if(perfStats.shown) return; perfStats.shown = true;
+  if(C.began){
+    var secs = Math.round((performance.now()-Score.startPerf)/1000);
+    $("st-time").textContent = Math.floor(secs/60)+":"+String(secs%60).padStart(2,"0");
+    $("st-bars").textContent = Score.bars()+1;
+    $("st-peak").textContent = dynLabel(C.peakDyn);
+  } else {
+    $("st-time").textContent = "—";
+    $("st-bars").textContent = "∅";
+    $("st-peak").textContent = "tacet";
+    $("bowline").textContent = "The orchestra bows to a silent hall.";
+  }
+}
+
+/* ---------------- controls ---------------- */
+$("begin").addEventListener("click", function(){
+  Orch.init();
+  if(Orch.ctx && Orch.ctx.state === "suspended") Orch.ctx.resume();
+  if(!Score.running) Score.start();
+  C.began = true;
+  this.setAttribute("disabled","");
+  $("ready").classList.add("on");
+  $("hud").classList.add("on");
+  updateMuteLabel();
+});
+
+function updateMuteLabel(){
+  $("mute").textContent = C.muted ? "♪ sound on" : "♪ sound off";
+  $("mute").setAttribute("aria-pressed", C.muted ? "true" : "false");
+}
+$("mute").addEventListener("click", function(){
+  C.muted = !C.muted;
+  Orch.setMuted(C.muted);
+  updateMuteLabel();
+});
+
+document.addEventListener("visibilitychange", function(){
+  if(document.hidden){
+    if(Orch.live && Orch.ctx.state==="running") Orch.ctx.suspend();
+    if(running){ cancelAnimationFrame(rafId); running=false; }
+    if(Score.running){ Score.stop(); Score._resume = true; }
+  } else {
+    if(Orch.live && Orch.ctx.state==="suspended") Orch.ctx.resume();
+    if(Score._resume){ Score._resume=false; Score.start(); }
+    if(!running && !reduced){ running=true; rafId=requestAnimationFrame(frame); }
+    if(reduced) Stage.draw(performance.now());
+  }
+});
+
+/* expression: pointer / touch height */
+window.addEventListener("pointermove", function(e){
+  C.expr = 1 - Math.min(1, Math.max(0, e.clientY/window.innerHeight));
+}, {passive:true});
+window.addEventListener("touchmove", function(e){
+  if(e.touches[0]) C.expr = 1 - Math.min(1, Math.max(0, e.touches[0].clientY/window.innerHeight));
+}, {passive:true});
+
+/* ---------------- boot ---------------- */
+Stage.init();
+// Silent score: run the generative clock even before Begin so the page
+// breathes visually. (No AudioContext exists until Begin is clicked.)
+if(!reduced) Score.start();
+if(!reduced){
+  running = true;
+  rafId = requestAnimationFrame(frame);
+} else {
+  // static score: draw once, refresh calmly on scroll
+  var t0=0;
+  Stage.draw(performance.now());
+  window.addEventListener("scroll", function(){
+    var n=performance.now();
+    if(n-t0>250){
+      t0=n;
+      var doc=document.documentElement;
+      var max=Math.max(1,doc.scrollHeight-window.innerHeight);
+      C.frac=Math.min(1,(window.scrollY||0)/max);
+      C.section=sectionFor(C.frac);
+      if(Orch.live) Orch.setMix(mixNow(), C.dyn);
+      Stage.draw(n); updateHud();
+      if(C.frac>0.9) showStats();
+    }
+  }, {passive:true});
+  $("hud").classList.add("on");
+}
+})();
+</script>
+
+<!-- PASS 1 (foundation):
+     1. Architecture: one generative scheduler (30ms lookahead ticks on a performance.now clock) emits
+        note events consumed by BOTH the lazy Web Audio orchestra and the canvas stage — so the silent
+        page and the sounding page share one score, and no AudioContext exists before Begin.
+     2. Harmony locked to D minor i–VI–III–VII (Dm–Bb–F–C, 2 bars each @56 BPM); every instrument draws
+        exclusively from the current chord's tone set, winds voice-lead to the nearest chord tone.
+     3. Conductor mapping: scroll fraction → 7-section mix matrix with 4.5% crossfade bands,
+        smoothed |scrollY delta| → dynamics (asym attack/release so swells are quick, decays slow),
+        pointer height → vibrato depth + filter brightness; >1.6s stillness → "ten." hold with breathing pad.
+     4. Master chain: per-group gain → analyser → compressor(-20dB, 4:1) → master 0.5, plus a
+        cross-fed dual-delay damped reverb (297/371ms, lp 3.4k) as a send bus. -->
+</body>
+</html>

@@ -1,0 +1,34 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>ORACLE — It has been expecting you — Guide</title>
+<meta name="description" content="Techniques behind ORACLE — It has been expecting you, plus a copy-paste reproduction prompt.">
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{background:#0B0C09;color:#EDE9E0;font-family:Georgia,serif;line-height:1.7;-webkit-font-smoothing:antialiased}
+.wrap{max-width:760px;margin:0 auto;padding:110px 24px 90px}
+a.back{position:fixed;top:16px;left:16px;font-family:ui-monospace,monospace;font-size:13px;color:#EDE9E0;text-decoration:none;border:1px solid rgba(237,233,224,.25);padding:7px 14px;border-radius:999px;background:rgba(0,0,0,.35)}
+a.back:hover{border-color:#C9CFA0;color:#C9CFA0}
+.kick{font-family:ui-monospace,monospace;font-size:11px;letter-spacing:.34em;text-transform:uppercase;color:#C9CFA0;margin-bottom:18px}
+h1{font-size:clamp(30px,5.5vw,46px);font-weight:400;line-height:1.15;margin-bottom:14px}
+.lede{color:rgba(237,233,224,.66);margin-bottom:54px;font-style:italic}
+section{margin-bottom:38px}
+h2{font-size:19px;font-weight:400;margin-bottom:10px;color:#C9CFA0}
+h2 span{font-family:ui-monospace,monospace;font-size:12px;letter-spacing:.2em;opacity:.7;margin-right:10px}
+section p{color:rgba(237,233,224,.82);font-size:16px}
+.pbox{margin-top:60px;border:1px solid rgba(237,233,224,.18);border-radius:10px;overflow:hidden}
+.ph{display:flex;justify-content:space-between;align-items:center;padding:12px 16px;border-bottom:1px solid rgba(237,233,224,.14);font-family:ui-monospace,monospace;font-size:11px;letter-spacing:.24em;text-transform:uppercase;color:#C9CFA0}
+.ph button{font-family:inherit;font-size:11px;letter-spacing:.14em;color:#0B0C09;background:#C9CFA0;border:0;border-radius:999px;padding:6px 14px;cursor:pointer}
+pre{white-space:pre-wrap;padding:20px;font-family:ui-monospace,monospace;font-size:13px;line-height:1.75;color:rgba(237,233,224,.86)}
+</style></head><body>
+<a class="back" href="/67-oracle/">← ORACLE</a>
+<div class="wrap">
+<p class="kick">The Big Five · making-of</p>
+<h1>ORACLE — It has been expecting you</h1>
+<p class="lede">How this experience works — and the prompt that rebuilds it. All of it is code: no image or audio assets, everything procedural.</p>
+<section><h2><span>01</span> The presence</h2><p>A living eye rendered from flowing radial filaments on canvas: it tracks the cursor precisely, the pupil dilates as you approach, it blinks naturally (rare double blinks), looks around idly when you stop, and squints on fast scroll.</p></section>
+<section><h2><span>02</span> The behavior engine</h2><p>The page quietly observes ~10 behaviors — idling, rushing, circling the eye, leaving and returning to the tab, selecting text, a second visit (localStorage), nearing the end — and answers each exactly once per session with a typeset line ('You stopped. So did it.'). No nagging: every line fires once, perfectly timed.</p></section>
+<section><h2><span>03</span> The deterministic oracle</h2><p>One input: ask it anything. The question hashes to one of ~40 crafted delphic answers — and the same question always returns the same answer. The copy dares you to test it: 'Ask again. It does not change its mind.'</p></section>
+<section><h2><span>04</span> Fallbacks</h2><p>Reduced motion stills the filaments but keeps tracking and the dialogue; localStorage is guarded for file:// contexts; the loop pauses offscreen and on hidden tabs.</p></section>
+<div class="pbox"><div class="ph"><span>Reproduction prompt</span><button onclick="navigator.clipboard&&navigator.clipboard.writeText(document.getElementById('prompt').textContent)">Copy</button></div>
+<pre id="prompt">Build a single-file uncanny-beautiful experience called "ORACLE — It has been expecting you." Near-black (#0B0C09) with one luminous gold-green accent (#C9CFA0), a serene classical serif, vast negative space. Hero: a living eye built from flowing radial canvas filaments — precise cursor tracking, pupil dilation with cursor proximity, natural blinking with rare double-blinks, idle wandering gaze, squinting under fast scroll; on touch devices it follows touch and scroll. Beneath it, a caption line types out behavior-reactions, each exactly once per session: idle 10s ("You stopped. So did it."), rapid scrolling ("No need to rush."), circling the eye ("It noticed."), tab return via visibilitychange ("Welcome back."), text selection ("Take it. It was written for you."), second visit via guarded localStorage ("It remembers you."), reaching the end ("You want to know how it ends."). Keep a "What it sees" section listing the mentions as they occur. Then "The dialogue": one input field; hash the question deterministically into one of ~40 hand-written delphic answers revealed slowly — same question, same answer, forever; say so in copy. Close with a deadpan about-section: "ORACLE is a page. Pages do not see. Probably." prefers-reduced-motion: becalmed eye, everything else functional. Pause loops offscreen/hidden; no horizontal overflow at 390px; zero console errors.</pre></div>
+</div></body></html>
