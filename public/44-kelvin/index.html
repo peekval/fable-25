@@ -1,0 +1,878 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<!--
+  FABLE/25 · 44-KELVIN — Computing at the edge of zero
+  CHANGELOG
+  PASS 1 — White-lab minimal quantum site. Scroll-driven descent: fixed mono
+           temperature readout falls 300 K → 10 mK; background cools toward
+           blue-white; frost-noise creeps in at edges; transition durations
+           lengthen with cold (--dur bound to --cool). Interactive canvas
+           Bloch sphere at 10 mK with pointer-driven state + measurement
+           collapse. Cryostat plate hero. Reduced-motion honored; canvas
+           pauses offscreen/hidden.
+-->
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>KELVIN — Computing at the edge of zero</title>
+<meta name="description" content="KELVIN is a quantum-computing laboratory. Scroll to descend the cryostat — 300 K to 10 mK — and meet the qubit at the bottom of the cold.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;1,300;1,400&family=IBM+Plex+Mono:wght@300;400;500&family=Instrument+Sans:ital,wght@0,400;0,500;0,600;1,400&display=swap" rel="stylesheet">
+<style>
+:root{
+  --white:#FAFBFC;
+  --ink:#14161A;
+  --gold:#C99B4C;
+  --copper:#A66A3F;
+  --violet:#A78BFA;
+  --icecyan:#7DD3FC;
+  --dim:#96A0AC;
+  --line:rgba(20,22,26,.10);
+  --gold-line:rgba(201,155,76,.45);
+  --cool:0;                 /* 0 at 300 K → 1 at 10 mK (set by JS) */
+  --dur:.35s;               /* transitions lengthen as it gets colder */
+  --frost:0;
+  --serif:"Cormorant Garamond",Georgia,serif;
+  --sans:"Instrument Sans",system-ui,sans-serif;
+  --mono:"IBM Plex Mono",ui-monospace,monospace;
+  --iri:linear-gradient(100deg,var(--violet),var(--icecyan));
+}
+*{margin:0;padding:0;box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{
+  font-family:var(--sans);
+  color:var(--ink);
+  background:var(--white); /* JS cools this toward blue-white */
+  font-size:16px;
+  line-height:1.6;
+  overflow-x:hidden;
+  -webkit-font-smoothing:antialiased;
+}
+::selection{background:rgba(201,155,76,.25)}
+
+/* ---------- fixed chrome ---------- */
+.back-pill{
+  position:fixed;top:18px;left:18px;z-index:60;
+  font-family:var(--mono);font-size:12px;letter-spacing:.08em;
+  color:var(--ink);text-decoration:none;
+  border:1px solid var(--line);border-radius:999px;
+  padding:8px 16px;background:rgba(250,251,252,.82);
+  backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);
+  transition:border-color var(--dur),color var(--dur),background var(--dur);
+}
+.back-pill:hover{border-color:var(--gold);color:var(--copper)}
+
+.wordmark{
+  position:fixed;top:24px;right:22px;z-index:60;
+  font-family:var(--mono);font-size:11px;letter-spacing:.34em;
+  color:var(--dim);pointer-events:none;
+}
+.wordmark b{color:var(--ink);font-weight:500}
+
+/* the falling readout */
+.readout{
+  position:fixed;left:20px;bottom:16px;z-index:55;pointer-events:none;
+  font-family:var(--mono);line-height:1;
+}
+.readout .t-label{
+  font-size:10px;letter-spacing:.3em;color:var(--dim);
+  text-transform:uppercase;margin-bottom:6px;
+}
+.readout .t-value{
+  font-size:clamp(2.6rem,7vw,5.2rem);
+  font-weight:300;letter-spacing:-.03em;color:var(--ink);
+  font-variant-numeric:tabular-nums;
+  white-space:nowrap;
+}
+.readout .t-value .unit{
+  font-size:.42em;color:var(--gold);font-weight:400;
+  letter-spacing:.02em;margin-left:.18em;
+}
+.readout .t-stage{
+  font-size:10px;letter-spacing:.22em;color:var(--dim);
+  text-transform:uppercase;margin-top:8px;min-height:12px;
+}
+
+/* descent rail */
+.rail{
+  position:fixed;right:24px;top:50%;transform:translateY(-50%);
+  z-index:50;display:flex;flex-direction:column;gap:22px;align-items:center;
+}
+.rail::before{
+  content:"";position:absolute;top:-8px;bottom:-8px;width:1px;
+  background:var(--line);z-index:-1;
+}
+.rail a{
+  width:7px;height:7px;border-radius:50%;
+  background:var(--white);border:1px solid var(--dim);
+  transition:background var(--dur),border-color var(--dur),transform var(--dur);
+}
+.rail a.on{background:var(--gold);border-color:var(--gold);transform:scale(1.35)}
+
+/* frost creeping in at the edges */
+.frost{
+  position:fixed;inset:0;z-index:40;pointer-events:none;
+  opacity:var(--frost);
+  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='320' height='320'%3E%3Cfilter id='f'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='3' seed='7'/%3E%3CfeColorMatrix values='0 0 0 0 0.85 0 0 0 0 0.91 0 0 0 0 0.98 0 0 0 0.9 0'/%3E%3C/filter%3E%3Crect width='320' height='320' filter='url(%23f)'/%3E%3C/svg%3E");
+  -webkit-mask-image:radial-gradient(ellipse 78% 74% at 50% 50%,transparent 52%,#000 100%);
+  mask-image:radial-gradient(ellipse 78% 74% at 50% 50%,transparent 52%,#000 100%);
+}
+.frost-veil{
+  position:fixed;inset:0;z-index:39;pointer-events:none;
+  opacity:calc(var(--frost)*.8);
+  background:radial-gradient(ellipse 70% 66% at 50% 50%,transparent 40%,rgba(190,214,240,.35) 82%,rgba(167,139,250,.14) 100%);
+}
+
+/* ---------- layout ---------- */
+.wrap{max-width:1120px;margin:0 auto;padding:0 clamp(20px,5vw,64px)}
+section{position:relative}
+
+.overline{
+  font-family:var(--mono);font-size:11px;letter-spacing:.32em;
+  text-transform:uppercase;color:var(--copper);
+  display:flex;align-items:center;gap:14px;
+}
+.overline::before{content:"";width:34px;height:1px;background:var(--gold)}
+
+h1,h2{font-family:var(--serif);font-weight:400;letter-spacing:-.01em;line-height:1.06}
+h1{font-size:clamp(2.9rem,6.8vw,5.4rem)}
+h2{font-size:clamp(2rem,4.4vw,3.2rem)}
+.zero{
+  background:var(--iri);
+  -webkit-background-clip:text;background-clip:text;
+  -webkit-text-fill-color:transparent;color:transparent;
+  font-style:italic;
+}
+.lede{color:var(--dim);max-width:34em;font-size:1.05rem}
+
+/* hero */
+.hero{
+  min-height:100svh;display:grid;
+  grid-template-columns:minmax(0,1.05fr) minmax(0,.95fr);
+  gap:clamp(28px,5vw,72px);align-items:center;
+  max-width:1180px;margin:0 auto;
+  padding:clamp(84px,12vh,120px) clamp(20px,5vw,64px) clamp(56px,8vh,96px);
+}
+.hero-copy>*+*{margin-top:26px}
+.hero-meta{
+  display:flex;gap:34px;font-family:var(--mono);font-size:11px;
+  letter-spacing:.14em;color:var(--dim);flex-wrap:wrap;
+}
+.hero-meta b{display:block;color:var(--ink);font-weight:500;font-size:13px;margin-bottom:2px}
+.hero-cue{
+  display:inline-flex;align-items:center;gap:12px;
+  font-family:var(--mono);font-size:11px;letter-spacing:.24em;
+  text-transform:uppercase;color:var(--copper);text-decoration:none;
+}
+.hero-cue .arr{display:inline-block;animation:drop 2.4s ease-in-out infinite}
+@keyframes drop{0%,100%{transform:translateY(0);opacity:.55}50%{transform:translateY(6px);opacity:1}}
+
+/* the machine, presented like jewellery */
+.plate{max-width:430px;margin-left:auto;width:100%}
+.plate figure{
+  border:1px solid var(--gold-line);
+  padding:clamp(14px,2vw,22px);
+  background:rgba(255,255,255,.55);
+  position:relative;
+}
+.plate figure::after{
+  content:"";position:absolute;inset:6px;border:1px solid rgba(201,155,76,.18);
+  pointer-events:none;
+}
+.plate img{display:block;width:100%;height:auto}
+.plate figcaption{
+  margin-top:14px;
+  font-family:var(--mono);font-size:10.5px;letter-spacing:.06em;
+  color:var(--dim);display:flex;justify-content:space-between;gap:12px;
+}
+.plate figcaption i{font-style:normal;color:var(--copper)}
+
+/* descent stages */
+.descent-head{padding:clamp(60px,10vh,110px) 0 0}
+.descent-head .wrap>*+*{margin-top:22px}
+.stage{
+  min-height:92svh;display:flex;align-items:center;
+}
+.stage .wrap{
+  display:grid;grid-template-columns:150px minmax(0,1fr);
+  gap:clamp(20px,4vw,56px);align-items:baseline;width:100%;
+}
+.stage-no{
+  font-family:var(--mono);font-size:12px;letter-spacing:.24em;color:var(--dim);
+  display:flex;flex-direction:column;gap:10px;
+}
+.stage-no .tick{width:44px;height:1px;background:var(--gold)}
+.stage-body{max-width:560px}
+.stage-temp{
+  font-family:var(--mono);font-weight:300;
+  font-size:clamp(1.6rem,3.2vw,2.2rem);letter-spacing:-.02em;
+  color:var(--copper);margin-bottom:14px;
+}
+.stage h2{margin-bottom:18px}
+.stage p{color:#4c545e;max-width:32em}
+.stage p+p{margin-top:14px}
+.stage-fact{
+  margin-top:26px;font-family:var(--mono);font-size:11px;
+  letter-spacing:.1em;color:var(--dim);
+  border-top:1px solid var(--line);padding-top:14px;max-width:32em;
+}
+/* stages fade/rise in — slower when colder */
+.reveal{opacity:0;transform:translateY(22px);transition:opacity var(--dur) ease,transform var(--dur) ease}
+.reveal.in{opacity:1;transform:none}
+
+/* ---------- the qubit ---------- */
+.qubit{padding:clamp(40px,8vh,90px) 0 clamp(80px,12vh,130px)}
+.qubit-card{
+  border:1px solid var(--line);
+  background:rgba(255,255,255,.5);
+  padding:clamp(24px,4.5vw,56px);
+  display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);
+  gap:clamp(26px,4vw,64px);align-items:center;
+  position:relative;
+}
+.qubit-card::before{
+  content:"";position:absolute;top:-1px;left:-1px;right:-1px;height:2px;
+  background:var(--iri);
+}
+.qubit-copy>*+*{margin-top:20px}
+.qubit-copy .overline::before{background:var(--violet)}
+.qubit-copy .overline{color:var(--ink)}
+.bloch-wrap{position:relative;max-width:460px;margin:0 auto;width:100%}
+#bloch{display:block;width:100%;height:auto;touch-action:none;cursor:crosshair}
+.bloch-ui{
+  display:flex;align-items:center;justify-content:space-between;
+  gap:14px;margin-top:6px;flex-wrap:wrap;
+}
+.measure{
+  font-family:var(--mono);font-size:12px;letter-spacing:.22em;
+  text-transform:uppercase;color:var(--ink);
+  background:transparent;border:1px solid var(--ink);
+  padding:12px 26px;cursor:pointer;position:relative;
+  transition:color var(--dur),border-color var(--dur),background var(--dur);
+}
+.measure:hover{background:var(--ink);color:var(--white)}
+.bloch-read{
+  font-family:var(--mono);font-size:12px;letter-spacing:.06em;color:var(--dim);
+  font-variant-numeric:tabular-nums;min-height:1.2em;
+}
+.bloch-read b{color:var(--ink);font-weight:500}
+.bloch-hint{
+  font-family:var(--mono);font-size:10.5px;letter-spacing:.1em;color:var(--dim);
+  margin-top:14px;
+}
+
+/* ---------- what we run ---------- */
+.run{padding:clamp(60px,10vh,110px) 0}
+.run .overline{margin-bottom:22px}
+.run h2{margin-bottom:44px;max-width:14em}
+.run-grid{
+  display:grid;grid-template-columns:repeat(2,minmax(0,1fr));
+  border-top:1px solid var(--line);border-left:1px solid var(--line);
+}
+.run-cell{
+  border-right:1px solid var(--line);border-bottom:1px solid var(--line);
+  padding:clamp(22px,3vw,36px);
+  transition:background var(--dur);
+}
+.run-cell:hover{background:rgba(201,155,76,.05)}
+.run-cell .no{font-family:var(--mono);font-size:11px;letter-spacing:.2em;color:var(--gold)}
+.run-cell h3{font-family:var(--serif);font-weight:500;font-size:1.5rem;margin:12px 0 8px}
+.run-cell p{color:var(--dim);font-size:.95rem;max-width:26em}
+
+/* ---------- papers + footer ---------- */
+.papers{padding:0 0 clamp(70px,10vh,120px)}
+.papers .overline{margin-bottom:30px}
+.paper{
+  display:grid;grid-template-columns:110px minmax(0,1fr) auto;
+  gap:clamp(14px,3vw,40px);align-items:baseline;
+  padding:20px 0;border-top:1px solid var(--line);
+  text-decoration:none;color:inherit;
+  transition:padding-left var(--dur);
+}
+.paper:last-of-type{border-bottom:1px solid var(--line)}
+.paper:hover{padding-left:12px}
+.paper .id{font-family:var(--mono);font-size:11px;letter-spacing:.08em;color:var(--copper)}
+.paper .ti{font-family:var(--serif);font-size:1.25rem;font-weight:500}
+.paper .yr{font-family:var(--mono);font-size:11px;color:var(--dim)}
+.cta{
+  margin-top:56px;display:flex;align-items:center;gap:26px;flex-wrap:wrap;
+}
+.cta a.btn{
+  font-family:var(--mono);font-size:12px;letter-spacing:.22em;text-transform:uppercase;
+  color:var(--white);background:var(--ink);text-decoration:none;
+  padding:16px 34px;transition:background var(--dur),letter-spacing var(--dur);
+}
+.cta a.btn:hover{background:var(--copper)}
+.cta span{font-family:var(--mono);font-size:11px;color:var(--dim);letter-spacing:.1em}
+
+footer{
+  border-top:1px solid var(--line);
+  padding:34px 0 120px;
+}
+footer .wrap{
+  display:flex;justify-content:space-between;gap:18px;flex-wrap:wrap;
+  font-family:var(--mono);font-size:11px;letter-spacing:.12em;color:var(--dim);
+}
+footer a{color:var(--ink);text-decoration:none;border-bottom:1px solid var(--gold-line);padding-bottom:2px;transition:color var(--dur),border-color var(--dur)}
+footer a:hover{color:var(--copper);border-color:var(--copper)}
+
+/* ---------- responsive ---------- */
+@media (max-width:900px){
+  .hero{grid-template-columns:1fr;min-height:auto;padding-top:96px}
+  .plate{margin:0 auto;max-width:400px}
+  .qubit-card{grid-template-columns:1fr}
+  .rail{display:none}
+}
+@media (max-width:640px){
+  .stage .wrap{grid-template-columns:1fr;gap:18px}
+  .stage-no{flex-direction:row;align-items:center}
+  .run-grid{grid-template-columns:1fr}
+  .paper{grid-template-columns:minmax(0,1fr) auto}
+  .paper .id{grid-column:1 / -1}
+  .readout{
+    left:0;right:0;bottom:0;
+    display:flex;align-items:baseline;gap:14px;
+    padding:12px 20px 14px;
+    background:rgba(250,251,252,.88);
+    backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);
+    border-top:1px solid var(--line);
+  }
+  .readout .t-label{display:none}
+  .readout .t-value{font-size:1.9rem}
+  .readout .t-stage{margin-top:0;margin-left:auto;text-align:right;font-size:9px}
+  .overline{font-size:10px;letter-spacing:.22em}
+  .overline::before{width:24px}
+  footer{padding-bottom:110px}
+  .wordmark{display:none}
+}
+@media (prefers-reduced-motion:reduce){
+  html{scroll-behavior:auto}
+  .hero-cue .arr{animation:none}
+  .reveal{opacity:1;transform:none;transition:none}
+  *{transition-duration:.01ms!important}
+}
+</style>
+</head>
+<body>
+
+<a class="back-pill" href="/">&larr; 25</a>
+<div class="wordmark"><b>KELVIN</b>&nbsp;&nbsp;CRYOGENIC COMPUTATION</div>
+
+<div class="frost-veil" aria-hidden="true"></div>
+<div class="frost" aria-hidden="true"></div>
+
+<div class="readout" aria-hidden="true">
+  <div class="t-label">Stage temperature</div>
+  <div class="t-value"><span id="tnum">300</span><span class="unit" id="tunit">K</span></div>
+  <div class="t-stage" id="tstage">Lab ambient</div>
+</div>
+
+<nav class="rail" aria-label="Descent stages">
+  <a href="#top" data-rail aria-label="300 K"></a>
+  <a href="#s50k" data-rail aria-label="50 K"></a>
+  <a href="#s4k" data-rail aria-label="4 K"></a>
+  <a href="#s800" data-rail aria-label="800 mK"></a>
+  <a href="#s10" data-rail aria-label="10 mK"></a>
+</nav>
+
+<!-- ============ HERO · 300 K ============ -->
+<header class="hero" id="top" data-temp="300" data-stage="Lab ambient">
+  <div class="hero-copy">
+    <div class="overline">Kelvin Laboratory · Est. 2019</div>
+    <h1>Computing at the edge of <span class="zero">zero</span>.</h1>
+    <p class="lede">KELVIN is a quantum-computing laboratory. Our processors live at the bottom of a dilution refrigerator, four hundred times colder than deep space, where a single microwave photon is an event and silence is an engineering discipline.</p>
+    <div class="hero-meta">
+      <div><b>10&nbsp;mK</b>base temperature</div>
+      <div><b>96</b>superconducting qubits</div>
+      <div><b>T₁ ≈ 480&nbsp;µs</b>coherence</div>
+    </div>
+    <a class="hero-cue" href="#descent"><span>Begin the descent</span><span class="arr">↓</span></a>
+  </div>
+  <div class="plate">
+    <figure>
+      <img src="assets/cryostat.webp" alt="Gold-plated dilution refrigerator suspended in a white laboratory" width="1400" height="1740" loading="eager" fetchpriority="high">
+      <figcaption><span>Plate I — the machine, warm and open</span><i>300&nbsp;K</i></figcaption>
+    </figure>
+  </div>
+</header>
+
+<!-- ============ THE DESCENT ============ -->
+<section class="descent-head" id="descent">
+  <div class="wrap">
+    <div class="overline">The descent</div>
+    <h2>Five floors down,<br>each one quieter.</h2>
+    <p class="lede">The refrigerator is a building read from the roof. Every plate below is colder than the last, and everything on this page cools with it — watch the readout fall, and notice the site itself slowing down: the colder it gets, the longer every motion takes.</p>
+  </div>
+</section>
+
+<section class="stage" id="s50k" data-temp="50" data-stage="First stage · pulse tube">
+  <div class="wrap">
+    <div class="stage-no reveal"><span>Stage 01</span><span class="tick"></span></div>
+    <div class="stage-body reveal">
+      <div class="stage-temp">50 K</div>
+      <h2>The first plate</h2>
+      <p>A pulse-tube cryocooler takes the first two hundred and fifty kelvin the way a harbour takes a swell. Radiation shields close around the experiment like eyelids; from here down, room temperature is only a rumour carried by the wiring.</p>
+      <p>Nitrogen would be liquid here. We are just getting started.</p>
+      <div class="stage-fact">SHIELD: gold-plated aluminium · HEAT LOAD ≈ 40 W · 250 K removed</div>
+    </div>
+  </div>
+</section>
+
+<section class="stage" id="s4k" data-temp="4" data-stage="Second stage · helium cold">
+  <div class="wrap">
+    <div class="stage-no reveal"><span>Stage 02</span><span class="tick"></span></div>
+    <div class="stage-body reveal">
+      <div class="stage-temp">4 K</div>
+      <h2>Where resistance forgets itself</h2>
+      <p>Liquid-helium cold. Niobium and aluminium cross into superconductivity, and current begins to move without loss — the first quantum behaviour you can hold in your hand. The amplifiers that will one day whisper a qubit's answer upward sit here, listening.</p>
+      <div class="stage-fact">Tc(Al) = 1.2 K · Tc(Nb) = 9.3 K · first cryogenic amplifiers</div>
+    </div>
+  </div>
+</section>
+
+<section class="stage" id="s800" data-temp="0.8" data-stage="The still">
+  <div class="wrap">
+    <div class="stage-no reveal"><span>Stage 03</span><span class="tick"></span></div>
+    <div class="stage-body reveal">
+      <div class="stage-temp">800 mK</div>
+      <h2>The still</h2>
+      <p>Below one kelvin the units change and so does the physics. In the still, helium-3 evaporates out of a bath of helium-4 — and evaporation, as your skin knows, is refrigeration. It is the same principle as sweat, performed by isotopes, near the coldest place on Earth.</p>
+      <div class="stage-fact">³He / ⁴He circulation ≈ 800 µmol·s⁻¹ · units switch to millikelvin</div>
+    </div>
+  </div>
+</section>
+
+<section class="stage" id="s10" data-temp="0.01" data-stage="Mixing chamber · base">
+  <div class="wrap">
+    <div class="stage-no reveal"><span>Stage 04</span><span class="tick"></span></div>
+    <div class="stage-body reveal">
+      <div class="stage-temp">10 mK</div>
+      <h2>The bottom of the cold</h2>
+      <p>The mixing chamber. Ten thousandths of a degree above absolute zero — colder than anywhere nature has ever been, as far as we know, except inside machines like this one. Thermal noise has nothing left to say.</p>
+      <p>Here, finally, the processor can hear itself think.</p>
+      <div class="stage-fact">Base plate, gold-plated OFHC copper · residual heat &lt; 1 µW</div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ THE QUBIT ============ -->
+<section class="qubit" aria-label="The qubit">
+  <div class="wrap">
+    <div class="qubit-card">
+      <div class="qubit-copy">
+        <div class="overline">At 10 mK · one qubit</div>
+        <h2>A sphere of maybe</h2>
+        <p class="lede">Every state of a single qubit is a point on this sphere: |0⟩ at the north pole, |1⟩ at the south, and every superposition in between. Move your pointer to steer the state. Then measure — and watch a continent of possibility collapse to a single pole.</p>
+        <div class="bloch-read" id="bread">|ψ⟩ = cos(θ/2)|0⟩ + e<sup>iφ</sup> sin(θ/2)|1⟩</div>
+      </div>
+      <div>
+        <div class="bloch-wrap">
+          <canvas id="bloch" width="460" height="460" aria-label="Interactive Bloch sphere. Move the pointer to rotate the qubit state; press Measure to collapse it."></canvas>
+        </div>
+        <div class="bloch-ui">
+          <button class="measure" id="measure" type="button">Measure</button>
+          <div class="bloch-read" id="bprob">P(|0⟩) = 0.50 &nbsp;·&nbsp; P(|1⟩) = 0.50</div>
+        </div>
+        <div class="bloch-hint">move pointer over the sphere to steer |ψ⟩ · click measure to collapse</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ WHAT WE RUN ============ -->
+<section class="run">
+  <div class="wrap">
+    <div class="overline">What we run</div>
+    <h2>Problems worth the electricity bill of a small village.</h2>
+    <div class="run-grid">
+      <div class="run-cell">
+        <div class="no">R—01</div>
+        <h3>Molecular simulation</h3>
+        <p>Nitrogen fixation, battery chemistry, drug candidates. Nature is quantum; we stopped pretending otherwise.</p>
+      </div>
+      <div class="run-cell">
+        <div class="no">R—02</div>
+        <h3>Error correction</h3>
+        <p>Surface codes below threshold. A logical qubit that outlives every physical qubit it is made of.</p>
+      </div>
+      <div class="run-cell">
+        <div class="no">R—03</div>
+        <h3>Quantum materials</h3>
+        <p>Spin liquids and strange metals, simulated by machines made of the same physics they describe.</p>
+      </div>
+      <div class="run-cell">
+        <div class="no">R—04</div>
+        <h3>Optimization</h3>
+        <p>Portfolios, logistics, schedules. Honest benchmarks only — we publish the losses too.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ PAPERS + CTA ============ -->
+<section class="papers">
+  <div class="wrap">
+    <div class="overline">Selected papers</div>
+    <a class="paper" href="#top"><span class="id">KLV-2026-04</span><span class="ti">A logical qubit below the surface-code threshold at 10 mK</span><span class="yr">2026</span></a>
+    <a class="paper" href="#top"><span class="id">KLV-2025-11</span><span class="ti">Millikelvin thermometry by noise alone</span><span class="yr">2025</span></a>
+    <a class="paper" href="#top"><span class="id">KLV-2025-02</span><span class="ti">On the acoustics of a very quiet refrigerator</span><span class="yr">2025</span></a>
+    <div class="cta">
+      <a class="btn" href="#top">Request access</a>
+      <span>Beam time is scheduled quarterly. Bring a Hamiltonian.</span>
+    </div>
+  </div>
+</section>
+
+<footer>
+  <div class="wrap">
+    <span>KELVIN — computing at the edge of zero · a FABLE/25 fiction</span>
+    <span><a href="/44-kelvin/guide/">guide &amp; prompt &rarr;</a></span>
+  </div>
+</footer>
+
+<script>
+(function(){
+"use strict";
+var reduced = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+/* ============ THE DESCENT — temperature-driven environment ============ */
+var anchors = [];          // {y, logT, stage}
+var tnum = document.getElementById("tnum");
+var tunit = document.getElementById("tunit");
+var tstage = document.getElementById("tstage");
+var rails = Array.prototype.slice.call(document.querySelectorAll("[data-rail]"));
+var stagesEls = Array.prototype.slice.call(document.querySelectorAll("[data-temp]"));
+var LOG_HI = Math.log10(300), LOG_LO = Math.log10(0.01);
+
+function measureAnchors(){
+  anchors = stagesEls.map(function(el){
+    var r = el.getBoundingClientRect();
+    return {
+      y: r.top + window.scrollY + r.height*0.5,
+      logT: Math.log10(parseFloat(el.getAttribute("data-temp"))),
+      stage: el.getAttribute("data-stage")
+    };
+  });
+}
+
+function fmtTemp(T){
+  if (T >= 100) return {n: Math.round(T), u: "K"};
+  if (T >= 10)  return {n: T.toFixed(1), u: "K"};
+  if (T >= 1)   return {n: T.toFixed(2), u: "K"};
+  return {n: Math.max(10, Math.round(T*1000)), u: "mK"};
+}
+
+// warm lab white -> blue-white cryo
+function lerp(a,b,t){ return a + (b-a)*t; }
+function bgFor(cool){
+  var r = Math.round(lerp(250, 238, cool));
+  var g = Math.round(lerp(251, 245, cool));
+  var b = Math.round(lerp(252, 253, cool));
+  return "rgb("+r+","+g+","+b+")";
+}
+
+var lastStage = "";
+function updateDescent(){
+  if (!anchors.length) return;
+  var y = window.scrollY + window.innerHeight*0.5;
+  var logT, stage;
+  if (y <= anchors[0].y){ logT = anchors[0].logT; stage = anchors[0].stage; }
+  else if (y >= anchors[anchors.length-1].y){
+    var last = anchors[anchors.length-1];
+    logT = last.logT; stage = last.stage;
+  } else {
+    for (var i=0;i<anchors.length-1;i++){
+      var a = anchors[i], b = anchors[i+1];
+      if (y >= a.y && y <= b.y){
+        var t = (y - a.y)/(b.y - a.y);
+        logT = lerp(a.logT, b.logT, t);
+        stage = (t < 0.5) ? a.stage : b.stage;
+        break;
+      }
+    }
+  }
+  var T = Math.pow(10, logT);
+  var cool = (LOG_HI - logT)/(LOG_HI - LOG_LO);
+  cool = Math.min(1, Math.max(0, cool));
+
+  var f = fmtTemp(T);
+  tnum.textContent = f.n;
+  tunit.textContent = f.u;
+  if (stage !== lastStage){ tstage.textContent = stage; lastStage = stage; }
+
+  var root = document.documentElement;
+  root.style.setProperty("--cool", cool.toFixed(3));
+  root.style.setProperty("--frost", (cool*cool*0.85).toFixed(3));
+  // the poetic system: colder -> slower, more precise
+  if (!reduced) root.style.setProperty("--dur", (0.35 + cool*1.05).toFixed(2)+"s");
+  document.body.style.backgroundColor = bgFor(cool);
+
+  // rail
+  var nearest = 0, best = Infinity;
+  for (var j=0;j<anchors.length;j++){
+    var d = Math.abs(anchors[j].y - y);
+    if (d < best){ best = d; nearest = j; }
+  }
+  rails.forEach(function(r,k){ r.classList.toggle("on", k===nearest); });
+}
+
+var ticking = false;
+function onScroll(){
+  if (ticking) return;
+  ticking = true;
+  requestAnimationFrame(function(){ updateDescent(); ticking = false; });
+}
+window.addEventListener("scroll", onScroll, {passive:true});
+window.addEventListener("resize", function(){ measureAnchors(); updateDescent(); });
+measureAnchors();
+// re-measure after image/fonts settle layout
+window.addEventListener("load", function(){ measureAnchors(); updateDescent(); });
+updateDescent();
+
+/* reveal-on-scroll */
+if ("IntersectionObserver" in window && !reduced){
+  var ro = new IntersectionObserver(function(entries){
+    entries.forEach(function(e){ if (e.isIntersecting){ e.target.classList.add("in"); ro.unobserve(e.target); } });
+  },{threshold:0.25});
+  document.querySelectorAll(".reveal").forEach(function(el){ ro.observe(el); });
+} else {
+  document.querySelectorAll(".reveal").forEach(function(el){ el.classList.add("in"); });
+}
+
+/* ============ THE QUBIT — Bloch sphere ============ */
+var cv = document.getElementById("bloch");
+var ctx = cv.getContext("2d");
+var bread = document.getElementById("bread");
+var bprob = document.getElementById("bprob");
+
+var theta = Math.PI/2, phi = 0;             // current state
+var tTheta = Math.PI/2, tPhi = 0;           // targets
+var precess = !reduced;
+var pointerActive = false, pointerIdle = 0;
+var measuring = false, mProg = 0, mFrom = null, mTo = null, mOutcome = 0, mP0 = 0.5;
+var flash = 0;
+var running = false, visible = false, rafId = null;
+
+var TILT = 0.42; // camera tilt (rad) — look slightly from above
+
+function sizeCanvas(){
+  var w = cv.clientWidth || 460;
+  var dpr = Math.min(2, window.devicePixelRatio || 1);
+  cv.width = Math.round(w*dpr);
+  cv.height = Math.round(w*dpr);
+  cv.style.height = w+"px";
+}
+sizeCanvas();
+window.addEventListener("resize", function(){ sizeCanvas(); if(!running) draw(); });
+
+function project(x,y,z,R,cx,cy){
+  // rotate around x-axis by TILT (view from slightly above)
+  var y2 = y*Math.cos(TILT) - z*Math.sin(TILT);
+  var z2 = y*Math.sin(TILT) + z*Math.cos(TILT);
+  return {x: cx + x*R, y: cy - z2*R, depth: y2};
+}
+function statePoint(th, ph){
+  return { x: Math.sin(th)*Math.cos(ph), y: Math.sin(th)*Math.sin(ph), z: Math.cos(th) };
+}
+
+function draw(){
+  var W = cv.width, H = cv.height;
+  var dpr = W/(cv.clientWidth||460);
+  ctx.clearRect(0,0,W,H);
+  ctx.save();
+  ctx.scale(dpr,dpr);
+  var w = W/dpr, h = H/dpr;
+  var cx = w/2, cy = h/2, R = w*0.36;
+
+  var ink = "#14161A", dim = "rgba(150,160,172,.55)", gold = "#C99B4C";
+
+  // sphere outline
+  ctx.lineWidth = 1;
+  ctx.strokeStyle = "rgba(20,22,26,.5)";
+  ctx.beginPath(); ctx.arc(cx,cy,R,0,Math.PI*2); ctx.stroke();
+
+  // latitude circles (equator + two)
+  [Math.PI/2, Math.PI/3.2, Math.PI - Math.PI/3.2].forEach(function(lt, idx){
+    var r = Math.sin(lt), z = Math.cos(lt);
+    ctx.beginPath();
+    for (var a=0;a<=64;a++){
+      var ang = a/64*Math.PI*2;
+      var p = project(r*Math.cos(ang), r*Math.sin(ang), z, R, cx, cy);
+      if (a===0) ctx.moveTo(p.x,p.y); else ctx.lineTo(p.x,p.y);
+    }
+    ctx.strokeStyle = idx===0 ? "rgba(201,155,76,.55)" : dim;
+    ctx.stroke();
+  });
+  // one meridian
+  ctx.beginPath();
+  for (var a2=0;a2<=64;a2++){
+    var ang2 = a2/64*Math.PI*2;
+    var p2 = project(Math.sin(ang2), 0, Math.cos(ang2), R, cx, cy);
+    if (a2===0) ctx.moveTo(p2.x,p2.y); else ctx.lineTo(p2.x,p2.y);
+  }
+  ctx.strokeStyle = dim; ctx.stroke();
+
+  // z axis
+  var top = project(0,0,1.18,R,cx,cy), bot = project(0,0,-1.18,R,cx,cy);
+  ctx.strokeStyle = "rgba(20,22,26,.35)";
+  ctx.setLineDash([3,4]);
+  ctx.beginPath(); ctx.moveTo(top.x,top.y); ctx.lineTo(bot.x,bot.y); ctx.stroke();
+  ctx.setLineDash([]);
+
+  // pole labels
+  ctx.fillStyle = ink;
+  ctx.font = "500 15px 'IBM Plex Mono', monospace";
+  ctx.textAlign = "center";
+  ctx.fillText("|0⟩", top.x, top.y - 10);
+  ctx.fillText("|1⟩", bot.x, bot.y + 22);
+
+  // state vector
+  var s = statePoint(theta, phi);
+  var sp = project(s.x, s.y, s.z, R, cx, cy);
+
+  // dashed projection onto equator plane
+  var eq = project(s.x, s.y, 0, R, cx, cy);
+  ctx.strokeStyle = "rgba(150,160,172,.7)";
+  ctx.setLineDash([2,4]);
+  ctx.beginPath(); ctx.moveTo(sp.x,sp.y); ctx.lineTo(eq.x,eq.y); ctx.stroke();
+  ctx.beginPath(); ctx.moveTo(cx,cy); ctx.lineTo(eq.x,eq.y); ctx.stroke();
+  ctx.setLineDash([]);
+
+  // the vector — iridescent
+  var grad = ctx.createLinearGradient(cx,cy,sp.x,sp.y);
+  grad.addColorStop(0,"#A78BFA"); grad.addColorStop(1,"#7DD3FC");
+  ctx.strokeStyle = grad;
+  ctx.lineWidth = 2.5;
+  ctx.beginPath(); ctx.moveTo(cx,cy); ctx.lineTo(sp.x,sp.y); ctx.stroke();
+
+  // state dot with soft halo
+  var halo = ctx.createRadialGradient(sp.x,sp.y,0,sp.x,sp.y,16);
+  halo.addColorStop(0,"rgba(125,211,252,.55)"); halo.addColorStop(1,"rgba(125,211,252,0)");
+  ctx.fillStyle = halo;
+  ctx.beginPath(); ctx.arc(sp.x,sp.y,16,0,Math.PI*2); ctx.fill();
+  ctx.fillStyle = "#7DD3FC";
+  ctx.beginPath(); ctx.arc(sp.x,sp.y,5,0,Math.PI*2); ctx.fill();
+  ctx.strokeStyle = "#A78BFA"; ctx.lineWidth = 1.5;
+  ctx.beginPath(); ctx.arc(sp.x,sp.y,5,0,Math.PI*2); ctx.stroke();
+
+  // measurement flash ring
+  if (flash > 0){
+    ctx.strokeStyle = "rgba(201,155,76,"+(flash*0.9).toFixed(3)+")";
+    ctx.lineWidth = 1.5;
+    ctx.beginPath(); ctx.arc(sp.x, sp.y, 8 + (1-flash)*30, 0, Math.PI*2); ctx.stroke();
+  }
+
+  // center
+  ctx.fillStyle = gold;
+  ctx.beginPath(); ctx.arc(cx,cy,2.2,0,Math.PI*2); ctx.fill();
+
+  ctx.restore();
+}
+
+function easeOutBack(t){
+  var c1 = 1.70158, c3 = c1 + 1;
+  return 1 + c3*Math.pow(t-1,3) + c1*Math.pow(t-1,2);
+}
+
+function updateReadouts(){
+  var p0 = Math.pow(Math.cos(theta/2), 2);
+  bprob.innerHTML = "P(|0⟩) = " + p0.toFixed(2) + " &nbsp;·&nbsp; P(|1⟩) = " + (1-p0).toFixed(2);
+}
+
+var lastT = 0;
+function loop(ts){
+  if (!running) return;
+  rafId = requestAnimationFrame(loop);
+  var dt = Math.min(0.05, (ts - lastT)/1000 || 0.016);
+  lastT = ts;
+
+  if (measuring){
+    mProg = Math.min(1, mProg + dt*2.6);
+    var e = easeOutBack(mProg);
+    theta = mFrom.th + (mTo.th - mFrom.th)*e;
+    phi = mFrom.ph + (mTo.ph - mFrom.ph)*Math.min(1,mProg*1.4);
+    flash = Math.max(0, 1 - mProg);
+    if (mProg >= 1){
+      measuring = false; flash = 0;
+      theta = mTo.th; tTheta = theta; tPhi = phi;
+      bread.innerHTML = "collapsed → <b>|"+mOutcome+"⟩</b> &nbsp;(P was "+(mOutcome===0?mP0:1-mP0).toFixed(2)+")";
+    }
+  } else {
+    // colder = slower, more precise: gentle chase toward pointer target
+    var k = 1 - Math.pow(0.0018, dt); // smooth chase
+    theta += (tTheta - theta)*k;
+    var dphi = tPhi - phi;
+    while (dphi > Math.PI) dphi -= Math.PI*2;
+    while (dphi < -Math.PI) dphi += Math.PI*2;
+    phi += dphi*k;
+    if (precess && !pointerActive){
+      pointerIdle += dt;
+      if (pointerIdle > 1.2){ tPhi += dt*0.35; } // slow Larmor precession
+    }
+  }
+  updateReadouts();
+  draw();
+}
+
+function startLoop(){
+  if (reduced){ draw(); return; } // static state; steering applied instantly
+  if (running || !visible || document.hidden) return;
+  running = true; lastT = performance.now();
+  rafId = requestAnimationFrame(loop);
+}
+function stopLoop(){
+  running = false;
+  if (rafId) cancelAnimationFrame(rafId);
+}
+
+if ("IntersectionObserver" in window){
+  new IntersectionObserver(function(entries){
+    visible = entries[0].isIntersecting;
+    if (visible) startLoop(); else stopLoop();
+  },{threshold:0.05}).observe(cv);
+} else { visible = true; startLoop(); }
+
+document.addEventListener("visibilitychange", function(){
+  if (document.hidden) stopLoop(); else startLoop();
+});
+
+/* pointer steering */
+function steer(ev){
+  var r = cv.getBoundingClientRect();
+  var x = (ev.clientX - r.left)/r.width;   // 0..1
+  var y = (ev.clientY - r.top)/r.height;
+  tTheta = Math.min(Math.PI-0.03, Math.max(0.03, y*Math.PI));
+  tPhi = (x - 0.5)*Math.PI*2;
+  pointerActive = true; pointerIdle = 0;
+  if (!measuring) bread.innerHTML = "|ψ⟩ = cos(θ/2)|0⟩ + e<sup>iφ</sup> sin(θ/2)|1⟩";
+  if (!running && visible){ // reduced-motion: still interactive, applied instantly
+    theta = tTheta; phi = tPhi; updateReadouts(); draw();
+  }
+}
+cv.addEventListener("pointermove", steer);
+cv.addEventListener("pointerdown", steer);
+cv.addEventListener("pointerleave", function(){ pointerActive = false; });
+
+/* measurement */
+document.getElementById("measure").addEventListener("click", function(){
+  if (measuring) return;
+  mP0 = Math.pow(Math.cos(theta/2), 2);
+  mOutcome = (Math.random() < mP0) ? 0 : 1;
+  mFrom = {th: theta, ph: phi};
+  mTo = {th: mOutcome === 0 ? 0.001 : Math.PI-0.001, ph: phi};
+  if (reduced || !running){
+    theta = mTo.th; tTheta = theta;
+    updateReadouts(); draw();
+    bread.innerHTML = "collapsed → <b>|"+mOutcome+"⟩</b> &nbsp;(P was "+(mOutcome===0?mP0:1-mP0).toFixed(2)+")";
+    return;
+  }
+  measuring = true; mProg = 0; pointerIdle = 0;
+});
+
+updateReadouts();
+draw();
+})();
+</script>
+</body>
+</html>

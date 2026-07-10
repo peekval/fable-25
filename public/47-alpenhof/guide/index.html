@@ -1,0 +1,94 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>ALPENHOF — Guide &amp; Prompt</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;1,400&family=Alegreya+Sans:ital,wght@0,300;0,400;0,500;0,700;1,400&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --timber:#8A6845;--timber-deep:#5C4530;--cream:#F6F2EA;--pine:#2E4237;
+    --rose:#D98E7A;--stone:#A8A29A;--ink:#22201C;
+    --serif:"Cormorant Garamond",Georgia,serif;--sans:"Alegreya Sans",system-ui,sans-serif;
+  }
+  *{margin:0;padding:0;box-sizing:border-box}
+  body{font-family:var(--sans);background:var(--cream);color:var(--ink);line-height:1.65;font-weight:400}
+  ::selection{background:var(--rose);color:var(--cream)}
+  .wrap{max-width:820px;margin:0 auto;padding:0 clamp(1.2rem,4vw,2rem)}
+  header{background:var(--pine);color:var(--cream);padding:4.5rem 0 3.5rem}
+  header .back{display:inline-block;font-size:.8rem;letter-spacing:.16em;text-transform:uppercase;
+    color:var(--cream);text-decoration:none;border:1px solid rgba(246,242,234,.35);
+    border-radius:99px;padding:.45rem .95rem;margin-bottom:2.2rem}
+  header .back:hover{background:rgba(246,242,234,.12)}
+  .eyebrow{font-size:.72rem;letter-spacing:.38em;text-transform:uppercase;font-weight:700;color:var(--rose)}
+  h1{font-family:var(--serif);font-weight:500;font-size:clamp(2.4rem,6vw,3.8rem);line-height:1.05;margin:.6rem 0 .8rem;letter-spacing:.04em}
+  header p{font-weight:300;max-width:36em;color:rgba(246,242,234,.85)}
+  main{padding:3.5rem 0 5rem}
+  h2{font-family:var(--serif);font-weight:600;font-size:1.9rem;margin:2.6rem 0 .8rem}
+  h2:first-child{margin-top:0}
+  p{max-width:44em}
+  p+p{margin-top:.8em}
+  em{color:var(--timber-deep)}
+  code{font-family:ui-monospace,Menlo,monospace;font-size:.86em;background:#ECE5D7;padding:.1em .35em;border-radius:3px}
+  ol,ul{margin:.6em 0 .6em 1.3em;max-width:42em}
+  li{margin:.35em 0}
+  .swatches{display:flex;gap:.5rem;flex-wrap:wrap;margin:1rem 0}
+  .swatches span{width:3.2rem;height:3.2rem;border-radius:4px;display:inline-block;border:1px solid rgba(34,32,28,.12)}
+  pre{
+    background:var(--pine);color:#E8EDE8;border-radius:6px;
+    padding:1.5rem 1.4rem;margin:1.2rem 0 0;white-space:pre-wrap;
+    font-family:ui-monospace,Menlo,monospace;font-size:.85rem;line-height:1.6;
+    overflow-x:auto;border-left:4px solid var(--rose);
+  }
+  footer{border-top:1px solid #DDD5C5;padding:1.6rem 0 2.4rem;font-size:.85rem;color:var(--stone)}
+  footer a{color:var(--ink)}
+</style>
+</head>
+<body>
+<header>
+  <div class="wrap">
+    <a class="back" href="/47-alpenhof/">&larr; zurück zum Anwesen</a>
+    <p class="eyebrow">FABLE/25 · Nº 47 · Guide</p>
+    <h1>ALPENHOF — wie der Berg die Jahreszeit wechselt</h1>
+    <p>Technik-Breakdown des Season-Sliders, der die ganze Seite thematisiert — und der vollständige Repro-Prompt.</p>
+  </div>
+</header>
+<main>
+  <div class="wrap">
+    <h2>1 · Das Prinzip: ein Regler, zwei Welten</h2>
+    <p>Das Herzstück ist ein <em>Season-Divider</em> im Full-Bleed-Hero: zwei deckungsgleiche Aufnahmen desselben Chalet-Anwesens — tiefer Winter zur blauen Stunde, Hochsommer in der Bergwiese — liegen exakt übereinander. Das Winterbild wird per <code>clip-path: inset(0 calc(100% - var(--split)) 0 0)</code> beschnitten; eine einzige CSS-Custom-Property <code>--split</code> steuert die Trennlinie. Pointer-Events (Maus wie Touch, <code>touch-action: pan-y</code> lässt vertikales Scrollen frei) setzen ein Ziel, ein rAF-Loop eased den Ist-Wert hinterher — Schnee schmilzt weich unter dem Finger zur Wiese. Solange niemand eingreift, driftet die Linie sinusförmig hin und her, leicht vom Scroll-Fortschritt verschoben.</p>
+
+    <h2>2 · Die Jahreszeit besitzt die ganze Seite</h2>
+    <p>Der Divider wählt nicht nur ein Bild — er wählt ein Thema. Steht die Linie mehrheitlich auf Winter, setzt JS <code>data-season="winter"</code> auf <code>&lt;html&gt;</code>; sämtliche Farben der Seite hängen an Custom Properties, die pro Saison umdefiniert werden (Winter: kühleres Schneelicht, Blaue-Stunde-Slate, Alpenglühen-Rosé als Akzent; Sommer: warme Cream, Kiefer, sonniges Holz). Eine 1,6-Sekunden-Transition auf Hintergrund-, Text- und Rahmenfarben lässt die Seite langsam „umkippen" wie das Licht am Berg. Ein fixierter Toggle (❄/☀) bleibt beim Scrollen erreichbar und fährt zugleich den Divider heim. Texte mit <code>data-w</code>/<code>data-s</code>-Attributen — Zimmerzeilen wie <em>„Kaminzimmer im Winter"</em> / <em>„Terrasse im Sommer"</em>, die Tal-Aktivitäten, sogar die Abschnittstitel — blenden per Opacity-Crossfade auf die passende Saison um.</p>
+
+    <h2>3 · Atmosphäre: Partikel &amp; Gräser</h2>
+    <p>Ein fixiertes Canvas (DPR-Cap 2) treibt je Saison andere Partikel: im Winter sinkender Schneestaub, im Sommer aufsteigende Pollen in warmem Gold; unter dem Tal-Abschnitt wiegt sich eine generierte SVG-Gräserlinie nur im Sommer. Alles pausiert bei <code>visibilitychange</code>, und <code>prefers-reduced-motion</code> schaltet komplett auf statisch: gewählte Saison ohne Drift und Partikel — der Divider bleibt aber ziehbar (direktes Setzen statt Easing).</p>
+
+    <h2>4 · Das Asset-Paar</h2>
+    <p>Die beiden Aufnahmen entstanden als <em>palette-locked matched pair</em> mit <strong>Nano Banana 2 via Higgsfield MCP</strong> in 2K: zwei Prompts mit identischer Architektur-, Kamera- und Kompositionsbeschreibung, in denen nur Jahreszeit, Licht und Vegetation getauscht wurden — und die Sitepalette (Timber, Snow Cream, Pine, Alpenglow) explizit im Prompt verankert war. Finales Encoding auf 1920×1080 WebP mit <strong>ffmpeg</strong> (~280–420 KB). Beide tragen echte <code>width</code>/<code>height</code>-Attribute; das Hero-Paar lädt eager mit <code>fetchpriority="high"</code>, Wiederverwendungen weiter unten lazy.</p>
+    <div class="swatches" aria-hidden="true">
+      <span style="background:#8A6845"></span><span style="background:#5C4530"></span>
+      <span style="background:#F6F2EA"></span><span style="background:#2E4237"></span>
+      <span style="background:#D98E7A"></span><span style="background:#A8A29A"></span>
+      <span style="background:#22201C"></span>
+    </div>
+
+    <h2>5 · Repro-Prompt</h2>
+    <pre id="prompt">Build a one-page marketing site for ALPENHOF, a fictional luxury chalet-estate development in the Swiss Alps, as a single self-contained HTML file (Google Fonts only, no libraries; the only local assets are a matched photo pair in assets/: winter.webp and summer.webp, both 1920×1080). All copy in warm, elevated German ("Vier Jahreszeiten. Ein Zuhause."). Aesthetic: warm alpine modern — dark timber, snow cream, pine; luxury that smells of wood. Palette: timber #8A6845, deep timber #5C4530, snow cream #F6F2EA, pine #2E4237, alpenglow rose #D98E7A, stone grey #A8A29A, ink #22201C. Fonts: Cormorant Garamond for display serif headlines and big numbers, Alegreya Sans for warm humanist body text.
+
+Generate the asset pair first: two palette-locked prompts to Nano Banana 2 via the Higgsfield MCP at 2K, describing the identical modern timber chalet, camera angle and composition — one in deep winter at blue hour with warm glowing windows, one in high summer wildflower meadows — then encode both to 1920×1080 WebP with ffmpeg.
+
+The showpiece is a season slider that owns the whole page. The hero is full-bleed: both photos stacked, the winter image clipped by clip-path inset driven by a --split custom property. A draggable divider line with a round grip (pointer events, touch-action: pan-y so the page still scrolls, works with touch) wipes snow into meadow under the pointer; when idle, a rAF loop drifts the line in a slow sine, biased by scroll progress. The divider's position picks the season, which themes the ENTIRE page: data-season on html swaps every color via CSS custom properties with a slow ~1.6s transition — winter reads as cooler snow light with blue-hour slate and alpenglow-rose accents, summer as warm cream with pine and sunlit timber. A fixed ❄/☀ toggle persists while scrolling and animates the divider home. Elements with data-w/data-s attributes crossfade their text per season — room lines like "Kaminzimmer im Winter" vs "Terrasse im Sommer", valley activities, section headlines.
+
+Atmosphere: a fixed canvas (DPR capped at 2) drifts gentle snow-dust particles in winter and warm rising pollen in summer, paused on visibilitychange; a generated SVG grass line sways only in summer. prefers-reduced-motion gets a static chosen season with no particles or auto-drift, though the divider stays draggable.
+
+Sections: hero with the divider, Das Anwesen (architecture story with reused seasonal photo and facts strip), Die Häuser (three chalet types — Enzian, Arve, Steinadler — with count-up Wohnfläche numbers on scroll and season-dependent room lines), Das Tal (location and four seasonal activities that swap copy), Anfrage footer with contact card and mailto CTA. Fixed "← 25" pill to the hub, footer link to the guide. Real image dimensions, lazy loading below the fold, zero console errors from file://, no horizontal scroll at 390px.</pre>
+  </div>
+</main>
+<footer>
+  <div class="wrap">ALPENHOF · FABLE/25 Nº 47 · <a href="/47-alpenhof/">zur Site</a> · <a href="/">zur Galerie</a></div>
+</footer>
+</body>
+</html>

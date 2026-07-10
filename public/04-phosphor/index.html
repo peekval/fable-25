@@ -825,7 +825,7 @@ still glowing, faintly, with everything you wrote.</pre>
   if (!gl) return; /* CSS tube fallback stays in charge */
 
   var MOBILE = window.innerWidth <= 768;
-  var DPR = 1, vw = 2, vh = 2;
+  var DPR = 1, TS = 1, vw = 2, vh = 2;
   var C_P = "#33FF66", C_DIM = "#1A8C3C", C_FAINT = "#0E4A20", C_AMBER = "#FFB000";
 
   /* ---------------- knobs ---------------- */
@@ -857,6 +857,13 @@ still glowing, faintly, with everything you wrote.</pre>
     "c+=(texture2D(uSrc,vUv+uDir*3.2308).rgb+texture2D(uSrc,vUv-uDir*3.2308).rgb)*0.0703;" +
     "gl_FragColor=vec4(c,1.0);}";
 
+  /* The composite is the only full-canvas pass, so its per-pixel cost is the
+     whole budget — and on software rasterizers that cost is almost entirely
+     texture samples, not ALU. So: 4 samples instead of 7. Persistence trails
+     merge at the centre tap only (they are decayed green glow — fringing them
+     was invisible), and the chroma fringe is single-sided (one offset tap for
+     R; G/B ride the centre tap). All the static math (vignette, grille, mask,
+     hash grain, jitter) stays analytic — it is cheaper than a lookup fetch. */
   var FS_COMP = PRE +
     "varying vec2 vUv;" +
     "uniform sampler2D uText;uniform sampler2D uPersist;uniform sampler2D uBloom;" +
@@ -866,7 +873,6 @@ still glowing, faintly, with everything you wrote.</pre>
     "float hash(vec2 p){return fract(sin(dot(p,vec2(127.1,311.7)))*43758.5453);}" +
     "vec2 curveUv(vec2 uv){vec2 c=uv*2.0-1.0;float r2=dot(c,c);" +
     "c*=(1.0+uCurve*r2*(1.0+0.35*r2))/(1.0+uCurve*1.35);return c*0.5+0.5;}" +
-    "vec3 fetch(vec2 uv){vec3 t=texture2D(uText,uv).rgb;vec3 p=texture2D(uPersist,uv).rgb;return max(t,p*0.93);}" +
     "void main(){" +
     "vec2 uv=vUv;" +
     /* power-on: collapse to a bright line, then the raster opens */
@@ -888,10 +894,13 @@ still glowing, faintly, with everything you wrote.</pre>
     "vec2 inb=step(vec2(0.0),uv)*step(uv,vec2(1.0));" +
     "float mask=inb.x*inb.y;" +
     "vec2 cuv=clamp(uv,0.0,1.0);" +
-    /* chromatic aberration (stronger while degaussing) */
+    /* chromatic aberration (stronger while degaussing): one offset tap for R,
+       G/B from the centre tap — half the fetch cost, same edge fringe read */
     "float caAmt=uCA*(1.0+dg*7.0);" +
     "vec2 cc=cuv-0.5;vec2 ca=cc*dot(cc,cc)*caAmt;" +
-    "vec3 col;col.r=fetch(cuv+ca).r;col.g=fetch(cuv).g;col.b=fetch(cuv-ca).b;" +
+    "vec3 col=texture2D(uText,cuv).rgb;" +
+    "col.r=texture2D(uText,cuv+ca).r;" +
+    "col=max(col,texture2D(uPersist,cuv).rgb*0.93);" +
     "vec3 bl=texture2D(uBloom,cuv).rgb;" +
     /* scanlines with a slow subtle roll */
     "float sl=1.0-uScan*0.42*(0.5+0.5*cos((uv.y+uTime*0.0045)*uRes.y*1.5708));" +
@@ -969,20 +978,32 @@ still glowing, faintly, with everything you wrote.</pre>
   var text2d = document.createElement("canvas");
   var ctx2d = text2d.getContext("2d");
   if (!ctx2d) return;
+  /* static glyphs are rastered once into base2d; blink frames just blit it
+     and repaint the few dynamic items (cursors, caret, blinking runs) */
+  var base2d = document.createElement("canvas");
+  var bctx = base2d.getContext("2d");
+  if (!bctx) return;
+  var baseOk = false;
   var LS_OK = "letterSpacing" in ctx2d;
   var textTex = null, persist = [null, null], pp = 0, bloomA = null, bloomB = null;
 
   function resizeAll() {
     vw = Math.max(2, window.innerWidth);
     vh = Math.max(2, window.innerHeight);
-    DPR = Math.min(window.devicePixelRatio || 1, MOBILE ? 1.25 : 2);
-    var W = Math.max(4, Math.round(vw * DPR)), H = Math.max(4, Math.round(vh * DPR));
+    /* CRTs are soft: the whole internal pipeline runs at a reduced scale and
+       the composite is stretched back up by the canvas — visually free, ~2.5x
+       fewer pixels through every pass and through the 2D mirror + upload. */
+    DPR = Math.min(window.devicePixelRatio || 1, 1.25);
+    TS = DPR * (MOBILE ? 0.55 : 0.62);
+    var W = Math.max(4, Math.round(vw * TS)), H = Math.max(4, Math.round(vh * TS));
     canvas.width = W; canvas.height = H;
     text2d.width = W; text2d.height = H;
+    base2d.width = W; base2d.height = H;
+    baseOk = false;
     if (textTex) gl.deleteTexture(textTex);
     textTex = mkTex(W, H);
     rmFbo(persist[0]); rmFbo(persist[1]); rmFbo(bloomA); rmFbo(bloomB);
-    var ps = MOBILE ? 0.35 : 0.5, bs = MOBILE ? 0.16 : 0.25;
+    var ps = MOBILE ? 0.35 : 0.45, bs = MOBILE ? 0.16 : 0.22;
     persist[0] = mkFbo(Math.max(4, W * ps | 0), Math.max(4, H * ps | 0));
     persist[1] = mkFbo(Math.max(4, W * ps | 0), Math.max(4, H * ps | 0));
     bloomA = mkFbo(Math.max(4, W * bs | 0), Math.max(4, H * bs | 0));
@@ -1162,17 +1183,23 @@ still glowing, faintly, with everything you wrote.</pre>
     }
   }
 
-  function drawMirror(now, staticMode) {
-    ctx2d.setTransform(DPR, 0, 0, DPR, 0, 0);
-    ctx2d.fillStyle = "#000";
-    ctx2d.fillRect(0, 0, vw, vh);
-    ctx2d.textBaseline = "middle";
-    ctx2d.textAlign = "left";
+  function dynItem(it) { return it.t === "cursor" || it.t === "input" || it.blink === 2; }
+
+  /* layer: 0 = static base (glyphs, boxes), 1 = dynamic (cursors, caret, blinking runs) */
+  function drawLayer(c, now, staticMode, layer) {
     var sx = window.scrollX, sy = window.scrollY;
     var blinkOn = staticMode ? true : (now % 1060) < 530;
     var slowA = staticMode ? 1 : ((now % 1400) < 700 ? 1 : 0.25);
 
-    for (var ri = 0; ri < regions.length; ri++) {
+    /* while the boot overlay is fully opaque it blacks out the whole raster,
+       so everything painted before it would be invisible anyway — skip it */
+    var start = 0;
+    for (var bi = 0; bi < regions.length; bi++) {
+      var br = regions[bi];
+      if (br.alphaEl && br.alphaEl.isConnected &&
+          parseFloat(getComputedStyle(br.alphaEl).opacity) >= 0.99) start = bi;
+    }
+    for (var ri = start; ri < regions.length; ri++) {
       var reg = regions[ri];
       if (!reg.items.length) continue;
       var alpha = 1;
@@ -1184,39 +1211,58 @@ still glowing, faintly, with everything you wrote.</pre>
       var ox = reg.fixed ? 0 : -sx, oy = reg.fixed ? 0 : -sy;
       for (var ii = 0; ii < reg.items.length; ii++) {
         var it = reg.items[ii];
+        if (dynItem(it) !== (layer === 1)) continue;
         var iy = it.y + oy;
         if (iy < -80 || iy - (it.h || 0) > vh + 80) continue;
         var ix = it.x + ox;
         if (it.clip) {
-          ctx2d.save(); ctx2d.beginPath();
-          ctx2d.rect(it.clip.x + ox, it.clip.y + oy, it.clip.w, it.clip.h);
-          ctx2d.clip();
+          c.save(); c.beginPath();
+          c.rect(it.clip.x + ox, it.clip.y + oy, it.clip.w, it.clip.h);
+          c.clip();
         }
-        ctx2d.globalAlpha = alpha * (it.blink === 2 ? slowA : 1);
+        c.globalAlpha = alpha * (it.blink === 2 ? slowA : 1);
         if (it.t === "run") {
-          ctx2d.font = it.font;
-          if (LS_OK) ctx2d.letterSpacing = it.ls || "0px";
-          ctx2d.fillStyle = (it.link && it.link === hoverA) ? C_P : it.color;
-          ctx2d.fillText(it.text, ix, iy);
+          c.font = it.font;
+          if (LS_OK) c.letterSpacing = it.ls || "0px";
+          c.fillStyle = (it.link && it.link === hoverA) ? C_P : it.color;
+          c.fillText(it.text, ix, iy);
         } else if (it.t === "cursor") {
-          if (blinkOn) { ctx2d.fillStyle = it.color; ctx2d.fillRect(ix, iy, it.w, it.h); }
+          if (blinkOn) { c.fillStyle = it.color; c.fillRect(ix, iy, it.w, it.h); }
         } else if (it.t === "box") {
-          if (it.fill) { ctx2d.fillStyle = it.fill; ctx2d.fillRect(ix, iy, it.w, it.h); }
+          if (it.fill) { c.fillStyle = it.fill; c.fillRect(ix, iy, it.w, it.h); }
           if (it.stroke) {
-            ctx2d.strokeStyle = (it.link && it.link === hoverA) ? C_DIM : it.stroke;
-            ctx2d.lineWidth = it.lw || 1;
-            ctx2d.setLineDash(it.dash || []);
-            if (it.line) { ctx2d.beginPath(); ctx2d.moveTo(ix, iy); ctx2d.lineTo(ix + it.w, iy); ctx2d.stroke(); }
-            else ctx2d.strokeRect(ix + 0.5, iy + 0.5, it.w - 1, it.h - 1);
-            ctx2d.setLineDash([]);
+            c.strokeStyle = (it.link && it.link === hoverA) ? C_DIM : it.stroke;
+            c.lineWidth = it.lw || 1;
+            c.setLineDash(it.dash || []);
+            if (it.line) { c.beginPath(); c.moveTo(ix, iy); c.lineTo(ix + it.w, iy); c.stroke(); }
+            else c.strokeRect(ix + 0.5, iy + 0.5, it.w - 1, it.h - 1);
+            c.setLineDash([]);
           }
         } else if (it.t === "input") {
           drawInput(blinkOn);
         }
-        if (it.clip) ctx2d.restore();
-        ctx2d.globalAlpha = 1;
+        if (it.clip) c.restore();
+        c.globalAlpha = 1;
       }
     }
+  }
+
+  function drawMirror(now, staticMode) {
+    if (!baseOk) {
+      bctx.setTransform(TS, 0, 0, TS, 0, 0);
+      bctx.fillStyle = "#000";
+      bctx.fillRect(0, 0, vw, vh);
+      bctx.textBaseline = "middle";
+      bctx.textAlign = "left";
+      drawLayer(bctx, now, staticMode, 0);
+      baseOk = true;
+    }
+    ctx2d.setTransform(1, 0, 0, 1, 0, 0);
+    ctx2d.drawImage(base2d, 0, 0);
+    ctx2d.setTransform(TS, 0, 0, TS, 0, 0);
+    ctx2d.textBaseline = "middle";
+    ctx2d.textAlign = "left";
+    drawLayer(ctx2d, now, staticMode, 1);
   }
 
   /* ---------------- dirty tracking ---------------- */
@@ -1251,9 +1297,12 @@ still glowing, faintly, with everything you wrote.</pre>
     }
   }
 
-  function bootAlive() {
+  /* boot typing dirties the mirror through the MutationObserver; the only
+     thing it can't see is the CSS opacity fade after .done, so only force
+     per-frame redraws during that fade, not for the whole boot sequence */
+  function bootFading() {
     var b = document.getElementById("boot");
-    return !!(b && b.isConnected);
+    return !!(b && b.isConnected && b.classList.contains("done"));
   }
 
   var lastBlinkSig = -1, lastScrollSig = -1;
@@ -1261,7 +1310,8 @@ still glowing, faintly, with everything you wrote.</pre>
     runSnaps();
     var blinkSig = staticMode ? 9 : (((now % 1060) < 530 ? 1 : 0) | (((now % 1400) < 700 ? 1 : 0) << 1));
     var scrollSig = Math.round(window.scrollY * 2);
-    if (mirrorDirty || blinkSig !== lastBlinkSig || scrollSig !== lastScrollSig || bootAlive()) {
+    if (mirrorDirty || blinkSig !== lastBlinkSig || scrollSig !== lastScrollSig || bootFading()) {
+      if (mirrorDirty || scrollSig !== lastScrollSig || bootFading()) baseOk = false;
       lastBlinkSig = blinkSig; lastScrollSig = scrollSig; mirrorDirty = false;
       drawMirror(now, staticMode);
       gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, true);
@@ -1333,7 +1383,7 @@ still glowing, faintly, with everything you wrote.</pre>
     gl.uniform1f(pComp.u.uBright, kBright());
     gl.uniform1f(pComp.u.uCurve, kCurve());
     gl.uniform1f(pComp.u.uScan, kScan());
-    gl.uniform1f(pComp.u.uGrille, MOBILE || DPR < 1.5 ? 0.16 : 0.42);
+    gl.uniform1f(pComp.u.uGrille, 0.16);
     gl.uniform1f(pComp.u.uCA, MOBILE ? 0 : 0.006);
     gl.uniform1f(pComp.u.uNoise, staticMode ? 0 : (MOBILE ? 0.02 : 0.035));
     gl.uniform1f(pComp.u.uPowerT, staticMode ? 10 : tSec - powerStart);
@@ -1365,9 +1415,13 @@ still glowing, faintly, with everything you wrote.</pre>
     renderGL(tSec, dt, staticMode);
   }
 
+  /* the beam runs at ~30fps: persistence decay is dt-based so trail timing
+     is unchanged, and grain/flicker/scan roll hold up fine at half rate */
+  var MIN_FRAME = 30; /* ms */
   function loop(now) {
     rafId = 0;
     if (!running || dead) return;
+    if (now - lastT < MIN_FRAME) { rafId = requestAnimationFrame(loop); return; }
     var dt = Math.min(0.1, Math.max(0.001, (now - lastT) / 1000));
     lastT = now;
     try { step(now, (now - t0) / 1000, dt, false); }
@@ -1536,6 +1590,24 @@ still glowing, faintly, with everything you wrote.</pre>
      tab is hidden or the canvas leaves the viewport, prefers-reduced-motion renders one static frame and
      only re-renders on scroll/mutation, and any GL failure (no context, link error, context loss, runtime
      throw) falls back cleanly to the PASS 1-3 CSS tube. -->
+<!-- PASS 5 (perf): the tube no longer lags — profiled under SwiftShader (CPU raster, worst case) the cost
+     was almost entirely GPU-side pixel work, and on software rasterizers specifically texture *samples*,
+     not ALU. Fixes: (1) the whole internal pipeline (text mirror, persistence, bloom, composite) now runs
+     at a reduced scale — 0.62x desktop / 0.55x mobile with DPR capped at 1.25 — and the canvas stretches
+     it back up: CRTs are soft, so this is visually free and cuts every pass ~2.5x; (2) the composite
+     shader dropped from 7 texture taps to 4 — persistence trails merge at the centre tap only (they are
+     decayed green glow, fringing them was invisible) and the chromatic fringe is single-sided (one offset
+     tap for R, G/B ride the centre tap) — while vignette/grille/mask/grain stay analytic (ALU is cheaper
+     than fetches); (3) the beam runs at ~30fps via an accumulator (persistence decay is dt-based, so trail
+     timing is unchanged); (4) the DOM mirror is now two layers: static glyphs raster once into a cached
+     base canvas and blink frames just blit it and repaint cursors/caret, so cursor blinks no longer
+     re-measure and re-raster the whole page; (5) boot typing no longer forces per-frame redraws (its
+     mutations already dirty the mirror; only the closing opacity fade forces frames) and while the boot
+     overlay is opaque the page content under it is skipped entirely. Measured (SwiftShader, 1280x800,
+     4s windows): before longtasks 39-45 totalling ~4000ms, p95 frame interval 108-139ms; after longtasks
+     0, p95 32-37ms, idle near-zero work. Hidden-tab / offscreen pause, reduced-motion static frame, both
+     viewports error-free, scrollWidth 390 @ 390, console + knobs + degauss + pointer-through-glass all
+     verified intact. PASS. -->
 
 
 </body>

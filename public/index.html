@@ -3,8 +3,8 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>FABLE / 25 — one model, forty design languages</title>
-<meta name="description" content="40 fundamentally different websites, designed and built end-to-end by Fable. Every visual generated from code — shaders, 3D, canvas, SVG, CSS. Zero stock assets.">
+<title>FABLE / 25 — one model, forty-eight design languages</title>
+<meta name="description" content="48 fundamentally different websites, designed and built end-to-end by Fable. Every visual generated from code — shaders, 3D, canvas, SVG, CSS. Zero stock assets.">
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='6' fill='%230B0B0E'/%3E%3Ctext x='16' y='22' font-size='14' font-family='monospace' fill='%23F5F3EE' text-anchor='middle'%3E25%3C/text%3E%3C/svg%3E">
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;700&family=Instrument+Serif:ital@0;1&display=swap" rel="stylesheet">
@@ -58,11 +58,11 @@ footer p b{color:var(--ink);font-weight:500}
 <body>
 <div class="wrap">
 <header>
-  <div class="kick">A design capability study — 40 sites, zero stock assets</div>
-  <h1>One model. <em>Forty</em> design languages.</h1>
-  <p class="sub">Every site below is a complete, living landing page in a fundamentally different visual dialect — <b>and every pixel is generated from code</b>: WebGL shaders, real-time 3D, canvas simulations, generative SVG, kinetic type. No photographs. No stock. Each passed three documented design-review iterations before shipping. Every site carries its own <b>/guide</b> with a copy-paste reproduction prompt.</p>
+  <div class="kick">A design capability study — 48 sites, zero stock assets</div>
+  <h1>One model. <em>Forty-eight</em> design languages.</h1>
+  <p class="sub">Every site below is a complete, living landing page in a fundamentally different visual dialect — <b>built from code</b>: WebGL shaders, real-time 3D, canvas simulations, generative SVG, kinetic type. Zero stock assets — where a site carries imagery, it is generated and palette-locked to its design system. Each passed documented design-review iterations before shipping. Every site carries its own <b>/guide</b> with a copy-paste reproduction prompt.</p>
   <div class="meta-row">
-    <span><b>40</b>websites</span>
+    <span><b>48</b>websites</span>
     <span><b>120</b>iteration passes</span>
     <span><b>0</b>stock images</span>
     <span><b>1</b>author — Fable</span>
@@ -117,7 +117,15 @@ const SITES=[
 ["37","37-arcanum","ARCANUM","True holo-foil cards — iridescence, sparkle and layer parallax","webgl foil shader",["#0E0B18","#C9A227","#8A5CFF"]],
 ["38","38-magnitude","MAGNITUDE","One scroll from the cosmic web down to a single atom","infinite zoom",["#0D1024","#7B6CFF","#46E3E3"]],
 ["39","39-caldera","CALDERA","Molten lava you can stoke — hot sauce with scoville gauges","domain-warped fbm",["#16120F","#FF5A1F","#D42B12"]],
-["40","40-somnium","SOMNIUM","A dreamscape that drifts like falling asleep","damped depth parallax",["#232152","#B9AEE0","#F5C9B0"]]
+["40","40-somnium","SOMNIUM","A dreamscape that drifts like falling asleep","damped depth parallax",["#232152","#B9AEE0","#F5C9B0"]],
+["41","41-helios","HELIOS","The sun crosses the page — every shadow follows it","unified light system",["#F7F8F6","#FFB627","#1A3A5C"]],
+["42","42-silica","SILICA","An AI chip that assembles layer by layer as you scroll","exploded-die scrub",["#0B0D10","#8B7CF6","#B8FF29"]],
+["43","43-aviary","AVIARY","Drone dispatch over a living map — ride one delivery","canvas route plotting",["#EAF2F8","#1B2733","#FF6B2C"]],
+["44","44-kelvin","KELVIN","Scroll down to 10 millikelvin — the page cools with you","temperature-driven UI",["#FAFBFC","#C99B4C","#A78BFA"]],
+["45","45-torus","TORUS","Scrub a fusion ignition until Q crosses 1.0","plasma canvas",["#070A0F","#E24FBB","#FFB37A"]],
+["46","46-strata","STRATA","Scrolling is the elevator — floorplans draw at every stop","elevator scroll",["#101823","#C7A867","#F2EEE6"]],
+["47","47-alpenhof","ALPENHOF","Drag winter into summer — the whole page changes season","season divider theming",["#F6F2EA","#8A6845","#2E4237"]],
+["48","48-quartier","QUARTIER NORD","A masterplan builds itself in three phases","axonometric build-up",["#E5E3DE","#E85D2F","#2C5F8A"]]
 ];
 const grid=document.getElementById('grid');
 grid.innerHTML=SITES.map(([n,slug,name,tag,tech,cols],i)=>{

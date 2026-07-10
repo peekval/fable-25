@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>KELVIN — guide &amp; prompt</title>
+<meta name="description" content="How 44-kelvin was built: a temperature-driven page environment, a canvas Bloch sphere, and a palette-locked cryostat asset.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;1,400&family=IBM+Plex+Mono:wght@300;400;500&family=Instrument+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+:root{
+  --white:#FAFBFC;--ink:#14161A;--gold:#C99B4C;--copper:#A66A3F;
+  --violet:#A78BFA;--icecyan:#7DD3FC;--dim:#96A0AC;
+  --line:rgba(20,22,26,.10);--gold-line:rgba(201,155,76,.45);
+}
+*{margin:0;padding:0;box-sizing:border-box}
+body{
+  font-family:"Instrument Sans",system-ui,sans-serif;
+  background:var(--white);color:var(--ink);line-height:1.65;
+  -webkit-font-smoothing:antialiased;
+}
+.wrap{max-width:860px;margin:0 auto;padding:clamp(70px,10vh,110px) clamp(20px,5vw,56px) 90px}
+.back{
+  position:fixed;top:18px;left:18px;
+  font-family:"IBM Plex Mono",monospace;font-size:12px;letter-spacing:.08em;
+  color:var(--ink);text-decoration:none;border:1px solid var(--line);
+  border-radius:999px;padding:8px 16px;background:rgba(250,251,252,.85);
+  backdrop-filter:blur(8px);
+}
+.back:hover{border-color:var(--gold);color:var(--copper)}
+.overline{
+  font-family:"IBM Plex Mono",monospace;font-size:11px;letter-spacing:.32em;
+  text-transform:uppercase;color:var(--copper);
+  display:flex;align-items:center;gap:14px;margin-bottom:22px;
+}
+.overline::before{content:"";width:34px;height:1px;background:var(--gold)}
+h1{
+  font-family:"Cormorant Garamond",serif;font-weight:400;
+  font-size:clamp(2.5rem,6vw,4rem);line-height:1.06;letter-spacing:-.01em;
+  margin-bottom:20px;
+}
+h1 em{
+  font-style:italic;
+  background:linear-gradient(100deg,var(--violet),var(--icecyan));
+  -webkit-background-clip:text;background-clip:text;
+  -webkit-text-fill-color:transparent;color:transparent;
+}
+.lede{color:var(--dim);max-width:36em;margin-bottom:64px}
+h2{
+  font-family:"Cormorant Garamond",serif;font-weight:500;
+  font-size:1.7rem;margin:56px 0 14px;
+}
+p{max-width:40em;color:#3c434c}
+p+p{margin-top:12px}
+code{
+  font-family:"IBM Plex Mono",monospace;font-size:.85em;
+  background:rgba(201,155,76,.1);padding:1px 6px;border-radius:3px;
+}
+.spec{
+  margin-top:16px;border-top:1px solid var(--line);
+}
+.spec div{
+  display:grid;grid-template-columns:170px minmax(0,1fr);gap:16px;
+  padding:12px 0;border-bottom:1px solid var(--line);
+  font-size:.92rem;
+}
+.spec b{font-family:"IBM Plex Mono",monospace;font-weight:500;font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--copper);padding-top:3px}
+pre{
+  margin-top:18px;padding:clamp(18px,3vw,30px);
+  border:1px solid var(--gold-line);background:#fff;
+  font-family:"IBM Plex Mono",monospace;font-size:12.5px;line-height:1.75;
+  white-space:pre-wrap;word-wrap:break-word;color:#33393f;
+}
+.foot{
+  margin-top:70px;padding-top:24px;border-top:1px solid var(--line);
+  font-family:"IBM Plex Mono",monospace;font-size:11px;letter-spacing:.12em;color:var(--dim);
+  display:flex;justify-content:space-between;flex-wrap:wrap;gap:12px;
+}
+.foot a{color:var(--ink);text-decoration:none;border-bottom:1px solid var(--gold-line)}
+.foot a:hover{color:var(--copper)}
+@media (max-width:600px){.spec div{grid-template-columns:1fr;gap:4px}}
+</style>
+</head>
+<body>
+<a class="back" href="/44-kelvin/">&larr; kelvin</a>
+<div class="wrap">
+  <div class="overline">FABLE/25 · Site 44 · Guide</div>
+  <h1>How the page reaches <em>10&nbsp;mK</em></h1>
+  <p class="lede">44-kelvin is one HTML file, no libraries. Its conceit is that the page itself is a dilution refrigerator: scrolling is descent, and the environment obeys the thermometer.</p>
+
+  <h2>Temperature-driven environment</h2>
+  <p>Each stage section carries a <code>data-temp</code> attribute (300, 50, 4, 0.8, 0.01). On scroll, the viewport midpoint is located between the midpoints of the two nearest stages and the temperature is interpolated <em>logarithmically</em> — the only honest way to travel four and a half orders of magnitude. A fixed IBM&nbsp;Plex&nbsp;Mono readout formats the result (K above one kelvin, mK below) and names the current stage.</p>
+  <p>From the log temperature a 0–1 <code>--cool</code> factor drives everything else: the body background lerps from warm lab white toward blue-white, a frost-noise texture (an inline SVG <code>feTurbulence</code> data-URI, radial-masked so it only touches the viewport edges) fades in as cool², and — the systems joke played straight — <code>--dur</code> stretches every transition duration from 0.35&nbsp;s at room temperature to ~1.4&nbsp;s at base. The colder the page, the slower and more precise its movements.</p>
+
+  <h2>The Bloch sphere</h2>
+  <p>A DPR-aware canvas draws a wireframe sphere: a gold equator, two latitude rings, one meridian, a dashed z-axis with |0⟩ and |1⟩ pole labels, all projected through a fixed camera tilt. Pointer position sets target θ and φ; the state chases them with an exponential smoothing that reads as cryogenic patience, and precesses slowly when idle. The vector is the site's single iridescent element — a violet→cyan gradient stroke with a glowing tip. <code>Measure</code> samples the Born rule (P(|0⟩)&nbsp;=&nbsp;cos²(θ/2)), then snaps the vector to the winning pole with an easeOutBack overshoot and a fading gold ring. The rAF loop pauses whenever the canvas leaves the viewport or the tab hides; with reduced motion there is no loop at all — steering applies instantly and measurement collapses without animation.</p>
+
+  <h2>The asset</h2>
+  <div class="spec">
+    <div><b>Model</b><span>Nano Banana 2, via the Higgsfield MCP</span></div>
+    <div><b>Resolution</b><span>2K generation, delivered at 1400×1740 (4:5)</span></div>
+    <div><b>Palette lock</b><span>prompted to the site's cryo-gold #C99B4C / copper #A66A3F hardware in a #FAFBFC white lab</span></div>
+    <div><b>Encode</b><span>ffmpeg → WebP, ~295 KB, served with real dimensions, eager as hero</span></div>
+    <div><b>Presentation</b><span>framed like scientific jewellery: thin gold rule, inner hairline, plate caption</span></div>
+  </div>
+
+  <h2>Reproduction prompt</h2>
+  <pre id="prompt">Build a single-file HTML site for "KELVIN — Computing at the edge of zero", a fictional quantum-computing laboratory. Aesthetic: futuristic-clean white-lab minimal — vast white space, scientific serenity, gold/copper warmth borrowed from the cryostat hardware, one iridescent quantum accent used sparingly. Palette: lab white #FAFBFC, ink #14161A, cryo-gold #C99B4C, copper #A66A3F, iridescent gradient violet #A78BFA → ice cyan #7DD3FC, dim #96A0AC. Fonts: Cormorant Garamond for large serif display headlines (italic gradient word "zero"), Instrument Sans for body, IBM Plex Mono for temperatures, overlines and captions.
+
+Signature technique — scrolling descends the cryostat. A fixed mono temperature readout (huge, bottom-left, with small "stage temperature" label and stage name) falls as you scroll: 300 K → 50 K → 4 K → 800 mK → 10 mK, interpolated logarithmically between the scroll midpoints of stage sections tagged data-temp. Derive a 0–1 "cool" factor from log temperature and use it to drive the whole environment: body background lerps from warm lab white toward blue-white; a fine frost-noise texture (inline SVG feTurbulence data-URI, radial-masked to the viewport edges) plus a soft blue vignette fade in as cool²; and — the poetic system idea — a CSS variable --dur lengthens transition durations from 0.35 s to ~1.4 s, so every hover and reveal becomes slower and more precise the colder the page gets. Add a right-side dot rail marking the five stages.
+
+Sections: hero at 300 K with headline "Computing at the edge of zero.", terse lab stats (10 mK, 96 qubits, T₁ ≈ 480 µs) and the golden dilution-refrigerator photo (4:5) presented like scientific jewellery — thin gold rule, inner hairline frame, plate caption "Plate I — the machine, warm and open · 300 K". Four descent stages with quietly poetic copy (the first plate; superconductivity where resistance forgets itself; the still, where helium-3 evaporation is refrigeration like sweat performed by isotopes; the 10 mK mixing chamber where "the processor can hear itself think"), each with a mono fact line. At 10 mK: an interactive canvas Bloch sphere — wireframe sphere with gold equator, dashed z-axis, |0⟩/|1⟩ pole labels; pointer position steers θ and φ with a smooth chase, an iridescent violet→cyan state vector with a glowing dot, dashed equatorial projections, slow idle precession, live P(|0⟩)/P(|1⟩) readout, and a Measure button that collapses the state to a pole with an easeOutBack snap and a fading gold ring, respecting Born-rule probabilities. Pause the canvas rAF loop when offscreen (IntersectionObserver) or the tab is hidden. Then "What we run" (four terse use-case cells in a hairline grid) and selected fictional papers with a "Request access" CTA ("Bring a Hamiltonian"). Fixed "← 25" pill; footer "guide &amp; prompt →". prefers-reduced-motion: static state, no precession or reveals, Bloch sphere still interactive with instant steering. On ≤640 px the readout becomes a frosted full-width bottom bar. No libraries; zero console errors from file://; no horizontal scroll at 390 px.
+
+Asset: generate the cryostat photograph with Nano Banana 2 (via Higgsfield MCP) at 2K — gold-plated dilution refrigerator chandelier suspended in a bright white laboratory, palette-locked to the site's gold/copper — then convert to WebP with ffmpeg (1400×1740).</pre>
+
+  <div class="foot">
+    <span>KELVIN · guide — a FABLE/25 fiction</span>
+    <span><a href="/44-kelvin/">&larr; back to the lab</a> &nbsp;·&nbsp; <a href="/">&larr; 25</a></span>
+  </div>
+</div>
+</body>
+</html>

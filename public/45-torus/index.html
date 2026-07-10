@@ -1,0 +1,745 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<!--
+  CHANGELOG
+  PASS 1 — Initial build: scroll-scrubbed ignition sequence over a canvas plasma torus
+           (additive particle streams, poloidal field lines, Q-factor readout), vessel
+           video porthole, spec counters, roadmap, guide link. Reduced-motion: static
+           post-ignition glow, no scrub, poster instead of video. Canvas pauses
+           offscreen/hidden, DPR capped at 2, particle counts reduced at <=768px.
+-->
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>TORUS — A star, held</title>
+<meta name="description" content="TORUS builds compact magnetic-confinement fusion machines. Two hundred million degrees, suspended in a field, three metres from cold steel.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Unbounded:wght@200;300;400;500;700&family=Martian+Mono:wght@100;200;300;400&display=swap" rel="stylesheet">
+<style>
+:root{
+  --void:#070A0F;
+  --steel:#2A3140;
+  --steel-dim:rgba(42,49,64,.55);
+  --magenta:#E24FBB;
+  --violet:#8E4FE2;
+  --core:#FFB37A;
+  --ink:#E8ECF2;
+  --dim:#7A8494;
+  --line:rgba(122,132,148,.22);
+  --mono:"Martian Mono",ui-monospace,monospace;
+  --disp:"Unbounded",system-ui,sans-serif;
+}
+*{margin:0;padding:0;box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{
+  font-family:var(--mono);
+  font-weight:300;
+  background:var(--void);
+  color:var(--ink);
+  overflow-x:hidden;
+  -webkit-font-smoothing:antialiased;
+  line-height:1.7;
+}
+::selection{background:var(--magenta);color:var(--void)}
+a{color:inherit}
+img,video{max-width:100%;display:block}
+
+/* ---------- fixed back pill ---------- */
+.back{
+  position:fixed;top:18px;left:18px;z-index:60;
+  font:400 12px/1 var(--mono);letter-spacing:.08em;
+  color:var(--ink);text-decoration:none;
+  padding:9px 15px;border-radius:999px;
+  border:1px solid var(--line);
+  background:rgba(7,10,15,.6);backdrop-filter:blur(8px);
+  transition:border-color .25s,color .25s;
+}
+.back:hover{border-color:var(--magenta);color:var(--magenta)}
+
+.brand{
+  position:fixed;top:22px;right:22px;z-index:60;
+  font:500 13px/1 var(--disp);letter-spacing:.34em;
+  color:var(--ink);opacity:.9;pointer-events:none;
+}
+.brand i{font-style:normal;color:var(--magenta)}
+
+/* ---------- ignition stage ---------- */
+.stage{position:relative;height:560vh}
+.stage .sticky{
+  position:sticky;top:0;height:100vh;height:100svh;
+  overflow:hidden;
+}
+#torus{position:absolute;inset:0;width:100%;height:100%;display:block}
+.shockwash{
+  position:absolute;inset:0;pointer-events:none;opacity:0;
+  background:radial-gradient(ellipse 90% 70% at 50% 46%,
+    rgba(255,179,122,.34) 0%,rgba(226,79,187,.20) 34%,rgba(142,79,226,.10) 58%,transparent 78%);
+}
+.grain{
+  position:absolute;inset:0;pointer-events:none;opacity:.5;mix-blend-mode:overlay;
+  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2'/%3E%3CfeColorMatrix values='0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0.5 0'/%3E%3C/filter%3E%3Crect width='120' height='120' filter='url(%23n)'/%3E%3C/svg%3E");
+}
+
+/* hero overlay */
+.hero{
+  position:absolute;inset:0;z-index:5;
+  display:flex;flex-direction:column;justify-content:flex-end;
+  padding:0 6vw 10vh;pointer-events:none;
+}
+.hero .eyebrow{
+  font:300 11px/1.6 var(--mono);letter-spacing:.32em;color:var(--dim);
+  text-transform:uppercase;margin-bottom:18px;
+}
+.hero .eyebrow b{color:var(--magenta);font-weight:400}
+.hero h1{
+  font:200 clamp(46px,9.2vw,132px)/1.02 var(--disp);
+  letter-spacing:-.01em;max-width:12ch;
+}
+.hero h1 em{font-style:normal;font-weight:500;
+  background:linear-gradient(100deg,var(--magenta) 5%,var(--violet) 45%,var(--core) 95%);
+  -webkit-background-clip:text;background-clip:text;color:transparent;
+}
+.hero p{
+  margin-top:26px;max-width:52ch;color:var(--dim);
+  font-size:clamp(12px,1.35vw,14px);
+}
+.hero p strong{color:var(--ink);font-weight:400}
+.scrollcue{
+  position:absolute;right:6vw;bottom:10vh;
+  font:300 10px/1.7 var(--mono);letter-spacing:.28em;color:var(--dim);
+  text-transform:uppercase;writing-mode:vertical-rl;
+}
+.scrollcue::after{
+  content:"";display:block;width:1px;height:54px;margin:14px auto 0;
+  background:linear-gradient(var(--dim),transparent);
+}
+
+/* ignition HUD */
+.hud{
+  position:absolute;inset:0;z-index:6;opacity:0;pointer-events:none;
+  padding:0 6vw;display:flex;flex-direction:column;justify-content:flex-end;
+}
+.hud .hud-head{
+  position:absolute;top:78px;left:6vw;right:6vw;
+  display:flex;justify-content:space-between;align-items:baseline;gap:16px;
+  border-bottom:1px solid var(--line);padding-bottom:12px;
+  font:300 10px/1.6 var(--mono);letter-spacing:.3em;color:var(--dim);text-transform:uppercase;
+}
+.hud .hud-head b{color:var(--ink);font-weight:400}
+.seq{list-style:none;margin-bottom:11vh;max-width:560px}
+.seq li{
+  font:300 clamp(11px,1.5vw,14px)/2.3 var(--mono);letter-spacing:.12em;
+  color:var(--dim);white-space:nowrap;min-height:2.3em;
+}
+.seq li .tick{color:var(--steel);margin-right:1ch}
+.seq li.on .tick{color:var(--violet)}
+.seq li.done .tick{color:var(--magenta)}
+.seq li.done,.seq li.on{color:var(--ink)}
+.seq li.on .txt::after{content:"▌";color:var(--magenta);animation:blink 1s steps(1) infinite}
+.seq li.ignite{font-weight:400;letter-spacing:.3em}
+.seq li.ignite.done{color:var(--core);text-shadow:0 0 22px rgba(255,179,122,.65)}
+@keyframes blink{50%{opacity:0}}
+
+.qbox{
+  position:absolute;right:6vw;bottom:11vh;text-align:right;
+}
+.qbox .qlabel{font:300 10px/1.6 var(--mono);letter-spacing:.3em;color:var(--dim);text-transform:uppercase}
+.qbox .qval{
+  font:300 clamp(40px,6.5vw,84px)/1 var(--disp);
+  color:var(--ink);font-variant-numeric:tabular-nums;
+  transition:color .3s,text-shadow .3s;
+}
+.qbox .qval.crit{color:var(--core);text-shadow:0 0 34px rgba(255,179,122,.55)}
+.qbox .qnote{font:300 10px/1.8 var(--mono);letter-spacing:.14em;color:var(--dim);margin-top:8px}
+.qbox .qnote span{color:var(--magenta)}
+
+/* progress rail */
+.rail{position:absolute;left:6vw;top:50%;transform:translateY(-50%);width:1px;height:34vh;background:var(--line)}
+.rail i{position:absolute;left:-1px;top:0;width:3px;height:0%;background:linear-gradient(var(--magenta),var(--core));border-radius:2px}
+
+/* ---------- shared section chrome ---------- */
+section.block{position:relative;padding:16vh 6vw;max-width:1240px;margin:0 auto}
+.kicker{
+  font:300 11px/1.6 var(--mono);letter-spacing:.34em;color:var(--dim);
+  text-transform:uppercase;margin-bottom:20px;display:flex;align-items:center;gap:14px;
+}
+.kicker::before{content:"";width:34px;height:1px;background:var(--magenta)}
+.kicker .idx{color:var(--steel)}
+h2{
+  font:300 clamp(28px,4.4vw,54px)/1.14 var(--disp);letter-spacing:-.01em;
+  max-width:20ch;margin-bottom:26px;
+}
+h2 em{font-style:normal;color:var(--core);font-weight:400}
+.lede{max-width:58ch;color:var(--dim);font-size:clamp(12px,1.4vw,14px)}
+.lede strong{color:var(--ink);font-weight:400}
+
+/* ---------- vessel porthole ---------- */
+#vessel .porthole{
+  position:relative;margin-top:56px;
+  border:1px solid var(--steel);border-radius:14px;
+  background:#04060a;
+  box-shadow:0 0 0 1px rgba(7,10,15,1),0 30px 90px -30px rgba(226,79,187,.28),inset 0 0 60px rgba(0,0,0,.7);
+  overflow:hidden;
+}
+#vessel .porthole::before,#vessel .porthole::after{
+  content:"";position:absolute;z-index:3;width:15px;height:15px;pointer-events:none;
+  border:1px solid var(--dim);opacity:.85;
+}
+#vessel .porthole::before{top:12px;left:12px;border-right:0;border-bottom:0}
+#vessel .porthole::after{bottom:12px;right:12px;border-left:0;border-top:0}
+#vessel .feed{position:relative;aspect-ratio:16/9;background:#04060a}
+#vessel .feed video,#vessel .feed img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
+#vessel .feed::after{ /* vignette + scan tint */
+  content:"";position:absolute;inset:0;pointer-events:none;
+  background:radial-gradient(ellipse at center,transparent 52%,rgba(4,6,10,.78) 100%);
+}
+#vessel .feedbar{
+  position:relative;z-index:2;display:flex;flex-wrap:wrap;justify-content:space-between;gap:8px 20px;
+  padding:12px 18px;border-top:1px solid var(--steel-dim);
+  font:300 10px/1.6 var(--mono);letter-spacing:.22em;color:var(--dim);text-transform:uppercase;
+}
+#vessel .rec{display:inline-flex;align-items:center;gap:8px;color:var(--ink)}
+#vessel .rec::before{content:"";width:7px;height:7px;border-radius:50%;background:var(--magenta);
+  box-shadow:0 0 10px var(--magenta);animation:blink 1.6s steps(1) infinite}
+#vessel .cap{margin-top:16px;font:300 10px/1.9 var(--mono);letter-spacing:.18em;color:var(--dim);text-transform:uppercase}
+#vessel .cap b{color:var(--ink);font-weight:400}
+
+/* ---------- machine specs ---------- */
+#machine{border-top:1px solid var(--line)}
+.specgrid{
+  margin-top:60px;display:grid;grid-template-columns:repeat(4,1fr);
+  border-top:1px solid var(--line);border-left:1px solid var(--line);
+}
+.spec{
+  border-right:1px solid var(--line);border-bottom:1px solid var(--line);
+  padding:30px 26px 34px;position:relative;overflow:hidden;
+}
+.spec::after{content:"";position:absolute;left:0;bottom:0;width:100%;height:2px;
+  background:linear-gradient(90deg,var(--magenta),var(--violet),transparent);
+  transform:scaleX(0);transform-origin:left;transition:transform 1.2s cubic-bezier(.2,.7,.2,1)}
+.spec.lit::after{transform:scaleX(1)}
+.spec .num{
+  font:300 clamp(34px,4.6vw,58px)/1 var(--disp);color:var(--ink);
+  font-variant-numeric:tabular-nums;letter-spacing:-.01em;
+}
+.spec .num sup{font-size:.42em;color:var(--core);vertical-align:.9em}
+.spec .unit{font:300 12px/1 var(--mono);color:var(--magenta);letter-spacing:.14em;margin-left:6px}
+.spec .lab{margin-top:16px;font:300 10px/1.9 var(--mono);letter-spacing:.22em;color:var(--dim);text-transform:uppercase}
+.machimg{
+  margin-top:64px;position:relative;border:1px solid var(--steel);border-radius:14px;overflow:hidden;
+  box-shadow:0 30px 90px -40px rgba(142,79,226,.4);
+}
+.machimg img{width:100%;height:auto}
+.machimg figcaption{
+  position:absolute;left:0;right:0;bottom:0;padding:14px 18px;
+  background:linear-gradient(transparent,rgba(4,6,10,.88));
+  font:300 10px/1.7 var(--mono);letter-spacing:.22em;color:var(--dim);text-transform:uppercase;
+}
+.machimg figcaption b{color:var(--ink);font-weight:400}
+
+/* ---------- roadmap ---------- */
+#roadmap{border-top:1px solid var(--line)}
+.timeline{margin-top:56px;border-left:1px solid var(--steel);padding-left:0}
+.mile{
+  display:grid;grid-template-columns:150px 1fr;gap:10px 46px;
+  padding:34px 0 34px 44px;position:relative;border-bottom:1px solid var(--line);
+}
+.mile::before{
+  content:"";position:absolute;left:-5px;top:46px;width:9px;height:9px;border-radius:50%;
+  background:var(--void);border:1px solid var(--dim);
+}
+.mile.hot::before{background:var(--core);border-color:var(--core);box-shadow:0 0 16px rgba(255,179,122,.8)}
+.mile .yr{font:300 clamp(22px,2.6vw,32px)/1.2 var(--disp);color:var(--ink)}
+.mile.hot .yr{color:var(--core)}
+.mile h3{font:400 13px/1.6 var(--mono);letter-spacing:.2em;text-transform:uppercase;margin-bottom:8px}
+.mile p{color:var(--dim);font-size:12.5px;max-width:54ch}
+
+/* ---------- footer ---------- */
+footer{border-top:1px solid var(--line);padding:16vh 6vw 60px;position:relative;overflow:hidden;text-align:center}
+footer::before{
+  content:"";position:absolute;left:50%;bottom:-32vh;transform:translateX(-50%);
+  width:110vw;height:60vh;pointer-events:none;
+  background:radial-gradient(ellipse at 50% 100%,rgba(255,179,122,.16) 0%,rgba(226,79,187,.10) 38%,rgba(142,79,226,.05) 60%,transparent 78%);
+}
+footer h2{margin:0 auto 26px;max-width:24ch}
+footer .lede{margin:0 auto}
+.ctarow{margin-top:44px;display:flex;gap:16px;justify-content:center;flex-wrap:wrap}
+.btn{
+  font:400 12px/1 var(--mono);letter-spacing:.2em;text-transform:uppercase;
+  text-decoration:none;padding:15px 26px;border-radius:999px;border:1px solid var(--steel);
+  transition:border-color .25s,color .25s,box-shadow .25s;
+}
+.btn.hot{border-color:var(--magenta);color:var(--ink);
+  background:linear-gradient(100deg,rgba(226,79,187,.18),rgba(142,79,226,.14));}
+.btn.hot:hover{box-shadow:0 0 30px rgba(226,79,187,.35)}
+.btn:hover{border-color:var(--dim)}
+.fmeta{
+  margin-top:80px;position:relative;display:flex;justify-content:space-between;gap:14px;flex-wrap:wrap;
+  border-top:1px solid var(--line);padding-top:26px;
+  font:300 10px/1.8 var(--mono);letter-spacing:.2em;color:var(--dim);text-transform:uppercase;
+}
+.fmeta a{color:var(--dim);text-decoration:none;border-bottom:1px solid var(--steel);transition:color .25s,border-color .25s}
+.fmeta a:hover{color:var(--core);border-color:var(--core)}
+
+/* reveal on scroll */
+.rv{opacity:0;transform:translateY(26px);transition:opacity .9s ease,transform .9s cubic-bezier(.2,.7,.2,1)}
+.rv.in{opacity:1;transform:none}
+
+/* ---------- responsive ---------- */
+@media(max-width:900px){
+  .specgrid{grid-template-columns:1fr 1fr}
+  .mile{grid-template-columns:1fr;padding-left:32px}
+}
+@media(max-width:768px){
+  .stage{height:480vh}
+  .hero{padding:0 22px 12vh}
+  .hero p{max-width:100%}
+  .scrollcue{position:static;writing-mode:horizontal-tb;margin-top:26px}
+  .scrollcue::after{width:54px;height:1px;margin:10px 0 0;background:linear-gradient(90deg,var(--dim),transparent)}
+  .hud{padding:0 22px}
+  .hud .hud-head{left:22px;right:22px;top:70px}
+  .rail{display:none}
+  .seq{margin-bottom:24vh}
+  .seq li{white-space:normal;line-height:2;min-height:2em;font-size:11px}
+  .qbox{right:22px;bottom:9vh}
+  section.block{padding:14vh 22px}
+  footer{padding:14vh 22px 48px}
+  #vessel .feedbar{letter-spacing:.14em}
+}
+@media(max-width:520px){
+  .specgrid{grid-template-columns:1fr}
+}
+
+/* ---------- reduced motion ---------- */
+@media(prefers-reduced-motion:reduce){
+  html{scroll-behavior:auto}
+  .stage{height:auto}
+  .stage .sticky{position:relative;height:100vh;height:100svh}
+  .hero{justify-content:flex-end}
+  .hud{position:relative;inset:auto;opacity:1!important;height:auto;padding:34px 6vw 60px;background:var(--void)}
+  .hud .hud-head{position:static;margin-bottom:26px}
+  .seq{margin-bottom:0}
+  .qbox{position:static;text-align:left;margin-top:34px}
+  .rail{display:none}
+  .shockwash{opacity:.5!important}
+  .scrollcue::after{display:none}
+  .seq li.on .txt::after,#vessel .rec::before{animation:none}
+  .rv{opacity:1;transform:none;transition:none}
+  .spec::after{transition:none}
+}
+</style>
+</head>
+<body>
+
+<a class="back" href="/">&larr; 25</a>
+<div class="brand" aria-hidden="true">T<i>O</i>RUS</div>
+
+<!-- ======================= HERO + IGNITION (sticky canvas stage) ======================= -->
+<section class="stage" id="stage" aria-label="Ignition sequence">
+  <div class="sticky">
+    <canvas id="torus" aria-hidden="true"></canvas>
+    <div class="shockwash" id="shockwash"></div>
+    <div class="grain" aria-hidden="true"></div>
+
+    <div class="hero" id="hero">
+      <p class="eyebrow"><b>TORUS ENERGY</b> &middot; COMPACT MAGNETIC CONFINEMENT FUSION</p>
+      <h1>A star, <em>held.</em></h1>
+      <p>Two hundred million degrees, suspended in a magnetic field, three metres
+         from cold steel. <strong>We build the machine that does the holding.</strong></p>
+      <div class="scrollcue">scroll to ignite</div>
+    </div>
+
+    <div class="hud" id="hud" aria-live="off">
+      <div class="hud-head"><span><b>IGNITION SEQUENCE</b> &middot; SHOT 4212</span><span>PLASMA CONTROL &middot; AUTO</span></div>
+      <div class="rail" aria-hidden="true"><i id="railfill"></i></div>
+      <ol class="seq" id="seq">
+        <li data-a="0.16" data-b="0.26"><span class="tick">&#9632;</span><span class="txt" data-t="VACUUM 1.2e-8 Pa ······· OK"></span></li>
+        <li data-a="0.30" data-b="0.40"><span class="tick">&#9632;</span><span class="txt" data-t="TF COILS AT FIELD ··· 12.6 T"></span></li>
+        <li data-a="0.44" data-b="0.54"><span class="tick">&#9632;</span><span class="txt" data-t="INJECTING D-T ··· 34 MW NBI"></span></li>
+        <li data-a="0.58" data-b="0.70"><span class="tick">&#9632;</span><span class="txt" data-t="HEATING ········· 40 keV"></span></li>
+        <li data-a="0.82" data-b="0.88" class="ignite"><span class="tick">&#9632;</span><span class="txt" data-t="IGNITION"></span></li>
+      </ol>
+      <div class="qbox">
+        <div class="qlabel">Fusion gain</div>
+        <div class="qval" id="qval">Q 0.00</div>
+        <div class="qnote">power out / power in &middot; <span>Q &gt; 1 = net gain</span></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ======================= INSIDE THE VESSEL ======================= -->
+<section class="block" id="vessel">
+  <p class="kicker rv"><span class="idx">01</span> Inside the vessel</p>
+  <h2 class="rv">Camera four looks at <em>a working star</em> through ten centimetres of fused quartz.</h2>
+  <p class="lede rv">During a shot, the inboard camera records what no person will ever stand near:
+     deuterium&ndash;tritium plasma circulating the torus at hundreds of kilometres per second,
+     glowing where it brushes the edge of the field. <strong>The wall it never touches
+     stays at room temperature.</strong></p>
+
+  <figure class="porthole rv">
+    <div class="feed" id="feed">
+      <img id="feedposter" src="assets/plasma-poster.webp" width="1120" height="630"
+           alt="Interior view of the tokamak vessel during a shot: a swirling magenta-violet plasma ring" loading="lazy">
+    </div>
+    <figcaption class="feedbar">
+      <span class="rec">REC &middot; CAM-04</span>
+      <span>INBOARD PORT &middot; F/11</span>
+      <span>SHOT 4212 &middot; T+02.4 s</span>
+      <span id="feedstate">LIVE FEED</span>
+    </figcaption>
+  </figure>
+  <p class="cap rv"><b>Fig. 01</b> &middot; visible-light emission at the plasma edge. The core, at 150 million &deg;C, is too hot to glow in visible light at all.</p>
+</section>
+
+<!-- ======================= THE MACHINE ======================= -->
+<section class="block" id="machine">
+  <p class="kicker rv"><span class="idx">02</span> The machine</p>
+  <h2 class="rv">T-1 is small enough to build in four years, and strong enough to <em>hold ignition.</em></h2>
+  <p class="lede rv">High-temperature superconducting magnets changed the arithmetic of fusion.
+     Field strength enters plasma performance to the fourth power &mdash; so doubling the field
+     shrinks the machine by an order of magnitude. <strong>T-1 is that bet, in 1,100 tonnes of steel.</strong></p>
+
+  <div class="specgrid rv">
+    <div class="spec"><div><span class="num" data-count="12.6" data-dec="1">0.0</span><span class="unit">T</span></div>
+      <div class="lab">Toroidal field on axis &mdash; 24 T peak in the coil bore</div></div>
+    <div class="spec"><div><span class="num" data-count="150" data-dec="0">0</span><span class="unit">M &deg;C</span></div>
+      <div class="lab">Core plasma temperature &mdash; 10&times; hotter than the sun&rsquo;s core</div></div>
+    <div class="spec"><div><span class="num" data-count="11.3" data-dec="1">0.0</span><span class="unit">Q</span></div>
+      <div class="lab">Target fusion gain &mdash; eleven watts out per watt in</div></div>
+    <div class="spec"><div><span class="num" data-count="400" data-dec="0">0</span><span class="unit">s</span></div>
+      <div class="lab">Pulse length &mdash; long enough to count as boring</div></div>
+  </div>
+
+  <figure class="machimg rv">
+    <img src="assets/plasma.webp" width="1920" height="1080" loading="lazy"
+         alt="Wide still of the tokamak interior mid-shot, the plasma ring swirling magenta and violet">
+    <figcaption><b>SHOT 4211</b> &middot; full-frame capture, 1/8000 s &middot; the field holds; the star sits still</figcaption>
+  </figure>
+</section>
+
+<!-- ======================= ROADMAP ======================= -->
+<section class="block" id="roadmap">
+  <p class="kicker rv"><span class="idx">03</span> Roadmap</p>
+  <h2 class="rv">Sober dates. <em>One immodest goal.</em></h2>
+  <p class="lede rv">Every milestone below is gated by the one before it. We publish shot data
+     quarterly, including the failures &mdash; <strong>fusion has been twenty years away for seventy years,
+     and the only cure for that is arithmetic in public.</strong></p>
+
+  <div class="timeline rv">
+    <div class="mile"><div class="yr">2027</div><div><h3>First plasma</h3>
+      <p>T-1 vessel sealed, coils at field, first deuterium shots. Milliseconds of confinement, terabytes of calibration.</p></div></div>
+    <div class="mile hot"><div class="yr">2029</div><div><h3>Ignition &mdash; Q &gt; 1</h3>
+      <p>The plasma heats itself faster than we heat it. The point of this company, crossed on an ordinary weekday shift.</p></div></div>
+    <div class="mile"><div class="yr">2031</div><div><h3>Q 10 campaign</h3>
+      <p>Sustained burning plasma, tritium bred in the blanket faster than the reaction consumes it. Fuel cycle closed.</p></div></div>
+    <div class="mile"><div class="yr">2035</div><div><h3>Pilot plant on grid</h3>
+      <p>400 MWe from the first commercial unit. From the switchyard side of the fence, just another quiet building.</p></div></div>
+  </div>
+</section>
+
+<!-- ======================= FOOTER CTA ======================= -->
+<footer>
+  <h2 class="rv">The hard part was never the star. <em>It was the holding.</em></h2>
+  <p class="lede rv">We are 214 engineers, one machine, and a schedule we intend to keep.
+     If you build magnets, code control systems, or model plasmas &mdash; the vessel has room.</p>
+  <div class="ctarow rv">
+    <a class="btn hot" href="#stage">Watch the ignition again</a>
+    <a class="btn" href="#machine">Read the machine spec</a>
+  </div>
+  <div class="fmeta">
+    <span>&copy; 2026 TORUS ENERGY &middot; A FICTIONAL COMPANY</span>
+    <span>FABLE/25 &middot; SITE 45</span>
+    <a href="guide/">guide &amp; prompt &rarr;</a>
+  </div>
+</footer>
+
+<script>
+(function(){
+"use strict";
+var RM = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+var clamp=function(v,a,b){return v<a?a:v>b?b:v};
+var smooth=function(t){t=clamp(t,0,1);return t*t*(3-2*t)};
+
+/* ============ torus canvas ============ */
+var cv=document.getElementById("torus"),ctx=cv.getContext("2d");
+var W=0,H=0,DPR=1,CX=0,CY=0,R=0,TR=0,SQ=0.36;
+var parts=[],PCOUNT=0;
+var MAG=[226,79,187],VIO=[142,79,226],COR=[255,179,122];
+
+function sizeCanvas(){
+  var box=cv.parentElement.getBoundingClientRect();
+  DPR=Math.min(window.devicePixelRatio||1,2);
+  W=Math.max(1,Math.round(box.width));H=Math.max(1,Math.round(box.height));
+  cv.width=Math.round(W*DPR);cv.height=Math.round(H*DPR);
+  ctx.setTransform(DPR,0,0,DPR,0,0);
+  CX=W/2; CY=H*0.44;
+  R=Math.min(W*0.30,H*0.34);
+  TR=R*0.30;
+  var want=(W<=768)?340:900;
+  if(want!==PCOUNT){PCOUNT=want;buildParts();}
+}
+function buildParts(){
+  parts.length=0;
+  for(var i=0;i<PCOUNT;i++){
+    parts.push({
+      th:Math.random()*Math.PI*2,             /* toroidal angle */
+      sp:(0.004+Math.random()*0.011)*(Math.random()<0.08?1.8:1),
+      ph:Math.random()*Math.PI*2,             /* poloidal angle */
+      psp:(Math.random()-0.5)*0.06,
+      tr:0.25+Math.random()*0.95,             /* tube radius fraction */
+      mix:Math.random(),                      /* magenta<->violet */
+      core:Math.random(),                     /* likelihood to whiten at ignition */
+      sz:0.7+Math.random()*1.5
+    });
+  }
+}
+function col(rgb,a){return "rgba("+rgb[0]+","+rgb[1]+","+rgb[2]+","+a+")"}
+function lerp3(a,b,t){return [a[0]+(b[0]-a[0])*t|0,a[1]+(b[1]-a[1])*t|0,a[2]+(b[2]-a[2])*t|0]}
+
+function pos(th,ph,trf,tight){
+  /* torus point: ring radius R, tube radius TR*trf, squashed vertically */
+  var tr=TR*trf*tight;
+  var rr=R+tr*Math.cos(ph);
+  return {
+    x:CX+rr*Math.cos(th),
+    y:CY+rr*Math.sin(th)*SQ - tr*Math.sin(ph)*0.62,
+    d:Math.sin(th) /* -1 back .. 1 front */
+  };
+}
+
+var rot=0;
+function draw(I,dt){
+  /* I: 0..1 plasma intensity */
+  ctx.clearRect(0,0,W,H);
+  var tight=1.25-0.45*I;                     /* field/stream tightening */
+  var speed=0.35+1.9*I;
+  rot+=0.0018*speed*dt;
+
+  /* ambient halo behind everything */
+  var g=ctx.createRadialGradient(CX,CY,R*0.1,CX,CY,R*2.1);
+  g.addColorStop(0,col(COR,0.05+0.30*I*I));
+  g.addColorStop(0.35,col(MAG,0.055+0.15*I));
+  g.addColorStop(0.7,col(VIO,0.02+0.07*I));
+  g.addColorStop(1,"rgba(7,10,15,0)");
+  ctx.fillStyle=g;ctx.fillRect(0,0,W,H);
+
+  /* torus body silhouette — a faint steel tube, not a disc */
+  ctx.save();
+  ctx.translate(CX,CY);ctx.scale(1,SQ);
+  ctx.strokeStyle="rgba(42,49,64,"+(0.30-0.16*I).toFixed(3)+")";
+  ctx.lineWidth=TR*1.7;
+  ctx.beginPath();ctx.arc(0,0,R,0,Math.PI*2);ctx.stroke();
+  ctx.strokeStyle="rgba(122,132,148,"+(0.14-0.06*I).toFixed(3)+")";
+  ctx.lineWidth=1;
+  ctx.beginPath();ctx.arc(0,0,R+TR*0.9,0,Math.PI*2);ctx.stroke();
+  ctx.beginPath();ctx.arc(0,0,R-TR*0.9,0,Math.PI*2);ctx.stroke();
+  ctx.restore();
+
+  ctx.globalCompositeOperation="lighter";
+
+  /* poloidal field lines */
+  var NL=(W<=768)?10:14;
+  for(var k=0;k<NL;k++){
+    var a=k/NL*Math.PI*2+rot*0.35;
+    var fx=CX+R*Math.cos(a), fy=CY+R*Math.sin(a)*SQ;
+    var fr=TR*tight*0.95;
+    var front=Math.sin(a)>0;
+    var rad=Math.atan2(Math.sin(a)*SQ,Math.cos(a)); /* radial screen direction */
+    ctx.strokeStyle=col(front?MAG:VIO,(front?0.07:0.04)+(front?0.20:0.09)*I);
+    ctx.lineWidth=0.8;
+    ctx.beginPath();
+    ctx.ellipse(fx,fy,fr,fr*0.66,rad,0,Math.PI*2);
+    ctx.stroke();
+  }
+
+  /* particle streams */
+  for(var i=0;i<PCOUNT;i++){
+    var p=parts[i];
+    p.th+=p.sp*speed*dt; p.ph+=p.psp*speed*dt;
+    var pt=pos(p.th+rot,p.ph,p.tr,tight);
+    var front2=(pt.d+1)/2;                   /* 0 back .. 1 front */
+    var a2=(0.17+0.46*I)*(0.35+0.65*front2)*(0.5+0.5*p.mix);
+    var c=lerp3(MAG,VIO,p.mix);
+    if(I>0.55&&p.core>0.45) c=lerp3(c,COR,(I-0.55)/0.45*p.core);
+    /* streak along direction of motion */
+    var dth=0.05+0.13*I;
+    var pt2=pos(p.th+rot+dth,p.ph,p.tr,tight);
+    ctx.strokeStyle=col(c,clamp(a2,0,0.9));
+    ctx.lineWidth=p.sz*(0.6+0.8*I);
+    ctx.beginPath();ctx.moveTo(pt.x,pt.y);ctx.lineTo(pt2.x,pt2.y);ctx.stroke();
+  }
+
+  /* hot inner rim at high intensity */
+  if(I>0.5){
+    ctx.save();
+    ctx.translate(CX,CY);ctx.scale(1,SQ);
+    ctx.strokeStyle=col(COR,(I-0.5)*0.9);
+    ctx.lineWidth=1.6+4*(I-0.5);
+    ctx.shadowColor=col(COR,0.9);ctx.shadowBlur=30*I;
+    ctx.beginPath();ctx.arc(0,0,R,0,Math.PI*2);ctx.stroke();
+    ctx.restore();
+  }
+  ctx.globalCompositeOperation="source-over";
+}
+
+/* ============ scroll scrub ============ */
+var stage=document.getElementById("stage"),
+    hero=document.getElementById("hero"),
+    hud=document.getElementById("hud"),
+    shock=document.getElementById("shockwash"),
+    qval=document.getElementById("qval"),
+    rail=document.getElementById("railfill"),
+    lis=[].slice.call(document.querySelectorAll("#seq li"));
+
+function progress(){
+  var r=stage.getBoundingClientRect();
+  var total=r.height-window.innerHeight;
+  if(total<=0)return 0;
+  return clamp(-r.top/total,0,1);
+}
+function intensity(p){
+  var base=0.15+0.47*smooth((p-0.16)/(0.66));      /* ramp through stages */
+  var ign=0.38*smooth((p-0.80)/(0.08));            /* jump at ignition */
+  return clamp(base+ign,0,1);
+}
+function qOf(p){
+  if(p<0.46)return 0;
+  if(p<0.84)return smooth((p-0.46)/0.38)*1.0;      /* climbs to 1.0 at ignition */
+  return 1.0+smooth((p-0.84)/0.16)*10.3;           /* runs away to 11.3 */
+}
+function applyHUD(p){
+  hero.style.opacity=String(clamp(1-p/0.10,0,1));
+  hero.style.visibility=p>0.12?"hidden":"visible";
+  hud.style.opacity=String(clamp((p-0.10)/0.06,0,1)*clamp((1.02-p)/0.02+1,0,1));
+  if(rail)rail.style.height=(p*100).toFixed(1)+"%";
+  for(var i=0;i<lis.length;i++){
+    var li=lis[i],a=parseFloat(li.dataset.a),b=parseFloat(li.dataset.b);
+    var t=li.querySelector(".txt"),full=t.dataset.t;
+    var sub=clamp((p-a)/(b-a),0,1);
+    var n=Math.round(sub*full.length);
+    var cur=t.textContent;
+    var want=full.slice(0,n);
+    if(cur!==want)t.textContent=want;
+    li.classList.toggle("on",sub>0&&sub<1);
+    li.classList.toggle("done",sub>=1);
+  }
+  var q=qOf(p);
+  qval.textContent="Q "+(q<10?q.toFixed(2):q.toFixed(1));
+  qval.classList.toggle("crit",q>=1);
+  /* shock wash: bump at ignition then settle to plateau */
+  var d=(p-0.875)/0.055;
+  var bump=Math.exp(-d*d)*0.55;
+  var plateau=0.22*smooth((p-0.86)/0.06);
+  shock.style.opacity=String(clamp(bump+plateau,0,1));
+}
+
+/* ============ main loop, pause offscreen/hidden ============ */
+var running=false,rafId=0,lastT=0,stageVisible=true;
+function frame(t){
+  if(!running)return;
+  var dt=lastT?Math.min((t-lastT)/16.7,3):1;lastT=t;
+  var p=progress();
+  applyHUD(p);
+  draw(intensity(p),dt);
+  rafId=requestAnimationFrame(frame);
+}
+function setRunning(on){
+  if(RM)return;
+  if(on&&!running){running=true;lastT=0;rafId=requestAnimationFrame(frame);}
+  else if(!on&&running){running=false;cancelAnimationFrame(rafId);}
+}
+if("IntersectionObserver" in window){
+  new IntersectionObserver(function(es){
+    stageVisible=es[0].isIntersecting;
+    setRunning(stageVisible&&!document.hidden);
+  },{rootMargin:"60px"}).observe(stage);
+}
+document.addEventListener("visibilitychange",function(){
+  setRunning(stageVisible&&!document.hidden);
+});
+window.addEventListener("resize",function(){sizeCanvas();if(RM)staticFrame();});
+sizeCanvas();
+
+function staticFrame(){
+  /* reduced motion: single post-ignition frame, HUD fully typed */
+  draw(1,1);
+  for(var i=0;i<lis.length;i++){
+    var t=lis[i].querySelector(".txt");
+    t.textContent=t.dataset.t;
+    lis[i].classList.add("done");
+  }
+  qval.textContent="Q 11.3";qval.classList.add("crit");
+  hero.style.opacity="1";
+}
+if(RM){staticFrame();}
+else{applyHUD(progress());draw(intensity(progress()),1);setRunning(true);}
+
+/* ============ vessel video (inject only when motion allowed) ============ */
+var feed=document.getElementById("feed"),feedstate=document.getElementById("feedstate");
+if(!RM&&feed){
+  var v=document.createElement("video");
+  v.muted=true;v.loop=true;v.playsInline=true;v.autoplay=true;
+  v.setAttribute("muted","");v.setAttribute("playsinline","");v.setAttribute("autoplay","");
+  v.preload="metadata";
+  v.poster="assets/plasma-poster.webp";
+  v.width=1120;v.height=630;
+  v.setAttribute("aria-label","Looping video from inside the vessel: swirling magenta-violet plasma");
+  var s=document.createElement("source");
+  s.src="assets/plasma.mp4";s.type="video/mp4";
+  v.appendChild(s);
+  feed.appendChild(v);
+  var tryPlay=function(){var pr=v.play();if(pr&&pr.catch)pr.catch(function(){});};
+  if("IntersectionObserver" in window){
+    new IntersectionObserver(function(es){
+      if(es[0].isIntersecting){tryPlay();}else{v.pause();}
+    },{rootMargin:"80px"}).observe(v);
+  }else{tryPlay();}
+  document.addEventListener("visibilitychange",function(){
+    if(document.hidden)v.pause();else tryPlay();
+  });
+}else if(feedstate){feedstate.textContent="STILL FRAME";}
+
+/* ============ reveals + counters ============ */
+var rvs=[].slice.call(document.querySelectorAll(".rv"));
+if(!RM&&"IntersectionObserver" in window){
+  var io=new IntersectionObserver(function(es){
+    es.forEach(function(e){if(e.isIntersecting){e.target.classList.add("in");io.unobserve(e.target);}});
+  },{threshold:0.18});
+  rvs.forEach(function(el){io.observe(el);});
+}else{rvs.forEach(function(el){el.classList.add("in");});}
+
+var nums=[].slice.call(document.querySelectorAll(".num[data-count]"));
+function runCounter(el){
+  var end=parseFloat(el.dataset.count),dec=parseInt(el.dataset.dec,10)||0;
+  var t0=null;
+  function step(t){
+    if(!t0)t0=t;
+    var k=smooth(Math.min((t-t0)/1400,1));
+    el.textContent=(end*k).toFixed(dec);
+    if(k<1)requestAnimationFrame(step);
+  }
+  requestAnimationFrame(step);
+}
+if(!RM&&"IntersectionObserver" in window){
+  var cio=new IntersectionObserver(function(es){
+    es.forEach(function(e){
+      if(e.isIntersecting){
+        runCounter(e.target);
+        e.target.closest(".spec").classList.add("lit");
+        cio.unobserve(e.target);
+      }
+    });
+  },{threshold:0.6});
+  nums.forEach(function(el){cio.observe(el);});
+}else{
+  nums.forEach(function(el){
+    el.textContent=parseFloat(el.dataset.count).toFixed(parseInt(el.dataset.dec,10)||0);
+    el.closest(".spec").classList.add("lit");
+  });
+}
+})();
+</script>
+</body>
+</html>

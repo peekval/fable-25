@@ -1,0 +1,17 @@
+# STRATA — Residenzen über der Stadt
+
+## Full Reproduction Prompt
+
+Build a one-page site for STRATA, a fictional luxury residential tower, as a single self-contained HTML file in German (gehoben, ruhig — quiet-luxury copy, no exclamation marks). Google Fonts only, no libraries; local assets are assets/tower.webp (1400×1750 hero) and assets/penthouse.webp (1920×1080). Palette: dusk navy #101823, deep panel #182230, brass #C7A867, cream stone #F2EEE6, warm white #F5F1E8, dim #8B94A3. Fonts: Marcellus for display and brass numerals, Archivo (300–600) for body and data.
+
+Generate both photos with Nano Banana 2 via the Higgsfield MCP, palette-locked to the six hex values: a 4:5 residential tower at blue hour with brass window glow, and a 16:9 penthouse interior at dusk overlooking the city; upscale to 2K and convert with ffmpeg to WebP (~85 quality) at real rendered dimensions.
+
+Hero: tower as a side-anchored 44% figure feathered into the navy copy column with the STRATA wordmark (letterspaced Marcellus, one brass letter), a calm two-line claim "Wohnen über der Stadt", and three hairline stat tiles (Etagen, Residenzen, Bezug). On mobile the figure flips above the headline.
+
+The showpiece: scrolling is the elevator. A 560vh section wraps a position:sticky 100vh stage. Progress p through the section drives everything in one rAF-throttled scroll handler, transforms/opacity only: two SVG city-silhouette planes (dark rects, tiny brass windows) sink at 0.55·vh and 1.25·vh with a haze layer between; ambient light shifts from a warm street-glow radial (fades by p≈0.45) to an open dusk-sky gradient plus a faint starfield fading in above p≈0.5. A fixed floor indicator on the right shows L · 12 · 24 · 38 · PH in Marcellus with tick marks; the active stop gets a brass color and a thicker, longer tick (line-weight change), a brass dot travels a hairline rail eased between measured label centers, and a live "ETAGE 07" readout counts floors continuously. Below 720px the indicator becomes a horizontal strip pinned to the top of the cab, ordered L→PH.
+
+Four stops occupy progress centers ~0.20/0.44/0.68/0.92; each residence card (blurred navy panel, hairline border, huge stroked ghost floor numeral behind) rides up through the cab via translateY tied to p−center with smoothstep opacity. Inside each card an SVG floorplan draws itself: every wall path has pathLength=1, dasharray 1, dashoffset 1→0 with staggered transition delays; cream walls, brass loggia lines and door arcs, room labels fading in late, and the m² value counting up (eased rAF). Leaving a stop resets it so the drawing replays. The PH stop is the payoff: the penthouse photo fills the stage from brightness(.06) to full over ~2.6s with a diagonal light sweep and the caption "Penthouse · Etage 41 — Ganz oben wird es still."
+
+After the ascent: a penthouse spec panel (Marcellus lede, hairline spec rows), Ausstattung as a quiet 3×2 hairline grid with Roman-numeral brass indices (smoked oak, raw brass, Jura limestone…), Lage as a minimal map-line SVG (two stroke weights, one river, pulsing brass STRATA dot) beside walking-time rows, and a Kontakt footer. Fixed "← 25" pill to the gallery, footer link "guide & prompt →".
+
+prefers-reduced-motion: the sticky stage collapses to static flow, stops stack pre-composed with plans fully drawn and counters set, all parallax/glow layers hidden. Zero console errors from file://, no horizontal scroll at 390px.

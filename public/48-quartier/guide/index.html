@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>QUARTIER NORD — Guide &amp; Prompt</title>
+<meta name="description" content="Technique breakdown und Reproduktions-Prompt für QUARTIER NORD: selbstbauender isometrischer Masterplan in CSS 3D.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wght@600;800;900&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root{
+  --concrete:#E5E3DE;--concrete-deep:#C9C6BF;--ink:#1E1E1C;
+  --orange:#E85D2F;--blue:#2C5F8A;--green:#6E8B5E;--line:rgba(30,30,28,.16);
+}
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:"IBM Plex Sans",system-ui,sans-serif;background:var(--concrete);color:var(--ink);line-height:1.6;overflow-x:clip}
+::selection{background:var(--orange);color:#fff}
+.pill{position:fixed;top:16px;left:16px;z-index:60;font-family:"IBM Plex Mono",monospace;font-size:12px;letter-spacing:.08em;background:var(--ink);color:var(--concrete);text-decoration:none;padding:8px 14px;border-radius:999px}
+.pill:hover{background:var(--orange);color:#fff}
+main{max-width:880px;margin:0 auto;padding:110px clamp(20px,5vw,48px) 80px}
+.kicker{font-family:"IBM Plex Mono",monospace;font-size:12px;letter-spacing:.28em;color:var(--blue);margin-bottom:14px}
+h1{font-family:"Archivo",sans-serif;font-weight:900;text-transform:uppercase;font-size:clamp(34px,7vw,64px);line-height:.95;letter-spacing:-.01em}
+h1 em{font-style:normal;color:var(--orange)}
+.sub{margin-top:16px;font-size:17px;max-width:60ch;color:rgba(30,30,28,.8)}
+h2{font-family:"Archivo",sans-serif;font-weight:800;text-transform:uppercase;font-size:clamp(19px,3vw,26px);margin:64px 0 14px;padding-top:22px;border-top:2px solid var(--ink)}
+h2 .no{color:var(--orange);font-family:"IBM Plex Mono",monospace;font-weight:400;font-size:13px;letter-spacing:.2em;display:block;margin-bottom:6px}
+p{margin:12px 0;color:rgba(30,30,28,.85)}
+code{font-family:"IBM Plex Mono",monospace;font-size:.88em;background:var(--concrete-deep);padding:1px 6px;border-radius:3px}
+ul{margin:12px 0 12px 20px}
+li{margin:7px 0;color:rgba(30,30,28,.85)}
+pre{
+  background:var(--ink);color:var(--concrete);padding:26px;overflow-x:auto;
+  font-family:"IBM Plex Mono",monospace;font-size:12.5px;line-height:1.7;
+  white-space:pre-wrap;border-left:3px solid var(--orange);margin-top:18px;
+}
+.asset-note{border:1px solid var(--line);background:#efede8;padding:18px 20px;margin:18px 0;font-size:14px}
+.asset-note b{font-family:"IBM Plex Mono",monospace;font-weight:500;font-size:12px;letter-spacing:.12em;color:var(--blue);display:block;margin-bottom:6px}
+footer{max-width:880px;margin:0 auto;padding:0 clamp(20px,5vw,48px) 60px;font-family:"IBM Plex Mono",monospace;font-size:11px;letter-spacing:.1em;color:rgba(30,30,28,.55);display:flex;gap:24px;flex-wrap:wrap}
+footer a{color:var(--ink);text-decoration:none;border-bottom:1px solid var(--orange)}
+footer a:hover{color:var(--orange)}
+</style>
+</head>
+<body>
+<a class="pill" href="/48-quartier/">&larr; QUARTIER NORD</a>
+<main>
+  <div class="kicker">FABLE/25 &middot; SITE 48 &middot; GUIDE &amp; PROMPT</div>
+  <h1>Der Plan, der sich<br>selbst <em>baut</em></h1>
+  <p class="sub">Wie QUARTIER NORD funktioniert: ein isometrischer Masterplan aus purem CSS 3D, choreografiert über eine Sticky-Scrollstrecke — Phase für Phase, Baufeld für Baufeld.</p>
+
+  <h2><span class="no">01 — TECHNIK</span>Axonometrie ohne Perspektive</h2>
+  <p>Die Grundplatte ist ein 640&times;640-px-Div mit <code>transform: rotateX(55deg) rotateZ(-45deg)</code> und <code>transform-style: preserve-3d</code> — ohne <code>perspective</code> auf den Eltern bleibt die Projektion parallel: echte Axonometrie, wie auf dem Wettbewerbsplan. Jedes Gebäude wird aus einem JS-Datenarray (Footprint, Höhe, Phase, Baufeldname, Programm) als Quader mit nur drei Flächen erzeugt: Dach auf <code>translateZ(var(--h))</code> plus die zwei dem Betrachter zugewandten Wände (<code>rotateX(90deg)</code> / <code>rotateY(-90deg)</code>), hell/mittel/dunkel schattiert.</p>
+
+  <h2><span class="no">02 — CHOREOGRAFIE</span>Kran-Easing auf der Scrollstrecke</h2>
+  <p>Der Plan liegt sticky in einer 560vh-Sektion. Der Scrollfortschritt <code>p</code> wird in Fenster geteilt: Hero über der leeren Platte bis 9&nbsp;%, Phase&nbsp;1 (2026) 8&ndash;36&nbsp;%, Phase&nbsp;2 (2028) 36&ndash;64&nbsp;%, Phase&nbsp;3 (2031) 64&ndash;90&nbsp;%. Öffnet sich ein Fenster, bekommen die Blöcke der Phase gestaffelt (~110&nbsp;ms) die Klasse <code>.up</code>:</p>
+  <ul>
+    <li><b>Aufbau:</b> von <code>scaleZ(0.001)</code> per Keyframes auf <code>scaleZ(1.07)</code> überschwingen, auf <code>0.985</code> absacken, hart auf <code>1</code> setzen — Baukran-Physik.</li>
+    <li><b>Status:</b> aktive Phase glüht Orange (Box-Shadow am Dach), abgeschlossene Phasen beruhigen sich zu Betonweiß; rückwärts scrollen versenkt die Blöcke wieder.</li>
+    <li><b>Interaktion:</b> Hover/Tap hebt gesetzte Blöcke um <code>translateZ(12px)</code> und schreibt das Programm (Wohnen &middot; 120 WE, Kita, Hochpunkt &hellip;) ins fixe HUD, das Phase, Jahr und drei Fortschrittssegmente führt.</li>
+  </ul>
+
+  <h2><span class="no">03 — PLANGRAFIK</span>Straßen, die sich zeichnen</h2>
+  <p>Auf der Platte liegt ein flaches SVG: Straßen als Pfade mit <code>pathLength="1"</code>, <code>stroke-dasharray:1</code> und animiertem <code>stroke-dashoffset</code> — sie zeichnen sich in Phase&nbsp;1 gestaffelt selbst. Der Grünzug (62&nbsp;px breiter #6E8B5E-Pfad) folgt in Phase&nbsp;2; seine Bäume werden per <code>getPointAtLength()</code> exakt entlang der Kurve gesetzt und ploppen mit Transition-Delays auf. Das blueprint-blaue Hafenbecken erscheint mit Phase&nbsp;3.</p>
+
+  <h2><span class="no">04 — ASSET</span>Das Modellfoto</h2>
+  <div class="asset-note">
+    <b>PIPELINE</b>
+    Nano Banana 2 via Higgsfield MCP &rarr; fotorealistisches Architekturmodell auf gefrästem Betonsockel, weiße Volumen, Grünzug, ein Cluster in glänzendem Orange-Acryl — <b>palette-locked</b> auf #E85D2F/#E5E3DE/#6E8B5E, in <b>2K</b> generiert, dann per <b>ffmpeg</b> zu 1920&times;1080 <b>WebP</b> (~180&nbsp;KB) enkodiert.
+  </div>
+  <p>Eingebaut als &laquo;Das Modell&raquo; im Wettbewerbsstil: auf Betonträger montiert, enthüllt von einem Zeichenlinien-Sweep (<code>clip-path: inset()</code> plus wandernde orange Linie), Bildunterschrift &laquo;Arbeitsmodell, Maßstab 1:500&raquo;, <code>loading="lazy"</code> mit echten Dimensionen.</p>
+
+  <h2><span class="no">05 — ROBUSTHEIT</span>Reduced Motion &amp; Mobile</h2>
+  <p><code>prefers-reduced-motion</code> rendert den Masterplan komplett und statisch — das HUD bleibt funktional und folgt weiter dem Scroll. Auf Mobilgeräten skaliert ein per JS gesetzter <code>--s</code>-Faktor die gesamte Bühne; der Sticky-Viewport clippt mit <code>overflow: clip</code>, sodass bei 390&nbsp;px keinerlei horizontales Scrollen entsteht.</p>
+
+  <h2><span class="no">06 — PROMPT</span>Vollständiger Repro-Prompt</h2>
+<pre id="prompt">Build a one-page fictional urban-development showcase for QUARTIER NORD ("Ein Stück Stadt, neu gedacht") — a phased masterplan district at a north-German harbor edge — as a single self-contained HTML file (Google Fonts allowed, no JS libraries; only local asset assets/model.webp, 1920×1080). German copy throughout, written with the precision of a Städtebau office. Palette: concrete #E5E3DE (deep #C9C6BF), ink #1E1E1C, masterplan orange #E85D2F, blueprint blue #2C5F8A, green spine #6E8B5E. Fonts: Archivo 800/900 uppercase for display, IBM Plex Sans for body, IBM Plex Mono for technical labels, captions and the HUD.
+
+The showpiece: the masterplan builds itself. A 640×640 CSS-3D baseplate (rotateX(55deg) rotateZ(-45deg), no perspective — true axonometry) sits on a concrete plinth inside a 100vh sticky viewport within a 560vh scroll section. ~21 building volumes are generated from a JS data array (x/y footprint, w/d, height, phase, Baufeld name, program) as three-face cuboids: a top face at translateZ(var(--h)) plus the two viewer-facing walls (rotateX(90deg) / rotateY(-90deg)), shaded light/medium/dark. Each block starts invisible at scaleZ(0.001) and, when its phase's scroll window opens, rises with construction-crane easing — keyframes overshooting to scaleZ(1.07), dipping to 0.985, then settling hard — staggered ~110ms per block; scrolling backwards sinks blocks again. Windows: hero headline over the empty plate fades by 9%; Phase 1 2026 (8–36%), Phase 2 2028 (36–64%), Phase 3 2031 (64–90%). Active-phase blocks glow masterplan orange (box-shadow on the top face); completed phases transition to concrete white. Streets draw themselves via pathLength=1 stroke-dashoffset transitions in a flat SVG on the plate; the green spine (62px #6E8B5E path) draws in Phase 2 with trees placed by getPointAtLength popping in staggered; the blueprint-blue Hafenbecken fades in with Phase 3. A dark HUD (orange left border) tracks PHASE/year with three progress segments and shows the hovered or tapped block's program (Wohnen · 120 WE, Kita, Hochpunkt, Quartiersgarage…); hovering lifts a settled block by translateZ(12px).
+
+Generate the model photo with Nano Banana 2 (via the Higgsfield MCP): photorealistic architectural model of the district on a milled concrete base in a bright studio, white/grey volumes, green spine, one cluster in glossy orange acrylic — palette-locked, 2K, then ffmpeg to a 1920×1080 WebP (~180KB). Present it competition-style under "Das Modell": mounted on a concrete plinth, revealed by a drafting-line sweep (clip-path inset plus a travelling orange rule), caption "Arbeitsmodell, Maßstab 1:500", lazy-loaded with real dimensions.
+
+Then: Programm with counting numbers (1.090 Wohneinheiten, 24.000 m² Gewerbe, 940 Bäume) and a scaleX-animated Nutzungsmix bar; Freiraum as inverted ink section with a self-drawing spine diagram; Zeitplan 2024→2031; Kontakt footer. Fixed "← 25" pill to the hub, footer "guide &amp; prompt →" link. prefers-reduced-motion: the masterplan renders complete and static while the HUD stays functional. Mobile: the stage rescales via a JS-set --s factor inside an overflow-clipped viewport — no horizontal scroll at 390px.</pre>
+</main>
+<footer>
+  <span>&copy; 2026 FABLE/25 &middot; SITE 48</span>
+  <span><a href="/48-quartier/">&larr; zur&uuml;ck zur Site</a></span>
+  <span><a href="/">&larr; 25</a></span>
+</footer>
+</body>
+</html>

@@ -1,0 +1,721 @@
+<!DOCTYPE html>
+<!--
+  CHANGELOG
+  PASS 1 — QUARTIER NORD: self-building isometric masterplan (CSS 3D, no perspective),
+           520vh sticky scroller with 3 phases (2026/2028/2031), crane-easing scaleZ rise,
+           self-drawing streets + green spine (pathLength dashoffset), HUD phase indicator,
+           hover program readout, model photo w/ drafting-line reveal, counters, Zeitplan.
+-->
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>QUARTIER NORD — Ein Stück Stadt, neu gedacht.</title>
+<meta name="description" content="Städtebaulicher Rahmenplan Quartier Nord: 14,2 ha, drei Bauphasen 2026–2031, 1.090 Wohneinheiten, ein grünes Rückgrat. Ein Stück Stadt, neu gedacht.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wght@500;600;700;800;900&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root{
+  --concrete:#E5E3DE;
+  --concrete-deep:#C9C6BF;
+  --ink:#1E1E1C;
+  --orange:#E85D2F;
+  --blue:#2C5F8A;
+  --green:#6E8B5E;
+  --line:rgba(30,30,28,.16);
+  --s:.9; /* iso stage scale, set by JS */
+}
+*{margin:0;padding:0;box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{
+  font-family:"IBM Plex Sans",system-ui,sans-serif;
+  background:var(--concrete);
+  color:var(--ink);
+  overflow-x:clip;
+  -webkit-font-smoothing:antialiased;
+  line-height:1.55;
+}
+::selection{background:var(--orange);color:#fff}
+a{color:inherit}
+.mono{font-family:"IBM Plex Mono",monospace}
+
+/* ---------- fixed chrome ---------- */
+.pill{
+  position:fixed;top:16px;left:16px;z-index:60;
+  font-family:"IBM Plex Mono",monospace;font-size:12px;letter-spacing:.08em;
+  background:var(--ink);color:var(--concrete);text-decoration:none;
+  padding:8px 14px;border-radius:999px;transition:background .2s,color .2s;
+}
+.pill:hover{background:var(--orange);color:#fff}
+.wordmark{
+  position:fixed;top:18px;right:18px;z-index:60;
+  font-family:"IBM Plex Mono",monospace;font-size:11px;letter-spacing:.14em;
+  color:var(--ink);text-align:right;line-height:1.5;pointer-events:none;
+}
+.wordmark b{color:var(--orange)}
+
+/* ---------- plan scroller ---------- */
+#plan{height:560vh;position:relative;background:var(--concrete)}
+.iso-viewport{
+  position:sticky;top:0;height:100vh;overflow:clip;
+  background:
+    radial-gradient(120% 90% at 50% 10%, #efede8 0%, var(--concrete) 55%, #dcd9d2 100%);
+}
+.iso-anchor{position:absolute;left:50%;top:52%;width:0;height:0}
+.iso-scale{
+  position:absolute;left:0;top:0;
+  transform:translate(-50%,-50%) scale(var(--s));
+}
+.plate{
+  width:640px;height:640px;position:relative;
+  transform:rotateX(55deg) rotateZ(-45deg);
+  transform-style:preserve-3d;
+  background:
+    repeating-linear-gradient(0deg,transparent 0 39px,rgba(30,30,28,.05) 39px 40px),
+    repeating-linear-gradient(90deg,transparent 0 39px,rgba(30,30,28,.05) 39px 40px),
+    var(--concrete-deep);
+  box-shadow:inset 0 0 0 2px rgba(30,30,28,.18);
+}
+/* plinth (model socket) */
+.plinth{position:absolute;background:#a8a49b;box-shadow:inset 0 0 0 1px rgba(30,30,28,.15)}
+.plinth.pf{left:0;top:100%;width:640px;height:30px;transform-origin:0 0;transform:translateZ(-30px) rotateX(90deg)}
+.plinth.ps{left:100%;top:0;width:30px;height:640px;transform-origin:0 0;transform:translateZ(-30px) rotateY(-90deg);background:#8f8b82}
+.plate-shadow{
+  position:absolute;left:-70px;top:-70px;width:780px;height:780px;
+  background:radial-gradient(50% 50% at 50% 50%,rgba(30,30,28,.35),rgba(30,30,28,0) 70%);
+  transform:translateZ(-31px);
+}
+/* plan drawing (streets, spine, water, labels) */
+.psvg{position:absolute;inset:0;width:640px;height:640px;transform:translateZ(1px)}
+.street{stroke-dasharray:1;stroke-dashoffset:1;transition:stroke-dashoffset 1.3s cubic-bezier(.4,0,.2,1);transition-delay:var(--sd,0s)}
+.psvg.s1 .street{stroke-dashoffset:0}
+.spine{stroke-dasharray:1;stroke-dashoffset:1;transition:stroke-dashoffset 2s cubic-bezier(.4,0,.2,1) .2s}
+.psvg.s2 .spine{stroke-dashoffset:0}
+.tree{opacity:0;transition:opacity .5s ease;transition-delay:var(--td,0s)}
+.psvg.s2 .tree{opacity:1}
+.water{opacity:0;transition:opacity 1.4s ease .4s}
+.psvg.s3 .water{opacity:1}
+.plabel{font-family:"IBM Plex Mono",monospace;font-size:11px;letter-spacing:.25em;fill:rgba(30,30,28,.5);opacity:0;transition:opacity 1s ease .8s}
+.psvg.s1 .plabel{opacity:1}
+
+/* ---------- buildings ---------- */
+.bld{
+  position:absolute;transform-style:preserve-3d;
+  transform:scaleZ(.001);opacity:0;
+  transition:transform .5s cubic-bezier(.55,0,.75,.4),opacity .3s ease;
+  --ct:#F0713F;--cf:#E85D2F;--cs:#BF4519;
+  pointer-events:auto;
+}
+.bld.up{
+  opacity:1;
+  animation:rise 1s cubic-bezier(.3,1.3,.4,1) forwards;animation-delay:var(--d,0s);
+  transition:transform .5s cubic-bezier(.55,0,.75,.4),opacity .25s ease var(--d,0s);
+}
+.bld.set{animation:none;transform:scaleZ(1)}
+.bld.set:hover{transform:scaleZ(1) translateZ(12px)}
+@keyframes rise{
+  0%{transform:scaleZ(.001)}
+  62%{transform:scaleZ(1.07)}
+  80%{transform:scaleZ(.985)}
+  100%{transform:scaleZ(1)}
+}
+.bld.ok{--ct:#F6F4EF;--cf:#DBD7CF;--cs:#BEBAB1}
+.f{position:absolute;backface-visibility:visible;transition:background .7s ease,box-shadow .7s ease;box-shadow:inset 0 0 0 1px rgba(30,30,28,.10)}
+.f.top{left:0;top:0;width:100%;height:100%;background:var(--ct);transform:translateZ(var(--h))}
+.bld:not(.ok) .f.top{box-shadow:inset 0 0 0 1px rgba(30,30,28,.10),0 0 30px 8px rgba(232,93,47,.5)}
+.f.fw{left:0;top:100%;width:100%;height:var(--h);background:var(--cf);transform-origin:0 0;transform:rotateX(90deg)}
+.f.sw{left:100%;top:0;width:var(--h);height:100%;background:var(--cs);transform-origin:0 0;transform:rotateY(-90deg)}
+
+/* ---------- hero overlay ---------- */
+.hero-ov{
+  position:absolute;inset:0;z-index:5;pointer-events:none;
+  display:flex;flex-direction:column;justify-content:flex-start;align-items:flex-start;
+  padding:clamp(84px,14vh,140px) clamp(20px,6vw,84px) 0;
+}
+.hero-kicker{font-family:"IBM Plex Mono",monospace;font-size:clamp(10px,1.3vw,13px);letter-spacing:.28em;color:var(--blue);margin-bottom:18px}
+h1{
+  font-family:"Archivo",sans-serif;font-weight:900;
+  font-size:clamp(46px,9.5vw,124px);line-height:.92;letter-spacing:-.015em;
+  text-transform:uppercase;
+}
+h1 .qn2{color:var(--orange)}
+.hero-sub{
+  margin-top:22px;font-family:"Archivo",sans-serif;font-weight:600;
+  font-size:clamp(17px,2.4vw,26px);letter-spacing:.01em;
+}
+.hero-meta{
+  margin-top:14px;font-family:"IBM Plex Mono",monospace;
+  font-size:clamp(10px,1.2vw,12px);letter-spacing:.12em;color:rgba(30,30,28,.6);
+}
+.hero-cue{
+  position:absolute;bottom:26px;left:50%;transform:translateX(-50%);
+  font-family:"IBM Plex Mono",monospace;font-size:11px;letter-spacing:.2em;color:rgba(30,30,28,.55);
+  white-space:nowrap;animation:cue 2.2s ease-in-out infinite;
+}
+@keyframes cue{0%,100%{transform:translate(-50%,0)}50%{transform:translate(-50%,7px)}}
+
+/* ---------- HUD ---------- */
+.hud{
+  position:absolute;left:clamp(16px,4vw,48px);bottom:clamp(16px,4vh,40px);z-index:6;
+  background:rgba(30,30,28,.92);color:var(--concrete);
+  padding:14px 18px 16px;min-width:250px;max-width:86vw;
+  border-left:3px solid var(--orange);
+  opacity:0;transform:translateY(12px);transition:opacity .5s ease,transform .5s ease;
+}
+.hud.show{opacity:1;transform:none}
+.hud-top{display:flex;justify-content:space-between;align-items:baseline;gap:18px}
+.hud-phase{font-family:"Archivo",sans-serif;font-weight:800;font-size:17px;letter-spacing:.04em;text-transform:uppercase}
+.hud-year{font-family:"IBM Plex Mono",monospace;font-size:13px;color:var(--orange)}
+.hud-bar{display:flex;gap:5px;margin:11px 0 10px}
+.hud-seg{flex:1;height:4px;background:rgba(229,227,222,.22);position:relative;overflow:hidden}
+.hud-seg i{position:absolute;left:0;top:0;bottom:0;width:0;background:var(--orange)}
+.hud-seg.full i{background:#8f8b82}
+.hud-info{font-family:"IBM Plex Mono",monospace;font-size:11px;letter-spacing:.04em;color:rgba(229,227,222,.75);min-height:16px}
+.hud-info b{color:#fff;font-weight:500}
+
+/* ---------- sections ---------- */
+section.block{padding:clamp(80px,12vh,150px) clamp(20px,6vw,84px);max-width:1240px;margin:0 auto}
+.kicker{font-family:"IBM Plex Mono",monospace;font-size:12px;letter-spacing:.28em;color:var(--blue);margin-bottom:16px}
+h2{
+  font-family:"Archivo",sans-serif;font-weight:800;text-transform:uppercase;
+  font-size:clamp(30px,5vw,58px);line-height:1;letter-spacing:-.01em;margin-bottom:26px;
+}
+.lede{max-width:62ch;font-size:clamp(15px,1.6vw,18px);color:rgba(30,30,28,.82)}
+.rule{border:0;border-top:1px solid var(--line);margin:0 clamp(20px,6vw,84px)}
+.reveal{opacity:0;transform:translateY(26px);transition:opacity .8s ease,transform .8s ease}
+.reveal.in{opacity:1;transform:none}
+
+/* Das Modell */
+#modell{background:var(--concrete-deep);max-width:none}
+.modell-inner{max-width:1240px;margin:0 auto}
+.model-mount{
+  position:relative;margin-top:46px;background:#b3afa6;padding:clamp(10px,2vw,22px);
+  box-shadow:0 30px 60px -20px rgba(30,30,28,.45),inset 0 0 0 1px rgba(30,30,28,.2);
+}
+.model-clip{position:relative;overflow:hidden}
+.model-clip img{display:block;width:100%;height:auto;clip-path:inset(0 100% 0 0)}
+.model-clip.swept img{clip-path:inset(0 0 0 0);transition:clip-path 1.6s cubic-bezier(.6,0,.2,1)}
+.sweep-line{position:absolute;top:0;bottom:0;left:0;width:2px;background:var(--orange);opacity:0;box-shadow:0 0 14px rgba(232,93,47,.8)}
+.model-clip.swept .sweep-line{opacity:1;animation:sweep 1.6s cubic-bezier(.6,0,.2,1) forwards}
+@keyframes sweep{from{left:0}to{left:100%;opacity:0}}
+figcaption{
+  display:flex;flex-wrap:wrap;gap:6px 26px;justify-content:space-between;
+  margin-top:14px;font-family:"IBM Plex Mono",monospace;font-size:11px;letter-spacing:.1em;color:rgba(30,30,28,.65);
+}
+figcaption b{color:var(--ink);font-weight:500}
+
+/* Programm */
+.stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:1px;background:var(--line);border:1px solid var(--line);margin-top:46px}
+.stat{background:var(--concrete);padding:26px 24px 22px}
+.stat .num{font-family:"Archivo",sans-serif;font-weight:900;font-size:clamp(34px,4.4vw,54px);line-height:1;letter-spacing:-.01em}
+.stat .num em{font-style:normal;color:var(--orange);font-size:.42em;letter-spacing:0}
+.stat .lbl{font-family:"IBM Plex Mono",monospace;font-size:11px;letter-spacing:.16em;margin-top:8px;color:rgba(30,30,28,.6);text-transform:uppercase}
+.mix{margin-top:56px}
+.mix h3{font-family:"Archivo",sans-serif;font-weight:800;text-transform:uppercase;font-size:15px;letter-spacing:.06em;margin-bottom:14px}
+.mixbar{display:flex;height:44px;border:1px solid var(--ink);overflow:hidden}
+.mixbar span{display:block;height:100%;transform-origin:left;transform:scaleX(0);transition:transform 1s cubic-bezier(.4,0,.2,1)}
+.mix.in .mixbar span{transform:scaleX(1)}
+.mixbar .m1{background:var(--orange)}
+.mixbar .m2{background:var(--blue)}
+.mixbar .m3{background:var(--ink)}
+.mixbar .m4{background:var(--green)}
+.mixleg{display:flex;flex-wrap:wrap;gap:8px 24px;margin-top:12px;font-family:"IBM Plex Mono",monospace;font-size:11px;letter-spacing:.08em;color:rgba(30,30,28,.7)}
+.mixleg i{display:inline-block;width:10px;height:10px;margin-right:7px;vertical-align:-1px}
+
+/* Freiraum */
+#freiraum{background:var(--ink);color:var(--concrete);max-width:none}
+#freiraum .fr-inner{max-width:1240px;margin:0 auto;display:grid;grid-template-columns:1.1fr .9fr;gap:clamp(30px,6vw,80px);align-items:center}
+#freiraum .kicker{color:var(--green)}
+#freiraum h2{color:var(--concrete)}
+#freiraum .lede{color:rgba(229,227,222,.8)}
+.fr-list{margin-top:30px;display:grid;gap:0;border-top:1px solid rgba(229,227,222,.18)}
+.fr-list li{list-style:none;display:flex;gap:18px;padding:15px 0;border-bottom:1px solid rgba(229,227,222,.18);font-size:15px;color:rgba(229,227,222,.85)}
+.fr-list .no{font-family:"IBM Plex Mono",monospace;font-size:11px;color:var(--green);letter-spacing:.1em;padding-top:4px;min-width:34px}
+.frsvg{width:100%;height:auto;display:block}
+.frpath{stroke-dasharray:1;stroke-dashoffset:1;transition:stroke-dashoffset 2.2s cubic-bezier(.4,0,.2,1)}
+.frwrap.in .frpath{stroke-dashoffset:0}
+.frdot{opacity:0;transition:opacity .5s ease;transition-delay:var(--td,0s)}
+.frwrap.in .frdot{opacity:1}
+
+/* Zeitplan */
+.timeline{margin-top:46px;border-top:2px solid var(--ink)}
+.trow{display:grid;grid-template-columns:130px 1fr;gap:20px;padding:20px 0;border-bottom:1px solid var(--line);align-items:baseline}
+.trow .ty{font-family:"Archivo",sans-serif;font-weight:800;font-size:clamp(19px,2.4vw,26px)}
+.trow.hot .ty{color:var(--orange)}
+.trow .tt{font-size:15px;color:rgba(30,30,28,.85)}
+.trow .tt small{display:block;font-family:"IBM Plex Mono",monospace;font-size:11px;letter-spacing:.12em;color:rgba(30,30,28,.5);margin-top:3px}
+
+/* footer */
+footer{background:var(--ink);color:var(--concrete);padding:clamp(60px,9vh,100px) clamp(20px,6vw,84px) 40px}
+.foot-grid{max-width:1240px;margin:0 auto;display:grid;grid-template-columns:1fr 1fr;gap:40px}
+footer h2{color:var(--concrete);font-size:clamp(26px,4vw,44px)}
+.foot-addr{font-family:"IBM Plex Mono",monospace;font-size:12px;letter-spacing:.06em;line-height:2;color:rgba(229,227,222,.75)}
+.foot-addr a{color:var(--concrete);text-decoration-color:var(--orange)}
+.foot-bottom{
+  max-width:1240px;margin:60px auto 0;padding-top:20px;border-top:1px solid rgba(229,227,222,.18);
+  display:flex;flex-wrap:wrap;gap:10px 30px;justify-content:space-between;
+  font-family:"IBM Plex Mono",monospace;font-size:11px;letter-spacing:.1em;color:rgba(229,227,222,.55);
+}
+.foot-bottom a{color:var(--concrete);text-decoration:none;border-bottom:1px solid var(--orange)}
+.foot-bottom a:hover{color:var(--orange)}
+
+@media (max-width:820px){
+  #freiraum .fr-inner{grid-template-columns:1fr}
+  .foot-grid{grid-template-columns:1fr}
+  .trow{grid-template-columns:84px 1fr}
+  .hud{min-width:0;right:16px}
+  .wordmark{display:none}
+}
+@media (prefers-reduced-motion:reduce){
+  html{scroll-behavior:auto}
+  .bld,.bld.up{animation:none!important;transform:scaleZ(1)!important;transition:none!important;opacity:1!important}
+  .street,.spine{stroke-dashoffset:0!important;transition:none!important}
+  .tree,.water,.plabel{opacity:1!important;transition:none!important}
+  .hero-cue{animation:none}
+  .reveal{opacity:1;transform:none;transition:none}
+  .model-clip img{clip-path:none!important;transition:none!important}
+  .sweep-line{display:none}
+  .mixbar span{transform:scaleX(1)!important;transition:none!important}
+  .f{transition:none!important}
+}
+</style>
+</head>
+<body>
+
+<a class="pill" href="/">&larr; 25</a>
+<div class="wordmark">QUARTIER <b>NORD</b><br>RAHMENPLAN 02 &middot; M 1:500</div>
+
+<!-- ============ DER PLAN (sticky scroller) ============ -->
+<section id="plan" aria-label="Der Plan — das Quartier baut sich auf">
+  <div class="iso-viewport">
+    <div class="iso-anchor"><div class="iso-scale">
+      <div class="plate" id="plate">
+        <div class="plate-shadow"></div>
+        <div class="plinth pf"></div>
+        <div class="plinth ps"></div>
+        <svg class="psvg" id="psvg" viewBox="0 0 640 640" aria-hidden="true">
+          <!-- water / Hafenbecken -->
+          <path class="water" d="M640,0 L640,640 L600,640 C612,520 596,380 608,240 C616,140 606,60 612,0 Z" fill="#2C5F8A" opacity="0"></path>
+          <path class="water" d="M612,0 C606,60 616,140 608,240 C596,380 612,520 600,640" fill="none" stroke="#c98d5f" stroke-width="4" opacity="0"></path>
+          <!-- streets -->
+          <g fill="none" stroke="#b7b3aa" stroke-width="20">
+            <path class="street" pathLength="1" style="--sd:0s"   d="M155,0 L155,640"></path>
+            <path class="street" pathLength="1" style="--sd:.15s" d="M480,0 L480,640"></path>
+            <path class="street" pathLength="1" style="--sd:.3s"  d="M0,160 L640,160"></path>
+            <path class="street" pathLength="1" style="--sd:.45s" d="M0,340 L640,340"></path>
+            <path class="street" pathLength="1" style="--sd:.6s"  d="M0,510 L640,510"></path>
+          </g>
+          <g fill="none" stroke="#f2f0eb" stroke-width="1.6" stroke-dasharray="1" opacity=".8">
+            <path class="street" pathLength="1" style="--sd:.5s"  d="M155,0 L155,640" stroke-dasharray="1" ></path>
+            <path class="street" pathLength="1" style="--sd:.65s" d="M0,340 L640,340"></path>
+          </g>
+          <!-- green spine -->
+          <path class="spine" id="spinePath" pathLength="1" d="M340,-14 C306,120 376,230 336,330 C300,420 372,520 338,656" fill="none" stroke="#6E8B5E" stroke-width="62" stroke-linecap="round"></path>
+          <path class="spine" pathLength="1" d="M340,-14 C306,120 376,230 336,330 C300,420 372,520 338,656" fill="none" stroke="#E5E3DE" stroke-width="2.5" opacity=".7"></path>
+          <g id="trees"></g>
+          <!-- flat plan labels -->
+          <text class="plabel" x="322" y="332" text-anchor="middle" transform="rotate(97 322 332)">GRÜNZUG</text>
+          <text class="plabel" x="622" y="330" text-anchor="middle" transform="rotate(94 622 330)">HAFENBECKEN</text>
+          <text class="plabel" x="320" y="628" text-anchor="middle" letter-spacing="6">QUARTIER NORD · 14,2 HA</text>
+        </svg>
+        <!-- buildings injected by JS -->
+      </div>
+    </div></div>
+
+    <div class="hero-ov" id="heroOv">
+      <div class="hero-kicker">STÄDTEBAULICHER RAHMENPLAN &middot; WETTBEWERB 1. PREIS</div>
+      <h1>Quartier<br><span class="qn2">Nord</span></h1>
+      <p class="hero-sub">Ein Stück Stadt, neu gedacht.</p>
+      <p class="hero-meta">14,2 HA &middot; DREI BAUPHASEN 2026&ndash;2031 &middot; NORDDEUTSCHE HAFENKANTE</p>
+      <div class="hero-cue">SCROLLEN, UM ZU BAUEN &darr;</div>
+    </div>
+
+    <div class="hud" id="hud" aria-live="polite">
+      <div class="hud-top">
+        <span class="hud-phase" id="hudPhase">Phase 1</span>
+        <span class="hud-year" id="hudYear">2026</span>
+      </div>
+      <div class="hud-bar">
+        <div class="hud-seg" id="seg0"><i></i></div>
+        <div class="hud-seg" id="seg1"><i></i></div>
+        <div class="hud-seg" id="seg2"><i></i></div>
+      </div>
+      <div class="hud-info" id="hudInfo">Baufeld ber&uuml;hren f&uuml;r Programm</div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ DAS MODELL ============ -->
+<section class="block" id="modell">
+  <div class="modell-inner">
+    <div class="reveal">
+      <div class="kicker">02 &mdash; DAS MODELL</div>
+      <h2>Ein Quartier zum Anfassen</h2>
+      <p class="lede">Das Arbeitsmodell zeigt den Rahmenplan im Ma&szlig;stab 1:500 &mdash; Blockr&auml;nder in Wei&szlig;, der Gr&uuml;nzug als durchlaufendes R&uuml;ckgrat, die Baufelder der dritten Phase an der Hafenkante in Orange abgesetzt. Was im Modell greifbar ist, bleibt im Plan verbindlich: klare Kanten, gemischte H&ouml;fe, kurze Wege.</p>
+    </div>
+    <figure class="reveal">
+      <div class="model-mount">
+        <div class="model-clip" id="modelClip">
+          <img src="assets/model.webp" alt="Architekturmodell des Quartiers Nord im Maßstab 1:500, weiße Baukörper mit grünem Grünzug, Phase 3 in Orange hervorgehoben" width="1920" height="1080" loading="lazy" decoding="async">
+          <div class="sweep-line"></div>
+        </div>
+      </div>
+      <figcaption>
+        <span><b>Abb. 01</b> &mdash; Arbeitsmodell, Ma&szlig;stab 1:500</span>
+        <span>Baufelder Phase 3 hervorgehoben</span>
+        <span>Sockel: Sichtbeton, gefr&auml;st</span>
+      </figcaption>
+    </figure>
+  </div>
+</section>
+
+<!-- ============ PROGRAMM ============ -->
+<section class="block" id="programm">
+  <div class="reveal">
+    <div class="kicker">03 &mdash; PROGRAMM</div>
+    <h2>Dichte, die tr&auml;gt</h2>
+    <p class="lede">Kein Monolith, sondern Mischung: Wohnen &uuml;ber belebten Erdgeschossen, Arbeit an der Hafenkante, Kita und Grundschule im Quartier &mdash; und ein Freiraum, der nicht Restfl&auml;che ist, sondern Adresse.</p>
+  </div>
+  <div class="stats reveal" id="stats">
+    <div class="stat"><div class="num"><span data-count="1090">0</span></div><div class="lbl">Wohneinheiten</div></div>
+    <div class="stat"><div class="num"><span data-count="24000">0</span><em>&nbsp;m&sup2;</em></div><div class="lbl">Gewerbe &amp; B&uuml;ro</div></div>
+    <div class="stat"><div class="num"><span data-count="940">0</span></div><div class="lbl">Neue B&auml;ume</div></div>
+    <div class="stat"><div class="num"><span data-count="180">0</span></div><div class="lbl">Kita- &amp; Schulpl&auml;tze</div></div>
+  </div>
+  <div class="mix reveal" id="mix">
+    <h3>Nutzungsmix nach Geschossfl&auml;che</h3>
+    <div class="mixbar" role="img" aria-label="Nutzungsmix: 58 Prozent Wohnen, 22 Prozent Gewerbe und Büro, 8 Prozent Soziales, 12 Prozent Sondernutzung und Kultur">
+      <span class="m1" style="width:58%;transition-delay:.1s"></span>
+      <span class="m2" style="width:22%;transition-delay:.35s"></span>
+      <span class="m3" style="width:8%;transition-delay:.55s"></span>
+      <span class="m4" style="width:12%;transition-delay:.7s"></span>
+    </div>
+    <div class="mixleg">
+      <span><i style="background:var(--orange)"></i>Wohnen 58&thinsp;%</span>
+      <span><i style="background:var(--blue)"></i>Gewerbe/B&uuml;ro 22&thinsp;%</span>
+      <span><i style="background:var(--ink)"></i>Soziales 8&thinsp;%</span>
+      <span><i style="background:var(--green)"></i>Kultur/Sonder 12&thinsp;%</span>
+    </div>
+  </div>
+</section>
+
+<hr class="rule">
+
+<!-- ============ FREIRAUM ============ -->
+<section class="block" id="freiraum">
+  <div class="fr-inner">
+    <div class="reveal">
+      <div class="kicker">04 &mdash; FREIRAUM</div>
+      <h2>Das gr&uuml;ne R&uuml;ckgrat</h2>
+      <p class="lede">Ein 60 Meter breiter Gr&uuml;nzug durchzieht das Quartier von Nord nach S&uuml;d &mdash; kein Park am Rand, sondern die Mitte selbst. Er verbindet Kita, Schule und Hafenkante, nimmt Starkregen auf und k&uuml;hlt die Bl&ouml;cke im Sommer.</p>
+      <ul class="fr-list">
+        <li><span class="no">4,6&nbsp;ha</span><span>&ouml;ffentlicher Freiraum, davon 1,8 ha Retentionsfl&auml;chen f&uuml;r Starkregenereignisse</span></li>
+        <li><span class="no">940</span><span>Neupflanzungen &mdash; klimaresiliente Arten, Baumrasen statt Baumscheibe</span></li>
+        <li><span class="no">1,4&nbsp;km</span><span>Spiel- und Bewegungsband entlang des Gr&uuml;nzugs, autofrei von Kante zu Kante</span></li>
+        <li><span class="no">&minus;4&deg;C</span><span>modellierte sommerliche Abk&uuml;hlung gegen&uuml;ber dem Bestandsquartier</span></li>
+      </ul>
+    </div>
+    <div class="frwrap reveal" id="frwrap">
+      <svg class="frsvg" viewBox="0 0 400 520" aria-hidden="true">
+        <rect x="1" y="1" width="398" height="518" fill="none" stroke="rgba(229,227,222,.25)" stroke-width="1"></rect>
+        <g fill="none" stroke="rgba(229,227,222,.14)" stroke-width="1">
+          <path d="M100,0 L100,520"></path><path d="M300,0 L300,520"></path>
+          <path d="M0,130 L400,130"></path><path d="M0,260 L400,260"></path><path d="M0,390 L400,390"></path>
+        </g>
+        <path class="frpath" pathLength="1" d="M200,-10 C170,90 235,170 195,260 C160,340 235,430 198,530" fill="none" stroke="#6E8B5E" stroke-width="44" stroke-linecap="round" opacity=".9"></path>
+        <path class="frpath" pathLength="1" d="M200,-10 C170,90 235,170 195,260 C160,340 235,430 198,530" fill="none" stroke="#E5E3DE" stroke-width="1.6" opacity=".7"></path>
+        <g id="frdots"></g>
+        <text x="16" y="30" fill="rgba(229,227,222,.5)" font-family="IBM Plex Mono,monospace" font-size="10" letter-spacing="3">SCHNITT GRÜNZUG · N—S</text>
+        <text x="16" y="504" fill="#6E8B5E" font-family="IBM Plex Mono,monospace" font-size="10" letter-spacing="3">RETENTION + SPIELBAND</text>
+      </svg>
+    </div>
+  </div>
+</section>
+
+<!-- ============ ZEITPLAN ============ -->
+<section class="block" id="zeitplan">
+  <div class="reveal">
+    <div class="kicker">05 &mdash; ZEITPLAN</div>
+    <h2>Von der Kante zum Quartier</h2>
+  </div>
+  <div class="timeline reveal">
+    <div class="trow"><span class="ty">2024</span><span class="tt">St&auml;dtebaulicher Wettbewerb, 1. Preis<small>ENTSCHEID Q3 &middot; 27 ARBEITEN</small></span></div>
+    <div class="trow"><span class="ty">2025</span><span class="tt">Bebauungsplan &mdash; Satzungsbeschluss<small>B-PLAN 214 &laquo;QUARTIER NORD&raquo;</small></span></div>
+    <div class="trow hot"><span class="ty">2026</span><span class="tt">Baubeginn Phase 1 &mdash; Baufelder A1&ndash;A8, Kita, Nahversorgung<small>486 WE &middot; FERTIGSTELLUNG 2028</small></span></div>
+    <div class="trow hot"><span class="ty">2028</span><span class="tt">Phase 2 &mdash; Nordband mit Hochpunkt, Grundschule, Quartiersgarage<small>480 WE &middot; MOBILITY-HUB 420 STELLPL&Auml;TZE</small></span></div>
+    <div class="trow"><span class="ty">2029</span><span class="tt">Er&ouml;ffnung Gr&uuml;nzug, erster Abschnitt<small>RETENTION IN BETRIEB</small></span></div>
+    <div class="trow hot"><span class="ty">2031</span><span class="tt">Phase 3 &mdash; Hafenkante: Wohnen, Hotel, Kultur<small>FERTIGSTELLUNG GESAMTQUARTIER</small></span></div>
+  </div>
+</section>
+
+<!-- ============ KONTAKT / FOOTER ============ -->
+<footer id="kontakt">
+  <div class="foot-grid">
+    <div>
+      <div class="kicker" style="color:var(--orange)">06 &mdash; KONTAKT</div>
+      <h2>Bauen Sie mit.</h2>
+      <p style="max-width:46ch;color:rgba(229,227,222,.75);font-size:15px">Verkaufsstart der Baufelder Phase 1 ab Q2 2026. Interessenbekundungen f&uuml;r Gewerbefl&auml;chen und Baugemeinschaften ab sofort.</p>
+    </div>
+    <div class="foot-addr">
+      PROJEKTGESELLSCHAFT QUARTIER NORD mbH<br>
+      Am Alten Hafen 12 &middot; 28217 Bremen<br>
+      T +49 421 40 41 42-0<br>
+      <a href="mailto:kontakt@quartier-nord.example">kontakt@quartier-nord.example</a><br><br>
+      Ein fiktives Projekt &mdash; FABLE/25, Site 48.
+    </div>
+  </div>
+  <div class="foot-bottom">
+    <span>&copy; 2026 QUARTIER NORD &middot; RAHMENPLAN 02</span>
+    <span><a href="/48-quartier/guide/">guide &amp; prompt &rarr;</a></span>
+  </div>
+</footer>
+
+<script>
+(function(){
+"use strict";
+var RM = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+/* ---------- district data: x,y footprint / w,d / h / phase / name / program ---------- */
+var B = [
+  /* Phase 1 — 2026 · center & west */
+  {x:30, y:175,w:110,d:70, h:44, p:1,n:"A1",i:"Wohnen · 86 WE"},
+  {x:30, y:255,w:110,d:70, h:52, p:1,n:"A2",i:"Wohnen · 94 WE"},
+  {x:175,y:175,w:125,d:150,h:58, p:1,n:"A3",i:"Blockrand Wohnen · 132 WE"},
+  {x:30, y:355,w:110,d:85, h:22, p:1,n:"A4",i:"Kita · 100 Plätze"},
+  {x:30, y:450,w:110,d:45, h:40, p:1,n:"A5",i:"Wohnen · 40 WE"},
+  {x:175,y:355,w:125,d:140,h:48, p:1,n:"A6",i:"Wohnen + Gewerbe EG · 96 WE"},
+  {x:175,y:525,w:125,d:88, h:64, p:1,n:"A7",i:"Büro · 7.800 m² BGF"},
+  {x:30, y:525,w:110,d:88, h:28, p:1,n:"A8",i:"Nahversorgung · 2.400 m²"},
+  /* Phase 2 — 2028 · north band + school + garage */
+  {x:30, y:30, w:110,d:115,h:46, p:2,n:"B1",i:"Wohnen · 74 WE"},
+  {x:175,y:30, w:125,d:115,h:54, p:2,n:"B2",i:"Wohnen · 108 WE"},
+  {x:392,y:36, w:64, d:72, h:118,p:2,n:"B3",i:"Hochpunkt Wohnen · 140 WE"},
+  {x:498,y:30, w:94, d:115,h:50, p:2,n:"B4",i:"Wohnen · 92 WE"},
+  {x:385,y:175,w:80, d:150,h:26, p:2,n:"B5",i:"Grundschule · 3-zügig"},
+  {x:385,y:355,w:80, d:140,h:48, p:2,n:"B6",i:"Wohnen · 66 WE"},
+  {x:385,y:525,w:80, d:88, h:34, p:2,n:"B7",i:"Quartiersgarage · 420 Stellplätze"},
+  /* Phase 3 — 2031 · Hafenkante east */
+  {x:498,y:175,w:92, d:70, h:72, p:3,n:"C1",i:"Wohnen · 104 WE"},
+  {x:498,y:255,w:92, d:70, h:88, p:3,n:"C2",i:"Büro · 9.200 m² BGF"},
+  {x:498,y:355,w:48, d:140,h:64, p:3,n:"C3",i:"Wohnen · 58 WE"},
+  {x:554,y:355,w:40, d:140,h:96, p:3,n:"C4",i:"Hotel · 160 Zimmer"},
+  {x:498,y:525,w:92, d:88, h:56, p:3,n:"C5",i:"Gewerbe & Kultur · 4.600 m²"},
+  {x:314,y:432,w:48, d:40, h:14, p:3,n:"P1",i:"Quartierspavillon im Grünzug"}
+];
+
+var plate = document.getElementById("plate");
+var counts = [0,0,0];
+B.forEach(function(b){
+  var el = document.createElement("div");
+  el.className = "bld";
+  el.setAttribute("data-p", b.p);
+  el.setAttribute("data-n", b.n);
+  el.setAttribute("data-i", b.i);
+  el.setAttribute("tabindex", "-1");
+  el.style.cssText = "left:"+b.x+"px;top:"+b.y+"px;width:"+b.w+"px;height:"+b.d+"px;--h:"+b.h+"px;--d:"+(counts[b.p-1]++*0.11).toFixed(2)+"s";
+  el.innerHTML = '<div class="f top"></div><div class="f fw"></div><div class="f sw"></div>';
+  plate.appendChild(el);
+});
+plate.addEventListener("animationend", function(e){
+  var t = e.target;
+  if (t.classList && t.classList.contains("bld")) t.classList.add("set");
+});
+
+/* ---------- trees along spine + streets ---------- */
+var spine = document.getElementById("spinePath");
+var treeG = document.getElementById("trees");
+var svgNS = "http://www.w3.org/2000/svg";
+try{
+  var L = spine.getTotalLength();
+  for (var i = 0; i < 26; i++){
+    var pt = spine.getPointAtLength(L*(i+0.5)/26);
+    var side = (i%2 ? 1 : -1);
+    var c = document.createElementNS(svgNS,"circle");
+    c.setAttribute("cx", (pt.x + side*38).toFixed(1));
+    c.setAttribute("cy", pt.y.toFixed(1));
+    c.setAttribute("r", 4.2);
+    c.setAttribute("fill", "#5E7A50");
+    c.setAttribute("class","tree");
+    c.style.setProperty("--td",(0.6+i*0.05).toFixed(2)+"s");
+    treeG.appendChild(c);
+  }
+}catch(err){/* SVG geometry unavailable — trees skipped */}
+
+/* dots for the Freiraum diagram */
+var frd = document.getElementById("frdots");
+for (var j = 0; j < 14; j++){
+  var d2 = document.createElementNS(svgNS,"circle");
+  d2.setAttribute("cx", 200 + (j%2?1:-1)*34 + (j%3)*4);
+  d2.setAttribute("cy", 30 + j*34);
+  d2.setAttribute("r", 3);
+  d2.setAttribute("fill", "#8FA97E");
+  d2.setAttribute("class","frdot");
+  d2.style.setProperty("--td",(0.8+j*0.07).toFixed(2)+"s");
+  frd.appendChild(d2);
+}
+
+/* ---------- responsive stage scale ---------- */
+function fit(){
+  var vw = window.innerWidth, vh = window.innerHeight;
+  var s = Math.min(vw/945, (vh-170)/720, 1);
+  s = Math.max(s, 0.30);
+  document.documentElement.style.setProperty("--s", s.toFixed(3));
+}
+fit();
+window.addEventListener("resize", fit);
+
+/* ---------- scroll choreography ---------- */
+var planEl  = document.getElementById("plan");
+var heroOv  = document.getElementById("heroOv");
+var psvg    = document.getElementById("psvg");
+var hud     = document.getElementById("hud");
+var hudPhase= document.getElementById("hudPhase");
+var hudYear = document.getElementById("hudYear");
+var segs    = [document.getElementById("seg0"),document.getElementById("seg1"),document.getElementById("seg2")];
+var blds    = Array.prototype.slice.call(plate.querySelectorAll(".bld"));
+var PH = [
+  {a:0.08, b:0.36, y:"2026", t:"Phase 1", s:"s1"},
+  {a:0.36, b:0.64, y:"2028", t:"Phase 2", s:"s2"},
+  {a:0.64, b:0.90, y:"2031", t:"Phase 3", s:"s3"}
+];
+var clamp = function(v){ return v<0?0:(v>1?1:v); };
+var lastInfoDefault = "Baufeld berühren für Programm";
+var hudInfo = document.getElementById("hudInfo");
+
+if (RM){
+  blds.forEach(function(el){ el.classList.add("up","set"); });
+  psvg.classList.add("s1","s2","s3");
+}
+
+var ticking = false;
+function onScroll(){
+  if (ticking) return;
+  ticking = true;
+  requestAnimationFrame(update);
+}
+function update(){
+  ticking = false;
+  var vh = window.innerHeight;
+  var rect = planEl.getBoundingClientRect();
+  var total = planEl.offsetHeight - vh;
+  var p = clamp((-rect.top) / (total || 1));
+
+  /* hero fade */
+  var hf = clamp(1 - p/0.09);
+  heroOv.style.opacity = hf;
+  heroOv.style.transform = "translateY(" + (RM?0:(-(1-hf)*40).toFixed(1)) + "px)";
+  heroOv.style.visibility = hf <= 0.01 ? "hidden" : "visible";
+
+  /* HUD visibility */
+  hud.classList.toggle("show", p > 0.05 && rect.bottom > vh*0.6);
+
+  var activeIdx = -1, allDone = p >= PH[2].b;
+  PH.forEach(function(ph, i){
+    var started = p >= ph.a, done = p >= ph.b;
+    var f = clamp((p - ph.a)/(ph.b - ph.a));
+    segs[i].firstElementChild.style.width = (f*100).toFixed(1) + "%";
+    segs[i].classList.toggle("full", done);
+    if (started && !done) activeIdx = i;
+    /* svg layers */
+    if (!RM) psvg.classList.toggle(ph.s, started);
+  });
+
+  blds.forEach(function(el){
+    var ph = PH[el.getAttribute("data-p")-1];
+    var started = p >= ph.a, done = p >= ph.b;
+    if (!RM){
+      if (started){ el.classList.add("up"); }
+      else { el.classList.remove("up","set"); }
+    }
+    el.classList.toggle("ok", done);
+  });
+
+  if (allDone){
+    hudPhase.textContent = "Gesamtquartier";
+    hudYear.textContent = "2031 ✓";
+  } else if (activeIdx >= 0){
+    hudPhase.textContent = PH[activeIdx].t;
+    hudYear.textContent = PH[activeIdx].y;
+  } else if (p < PH[0].a){
+    hudPhase.textContent = "Baufeld frei";
+    hudYear.textContent = "2025";
+  } else {
+    /* between phases (shouldn't happen with contiguous windows) */
+    hudPhase.textContent = "Phase " + (activeIdx+1);
+  }
+}
+window.addEventListener("scroll", onScroll, {passive:true});
+update();
+
+/* ---------- hover / tap program readout ---------- */
+function showInfo(el){
+  hudInfo.innerHTML = "<b>" + el.getAttribute("data-n") + "</b> · " + el.getAttribute("data-i") +
+    " · Phase " + el.getAttribute("data-p");
+}
+plate.addEventListener("pointerover", function(e){
+  var el = e.target.closest ? e.target.closest(".bld") : null;
+  if (el) showInfo(el);
+});
+plate.addEventListener("pointerout", function(e){
+  var el = e.target.closest ? e.target.closest(".bld") : null;
+  if (el) hudInfo.textContent = lastInfoDefault;
+});
+plate.addEventListener("click", function(e){
+  var el = e.target.closest ? e.target.closest(".bld") : null;
+  if (el) showInfo(el);
+});
+
+/* ---------- section reveals ---------- */
+var io = new IntersectionObserver(function(entries){
+  entries.forEach(function(en){
+    if (en.isIntersecting){ en.target.classList.add("in"); io.unobserve(en.target); }
+  });
+},{threshold:0.18});
+document.querySelectorAll(".reveal").forEach(function(el){ io.observe(el); });
+
+/* model sweep */
+var mc = document.getElementById("modelClip");
+var ioM = new IntersectionObserver(function(entries){
+  entries.forEach(function(en){
+    if (en.isIntersecting){ mc.classList.add("swept"); ioM.disconnect(); }
+  });
+},{threshold:0.35});
+ioM.observe(mc);
+
+/* freiraum draw + mix bars share .in via .reveal — frwrap & mix need their own class */
+["frwrap","mix"].forEach(function(id){
+  var el = document.getElementById(id);
+  var o = new IntersectionObserver(function(es){
+    es.forEach(function(en){ if (en.isIntersecting){ el.classList.add("in"); o.disconnect(); } });
+  },{threshold:0.3});
+  o.observe(el);
+});
+
+/* ---------- counters ---------- */
+function runCounter(sp){
+  var target = parseInt(sp.getAttribute("data-count"),10);
+  if (RM){ sp.textContent = target.toLocaleString("de-DE"); return; }
+  var t0 = null, dur = 1600;
+  function step(ts){
+    if (!t0) t0 = ts;
+    var k = clamp((ts - t0)/dur);
+    k = 1 - Math.pow(1-k, 3);
+    sp.textContent = Math.round(target*k).toLocaleString("de-DE");
+    if (k < 1) requestAnimationFrame(step);
+  }
+  requestAnimationFrame(step);
+}
+var ioC = new IntersectionObserver(function(entries){
+  entries.forEach(function(en){
+    if (en.isIntersecting){
+      en.target.querySelectorAll("[data-count]").forEach(runCounter);
+      ioC.disconnect();
+    }
+  });
+},{threshold:0.4});
+ioC.observe(document.getElementById("stats"));
+})();
+</script>
+</body>
+</html>

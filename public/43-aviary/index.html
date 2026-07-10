@@ -1,0 +1,997 @@
+<!DOCTYPE html>
+<!--
+  AVIARY — The sky, scheduled. · FABLE/25 site 43
+  CHANGELOG
+  PASS 1: full build — living dispatch canvas map (ambient flights), scroll-scrubbed
+          single-delivery journey with pinned checkpoints, aircraft callouts over
+          drone.webp, network counters, zones + waitlist footer. Reduced-motion
+          static composition, DPR cap 2, canvas pauses offscreen/hidden tab.
+-->
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AVIARY — The sky, scheduled.</title>
+<meta name="description" content="AVIARY flies your city's small freight on scheduled air corridors — parcels, meds, parts — door to door in minutes. An autonomous drone delivery network.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,300..800&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root{
+  --paper:#EAF2F8;
+  --cloud:#FFFFFF;
+  --ink:#1B2733;
+  --orange:#FF6B2C;
+  --blue:#3D7DC8;
+  --dim:#7C8FA3;
+  --line:rgba(27,39,51,.10);
+  --mono:"IBM Plex Mono",ui-monospace,monospace;
+}
+*{margin:0;padding:0;box-sizing:border-box}
+html{scroll-behavior:smooth}
+html.rm{scroll-behavior:auto}
+body{
+  font-family:"Bricolage Grotesque",system-ui,sans-serif;
+  background:var(--paper);
+  color:var(--ink);
+  overflow-x:hidden;
+  -webkit-font-smoothing:antialiased;
+}
+::selection{background:var(--orange);color:#fff}
+a{color:inherit}
+img{max-width:100%;height:auto;display:block}
+
+/* ---------- fixed chrome ---------- */
+#map{position:fixed;inset:0;width:100%;height:100%;z-index:0;background:var(--paper)}
+.back{
+  position:fixed;top:1rem;left:1rem;z-index:40;
+  font-family:var(--mono);font-size:.78rem;letter-spacing:.06em;text-decoration:none;
+  background:rgba(255,255,255,.82);backdrop-filter:blur(6px);
+  border:1px solid var(--line);border-radius:999px;padding:.5rem 1rem;color:var(--ink);
+  transition:background .25s,color .25s;
+}
+.back:hover{background:var(--ink);color:#fff}
+.brand{
+  position:fixed;top:1rem;right:1rem;z-index:40;display:flex;align-items:center;gap:.55rem;
+  font-family:var(--mono);font-size:.78rem;letter-spacing:.14em;color:var(--ink);
+  background:rgba(255,255,255,.82);backdrop-filter:blur(6px);
+  border:1px solid var(--line);border-radius:999px;padding:.5rem 1rem;
+}
+.brand i{width:8px;height:8px;border-radius:50%;background:var(--orange);display:inline-block}
+html:not(.rm) .brand i{animation:blink 2.4s ease-in-out infinite}
+@keyframes blink{0%,100%{opacity:1}50%{opacity:.25}}
+
+/* ---------- hero ---------- */
+.hero{
+  position:relative;z-index:1;min-height:100svh;
+  display:flex;flex-direction:column;justify-content:center;
+  padding:0 clamp(1.2rem,6vw,6rem);
+}
+.hero::before{
+  content:"";position:absolute;inset:0;pointer-events:none;
+  background:radial-gradient(ellipse 62% 54% at 34% 46%,rgba(234,242,248,.94) 0%,rgba(234,242,248,.55) 55%,rgba(234,242,248,0) 100%);
+}
+.hero>*{position:relative}
+.kicker{
+  font-family:var(--mono);font-size:.75rem;letter-spacing:.3em;color:var(--blue);
+  text-transform:uppercase;margin-bottom:1.3rem;
+}
+.kicker b{color:var(--orange);font-weight:500}
+h1{
+  font-size:clamp(3rem,9.2vw,7.2rem);
+  font-weight:700;letter-spacing:-.03em;line-height:.98;
+  font-variation-settings:"opsz" 96;
+  max-width:12ch;
+}
+h1 em{font-style:normal;color:var(--orange)}
+.hero p.lede{
+  margin-top:1.5rem;max-width:44ch;font-size:clamp(1.02rem,1.6vw,1.25rem);
+  line-height:1.6;color:var(--ink);font-weight:400;
+}
+.cta-row{display:flex;gap:.8rem;flex-wrap:wrap;margin-top:2.1rem}
+.btn{
+  display:inline-block;text-decoration:none;font-weight:600;font-size:.95rem;
+  border-radius:999px;padding:.85rem 1.7rem;letter-spacing:.01em;
+  transition:transform .25s,background .25s,color .25s,border-color .25s;
+}
+.btn:hover{transform:translateY(-2px)}
+.btn.solid{background:var(--orange);color:#fff}
+.btn.solid:hover{background:#e35a20}
+.btn.ghost{border:1.5px solid var(--ink);color:var(--ink);background:rgba(255,255,255,.6)}
+.btn.ghost:hover{background:var(--ink);color:#fff}
+.feed{
+  position:absolute;left:clamp(1.2rem,6vw,6rem);bottom:1.4rem;
+  font-family:var(--mono);font-size:.68rem;line-height:1.75;letter-spacing:.03em;
+  color:var(--dim);pointer-events:none;
+}
+.feed div b{color:var(--orange);font-weight:500}
+.hero .scroll-hint{
+  position:absolute;right:clamp(1.2rem,6vw,6rem);bottom:1.6rem;
+  font-family:var(--mono);font-size:.7rem;letter-spacing:.22em;color:var(--dim);
+  writing-mode:vertical-rl;
+}
+@media (max-width:720px){
+  .feed{display:none}
+  .hero .scroll-hint{display:none}
+}
+
+/* ---------- journey ---------- */
+.journey{position:relative;z-index:1;height:520svh}
+html.rm .journey{height:auto;padding:4rem 0}
+.j-sticky{position:sticky;top:0;height:100svh;overflow:hidden}
+html.rm .j-sticky{position:static;height:auto;overflow:visible}
+.j-head{
+  position:absolute;top:4.6rem;left:clamp(1.2rem,6vw,6rem);
+  font-family:var(--mono);font-size:.72rem;letter-spacing:.28em;color:var(--ink);
+  background:rgba(255,255,255,.85);border:1px solid var(--line);border-radius:999px;
+  padding:.5rem 1.05rem;
+}
+.j-head b{color:var(--orange);font-weight:500}
+.hud{
+  position:absolute;top:4.6rem;right:clamp(1.2rem,6vw,6rem);text-align:right;
+  font-family:var(--mono);font-size:.72rem;line-height:1.9;letter-spacing:.05em;color:var(--ink);
+  background:rgba(255,255,255,.85);border:1px solid var(--line);border-radius:14px;
+  padding:.8rem 1.05rem;min-width:12.5rem;
+}
+.hud span{color:var(--dim)}
+.hud b{font-weight:500;color:var(--ink)}
+.hud .st{color:var(--blue)}
+.hud .st.warn{color:var(--orange)}
+.j-card{
+  position:absolute;left:clamp(1.2rem,6vw,6rem);bottom:clamp(1.4rem,7vh,4.5rem);
+  max-width:390px;background:rgba(255,255,255,.94);backdrop-filter:blur(4px);
+  border:1px solid var(--line);border-radius:18px;padding:1.5rem 1.6rem 1.45rem;
+  box-shadow:0 18px 50px -22px rgba(27,39,51,.28);
+  opacity:0;transform:translateY(18px);pointer-events:none;
+}
+html.rm .j-card{position:static;opacity:1;transform:none;margin:1.2rem auto;pointer-events:auto}
+.j-card .tag{
+  font-family:var(--mono);font-size:.68rem;letter-spacing:.2em;color:var(--blue);
+  text-transform:uppercase;margin-bottom:.7rem;display:flex;justify-content:space-between;gap:1rem;
+}
+.j-card .tag em{font-style:normal;color:var(--dim)}
+.j-card.warn .tag{color:var(--orange)}
+.j-card h3{font-size:1.35rem;font-weight:650;letter-spacing:-.015em;margin-bottom:.5rem}
+.j-card p{font-size:.93rem;line-height:1.62;color:#425364}
+.j-progress{
+  position:absolute;left:50%;transform:translateX(-50%);bottom:1.2rem;
+  display:flex;gap:.45rem;align-items:center;
+}
+html.rm .j-progress{display:none}
+.j-progress i{width:7px;height:7px;border-radius:50%;background:rgba(27,39,51,.18);transition:background .3s,transform .3s}
+.j-progress i.on{background:var(--orange);transform:scale(1.25)}
+@media (max-width:720px){
+  .j-head{top:3.9rem;font-size:.62rem;padding:.42rem .8rem;letter-spacing:.2em}
+  .hud{top:7.3rem;bottom:auto;right:1rem;font-size:.62rem;line-height:1.7;min-width:0;padding:.6rem .8rem}
+  .j-card{left:1rem;right:1rem;max-width:none;bottom:5.6rem;padding:1.15rem 1.2rem 1.1rem}
+  .j-card h3{font-size:1.15rem}
+  .j-card p{font-size:.86rem}
+  .j-progress{display:none}
+}
+
+/* ---------- solid sections ---------- */
+.solid{position:relative;z-index:2;background:var(--cloud)}
+.solid.paper{background:var(--paper)}
+.section-inner{max-width:1180px;margin:0 auto;padding:clamp(4.5rem,9vw,8rem) clamp(1.2rem,5vw,3rem)}
+.sec-kicker{
+  font-family:var(--mono);font-size:.72rem;letter-spacing:.3em;text-transform:uppercase;
+  color:var(--orange);margin-bottom:1rem;
+}
+h2{font-size:clamp(2rem,4.6vw,3.4rem);font-weight:700;letter-spacing:-.025em;line-height:1.05;max-width:18ch}
+.sec-lede{margin-top:1.1rem;max-width:52ch;color:#425364;line-height:1.65;font-size:1.02rem}
+
+/* aircraft */
+.craft{border-top:1px solid var(--line)}
+.stage{position:relative;margin-top:clamp(2.2rem,5vw,4rem)}
+.stage img{width:100%;border-radius:22px;border:1px solid var(--line)}
+.stage svg{position:absolute;inset:0;width:100%;height:100%;pointer-events:none;overflow:visible}
+.stage svg line,.stage svg path{stroke:var(--ink);stroke-width:1.5;fill:none}
+.stage svg circle.pt{fill:var(--orange);stroke:#fff;stroke-width:2}
+.stage svg circle.ring{fill:none;stroke:var(--orange);stroke-width:1.5;opacity:.55}
+.callout{
+  position:absolute;max-width:215px;background:rgba(255,255,255,.94);
+  border:1px solid var(--line);border-radius:12px;padding:.7rem .85rem;
+  box-shadow:0 12px 34px -18px rgba(27,39,51,.35);
+}
+.callout b{display:block;font-size:.86rem;font-weight:650;letter-spacing:-.01em}
+.callout span{font-size:.76rem;line-height:1.45;color:#425364;display:block;margin-top:.2rem}
+.callout .n{
+  font-family:var(--mono);font-size:.62rem;color:var(--orange);letter-spacing:.14em;display:block;margin-bottom:.3rem;
+}
+html:not(.rm) .stage svg line{stroke-dasharray:240;stroke-dashoffset:240;transition:stroke-dashoffset 1.1s cubic-bezier(.6,0,.2,1)}
+html:not(.rm) .stage.seen svg line{stroke-dashoffset:0}
+html:not(.rm) .callout{opacity:0;transform:translateY(10px);transition:opacity .7s ease,transform .7s ease}
+html:not(.rm) .stage.seen .callout{opacity:1;transform:none}
+html:not(.rm) .stage.seen .callout:nth-of-type(2){transition-delay:.25s}
+html:not(.rm) .stage.seen .callout:nth-of-type(3){transition-delay:.5s}
+html:not(.rm) .stage.seen .callout:nth-of-type(4){transition-delay:.75s}
+.legend{display:none;margin-top:1.3rem;list-style:none}
+.legend li{display:flex;gap:.7rem;align-items:baseline;padding:.55rem 0;border-bottom:1px dashed var(--line);font-size:.9rem}
+.legend li .n{font-family:var(--mono);color:var(--orange);font-size:.68rem;letter-spacing:.12em}
+.legend li span{color:#425364;font-size:.82rem}
+@media (max-width:860px){
+  .callout,.stage svg{display:none}
+  .legend{display:block}
+}
+.spec-row{
+  display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:1px;
+  background:var(--line);border:1px solid var(--line);border-radius:16px;overflow:hidden;
+  margin-top:clamp(2rem,4vw,3rem);
+}
+.spec{background:var(--cloud);padding:1.3rem 1.3rem 1.15rem}
+.spec .v{font-size:clamp(1.5rem,2.6vw,2.1rem);font-weight:700;letter-spacing:-.02em}
+.spec .v small{font-size:.55em;font-weight:500;color:var(--dim);margin-left:.15em}
+.spec .k{font-family:var(--mono);font-size:.66rem;letter-spacing:.2em;color:var(--dim);text-transform:uppercase;margin-top:.35rem}
+
+/* stats */
+.stats-grid{
+  display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));
+  gap:clamp(1.2rem,3vw,2.5rem);margin-top:clamp(2.5rem,5vw,4rem);
+}
+.stat{border-top:2px solid var(--ink);padding-top:1.1rem}
+.stat .num{
+  font-size:clamp(2.4rem,4.6vw,3.6rem);font-weight:750;letter-spacing:-.03em;
+  font-variant-numeric:tabular-nums;
+}
+.stat .num small{font-size:.5em;color:var(--orange);font-weight:600}
+.stat .lbl{font-family:var(--mono);font-size:.7rem;letter-spacing:.18em;text-transform:uppercase;color:var(--dim);margin-top:.4rem;line-height:1.7}
+
+/* zones / footer */
+.zones h2 em{font-style:normal;color:var(--blue)}
+.zone-grid{display:flex;flex-wrap:wrap;gap:.6rem;margin-top:2.2rem;max-width:820px}
+.zone{
+  font-family:var(--mono);font-size:.74rem;letter-spacing:.06em;
+  border:1px solid rgba(27,39,51,.18);border-radius:999px;padding:.55rem 1rem;
+  display:inline-flex;gap:.55rem;align-items:center;background:var(--cloud);
+}
+.zone i{width:7px;height:7px;border-radius:50%;background:var(--blue);flex:none}
+.zone.live i{background:var(--orange)}
+.zone em{font-style:normal;color:var(--dim);font-size:.62rem;letter-spacing:.16em}
+.wait{margin-top:3rem;max-width:560px}
+.wait form{display:flex;gap:.6rem;flex-wrap:wrap;margin-top:1.1rem}
+.wait input{
+  flex:1;min-width:220px;font-family:var(--mono);font-size:.88rem;color:var(--ink);
+  background:var(--cloud);border:1.5px solid rgba(27,39,51,.22);border-radius:999px;
+  padding:.85rem 1.3rem;outline:none;transition:border-color .25s;
+}
+.wait input:focus{border-color:var(--blue)}
+.wait button{
+  font-family:inherit;font-weight:600;font-size:.95rem;cursor:pointer;border:0;
+  background:var(--ink);color:#fff;border-radius:999px;padding:.85rem 1.7rem;
+  transition:background .25s,transform .25s;
+}
+.wait button:hover{background:var(--orange);transform:translateY(-2px)}
+.wait .ok{font-family:var(--mono);font-size:.78rem;color:var(--blue);margin-top:.7rem;min-height:1.2em}
+footer.site{
+  border-top:1px solid var(--line);margin-top:clamp(3rem,7vw,5rem);
+  padding-top:1.6rem;display:flex;justify-content:space-between;gap:1rem;flex-wrap:wrap;
+  font-family:var(--mono);font-size:.74rem;letter-spacing:.06em;color:var(--dim);
+}
+footer.site a{color:var(--ink);text-decoration:none;border-bottom:1px solid rgba(27,39,51,.3)}
+footer.site a:hover{color:var(--orange);border-color:var(--orange)}
+</style>
+</head>
+<body>
+
+<canvas id="map" aria-hidden="true"></canvas>
+
+<a class="back" href="/" aria-label="Back to FABLE/25">&larr; 25</a>
+<div class="brand" aria-hidden="true"><i></i>AVIARY&nbsp;OPS</div>
+
+<!-- ============ HERO ============ -->
+<header class="hero">
+  <p class="kicker">Autonomous delivery network <b>&middot; now boarding parcels</b></p>
+  <h1>The sky, <em>scheduled.</em></h1>
+  <p class="lede">AVIARY flies your city's small freight — parcels, meds, spare parts — on
+  fixed air corridors, door to rooftop in minutes. No traffic. No idling van. Just a quiet
+  lane of sky with your name on it.</p>
+  <div class="cta-row">
+    <a class="btn solid" href="#zones">Join the waitlist</a>
+    <a class="btn ghost" href="#journey">Follow one delivery &darr;</a>
+  </div>
+  <div class="feed" id="feed" aria-hidden="true"></div>
+  <div class="scroll-hint" aria-hidden="true">SCROLL &darr; DISPATCH 8841</div>
+</header>
+
+<!-- ============ JOURNEY ============ -->
+<section class="journey" id="journey" aria-label="One delivery, start to finish">
+  <div class="j-sticky">
+    <div class="j-head">ONE DELIVERY &middot; <b>PKG&nbsp;8841</b> &middot; AV-114 &ldquo;KESTREL&rdquo;</div>
+    <div class="hud" id="hud" aria-hidden="true">
+      <div><span>ALT</span> <b id="hAlt">000 M</b></div>
+      <div><span>SPD</span> <b id="hSpd">00.0 M/S</b></div>
+      <div><span>DIST</span> <b id="hDist">0.00 KM</b></div>
+      <div class="st" id="hSt">STANDBY &middot; DOCK 3</div>
+    </div>
+
+    <article class="j-card" data-cp="0">
+      <div class="tag"><span>Checkpoint 01</span><em>09:41:07</em></div>
+      <h3>Pickup — Hub A, Dock 3</h3>
+      <p>A courier sets the parcel in the pod and the latch clicks shut. Pre-flight
+      self-check runs in four seconds. Twelve seconds later, AV-114 is climbing
+      to its assigned lane.</p>
+    </article>
+    <article class="j-card" data-cp="1">
+      <div class="tag"><span>Checkpoint 02</span><em>09:44:31</em></div>
+      <h3>Corridor 7, 80 m up</h3>
+      <p>Corridors are the network's freight lanes — surveyed, deconflicted, and
+      flown thousands of times a day. AV-114 slots between two other flights with
+      forty metres of spacing, cruising at 14&nbsp;m/s over the avenue.</p>
+    </article>
+    <article class="j-card warn" data-cp="2">
+      <div class="tag"><span>Checkpoint 03 &middot; advisory</span><em>09:47:02</em></div>
+      <h3>Crosswind over the river</h3>
+      <p>Gusts hit 11 m/s across the Mern. The network sees it before the aircraft
+      does and reroutes AV-114 two blocks east — a smooth detour computed, approved
+      and flown without a single human in the loop.</p>
+    </article>
+    <article class="j-card" data-cp="3">
+      <div class="tag"><span>Checkpoint 04</span><em>09:52:39</em></div>
+      <h3>Rooftop delivery, 14th floor</h3>
+      <p>Touchdown on the building's pad. The pod opens, photo confirms, and AV-114
+      is airborne again before the elevator arrives. Door time: <b>11 min 32 s</b>.</p>
+    </article>
+
+    <div class="j-progress" aria-hidden="true"><i></i><i></i><i></i><i></i></div>
+  </div>
+</section>
+
+<!-- ============ AIRCRAFT ============ -->
+<section class="solid craft" aria-label="The aircraft">
+  <div class="section-inner">
+    <p class="sec-kicker">The aircraft</p>
+    <h2>AV-1 &ldquo;Kestrel&rdquo; — built for the last two kilometres.</h2>
+    <p class="sec-lede">One airframe, one job: carry 4 kilograms across a city quietly,
+    in any reasonable weather, ten thousand times before its first overhaul.</p>
+
+    <div class="stage" id="stage">
+      <img src="assets/drone.webp" alt="The AVIARY AV-1 delivery drone: a white quadcopter with a signal-orange cargo pod, photographed against open sky" width="1920" height="1080" loading="lazy">
+      <svg viewBox="0 0 1920 1080" preserveAspectRatio="none" aria-hidden="true">
+        <circle class="ring" cx="712" cy="482" r="26"/><circle class="pt" cx="712" cy="482" r="7"/>
+        <line x1="712" y1="482" x2="420" y2="250"/>
+        <circle class="ring" cx="722" cy="760" r="26"/><circle class="pt" cx="722" cy="760" r="7"/>
+        <line x1="722" y1="760" x2="722" y2="935"/>
+        <circle class="ring" cx="905" cy="628" r="26"/><circle class="pt" cx="905" cy="628" r="7"/>
+        <line x1="905" y1="628" x2="1490" y2="330"/>
+      </svg>
+      <div class="callout" style="left:4%;top:4%"><span class="n">01 / ROTORS</span><b>Quad coaxial rotors</b><span>62&nbsp;dB(A) at street level — quieter than the traffic it replaces.</span></div>
+      <div class="callout" style="left:37.5%;bottom:3%;transform:translateX(-50%)"><span class="n">02 / CARGO POD</span><b>4.2 kg smart pod</b><span>Climate-passive, latch-locked, and orange so the whole street knows whose it isn't.</span></div>
+      <div class="callout" style="right:4%;top:12%"><span class="n">03 / SENSOR MAST</span><b>Lidar + vision stack</b><span>Sees wire-thin obstacles at 120&nbsp;m and lands on a one-metre pad in gusts.</span></div>
+    </div>
+    <ul class="legend">
+      <li><span class="n">01</span><div><b>Quad coaxial rotors</b> <span>— 62 dB(A) at street level.</span></div></li>
+      <li><span class="n">02</span><div><b>4.2 kg smart cargo pod</b> <span>— climate-passive, latch-locked.</span></div></li>
+      <li><span class="n">03</span><div><b>Lidar + vision mast</b> <span>— spots wire-thin obstacles at 120 m.</span></div></li>
+    </ul>
+
+    <div class="spec-row">
+      <div class="spec"><div class="v">18<small>KM</small></div><div class="k">Range, loaded</div></div>
+      <div class="spec"><div class="v">4.2<small>KG</small></div><div class="k">Max payload</div></div>
+      <div class="spec"><div class="v">14<small>M/S</small></div><div class="k">Corridor cruise</div></div>
+      <div class="spec"><div class="v">62<small>dB(A)</small></div><div class="k">Noise at street</div></div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ STATS ============ -->
+<section class="solid paper" aria-label="Network statistics" style="border-top:1px solid var(--line)">
+  <div class="section-inner">
+    <p class="sec-kicker">The network, this quarter</p>
+    <h2>Boringly reliable. On purpose.</h2>
+    <div class="stats-grid" id="stats">
+      <div class="stat"><div class="num"><span data-count="1248003">0</span></div><div class="lbl">Deliveries completed</div></div>
+      <div class="stat"><div class="num"><span data-count="12.4" data-dec="1">0</span><small>&nbsp;min</small></div><div class="lbl">Average door time</div></div>
+      <div class="stat"><div class="num"><span data-count="38">0</span></div><div class="lbl">Zones live today</div></div>
+      <div class="stat"><div class="num"><span data-count="99.2" data-dec="1">0</span><small>%</small></div><div class="lbl">On-schedule arrivals</div></div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ ZONES / CTA ============ -->
+<section class="solid zones" id="zones" aria-label="Zones and waitlist">
+  <div class="section-inner">
+    <p class="sec-kicker">Coverage</p>
+    <h2>Is your rooftop <em>on the map</em> yet?</h2>
+    <p class="sec-lede">We open zones block by block, corridor by corridor. Live zones fly
+    seven days a week, 06:00–22:00. Waitlisted zones open as soon as their corridors are surveyed.</p>
+    <div class="zone-grid">
+      <span class="zone live"><i></i>RIVERSIDE <em>LIVE</em></span>
+      <span class="zone live"><i></i>OLD DOCKS <em>LIVE</em></span>
+      <span class="zone live"><i></i>MERN CROSSING <em>LIVE</em></span>
+      <span class="zone live"><i></i>PARKSIDE <em>LIVE</em></span>
+      <span class="zone live"><i></i>FOUNDRY DISTRICT <em>LIVE</em></span>
+      <span class="zone"><i></i>NORTHFIELD <em>Q3</em></span>
+      <span class="zone"><i></i>THE TERRACES <em>Q3</em></span>
+      <span class="zone"><i></i>WESTGATE <em>Q4</em></span>
+      <span class="zone"><i></i>HARBOUR EAST <em>Q4</em></span>
+    </div>
+    <div class="wait">
+      <h3 style="font-size:1.25rem;font-weight:650;letter-spacing:-.015em">Get on the waitlist</h3>
+      <form id="wl" novalidate>
+        <input type="email" name="email" placeholder="you@rooftop.city" aria-label="Email address" required>
+        <button type="submit">Reserve my lane</button>
+      </form>
+      <p class="ok" id="wlOk" role="status"></p>
+    </div>
+    <footer class="site">
+      <span>AVIARY&reg; — a fictional network for FABLE/25</span>
+      <a href="/43-aviary/guide/">guide &amp; prompt &rarr;</a>
+    </footer>
+  </div>
+</section>
+
+<script>
+(function(){
+"use strict";
+/* ============================ setup ============================ */
+var RM=false;
+try{RM=window.matchMedia("(prefers-reduced-motion: reduce)").matches;}catch(e){}
+if(RM)document.documentElement.classList.add("rm");
+var MOBILE=Math.min(window.innerWidth,window.innerHeight)<720&&window.innerWidth<720;
+
+var cv=document.getElementById("map"),ctx=cv.getContext("2d");
+var DPR=1,VW=0,VH=0,BASE=1;
+var W=1600,H=1000; // world units
+
+function rngFactory(seed){var a=seed>>>0;return function(){a|=0;a=a+0x6D2B79F5|0;var t=Math.imul(a^a>>>15,1|a);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296;};}
+
+/* ============================ city ============================ */
+var city=null;
+function buildCity(){
+  var rng=rngFactory(4325);
+  var xs=[0],ys=[0],x=0,y=0;
+  var stepX=MOBILE?150:105,stepY=MOBILE?135:95;
+  while(x<W){x+=stepX*(0.7+rng()*0.8);xs.push(Math.min(x,W));}
+  while(y<H){y+=stepY*(0.7+rng()*0.8);ys.push(Math.min(y,H));}
+  // river polyline
+  var river=[];
+  for(var rx=-80;rx<=W+80;rx+=30){
+    river.push([rx,660+95*Math.sin(rx/265+1.35)+34*Math.sin(rx/97+0.4)]);
+  }
+  function riverDist(px,py){
+    var d=1e9;
+    for(var i=0;i<river.length;i++){var dx=river[i][0]-px,dy=river[i][1]-py;var q=dx*dx+dy*dy;if(q<d)d=q;}
+    return Math.sqrt(d);
+  }
+  var park={x:1185,y:295,rx:150,ry:112};
+  function inPark(px,py){var dx=(px-park.x)/(park.rx+26),dy=(py-park.y)/(park.ry+26);return dx*dx+dy*dy<1;}
+  var blocks=[],nodes=[];
+  var gut=MOBILE?9:7;
+  for(var i=0;i<xs.length-1;i++)for(var j=0;j<ys.length-1;j++){
+    var bx=xs[i]+gut,by=ys[j]+gut,bw=xs[i+1]-xs[i]-gut*2,bh=ys[j+1]-ys[j]-gut*2;
+    if(bw<24||bh<24)continue;
+    var cx=bx+bw/2,cyy=by+bh/2;
+    if(riverDist(cx,cyy)<70+Math.min(bw,bh)/2)continue;
+    if(inPark(cx,cyy))continue;
+    var b={x:bx,y:by,w:bw,h:bh,sub:[]};
+    // building footprints inside some blocks
+    if(rng()<0.62){
+      var n=1+((rng()*3)|0);
+      for(var k=0;k<n;k++){
+        var sw=bw*(0.22+rng()*0.32),sh=bh*(0.22+rng()*0.32);
+        b.sub.push([bx+rng()*(bw-sw),by+rng()*(bh-sh),sw,sh]);
+      }
+    }
+    blocks.push(b);
+  }
+  for(i=1;i<xs.length-1;i++)for(j=1;j<ys.length-1;j++){
+    if(riverDist(xs[i],ys[j])<80)continue;
+    if(inPark(xs[i],ys[j]))continue;
+    nodes.push([xs[i],ys[j]]);
+  }
+  // park trees
+  var trees=[];
+  for(i=0;i<(MOBILE?26:46);i++){
+    var a=rng()*Math.PI*2,rr=Math.sqrt(rng());
+    trees.push([park.x+Math.cos(a)*park.rx*0.88*rr,park.y+Math.sin(a)*park.ry*0.88*rr,2.2+rng()*3]);
+  }
+  city={xs:xs,ys:ys,river:river,park:park,blocks:blocks,nodes:nodes,trees:trees,
+        labels:[
+          [230,120,"SECTOR 01"],[820,95,"SECTOR 02"],[1435,140,"SECTOR 03"],
+          [190,905,"SECTOR 04"],[860,940,"SECTOR 05"],[1440,860,"SECTOR 06"],
+          [1148,352,"ROOSEVELT PARK"],[120,600,"RIVER MERN"]
+        ],
+        hubs:[[300,780,"HUB A"],[1252,262,"PAD 14F"],[700,168,"HUB B"]]};
+}
+
+function drawCity(sPix){
+  var lw=function(px){return px/sPix;};
+  // river
+  ctx.beginPath();
+  for(var i=0;i<city.river.length;i++){var p=city.river[i];i?ctx.lineTo(p[0],p[1]):ctx.moveTo(p[0],p[1]);}
+  ctx.lineCap="round";ctx.lineJoin="round";
+  ctx.strokeStyle="#D7E7F4";ctx.lineWidth=78;ctx.stroke();
+  ctx.strokeStyle="rgba(61,125,200,.20)";ctx.lineWidth=lw(1.2);
+  for(var off=-22;off<=22;off+=22){
+    ctx.beginPath();
+    for(i=0;i<city.river.length;i++){var q=city.river[i];i?ctx.lineTo(q[0],q[1]+off):ctx.moveTo(q[0],q[1]+off);}
+    ctx.stroke();
+  }
+  // park
+  var pk=city.park;
+  ctx.beginPath();ctx.ellipse(pk.x,pk.y,pk.rx,pk.ry,-0.18,0,Math.PI*2);
+  ctx.fillStyle="#E0EEE4";ctx.fill();
+  ctx.strokeStyle="rgba(27,39,51,.10)";ctx.lineWidth=lw(1.2);ctx.stroke();
+  ctx.fillStyle="rgba(61,125,200,.16)";
+  for(i=0;i<city.trees.length;i++){var t=city.trees[i];ctx.beginPath();ctx.arc(t[0],t[1],t[2],0,Math.PI*2);ctx.fill();}
+  // blocks
+  ctx.fillStyle="#FFFFFF";ctx.strokeStyle="rgba(27,39,51,.10)";ctx.lineWidth=lw(1);
+  for(i=0;i<city.blocks.length;i++){
+    var b=city.blocks[i];
+    ctx.fillRect(b.x,b.y,b.w,b.h);ctx.strokeRect(b.x,b.y,b.w,b.h);
+  }
+  ctx.strokeStyle="rgba(27,39,51,.07)";
+  for(i=0;i<city.blocks.length;i++){
+    var bb=city.blocks[i];
+    for(var k=0;k<bb.sub.length;k++){var s=bb.sub[k];ctx.strokeRect(s[0],s[1],s[2],s[3]);}
+  }
+  // intersection crosses
+  ctx.strokeStyle="rgba(61,125,200,.30)";ctx.lineWidth=lw(1);
+  for(i=0;i<city.nodes.length;i+=3){
+    var n=city.nodes[i];
+    ctx.beginPath();ctx.moveTo(n[0]-3,n[1]);ctx.lineTo(n[0]+3,n[1]);ctx.moveTo(n[0],n[1]-3);ctx.lineTo(n[0],n[1]+3);ctx.stroke();
+  }
+  // labels
+  ctx.fillStyle="rgba(124,143,163,.85)";
+  ctx.font="500 11px 'IBM Plex Mono',monospace";
+  ctx.textAlign="center";
+  for(i=0;i<city.labels.length;i++){
+    var L=city.labels[i];
+    ctx.save();ctx.translate(L[0],L[1]);
+    var inv=1/(sPix/DPR); // world units per css px
+    ctx.scale(inv,inv);
+    ctx.letterSpacing="3px";
+    ctx.fillText(L[2],0,0);
+    ctx.restore();
+  }
+  // hubs
+  for(i=0;i<city.hubs.length;i++){
+    var hgs=city.hubs[i];
+    ctx.save();ctx.translate(hgs[0],hgs[1]);
+    var iv=1/(sPix/DPR);ctx.scale(iv,iv);
+    ctx.beginPath();ctx.arc(0,0,11,0,Math.PI*2);
+    ctx.fillStyle="#FFFFFF";ctx.fill();
+    ctx.strokeStyle="rgba(27,39,51,.55)";ctx.lineWidth=1.4;ctx.stroke();
+    ctx.beginPath();ctx.arc(0,0,5.5,0,Math.PI*2);ctx.strokeStyle="#3D7DC8";ctx.lineWidth=1.4;ctx.stroke();
+    ctx.fillStyle="rgba(124,143,163,.95)";
+    ctx.font="500 10px 'IBM Plex Mono',monospace";ctx.textAlign="center";ctx.letterSpacing="2px";
+    ctx.fillText(hgs[2],0,26);
+    ctx.restore();
+  }
+}
+
+/* ============================ bezier helpers ============================ */
+function qBez(a,c,b,t){
+  var u=1-t;
+  return [u*u*a[0]+2*u*t*c[0]+t*t*b[0], u*u*a[1]+2*u*t*c[1]+t*t*b[1]];
+}
+function qBezD(a,c,b,t){
+  return [2*(1-t)*(c[0]-a[0])+2*t*(b[0]-c[0]), 2*(1-t)*(c[1]-a[1])+2*t*(b[1]-c[1])];
+}
+
+/* ============================ ambient flights ============================ */
+var flights=[],flightId=8841;
+var MAXF=MOBILE?3:5;
+var frng=rngFactory(9107);
+var feedEl=document.getElementById("feed"),feedLines=[];
+function pushFeed(txt){
+  if(!feedEl)return;
+  feedLines.push(txt);if(feedLines.length>5)feedLines.shift();
+  var h="";for(var i=0;i<feedLines.length;i++)h+="<div>"+feedLines[i]+"</div>";
+  feedEl.innerHTML=h;
+}
+function newFlight(now){
+  var n=city.nodes;if(n.length<2)return null;
+  var a=n[(frng()*n.length)|0],b=a,tries=0;
+  do{b=n[(frng()*n.length)|0];tries++;}while(tries<20&&(Math.abs(a[0]-b[0])+Math.abs(a[1]-b[1])<380));
+  var mx=(a[0]+b[0])/2,my=(a[1]+b[1])/2;
+  var dx=b[0]-a[0],dy=b[1]-a[1],len=Math.hypot(dx,dy)||1;
+  var side=frng()<0.5?1:-1;
+  var c=[mx-dy/len*len*0.22*side,my+dx/len*len*0.22*side];
+  var id=++flightId;
+  var f={a:a,b:b,c:c,len:len,t0:now,id:id,
+    dPing:0.9,dDraw:1.5,dFly:Math.max(3.2,len/110),dDrop:0.9,dFade:1.4,ann:0};
+  pushFeed("<b>PKG "+id+"</b> → SECTOR "+(1+((frng()*6)|0))+" · dispatched");
+  return f;
+}
+function drawPing(x,y,k,col,sPix){ // k 0..1
+  var iv=1/(sPix/DPR);
+  ctx.save();ctx.translate(x,y);ctx.scale(iv,iv);
+  ctx.globalAlpha*= (1-k);
+  ctx.beginPath();ctx.arc(0,0,4+k*26,0,Math.PI*2);
+  ctx.strokeStyle=col;ctx.lineWidth=1.6;ctx.stroke();
+  ctx.globalAlpha/=(1-k)||1;
+  ctx.beginPath();ctx.arc(0,0,3.2,0,Math.PI*2);ctx.fillStyle=col;ctx.fill();
+  ctx.restore();
+}
+function strokeRoute(a,c,b,t0,t1,sPix,style,wPx,dash){
+  var steps=28;
+  ctx.beginPath();
+  for(var i=0;i<=steps;i++){
+    var t=t0+(t1-t0)*i/steps,p=qBez(a,c,b,t);
+    i?ctx.lineTo(p[0],p[1]):ctx.moveTo(p[0],p[1]);
+  }
+  ctx.strokeStyle=style;ctx.lineWidth=wPx/(sPix/DPR);
+  if(dash){var u=1/(sPix/DPR);ctx.setLineDash([6*u,7*u]);}else ctx.setLineDash([]);
+  ctx.stroke();ctx.setLineDash([]);
+}
+function drawDrone(x,y,ang,roll,sPix,scale){
+  var iv=1/(sPix/DPR)*(scale||1);
+  ctx.save();ctx.translate(x,y);ctx.rotate(ang);ctx.scale(iv,iv);
+  ctx.scale(1,1-0.35*Math.abs(roll)); // banking squash
+  ctx.rotate(roll*0.5);
+  // arms + rotors
+  ctx.strokeStyle="#1B2733";ctx.lineWidth=1.4;
+  ctx.beginPath();ctx.moveTo(-6,-6);ctx.lineTo(6,6);ctx.moveTo(-6,6);ctx.lineTo(6,-6);ctx.stroke();
+  ctx.fillStyle="#FFFFFF";ctx.strokeStyle="#1B2733";
+  var rp=[[-6,-6],[6,-6],[-6,6],[6,6]];
+  for(var i=0;i<4;i++){ctx.beginPath();ctx.arc(rp[i][0],rp[i][1],3.4,0,Math.PI*2);ctx.fill();ctx.stroke();}
+  // body + pod
+  ctx.beginPath();ctx.arc(0,0,4.4,0,Math.PI*2);ctx.fillStyle="#FFFFFF";ctx.fill();ctx.stroke();
+  ctx.beginPath();ctx.arc(0,0,2.4,0,Math.PI*2);ctx.fillStyle="#FF6B2C";ctx.fill();
+  ctx.restore();
+}
+function easeInOut(t){return t<0.5?2*t*t:1-Math.pow(-2*t+2,2)/2;}
+function updateFlights(now,alpha,sPix){
+  if(alpha<=0.01)return;
+  while(flights.length<MAXF)flights.push(newFlight(now-frng()*4));
+  ctx.globalAlpha=alpha;
+  for(var i=flights.length-1;i>=0;i--){
+    var f=flights[i];if(!f){flights.splice(i,1);continue;}
+    var e=now-f.t0;
+    var T1=f.dPing,T2=T1+f.dDraw,T3=T2+f.dFly,T4=T3+f.dDrop,T5=T4+f.dFade;
+    if(e>=T5){flights.splice(i,1);continue;}
+    var fade=e>T4?1-(e-T4)/f.dFade:1;
+    ctx.globalAlpha=alpha*fade;
+    if(e<T1){ drawPing(f.a[0],f.a[1],e/T1,"#FF6B2C",sPix); continue; }
+    var drawT=e<T2?easeInOut((e-T1)/f.dDraw):1;
+    strokeRoute(f.a,f.c,f.b,0,drawT,sPix,"rgba(61,125,200,.55)",1.4,true);
+    // endpoints
+    var iv=1/(sPix/DPR);
+    ctx.fillStyle="#3D7DC8";
+    ctx.beginPath();ctx.arc(f.a[0],f.a[1],3*iv,0,Math.PI*2);ctx.fill();
+    if(drawT>=1){
+      ctx.beginPath();ctx.arc(f.b[0],f.b[1],3*iv,0,Math.PI*2);
+      ctx.strokeStyle="#3D7DC8";ctx.lineWidth=1.3*iv;ctx.stroke();
+    }
+    if(e>=T2&&e<T3){
+      var ft=easeInOut((e-T2)/f.dFly);
+      var p=qBez(f.a,f.c,f.b,ft),d=qBezD(f.a,f.c,f.b,ft);
+      var ang=Math.atan2(d[1],d[0]);
+      // orange progress trail
+      strokeRoute(f.a,f.c,f.b,Math.max(0,ft-0.12),ft,sPix,"rgba(255,107,44,.85)",2,false);
+      strokeRoute(f.a,f.c,f.b,0,ft,sPix,"rgba(255,107,44,.30)",1.2,false);
+      var roll=(ft<0.5?1:-1)*0.5*Math.sin(ft*Math.PI); // bank into the curve
+      drawDrone(p[0],p[1],ang,roll,sPix,1);
+      if(!f.ann&&ft>0.5){f.ann=1;pushFeed("<b>PKG "+f.id+"</b> · corridor "+(2+(f.id%9))+" · 14.1 m/s");}
+    }else if(e>=T3){
+      strokeRoute(f.a,f.c,f.b,0,1,sPix,"rgba(255,107,44,.30)",1.2,false);
+      drawPing(f.b[0],f.b[1],(e-T3)/f.dDrop<1?(e-T3)/f.dDrop:1,"#FF6B2C",sPix);
+      if(f.ann!==2){f.ann=2;pushFeed("<b>PKG "+f.id+"</b> · delivered ✓");}
+    }
+    ctx.globalAlpha=alpha;
+  }
+  ctx.globalAlpha=1;
+}
+
+/* ============================ journey route ============================ */
+// composite quadratic segments: pickup(HUB A) -> corridor 7 -> reroute -> rooftop(PAD 14F)
+var jSegs=[
+  {a:[300,780],c:[360,600],b:[470,520]},
+  {a:[470,520],c:[620,420],b:[790,430]},   // corridor 7
+  {a:[790,430],c:[930,440],b:[985,520]},   // toward river
+  {a:[985,520],c:[1070,470],b:[1090,390]}, // reroute kink east
+  {a:[1090,390],c:[1120,310],b:[1252,262]} // rooftop
+];
+var ghostSeg={a:[900,452],c:[1040,380],b:[1252,262]}; // original planned path (crossed out)
+var jPts=[],jLen=0;
+function buildJourney(){
+  jPts=[];var prev=null;jLen=0;
+  for(var s=0;s<jSegs.length;s++){
+    var g=jSegs[s];
+    for(var i=0;i<=60;i++){
+      if(s>0&&i===0)continue;
+      var p=qBez(g.a,g.c,g.b,i/60);
+      if(prev)jLen+=Math.hypot(p[0]-prev[0],p[1]-prev[1]);
+      jPts.push({p:p,l:jLen});prev=p;
+    }
+  }
+}
+function routeAt(f){ // f 0..1 by arc length -> {p,ang}
+  var target=f*jLen;
+  var lo=0,hi=jPts.length-1;
+  while(lo<hi){var mid=(lo+hi)>>1;if(jPts[mid].l<target)lo=mid+1;else hi=mid;}
+  var i=Math.max(1,lo);
+  var A=jPts[i-1],B=jPts[i];
+  var span=(B.l-A.l)||1,t=(target-A.l)/span;
+  var x=A.p[0]+(B.p[0]-A.p[0])*t,y=A.p[1]+(B.p[1]-A.p[1])*t;
+  return {x:x,y:y,ang:Math.atan2(B.p[1]-A.p[1],B.p[0]-A.p[0])};
+}
+function strokeJourney(f0,f1,sPix,style,wPx,dash){
+  var l0=f0*jLen,l1=f1*jLen;
+  ctx.beginPath();var started=false;
+  for(var i=0;i<jPts.length;i++){
+    var q=jPts[i];
+    if(q.l<l0)continue;
+    if(q.l>l1)break;
+    if(!started){var s0=routeAt(f0);ctx.moveTo(s0.x,s0.y);started=true;}
+    ctx.lineTo(q.p[0],q.p[1]);
+  }
+  if(started){var s1=routeAt(f1);ctx.lineTo(s1.x,s1.y);}
+  ctx.strokeStyle=style;ctx.lineWidth=wPx/(sPix/DPR);
+  if(dash){var u=1/(sPix/DPR);ctx.setLineDash([6*u,7*u]);}else ctx.setLineDash([]);
+  ctx.lineCap="round";ctx.stroke();ctx.setLineDash([]);
+}
+var CPS=[0.02,0.34,0.60,0.965]; // checkpoint route fractions
+// camera keyframes: [progress, zoom]
+var ZOOMK=[[0,2.3],[0.10,1.9],[0.34,1.75],[0.52,1.9],[0.62,2.0],[0.85,2.05],[1,2.5]];
+function zoomAt(p){
+  for(var i=1;i<ZOOMK.length;i++){
+    if(p<=ZOOMK[i][0]){
+      var A=ZOOMK[i-1],B=ZOOMK[i],t=(p-A[0])/(B[0]-A[0]||1);
+      t=easeInOut(Math.min(1,Math.max(0,t)));
+      return A[1]+(B[1]-A[1])*t;
+    }
+  }
+  return ZOOMK[ZOOMK.length-1][1];
+}
+function drawJourneyLayer(now,jp,sPix,alpha){
+  if(alpha<=0.01)return;
+  ctx.globalAlpha=alpha;
+  var iv=1/(sPix/DPR);
+  // full planned route (ahead) faint dashed blue
+  strokeJourney(0,1,sPix,"rgba(61,125,200,.38)",1.4,true);
+  // ghost original route near reroute, crossed out once advisory reached
+  if(jp>0.40){
+    var ga=Math.min(1,(jp-0.40)/0.08)*(jp>0.80?Math.max(0,1-(jp-0.80)/0.1):1);
+    ctx.globalAlpha=alpha*ga*0.7;
+    strokeRoute(ghostSeg.a,ghostSeg.c,ghostSeg.b,0,1,sPix,"rgba(124,143,163,.55)",1.2,true);
+    var gm=qBez(ghostSeg.a,ghostSeg.c,ghostSeg.b,0.5);
+    ctx.strokeStyle="rgba(255,107,44,.9)";ctx.lineWidth=1.6*iv;
+    ctx.beginPath();ctx.moveTo(gm[0]-6*iv,gm[1]-6*iv);ctx.lineTo(gm[0]+6*iv,gm[1]+6*iv);
+    ctx.moveTo(gm[0]+6*iv,gm[1]-6*iv);ctx.lineTo(gm[0]-6*iv,gm[1]+6*iv);ctx.stroke();
+    ctx.globalAlpha=alpha;
+  }
+  // wind chevrons over river during advisory
+  if(jp>0.42&&jp<0.78&&!RM){
+    var wa=Math.min(1,(jp-0.42)/0.06)*Math.min(1,(0.78-jp)/0.06);
+    ctx.globalAlpha=alpha*wa*0.8;
+    ctx.strokeStyle="#3D7DC8";ctx.lineWidth=1.4*iv;
+    for(var wi=0;wi<5;wi++){
+      var wx=880+((now*40+wi*70)%220),wy=560+wi*26-((wi%2)*40);
+      ctx.beginPath();ctx.moveTo(wx-7,wy-5);ctx.lineTo(wx,wy);ctx.lineTo(wx-7,wy+5);ctx.stroke();
+    }
+    ctx.globalAlpha=alpha;
+  }
+  // flown route solid orange
+  strokeJourney(0,Math.max(0.001,jp),sPix,"rgba(255,107,44,.95)",2.2,false);
+  // checkpoint markers
+  for(var i=0;i<CPS.length;i++){
+    var cp=routeAt(CPS[i]);
+    var hit=jp>=CPS[i]-0.005;
+    ctx.beginPath();ctx.arc(cp.x,cp.y,4.5*iv,0,Math.PI*2);
+    ctx.fillStyle=hit?"#FF6B2C":"#FFFFFF";ctx.fill();
+    ctx.strokeStyle=hit?"#FF6B2C":"#7C8FA3";ctx.lineWidth=1.5*iv;ctx.stroke();
+    if(hit&&jp-CPS[i]<0.05){drawPing(cp.x,cp.y,(jp-CPS[i])/0.05,"#FF6B2C",sPix);}
+  }
+  // the aircraft
+  var pt=routeAt(jp);
+  var ahead=routeAt(Math.min(1,jp+0.015));
+  var roll=(ahead.ang-pt.ang);
+  while(roll>Math.PI)roll-=Math.PI*2;while(roll<-Math.PI)roll+=Math.PI*2;
+  roll=Math.max(-0.7,Math.min(0.7,roll*9));
+  drawDrone(pt.x,pt.y,pt.ang,roll,sPix,1.35);
+  ctx.globalAlpha=1;
+}
+
+/* ============================ render loop ============================ */
+var journeyEl=document.getElementById("journey");
+var hudAlt=document.getElementById("hAlt"),hudSpd=document.getElementById("hSpd"),
+    hudDist=document.getElementById("hDist"),hudSt=document.getElementById("hSt");
+var dots=document.querySelectorAll(".j-progress i");
+var cards=document.querySelectorAll(".j-card");
+var camX=W/2,camY=H/2,camZ=1;
+var rafId=null,active=true,lastNow=0;
+var lastHud=-1;
+
+function journeyProgress(){
+  var r=journeyEl.getBoundingClientRect();
+  var total=r.height-VH;
+  if(total<=0)return 0;
+  return Math.min(1,Math.max(0,-r.top/total));
+}
+function updateCards(jp){
+  // map scroll fraction to route fraction with plateaus at checkpoints
+  for(var i=0;i<cards.length;i++){
+    var c=CPS[i];
+    var vis=Math.min(1,Math.max(0,1-Math.abs(jp-c)/0.115));
+    vis=easeInOut(vis);
+    cards[i].style.opacity=vis;
+    cards[i].style.transform="translateY("+(18*(1-vis))+"px)";
+  }
+  for(i=0;i<dots.length;i++)dots[i].classList.toggle("on",jp>=CPS[i]-0.02);
+}
+function updateHud(now,jp){
+  if(now-lastHud<0.12)return;lastHud=now;
+  var alt=jp<0.03?jp/0.03*82:(jp>0.94?Math.max(6,82-(jp-0.94)/0.06*76):82+6*Math.sin(jp*40));
+  var spd=jp<0.03?jp/0.03*14.2:(jp>0.94?Math.max(0,14.2*(1-(jp-0.94)/0.06)):(jp>0.55&&jp<0.66?11.6:14.2)+0.3*Math.sin(jp*60));
+  hudAlt.textContent=String(Math.round(alt)).padStart(3,"0")+" M";
+  hudSpd.textContent=spd.toFixed(1)+" M/S";
+  hudDist.textContent=(jp*3.42).toFixed(2)+" KM";
+  var st,warn=false;
+  if(jp<0.02){st="STANDBY · DOCK 3";}
+  else if(jp<0.30){st="CLIMB · LANE ASSIGNED";}
+  else if(jp<0.48){st="CRUISE · CORRIDOR 7";}
+  else if(jp<0.72){st="ADVISORY · REROUTE E-2";warn=true;}
+  else if(jp<0.94){st="APPROACH · PAD 14F";}
+  else{st="DELIVERED ✓ · RTB";}
+  hudSt.textContent=st;
+  hudSt.className="st"+(warn?" warn":"");
+}
+
+function render(now){
+  var jp=journeyProgress();
+  // ambient fades out as journey begins
+  var blend=Math.min(1,jp/0.06);
+  var tgt;
+  if(blend<=0){tgt={x:W/2,y:H/2,z:1};}
+  else{
+    var pt=routeAt(jp);
+    var look=routeAt(Math.min(1,jp+0.05));
+    var jx=pt.x*0.7+look.x*0.3,jy=pt.y*0.7+look.y*0.3;
+    var z=zoomAt(jp);
+    // keep route point off-center (right of the card zone on desktop)
+    var offX=MOBILE?0:(VW*0.11)/(BASE*z/DPR);
+    var offY=MOBILE?(VH*0.10)/(BASE*z/DPR):(VH*0.04)/(BASE*z/DPR);
+    var ox={x:jx-offX,y:jy-offY,z:z};
+    var ov={x:W/2,y:H/2,z:1};
+    var bb=easeInOut(blend);
+    tgt={x:ov.x+(ox.x-ov.x)*bb,y:ov.y+(ox.y-ov.y)*bb,z:ov.z+(ox.z-ov.z)*bb};
+  }
+  var k=RM?1:0.14;
+  camX+=(tgt.x-camX)*k;camY+=(tgt.y-camY)*k;camZ+=(tgt.z-camZ)*k;
+
+  var s=BASE*camZ; // device px per world unit
+  ctx.setTransform(1,0,0,1,0,0);
+  ctx.fillStyle="#EAF2F8";
+  ctx.fillRect(0,0,cv.width,cv.height);
+  ctx.setTransform(s,0,0,s,cv.width/2-camX*s,cv.height/2-camY*s);
+  drawCity(s);
+  updateFlights(now,1-blend,s);
+  drawJourneyLayer(now,jp,s,blend<0.02?(jp>0?blend:0.0):blend);
+  // journey route hint even at overview (very faint)
+  if(blend<0.02){ctx.globalAlpha=0.5;strokeJourney(0,1,s,"rgba(61,125,200,.25)",1.2,true);ctx.globalAlpha=1;}
+  if(blend>0){updateCards(jp);updateHud(now,jp);}
+}
+function loop(ts){
+  rafId=null;
+  var now=ts/1000;lastNow=now;
+  render(now);
+  schedule();
+}
+function schedule(){
+  if(!RM&&active&&!document.hidden&&rafId===null)rafId=requestAnimationFrame(loop);
+}
+function checkActive(){
+  // canvas only matters through hero + journey; pause below
+  var r=journeyEl.getBoundingClientRect();
+  active=r.bottom>-40;
+  schedule();
+}
+document.addEventListener("visibilitychange",schedule);
+window.addEventListener("scroll",checkActive,{passive:true});
+
+/* ============================ reduced-motion static frame ============================ */
+function staticFrame(){
+  var s=BASE;
+  ctx.setTransform(1,0,0,1,0,0);
+  ctx.fillStyle="#EAF2F8";ctx.fillRect(0,0,cv.width,cv.height);
+  ctx.setTransform(s,0,0,s,cv.width/2-(W/2)*s,cv.height/2-(H/2)*s);
+  drawCity(s);
+  // pre-drawn ambient routes with drones mid-flight
+  var rng=rngFactory(77);
+  for(var i=0;i<4;i++){
+    var n=city.nodes;
+    var a=n[(rng()*n.length)|0],b=n[(rng()*n.length)|0];
+    if(Math.abs(a[0]-b[0])+Math.abs(a[1]-b[1])<300){i--;continue;}
+    var mx=(a[0]+b[0])/2,my=(a[1]+b[1])/2,dx=b[0]-a[0],dy=b[1]-a[1],len=Math.hypot(dx,dy)||1;
+    var c=[mx-dy/len*len*0.2,my+dx/len*len*0.2];
+    strokeRoute(a,c,b,0,1,s,"rgba(61,125,200,.5)",1.4,true);
+    var t=0.3+rng()*0.4,p=qBez(a,c,b,t),d=qBezD(a,c,b,t);
+    strokeRoute(a,c,b,0,t,s,"rgba(255,107,44,.6)",1.6,false);
+    drawDrone(p[0],p[1],Math.atan2(d[1],d[0]),0,s,1);
+  }
+  // full journey pre-composed
+  strokeJourney(0,1,s,"rgba(255,107,44,.9)",2,false);
+  var iv=1/(s/DPR);
+  for(i=0;i<CPS.length;i++){
+    var cp=routeAt(CPS[i]);
+    ctx.beginPath();ctx.arc(cp.x,cp.y,4.5*iv,0,Math.PI*2);
+    ctx.fillStyle="#FF6B2C";ctx.fill();
+    ctx.strokeStyle="#FFFFFF";ctx.lineWidth=1.5*iv;ctx.stroke();
+  }
+  var mid=routeAt(0.5);drawDrone(mid.x,mid.y,mid.ang,0,s,1.3);
+  // static hud + feed
+  updateHud(999,0.5);
+  feedLines=[];
+  pushFeed("<b>PKG 8843</b> → SECTOR 2 · dispatched");
+  pushFeed("<b>PKG 8841</b> · corridor 7 · 14.1 m/s");
+  pushFeed("<b>PKG 8839</b> · delivered ✓");
+}
+
+/* ============================ resize ============================ */
+function resize(){
+  DPR=Math.min(window.devicePixelRatio||1,2);
+  VW=window.innerWidth;VH=window.innerHeight;
+  cv.width=Math.round(VW*DPR);cv.height=Math.round(VH*DPR);
+  BASE=Math.max(VW*DPR/W,VH*DPR/H)*1.04;
+  if(RM)staticFrame();
+}
+window.addEventListener("resize",function(){resize();checkActive();});
+
+/* ============================ init ============================ */
+buildCity();buildJourney();resize();
+if(RM){
+  // resize() already drew the static frame; cards are static via CSS
+  for(var ci=0;ci<cards.length;ci++){cards[ci].style.opacity="";cards[ci].style.transform="";}
+}else{
+  pushFeed("<b>NET</b> · 38 zones live · wind 4 m/s NW");
+  checkActive();
+}
+
+/* ============================ aircraft callouts ============================ */
+var stage=document.getElementById("stage");
+if("IntersectionObserver" in window&&!RM){
+  var io=new IntersectionObserver(function(en){
+    for(var i=0;i<en.length;i++)if(en[i].isIntersecting){stage.classList.add("seen");io.disconnect();}
+  },{threshold:0.35});
+  io.observe(stage);
+}else{stage.classList.add("seen");}
+
+/* ============================ counters ============================ */
+var nums=document.querySelectorAll("#stats [data-count]");
+function fmt(v,dec){
+  if(dec)return v.toFixed(dec);
+  return Math.round(v).toString().replace(/\B(?=(\d{3})+(?!\d))/g,",");
+}
+function runCounters(){
+  var t0=performance.now(),dur=1800;
+  function step(ts){
+    var t=Math.min(1,(ts-t0)/dur),e=1-Math.pow(1-t,3);
+    for(var i=0;i<nums.length;i++){
+      var end=parseFloat(nums[i].getAttribute("data-count"));
+      var dec=parseInt(nums[i].getAttribute("data-dec")||"0",10);
+      nums[i].textContent=fmt(end*e,dec);
+    }
+    if(t<1)requestAnimationFrame(step);
+  }
+  requestAnimationFrame(step);
+}
+function setFinal(){
+  for(var i=0;i<nums.length;i++){
+    var end=parseFloat(nums[i].getAttribute("data-count"));
+    var dec=parseInt(nums[i].getAttribute("data-dec")||"0",10);
+    nums[i].textContent=fmt(end,dec);
+  }
+}
+if(RM||!("IntersectionObserver" in window)){setFinal();}
+else{
+  var so=new IntersectionObserver(function(en){
+    for(var i=0;i<en.length;i++)if(en[i].isIntersecting){runCounters();so.disconnect();}
+  },{threshold:0.4});
+  so.observe(document.getElementById("stats"));
+}
+
+/* ============================ waitlist ============================ */
+var wl=document.getElementById("wl"),wlOk=document.getElementById("wlOk");
+wl.addEventListener("submit",function(e){
+  e.preventDefault();
+  var v=wl.email.value.trim();
+  if(!v||v.indexOf("@")<1){wlOk.textContent="⚠ that address won't reach the tower.";return;}
+  wlOk.textContent="✓ lane reserved · we'll write when your corridor is surveyed.";
+  wl.email.value="";
+});
+})();
+</script>
+</body>
+</html>

@@ -1,0 +1,169 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>STRATA — guide &amp; prompt</title>
+<meta name="description" content="How STRATA was built: the scroll-as-elevator system, self-drawing SVG floorplans, palette-locked assets, and the full reproduction prompt.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Marcellus&family=Archivo:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+:root{
+  --navy:#101823;--panel:#182230;--brass:#C7A867;--stone:#F2EEE6;
+  --ink:#F5F1E8;--dim:#8B94A3;
+  --line:rgba(199,168,103,.28);--hair:rgba(139,148,163,.22);
+}
+*{margin:0;padding:0;box-sizing:border-box}
+body{
+  font-family:"Archivo",system-ui,sans-serif;font-weight:300;
+  background:var(--navy);color:var(--ink);
+  overflow-x:hidden;-webkit-font-smoothing:antialiased;line-height:1.7;
+}
+::selection{background:var(--brass);color:var(--navy)}
+h1,h2,h3{font-family:"Marcellus",serif;font-weight:400}
+a{color:inherit}
+.back{
+  position:fixed;top:1.1rem;left:1.2rem;z-index:20;
+  font-size:.8rem;letter-spacing:.12em;text-decoration:none;
+  color:var(--stone);background:rgba(16,24,35,.62);
+  border:1px solid var(--line);border-radius:999px;padding:.42rem 1rem;
+  backdrop-filter:blur(6px);transition:background .3s,color .3s;
+}
+.back:hover{background:var(--brass);color:var(--navy)}
+.wrap{max-width:860px;margin:0 auto;padding:7rem clamp(1.3rem,5vw,3rem) 4rem}
+.eyebrow{font-size:.7rem;letter-spacing:.34em;text-transform:uppercase;color:var(--brass)}
+h1{font-size:clamp(2.2rem,6vw,3.4rem);letter-spacing:.12em;color:var(--stone);margin:.8rem 0 1rem}
+.lede{color:var(--dim);max-width:44em}
+section{margin-top:4rem}
+h2{
+  font-size:1.45rem;letter-spacing:.08em;color:var(--stone);
+  padding-bottom:.7rem;border-bottom:1px solid var(--line);margin-bottom:1.4rem;
+}
+h2 i{font-style:normal;color:var(--brass);margin-right:.7rem;font-size:1rem;letter-spacing:.2em}
+p{color:var(--dim);margin-bottom:1rem;max-width:52em}
+p b,li b{color:var(--stone);font-weight:400}
+ul{list-style:none;margin:1.2rem 0}
+li{
+  color:var(--dim);padding:.75rem 0 .75rem 1.4rem;position:relative;
+  border-bottom:1px solid var(--hair);
+}
+li::before{content:"";position:absolute;left:0;top:1.35rem;width:9px;height:1px;background:var(--brass)}
+code{
+  font-family:ui-monospace,"SF Mono",Menlo,monospace;font-size:.84em;
+  color:var(--stone);background:var(--panel);
+  border:1px solid var(--hair);border-radius:3px;padding:.08em .4em;
+}
+pre{
+  background:var(--panel);border:1px solid var(--line);
+  padding:1.6rem;overflow-x:auto;white-space:pre-wrap;
+  font-family:ui-monospace,"SF Mono",Menlo,monospace;
+  font-size:.84rem;line-height:1.75;color:var(--stone);
+}
+footer{
+  max-width:860px;margin:0 auto;padding:0 clamp(1.3rem,5vw,3rem) 3rem;
+  display:flex;justify-content:space-between;gap:1rem;flex-wrap:wrap;
+  font-size:.75rem;letter-spacing:.14em;color:var(--dim);
+}
+footer a{text-decoration:none}
+footer a:hover{color:var(--brass)}
+</style>
+</head>
+<body>
+<a class="back" href="/46-strata/">←&nbsp;STRATA</a>
+
+<main class="wrap">
+  <span class="eyebrow">FABLE/25 · Nº 46 · Guide</span>
+  <h1>STRATA</h1>
+  <p class="lede">A fictional luxury residential tower where <b>scrolling is the elevator</b>:
+  one sticky stage, four floors, a city that sinks as you rise, and floorplans that draw
+  themselves at every stop.</p>
+
+  <section>
+    <h2><i>I</i>The elevator scroll system</h2>
+    <p>The ascent is a <code>560vh</code> section wrapping a <code>position:sticky</code>,
+    100vh "cab". A single passive scroll listener computes progress
+    <code>p&nbsp;=&nbsp;(scrollY − top) / (height − vh)</code> and hands it to one
+    rAF-throttled render function. Everything is a pure function of <code>p</code> —
+    transforms and opacity only, nothing re-layouts:</p>
+    <ul>
+      <li><b>Parallax city:</b> two inline-SVG skyline planes (dark rects, a few brass window
+      pixels) sink at <code>0.55·vh</code> and <code>1.25·vh</code> with a haze gradient between
+      them — the near plane drops below the fold by floor 24, which is what sells the altitude.</li>
+      <li><b>Ambient light:</b> three stacked fixed-cost layers — warm street-glow radial
+      (gone by p≈0.45), open dusk-sky gradient and a faint star field (fading in past p≈0.5) —
+      cross-faded by opacity, never repainted.</li>
+      <li><b>Floor indicator:</b> L · 12 · 24 · 38 · PH in brass Marcellus. The current stop is
+      marked by a <b>line-weight change</b> (thicker, longer tick + brass color); a dot travels the
+      hairline rail, eased between <em>measured</em> label centers, beside a continuous
+      "ETAGE 07" readout. Under 720px the whole thing becomes a horizontal strip pinned to the
+      top of the cab, ordered L→PH.</li>
+      <li><b>Stops:</b> four residence tiers at progress centers ≈ .20/.44/.68/.92. Each card's
+      <code>translateY</code> is tied to <code>p − center</code> so it physically rides up through
+      the cab under a smoothstep opacity window; a huge stroked ghost numeral behind it names the
+      floor at a glance.</li>
+    </ul>
+  </section>
+
+  <section>
+    <h2><i>II</i>Self-drawing floorplans</h2>
+    <p>Each stop carries a hand-authored SVG plan. Every wall path gets
+    <code>pathLength="1"</code>, <code>stroke-dasharray:1</code>,
+    <code>stroke-dashoffset:1</code>; when the stop goes live a class flips the offset to 0 and
+    staggered <code>transition-delay</code>s draw outer walls first, partitions next, brass
+    loggia lines and door arcs last. Room labels fade in after the ink dries, and the m² figure
+    counts up with an eased rAF loop. Leaving a stop resets the classes and the counter, so the
+    plan redraws on every visit. The PH stop is the payoff: the penthouse photo wakes from
+    <code>brightness(.06)</code> to full over ~2.6s with a diagonal light sweep — entering the
+    room, not loading an image.</p>
+  </section>
+
+  <section>
+    <h2><i>III</i>Assets</h2>
+    <p>Both photographs were generated with <b>Nano Banana 2 via the Higgsfield MCP</b>,
+    palette-locked to the six site hexes (dusk navy #101823, brass #C7A867, cream stone #F2EEE6…):
+    a 4:5 tower at blue hour with brass window glow, and a 16:9 penthouse interior at dusk.
+    Upscaled to <b>2K</b>, then converted with <b>ffmpeg</b> to WebP at the real rendered
+    dimensions (1400×1750 and 1920×1080) — ~215&nbsp;KB and ~110&nbsp;KB. The tower loads eagerly
+    as the hero; the penthouse is lazy.</p>
+  </section>
+
+  <section>
+    <h2><i>IV</i>Quiet-luxury discipline</h2>
+    <ul>
+      <li><b>Type:</b> Marcellus for display and numerals, Archivo 300 for prose — no obvious
+      Playfair/Cormorant pairing, no bold weights anywhere.</li>
+      <li><b>Brass is scarce:</b> eyebrows, ticks, loggia strokes, door arcs, the m² digits.
+      Walls draw in cream so plans read as ink on stone.</li>
+      <li><b>Reduced motion:</b> the sticky stage collapses to static flow; stops stack as
+      pre-composed blocks with plans fully drawn, counters set once, all parallax and glow layers
+      removed. No rAF loop ever starts.</li>
+      <li><b>Performance:</b> one scroll handler, <code>contain:strict</code> on the stage,
+      transforms/opacity only, zero libraries, zero console errors from <code>file://</code>.</li>
+    </ul>
+  </section>
+
+  <section>
+    <h2><i>V</i>Reproduction prompt</h2>
+    <pre id="prompt">Build a one-page site for STRATA, a fictional luxury residential tower, as a single self-contained HTML file in German (gehoben, ruhig — quiet-luxury copy, no exclamation marks). Google Fonts only, no libraries; local assets are assets/tower.webp (1400×1750 hero) and assets/penthouse.webp (1920×1080). Palette: dusk navy #101823, deep panel #182230, brass #C7A867, cream stone #F2EEE6, warm white #F5F1E8, dim #8B94A3. Fonts: Marcellus for display and brass numerals, Archivo (300–600) for body and data.
+
+Generate both photos with Nano Banana 2 via the Higgsfield MCP, palette-locked to the six hex values: a 4:5 residential tower at blue hour with brass window glow, and a 16:9 penthouse interior at dusk overlooking the city; upscale to 2K and convert with ffmpeg to WebP (~85 quality) at real rendered dimensions.
+
+Hero: tower as a side-anchored 44% figure feathered into the navy copy column with the STRATA wordmark (letterspaced Marcellus, one brass letter), a calm two-line claim "Wohnen über der Stadt", and three hairline stat tiles (Etagen, Residenzen, Bezug). On mobile the figure flips above the headline.
+
+The showpiece: scrolling is the elevator. A 560vh section wraps a position:sticky 100vh stage. Progress p through the section drives everything in one rAF-throttled scroll handler, transforms/opacity only: two SVG city-silhouette planes (dark rects, tiny brass windows) sink at 0.55·vh and 1.25·vh with a haze layer between; ambient light shifts from a warm street-glow radial (fades by p≈0.45) to an open dusk-sky gradient plus a faint starfield fading in above p≈0.5. A fixed floor indicator on the right shows L · 12 · 24 · 38 · PH in Marcellus with tick marks; the active stop gets a brass color and a thicker, longer tick (line-weight change), a brass dot travels a hairline rail eased between measured label centers, and a live "ETAGE 07" readout counts floors continuously. Below 720px the indicator becomes a horizontal strip pinned to the top of the cab, ordered L→PH.
+
+Four stops occupy progress centers ~0.20/0.44/0.68/0.92; each residence card (blurred navy panel, hairline border, huge stroked ghost floor numeral behind) rides up through the cab via translateY tied to p−center with smoothstep opacity. Inside each card an SVG floorplan draws itself: every wall path has pathLength=1, dasharray 1, dashoffset 1→0 with staggered transition delays; cream walls, brass loggia lines and door arcs, room labels fading in late, and the m² value counting up (eased rAF). Leaving a stop resets it so the drawing replays. The PH stop is the payoff: the penthouse photo fills the stage from brightness(.06) to full over ~2.6s with a diagonal light sweep and the caption "Penthouse · Etage 41 — Ganz oben wird es still."
+
+After the ascent: a penthouse spec panel (Marcellus lede, hairline spec rows), Ausstattung as a quiet 3×2 hairline grid with Roman-numeral brass indices (smoked oak, raw brass, Jura limestone…), Lage as a minimal map-line SVG (two stroke weights, one river, pulsing brass STRATA dot) beside walking-time rows, and a Kontakt footer. Fixed "← 25" pill to the gallery, footer link "guide & prompt →".
+
+prefers-reduced-motion: the sticky stage collapses to static flow, stops stack pre-composed with plans fully drawn and counters set, all parallax/glow layers hidden. Zero console errors from file://, no horizontal scroll at 390px.</pre>
+  </section>
+</main>
+
+<footer>
+  <span>© 2026 STRATA — FABLE/25, Nº 46.</span>
+  <a href="/46-strata/">← back to the tower</a>
+</footer>
+</body>
+</html>

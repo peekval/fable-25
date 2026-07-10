@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AVIARY — how this site was built</title>
+<meta name="description" content="How the AVIARY dispatch-map site was built: living canvas map, scroll-scrubbed delivery journey, asset pipeline, plus a full reproduction prompt.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,300..800&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root{
+  --paper:#EAF2F8;--cloud:#FFFFFF;--ink:#1B2733;--orange:#FF6B2C;--blue:#3D7DC8;--dim:#7C8FA3;
+  --line:rgba(27,39,51,.10);--mono:"IBM Plex Mono",ui-monospace,monospace;
+}
+*{margin:0;padding:0;box-sizing:border-box}
+body{
+  font-family:"Bricolage Grotesque",system-ui,sans-serif;background:var(--paper);color:var(--ink);
+  -webkit-font-smoothing:antialiased;min-height:100vh;
+  background-image:
+    linear-gradient(rgba(61,125,200,.06) 1px,transparent 1px),
+    linear-gradient(90deg,rgba(61,125,200,.06) 1px,transparent 1px);
+  background-size:64px 64px;
+}
+::selection{background:var(--orange);color:#fff}
+.back{
+  position:fixed;top:1rem;left:1rem;z-index:9;font-family:var(--mono);font-size:.78rem;
+  letter-spacing:.06em;text-decoration:none;color:var(--ink);
+  background:rgba(255,255,255,.85);border:1px solid var(--line);border-radius:999px;padding:.5rem 1rem;
+  transition:background .25s,color .25s;
+}
+.back:hover{background:var(--ink);color:#fff}
+.wrap{max-width:780px;margin:0 auto;padding:6.5rem 1.3rem 5rem}
+.kicker{font-family:var(--mono);font-size:.72rem;letter-spacing:.3em;text-transform:uppercase;color:var(--orange);margin-bottom:1rem}
+h1{font-size:clamp(2.1rem,6vw,3.4rem);font-weight:700;letter-spacing:-.03em;line-height:1.02;margin-bottom:2rem}
+h1 em{font-style:normal;color:var(--blue)}
+h2{font-size:1.4rem;font-weight:650;letter-spacing:-.015em;margin:2.8rem 0 .9rem}
+h2 .n{font-family:var(--mono);font-size:.7rem;color:var(--orange);letter-spacing:.16em;margin-right:.6rem;vertical-align:.25em}
+p{line-height:1.72;color:#425364;margin-bottom:1rem}
+p b{color:var(--ink)}
+code{font-family:var(--mono);font-size:.86em;background:var(--cloud);border:1px solid var(--line);border-radius:6px;padding:.08em .4em}
+.card{
+  background:var(--cloud);border:1px solid var(--line);border-radius:18px;
+  padding:1.6rem 1.7rem;margin:1.4rem 0;box-shadow:0 18px 50px -30px rgba(27,39,51,.25);
+}
+pre{
+  font-family:var(--mono);font-size:.82rem;line-height:1.7;color:var(--ink);
+  white-space:pre-wrap;word-break:break-word;
+}
+.copy{
+  margin-top:1.1rem;cursor:pointer;font-family:inherit;font-size:.92rem;font-weight:600;
+  background:var(--orange);color:#fff;border:0;border-radius:999px;padding:.75rem 1.6rem;
+  transition:transform .25s,background .25s;
+}
+.copy:hover{transform:translateY(-2px)}
+.copy.done{background:var(--blue)}
+.links{display:flex;gap:.8rem;flex-wrap:wrap;margin-top:3rem}
+.links a{
+  text-decoration:none;font-size:.92rem;font-weight:600;color:var(--ink);
+  border:1.5px solid var(--ink);border-radius:999px;padding:.7rem 1.5rem;
+  transition:background .25s,color .25s,transform .25s;background:rgba(255,255,255,.7);
+}
+.links a:hover{background:var(--ink);color:#fff;transform:translateY(-2px)}
+footer{margin-top:4rem;font-family:var(--mono);font-size:.72rem;letter-spacing:.08em;color:var(--dim)}
+</style>
+</head>
+<body>
+<a class="back" href="/43-aviary/">&larr; AVIARY</a>
+<div class="wrap">
+  <p class="kicker">FABLE/25 &middot; site 43 &middot; guide</p>
+  <h1>How the sky got <em>scheduled</em></h1>
+
+  <h2><span class="n">01</span>The living dispatch map</h2>
+  <p>The whole page sits on one fixed, full-viewport <b>2D canvas</b> (no libraries, DPR capped
+  at 2). An abstract city is generated from a seeded PRNG in a 1600&times;1000 world-unit space:
+  an irregular street grid, white blocks with faint building footprints, a sinusoidal river band,
+  a park blob with scattered trees, plus mono cartographic labels and hub markers. Rendering goes
+  through a single <code>setTransform</code> camera (pan + zoom), with line widths divided by the
+  scale so cartographic strokes stay hairline at any zoom.</p>
+  <p>On top of the map, 3&ndash;5 <b>ambient flights</b> run endlessly through a small state
+  machine: origin ping &rarr; dashed quadratic-bezier route draws in &rarr; a tiny quad-rotor
+  glyph flies it with eased timing and a curvature-driven banking squash &rarr; delivery ping
+  &rarr; fade. Each phase also pushes a line into the hero's mono dispatch feed.</p>
+
+  <h2><span class="n">02</span>The scroll-scrubbed journey</h2>
+  <p>Scrolling past the hero enters a 520vh section with a sticky viewport. Scroll progress
+  scrubs <b>one arc-length-parameterised route</b> (five bezier segments, resampled so speed is
+  uniform) from Hub A to a rooftop pad. The camera lerps toward the route point with keyframed
+  zoom, ambient flights cross-fade out, and four checkpoint cards fade in around fixed route
+  fractions — pickup, corridor 7, a wind-advisory reroute (the original path draws as a dashed
+  ghost and gets crossed out while wind chevrons drift over the river), and rooftop delivery.
+  A mono HUD ticks altitude, speed, distance and status the whole way.</p>
+  <p>Everything pauses when the tab is hidden or the map scrolls out of relevance; with
+  <code>prefers-reduced-motion</code> the map renders one static composition — ambient routes
+  pre-drawn, the journey pre-composed with all checkpoints — and the cards stack as normal flow.</p>
+
+  <h2><span class="n">03</span>The aircraft asset</h2>
+  <p>The AV-1 product shot was generated with <b>Nano Banana 2 via the Higgsfield MCP</b> at 2K —
+  prompt-locked to the site palette (cloud-white airframe, signal-orange #FF6B2C cargo pod, pale
+  sky) — then converted to a 1920&times;1080 <b>WebP with ffmpeg</b>. It loads lazily with real
+  dimensions, and an SVG overlay draws callout lines to the rotors, pod and sensor mast when the
+  section scrolls into view (a plain legend list replaces the overlay on small screens).</p>
+
+  <h2><span class="n">04</span>Reproduction prompt</h2>
+  <div class="card">
+<pre id="prompt">Build a single-file showcase website (index.html, no build step, no JS libraries) for AVIARY — "The sky, scheduled." — a fictional autonomous drone-delivery network. Aesthetic: futuristic-clean light-sky with cartographic precision. Palette: sky paper #EAF2F8, cloud white #FFFFFF, ink #1B2733, signal orange #FF6B2C, route blue #3D7DC8, dim #7C8FA3. Fonts via Google Fonts: Bricolage Grotesque for display/body, IBM Plex Mono for all ops data.
+
+Showpiece — a living dispatch map. A fixed full-viewport 2D canvas draws an abstract city in thin cartographic lines: seeded-random irregular street grid, white blocks with faint building-footprint rectangles, a sinusoidal pale-blue river with flow lines, a park blob with tree dots, low-opacity mono labels (SECTOR 01…, RIVER MERN, ROOSEVELT PARK) and circular hub markers. Render everything in world coordinates (about 1600x1000) through one setTransform camera so it can pan and zoom; keep strokes hairline by dividing lineWidth by the scale. On it, 3-5 concurrent delivery flights loop forever: orange origin ping, dashed blue quadratic-bezier route drawing in, a tiny quad-rotor drone glyph flying it with easing and a banking squash on curves, an orange trail, delivery ping, fade out. A mono dispatch feed in the hero corner logs pickups and deliveries. Hero headline sits over the map ("The sky, scheduled." with "scheduled." in orange) behind a soft radial paper scrim.
+
+Then make scroll tell one package's story: a 520vh section with a sticky viewport where scroll progress scrubs a single arc-length-parameterised multi-bezier route from Hub A to a rooftop pad. Camera lerps along the route with keyframed zoom (2.3 at pickup, wider in cruise, tight at delivery); ambient flights cross-fade out. Four checkpoint copy cards fade in at fixed route fractions: pickup at Hub A, Corridor 7 cruise, a wind-advisory reroute where the original path shows as a crossed-out dashed ghost with animated wind chevrons over the river, and rooftop delivery. Add a mono telemetry HUD (ALT/SPD/DIST/status) updating throughout, plus progress dots.
+
+After the journey: an aircraft section presenting assets/drone.webp (1920x1080, lazy, real dims) with SVG callout lines that draw to the rotors, cargo pod and sensor mast (legend list under 860px), and a 4-cell spec strip (18 km, 4.2 kg, 14 m/s, 62 dB). Then count-up network stats, and a zones + waitlist footer with mono zone chips (LIVE/Q3/Q4) and a fake email form. Fixed "← 25" pill to "/", footer link to /43-aviary/guide/.
+
+Hard requirements: prefers-reduced-motion gets a static pre-composed map and stacked cards; canvas pauses when offscreen or the tab is hidden; devicePixelRatio capped at 2; reduced map density and 3 flights on mobile; zero console errors from file://; no horizontal overflow at 390px.</pre>
+    <button class="copy" id="copyBtn">Copy prompt</button>
+  </div>
+
+  <div class="links">
+    <a href="/43-aviary/">&larr; Visit AVIARY</a>
+    <a href="/">All 25+ sites</a>
+  </div>
+  <footer>AVIARY &middot; FABLE/25 &middot; canvas 2D, one file, zero libraries</footer>
+</div>
+<script>
+(function(){
+  var b=document.getElementById("copyBtn"),p=document.getElementById("prompt");
+  b.addEventListener("click",function(){
+    function done(){b.textContent="Copied ✓";b.classList.add("done");
+      setTimeout(function(){b.textContent="Copy prompt";b.classList.remove("done");},1800);}
+    if(navigator.clipboard&&navigator.clipboard.writeText){
+      navigator.clipboard.writeText(p.textContent).then(done,done);
+    }else{
+      var r=document.createRange();r.selectNodeContents(p);
+      var s=window.getSelection();s.removeAllRanges();s.addRange(r);done();
+    }
+  });
+})();
+</script>
+</body>
+</html>

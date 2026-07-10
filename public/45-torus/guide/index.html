@@ -1,0 +1,154 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>TORUS — how this site was built</title>
+<meta name="description" content="Technique breakdown for the TORUS fusion-energy site: the scroll-scrubbed ignition sequence, the canvas plasma torus, the asset pipeline, and a full reproduction prompt.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Unbounded:wght@200;300;400;500&family=Martian+Mono:wght@100;200;300;400&display=swap" rel="stylesheet">
+<style>
+:root{
+  --void:#070A0F;--steel:#2A3140;--magenta:#E24FBB;--violet:#8E4FE2;--core:#FFB37A;
+  --ink:#E8ECF2;--dim:#7A8494;--line:rgba(122,132,148,.22);
+  --mono:"Martian Mono",ui-monospace,monospace;--disp:"Unbounded",system-ui,sans-serif;
+}
+*{margin:0;padding:0;box-sizing:border-box}
+body{
+  font-family:var(--mono);font-weight:300;background:var(--void);color:var(--ink);
+  line-height:1.75;-webkit-font-smoothing:antialiased;overflow-x:hidden;
+}
+::selection{background:var(--magenta);color:var(--void)}
+.back{
+  position:fixed;top:18px;left:18px;z-index:60;
+  font:400 12px/1 var(--mono);letter-spacing:.08em;color:var(--ink);text-decoration:none;
+  padding:9px 15px;border-radius:999px;border:1px solid var(--line);
+  background:rgba(7,10,15,.6);backdrop-filter:blur(8px);
+  transition:border-color .25s,color .25s;
+}
+.back:hover{border-color:var(--magenta);color:var(--magenta)}
+main{max-width:880px;margin:0 auto;padding:130px 22px 90px}
+.kicker{
+  font:300 11px/1.6 var(--mono);letter-spacing:.34em;color:var(--dim);text-transform:uppercase;
+  margin-bottom:18px;display:flex;align-items:center;gap:14px;
+}
+.kicker::before{content:"";width:34px;height:1px;background:var(--magenta)}
+h1{font:300 clamp(30px,5.4vw,52px)/1.12 var(--disp);margin-bottom:22px}
+h1 em{font-style:normal;font-weight:500;
+  background:linear-gradient(100deg,var(--magenta),var(--violet) 55%,var(--core));
+  -webkit-background-clip:text;background-clip:text;color:transparent}
+.lede{color:var(--dim);font-size:13.5px;max-width:62ch}
+.lede strong{color:var(--ink);font-weight:400}
+h2{
+  font:400 15px/1.5 var(--disp);letter-spacing:.06em;margin:66px 0 16px;
+  padding-top:30px;border-top:1px solid var(--line);
+}
+h2 span{color:var(--magenta);font-family:var(--mono);font-size:11px;letter-spacing:.3em;margin-right:14px}
+p{color:var(--dim);font-size:13px;margin-bottom:14px;max-width:70ch}
+p strong{color:var(--ink);font-weight:400}
+code{
+  font-family:var(--mono);font-size:.92em;color:var(--core);
+  background:rgba(42,49,64,.4);border:1px solid var(--line);border-radius:5px;padding:1px 6px;
+}
+ul{margin:0 0 14px 18px;color:var(--dim);font-size:13px}
+li{margin-bottom:8px}
+li strong{color:var(--ink);font-weight:400}
+.prompt-wrap{
+  margin-top:26px;border:1px solid var(--steel);border-radius:12px;overflow:hidden;
+  box-shadow:0 30px 80px -40px rgba(142,79,226,.35);
+}
+.prompt-head{
+  display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap;
+  padding:12px 18px;border-bottom:1px solid var(--line);
+  font:300 10px/1.6 var(--mono);letter-spacing:.26em;color:var(--dim);text-transform:uppercase;
+}
+.prompt-head b{color:var(--ink);font-weight:400}
+pre{
+  padding:24px 22px;overflow-x:auto;white-space:pre-wrap;word-break:break-word;
+  font:300 12px/1.9 var(--mono);color:var(--ink);background:rgba(4,6,10,.7);
+}
+footer{
+  max-width:880px;margin:0 auto;padding:0 22px 60px;
+  font:300 10px/1.8 var(--mono);letter-spacing:.2em;color:var(--dim);text-transform:uppercase;
+  display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap;
+}
+footer a{color:var(--dim);text-decoration:none;border-bottom:1px solid var(--steel);transition:color .25s}
+footer a:hover{color:var(--core)}
+</style>
+</head>
+<body>
+<a class="back" href="../">&larr; TORUS</a>
+<main>
+  <p class="kicker">FABLE/25 &middot; Site 45 &middot; Build guide</p>
+  <h1>How the star got <em>held.</em></h1>
+  <p class="lede">One HTML file, one 2D canvas, three generated assets. The whole site is built
+     around a single earned moment: <strong>scrolling a fusion reactor through its real startup
+     sequence until it ignites.</strong></p>
+
+  <h2><span>01</span>The ignition scrub</h2>
+  <p>Hero and ignition chapter share one <code>560vh</code> section with a sticky full-viewport
+     canvas. A scroll listener does nothing but compute progress <code>p = -rect.top / (height - viewport)</code>;
+     every visual is a <strong>pure function of p</strong>, which is what makes the sequence perfectly
+     reversible when you scroll back up.</p>
+  <ul>
+    <li><strong>Status lines type in</strong> by slicing each string to <code>floor(subProgress &times; length)</code>
+        characters inside a per-line progress window — no timers, so reverse-scrolling untypes them.</li>
+    <li><strong>Plasma intensity</strong> is a smoothstep ramp through the stages plus a sharp extra
+        step at p&thinsp;&asymp;&thinsp;0.82 — the ignition jump.</li>
+    <li><strong>The Q-factor readout</strong> is tuned to cross exactly 1.0 at the IGNITION line
+        (the physics punchline: net gain), then runs away to 11.3.</li>
+    <li><strong>The shockglow</strong> is a fixed radial-gradient overlay whose opacity is a Gaussian
+        bump centred just past ignition plus a settling plateau — a slow flash that washes the
+        section and stays as an afterglow.</li>
+  </ul>
+
+  <h2><span>02</span>The plasma torus (canvas 2D, no libraries)</h2>
+  <p>The torus is parametric: a point at toroidal angle &theta; and poloidal angle &phi; lands at
+     <code>(R + r&middot;cos&phi;)&middot;(cos&theta;, sin&theta;&middot;squash)</code> minus a vertical tube offset. ~900 particles
+     (340 under 768px) each carry their own angular speeds and are drawn as short streaks along
+     their direction of motion with <code>globalCompositeOperation = "lighter"</code>, so overlapping
+     streams add up to glow. Fourteen thin poloidal ellipses hug the tube as magnetic field lines;
+     their radius shrinks as intensity rises — <strong>the field visibly tightens its grip</strong>.
+     Colour lerps from magenta #E24FBB through violet #8E4FE2, and particles flagged as core-bound
+     whiten toward #FFB37A only above 55% intensity. DPR is capped at 2, and an IntersectionObserver
+     plus <code>visibilitychange</code> stop the rAF loop whenever the stage is offscreen or the tab hidden.</p>
+
+  <h2><span>03</span>The assets — inside the vessel</h2>
+  <p>The porthole footage is generated, not stock: a <strong>Nano Banana 2</strong> still of a tokamak
+     interior mid-shot (swirling magenta-violet plasma ring, palette-exact) was fed to
+     <strong>Kling 3.0 Turbo image-to-video via the Higgsfield MCP</strong> for a slow plasma churn, then
+     finished with <strong>ffmpeg</strong>: a 1920-wide WebP still, a matching poster frame, and an h264
+     CRF encode whose head and tail are crossfaded so the ~4.5&thinsp;s clip self-loops seamlessly at
+     ~430&thinsp;KB. On the page it's framed as CAM-04 — a live camera feed with corner ticks, REC dot
+     and shot metadata. The video element is injected by JS only when motion is allowed
+     (<code>autoplay muted loop playsinline preload="metadata"</code>, poster set), and an
+     IntersectionObserver pauses it offscreen.</p>
+
+  <h2><span>04</span>Accessibility &amp; the reduced-motion cut</h2>
+  <p><code>prefers-reduced-motion</code> gets a different edit, not a broken one: the scrub section
+     collapses to a single viewport showing one static post-ignition frame, the HUD renders fully
+     typed with Q at 11.3, the porthole shows the poster still, and reveals/counters resolve
+     instantly. Fonts: <strong>Unbounded</strong> (monumental display) + <strong>Martian Mono</strong> (technical
+     everything-else).</p>
+
+  <h2><span>05</span>Reproduction prompt</h2>
+  <div class="prompt-wrap">
+    <div class="prompt-head"><span><b>PROMPT</b> &middot; 45-TORUS</span><span>PASTE INTO YOUR AGENT</span></div>
+    <pre id="prompt">Build a one-page site for TORUS, a fictional fusion-energy company ("A star, held"), as a single self-contained HTML file (Google Fonts allowed; local assets in assets/: plasma.webp still, plasma.mp4 loop, plasma-poster.webp). Aesthetic: futuristic dark — void black #070A0F, steel #2A3140, text #E8ECF2, dim #7A8494, and a plasma gradient from magenta #E24FBB through violet #8E4FE2 to a white-orange core #FFB37A. Fonts: Unbounded for monumental display headlines, Martian Mono for everything else. Copy: awed but engineering-sober.
+
+The showpiece is a scroll-scrubbed ignition sequence. Hero and ignition share one ~560vh section with a sticky full-viewport 2D canvas (no libraries) rendering a plasma torus: ~900 additive-blended particle streaks (340 on mobile) orbiting a squashed elliptical ring via toroidal + poloidal angles, fourteen thin poloidal field-line ellipses hugging the tube, a faint steel silhouette, and a radial core halo. Scroll progress drives everything as a pure function: hero text fades out, a mono HUD types status lines in character-by-character (VACUUM OK → TF COILS AT FIELD 12.6 T → INJECTING D-T → HEATING 40 keV → IGNITION), intensity ramps so particles brighten and shift magenta→violet→white-orange, field lines tighten, and at ~85% a Q-factor readout crosses exactly 1.0 (flipping to orange — net gain) while a radial shockglow overlay washes the viewport with a Gaussian bump that settles to an afterglow plateau, then Q runs away to 11.3. Because everything derives from progress, scrolling back reverses the startup. Pause the rAF loop when the stage is offscreen or the tab hidden; cap DPR at 2.
+
+Generate the assets first: prompt Nano Banana 2 for a 16:9 tokamak interior mid-shot — swirling magenta-violet plasma ring, palette-exact — then feed the still to Kling 3.0 Turbo image-to-video via the Higgsfield MCP for a slow plasma churn, and finish with ffmpeg: a 1920-wide WebP still plus matching poster, and an h264 CRF encode with crossfaded head/tail so the ~4.5s clip self-loops seamlessly around 430KB.
+
+Sections after the stage: "Inside the vessel" — the loop framed as live camera CAM-04 (bordered porthole, corner ticks, blinking REC dot, shot-metadata bar), the video injected by JS only when motion is allowed (autoplay muted loop playsinline preload=metadata, poster) and paused offscreen by an IntersectionObserver. "The machine" — four bordered spec tiles with IntersectionObserver count-up counters (12.6 T field, 150M °C "10× hotter than the sun's core", Q 11.3, 400 s pulse) plus the full-frame still. Roadmap — four-milestone timeline, the 2029 ignition node glowing warm. Footer CTA, fixed "← 25" pill, footer guide link.
+
+prefers-reduced-motion gets a different edit: no scrub — the stage collapses to one viewport with a static post-ignition frame, the HUD fully typed, Q at 11.3, poster still instead of video, reveals and counters instant. Zero console errors from file://, no horizontal scroll at 390px wide.</pre>
+  </div>
+</main>
+<footer>
+  <span>TORUS &middot; FABLE/25 &middot; SITE 45</span>
+  <a href="../">&larr; back to the site</a>
+</footer>
+</body>
+</html>

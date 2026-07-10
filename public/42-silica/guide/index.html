@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>How SILICA was built — guide</title>
+<meta name="description" content="Techniques behind the SILICA exploded-die showcase — scroll-scrubbed layer assembly, trace pulses, wafer-scan reveal — plus a copy-paste reproduction prompt.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Familjen+Grotesk:wght@400;500;600;700&family=Spline+Sans+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#0B0D10; --panel:#12151A; --vio:#8B7CF6; --cyn:#5EEAD4; --lime:#B8FF29;
+  --txt:#E7EAF0; --dim:#8B93A3; --line:rgba(139,147,163,.16); --line2:rgba(139,147,163,.3);
+  --mono:'Spline Sans Mono',ui-monospace,monospace;
+}
+*{margin:0;padding:0;box-sizing:border-box}
+html,body{overflow-x:clip}
+body{
+  background:var(--bg);color:var(--txt);font-family:'Familjen Grotesk',system-ui,sans-serif;
+  line-height:1.65;-webkit-font-smoothing:antialiased;
+}
+::selection{background:var(--lime);color:#0B0D10}
+.back{
+  position:fixed;top:18px;left:18px;z-index:9;text-decoration:none;
+  font-family:var(--mono);font-size:12px;letter-spacing:.12em;color:var(--dim);
+  background:rgba(18,21,26,.72);border:1px solid var(--line2);border-radius:999px;
+  padding:8px 16px;backdrop-filter:blur(10px);transition:color .2s,border-color .2s;
+}
+.back:hover{color:var(--lime);border-color:var(--lime)}
+main{max-width:840px;margin:0 auto;padding:120px clamp(20px,5vw,48px) 90px}
+.eyebrow{
+  font-family:var(--mono);font-size:11px;letter-spacing:.28em;text-transform:uppercase;
+  color:var(--cyn);display:flex;align-items:center;gap:12px;margin-bottom:20px;
+}
+.eyebrow::before{content:"";width:26px;height:1px;background:linear-gradient(90deg,var(--vio),var(--cyn))}
+h1{
+  font-size:clamp(34px,6vw,58px);font-weight:700;letter-spacing:-.03em;line-height:1.04;
+  background:linear-gradient(100deg,var(--txt) 35%,var(--vio) 70%,var(--cyn));
+  -webkit-background-clip:text;background-clip:text;color:transparent;padding-bottom:.08em;
+}
+.intro{margin-top:18px;color:var(--dim);font-size:17px;max-width:60ch}
+.intro b{color:var(--txt);font-weight:500}
+h2{
+  font-size:22px;font-weight:600;letter-spacing:-.01em;margin:64px 0 14px;
+  display:flex;align-items:center;gap:12px;
+}
+h2 .tick{width:10px;height:10px;background:var(--lime);flex:0 0 auto}
+p{color:var(--dim);margin-bottom:14px;max-width:68ch}
+p b,li b{color:var(--txt);font-weight:500}
+code{
+  font-family:var(--mono);font-size:.86em;color:var(--cyn);
+  background:var(--panel);border:1px solid var(--line);border-radius:5px;padding:1px 6px;
+}
+ul{margin:0 0 14px 18px;color:var(--dim)}
+li{margin-bottom:8px;max-width:64ch}
+li::marker{color:var(--vio)}
+.prompt-box{
+  position:relative;margin-top:22px;background:var(--panel);
+  border:1px solid var(--line2);border-radius:12px;padding:34px 28px 30px;
+  box-shadow:0 30px 70px -34px rgba(0,0,0,.9);
+}
+.prompt-box .ph{
+  font-family:var(--mono);font-size:10px;letter-spacing:.24em;color:var(--lime);margin-bottom:18px;
+}
+.prompt-box pre{
+  white-space:pre-wrap;word-wrap:break-word;font-family:inherit;
+  font-size:15px;line-height:1.75;color:#C9CFDA;
+}
+.copy-btn{
+  position:absolute;top:18px;right:18px;cursor:pointer;
+  font-family:var(--mono);font-size:10px;letter-spacing:.16em;text-transform:uppercase;
+  color:#0B0D10;background:var(--lime);border:0;border-radius:6px;padding:8px 14px;font-weight:600;
+  transition:transform .15s;
+}
+.copy-btn:hover{transform:translateY(-1px)}
+footer{
+  margin-top:80px;padding-top:24px;border-top:1px solid var(--line);
+  font-family:var(--mono);font-size:11px;letter-spacing:.16em;color:var(--dim);
+  display:flex;justify-content:space-between;gap:14px;flex-wrap:wrap;
+}
+footer a{color:var(--dim);text-decoration:none}
+footer a:hover{color:var(--lime)}
+</style>
+</head>
+<body>
+<a class="back" href="/42-silica/">&larr; SILICA</a>
+<main>
+  <div class="eyebrow">FABLE/25 &middot; site 42 &middot; build guide</div>
+  <h1>How SILICA was built</h1>
+  <p class="intro">One HTML file, no libraries, no WebGL. The whole chip is <b>five flat SVG planes in a CSS preserve-3d isometric stack</b> — assembled by scroll, lit by dash-offset math.</p>
+
+  <h2><span class="tick"></span>The exploded-die scrub</h2>
+  <p>The hero is a 430vh section with a sticky 100vh viewport. Each die layer (substrate, compute tiles, interconnect mesh, SRAM banks, heat spreader) is an SVG on an absolutely-positioned plane inside a <code>transform-style: preserve-3d</code> container rotated <code>rotateX(60deg) rotateZ(45deg)</code> — with <b>no perspective</b>, so the projection is orthographic and every edge stays parallel and crisp.</p>
+  <p>Scroll progress maps to five staggered per-layer windows. The trick that makes assembly feel mechanical: gap collapse is <b>cumulative bottom-up</b> — layer <em>i</em> sits at <code>z = Σ (T + GAP·(1−e_j))</code>, so when a lower gap seats, the entire upper stack rides down with it. Each window eases with a mild easeOutBack for a snap-and-settle landing, and a label with a leader line flies in as its layer seats. The stage counter-translates by <code>0.4 × totalZ</code> so the shrinking stack stays optically centered. The scrub itself is a dirty-flag rAF: scroll events only set a flag, one frame applies it, and nothing runs while idle.</p>
+
+  <h2><span class="tick"></span>Trace pulses &amp; the x-ray state</h2>
+  <p>At 90% progress the die goes &ldquo;live&rdquo;: the heat spreader and SRAM fade to ghost opacity (an x-ray view, so the mesh stays visible), and pulses stream along the interconnect. Every mesh edge is drawn twice — a dim base path and a <code>pathLength="100"</code> pulse copy with <code>stroke-dasharray: 9 91</code> animated on <code>stroke-dashoffset</code>, with per-edge duration/negative-delay jitter so traffic never looks looped. Hovering a compute tile adds a <code>.hot</code> class to its adjacent edges (a tile&rarr;edges map built while generating the SVG) and lights its local traffic lime. All 144 substrate pads, 16 tiles, 24 edges and 6 SRAM banks are generated in ~40 lines of JS instead of hand-written markup.</p>
+  <p>Lifecycle hygiene: an IntersectionObserver on the sticky viewport plus a <code>visibilitychange</code> listener toggle <code>animation-play-state: paused</code> on every pulse when the hero is offscreen or the tab is hidden. <code>prefers-reduced-motion</code> collapses the hero to a single static assembled viewport with counters landed and static dashes.</p>
+
+  <h2><span class="tick"></span>The die shot (asset pipeline)</h2>
+  <p>The macro photo of the iridescent die was generated with <b>Nano Banana 2 via the Higgsfield MCP</b> at 2K, palette-locked to the site (violet #8B7CF6 / cyan #5EEAD4 iridescence on near-black, one lime pad dead center), then encoded to WebP with <b>ffmpeg</b> (1920&times;1080, ~335&nbsp;KB). It's revealed by a wafer-scan: a lime scanline sweeps down while the image&rsquo;s <code>clip-path: inset()</code> opens behind it, then an engraved mono caption fades up. The <code>img</code> is lazy-loaded with real width/height attributes.</p>
+
+  <h2><span class="tick"></span>Everything else</h2>
+  <ul>
+    <li><b>Fonts:</b> Familjen Grotesk (technical grotesque display) + Spline Sans Mono — deliberately not Inter/Space Grotesk.</li>
+    <li><b>Architecture story:</b> a sticky mini-stack of five CSS plates; IntersectionObserver picks the step in the middle band of the viewport and lifts that plate with a lime outline.</li>
+    <li><b>Benchmarks:</b> bars are <code>transform: scaleX(var(--w))</code> from origin-left; numbers count up once with cubic ease and <code>tabular-nums</code>.</li>
+    <li><b>Mobile:</b> die size clamped so the iso diagonal fits 390px; side labels swap for a single mono readout line under the die.</li>
+  </ul>
+
+  <h2><span class="tick"></span>Reproduction prompt</h2>
+  <p>Paste this into a capable coding agent to rebuild the site from scratch.</p>
+  <div class="prompt-box">
+    <div class="ph">PROMPT &middot; ~420 WORDS</div>
+    <button class="copy-btn" id="copy">Copy</button>
+    <pre id="prompt">Build a single-file HTML showcase site for SILICA, a fictional AI-inference-chip company: "SILICA — Inference, etched in silicon". Aesthetic: futuristic-clean dark and surgical — near-black #0B0D10, panels #12151A, a silicon-iridescence duotone of violet #8B7CF6 and cyan #5EEAD4, electric lime #B8FF29 as a rare surgical accent, text #E7EAF0, dim #8B93A3. Fonts: Familjen Grotesk for display, Spline Sans Mono for labels, readouts and code. Terse, confident hardware copy throughout ("Data moves; nothing waits", "350 watts leave quietly").
+
+Signature piece: a scroll-scrubbed exploded die. A 430vh hero with a sticky 100vh viewport holds five SVG layers — substrate with a 12x12 pad grid, 16 compute tiles on a shared violet-to-cyan gradient, an interconnect mesh of 24 edges plus a perimeter ring, six hatched SRAM banks, and a brushed heat spreader engraved "SILICA S1 · TESSERA" — stacked as flat planes in a preserve-3d container at rotateX(60deg) rotateZ(45deg) with NO perspective, so the projection stays orthographic and crisp. Generate all repetitive geometry in JS. Map scroll progress to five staggered windows; collapse gaps cumulatively bottom-up (z_i = sum of T + GAP*(1-ease_j) so the upper stack rides down as each layer seats) with a mild easeOutBack snap, counter-translating the stage by 0.4*totalZ to keep the stack centered. As each layer seats, a mono label with a leader line flies in, and a mono readout line reports "02 · INTERCONNECT — CLOSING / SEATED". At 90% the die goes live: heat spreader and SRAM ghost to x-ray opacity, pulses stream along every edge (duplicate pulse paths, pathLength 100, stroke-dasharray 9 91, animated stroke-dashoffset with per-edge duration and negative-delay jitter), hovering a compute tile lights its adjacent edges lime via a tile-to-edges map, and three hero stats count up mechanically with tabular-nums (1,860 TOPS · 48.2 TOPS/W · 38 ms). Drive the scrub with a dirty-flag rAF; pause all pulse animations when the hero leaves the viewport (IntersectionObserver) or the tab hides.
+
+Then: an Architecture section — sticky isometric mini-stack of five CSS plates beside five scroll steps; the active step lifts its plate with a lime outline. A full-bleed die-shot section: a 1920x1080 macro photo of an iridescent silicon die (lazy, real dims) revealed by a lime scanline sweep synced to a clip-path inset wipe, with an engraved mono caption. Benchmarks vs previous gen: scaleX bars and count-ups (142 vs 51 tok/s; 48.2 vs 19.5 TOPS/W; 38 vs 210 ms TTFT) with lime delta chips. A developer section with a beautifully styled Python snippet (attach, load, stream — blinking lime cursor). Footer CTA "The stack is closed. Open a terminal." with a lime button. Fixed "← 25" pill top-left. prefers-reduced-motion: static assembled die, counters landed, no pulses or scan. Must run from file:// with zero console errors, no horizontal scroll at 390px, genuinely good on mobile.</pre>
+  </div>
+
+  <footer>
+    <span>&copy; 2026 SILICA &middot; FABLE/25</span>
+    <a href="/42-silica/">&larr; back to the site</a>
+  </footer>
+</main>
+<script>
+document.getElementById('copy').addEventListener('click',function(){
+  var b=this;
+  navigator.clipboard.writeText(document.getElementById('prompt').textContent).then(function(){
+    b.textContent='Copied';setTimeout(function(){b.textContent='Copy'},1400);
+  }).catch(function(){});
+});
+</script>
+</body>
+</html>
