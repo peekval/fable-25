@@ -1,0 +1,1069 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>L'ÉTOILE — Die Nacht gehört der Strecke</title>
+<meta name="description" content="L'Étoile, der Alpen-Nachtzug: Abfahrt Zürlenz 21:04, Ankunft St. Alvra 07:26. Marketerie, Messinglicht, elf Viadukte und ein Erwachen im Alpenglühen.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;500;600&family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;1,300;1,400&family=Jost:ital,wght@0,300;0,400;0,500;1,300&display=swap" rel="stylesheet">
+<style>
+:root{
+  --night:#1A2233;
+  --deep:#111826;
+  --abyss:#0b101d;
+  --brass:#D9A554;
+  --brass-dim:#a97f42;
+  --wood:#7A5A3A;
+  --linen:#F2EDE2;
+  --rose:#C88A7E;
+  --dim:#8B90A0;
+  --line:rgba(217,165,84,.28);
+  --line-soft:rgba(139,144,160,.18);
+  --card:rgba(17,24,38,.62);
+}
+*{margin:0;padding:0;box-sizing:border-box}
+html{scroll-behavior:smooth}
+html,body{overflow-x:clip}
+body{
+  font-family:"Jost",system-ui,sans-serif;
+  font-weight:300;
+  background:var(--night);
+  color:var(--linen);
+  -webkit-font-smoothing:antialiased;
+  line-height:1.6;
+}
+::selection{background:var(--brass);color:var(--deep)}
+img{display:block;max-width:100%}
+a{color:inherit}
+h1,h2,h3{font-weight:400}
+.serif{font-family:"Cormorant Garamond",serif}
+
+/* ---------- chrome ---------- */
+.back{
+  position:fixed;top:1.05rem;left:1.1rem;z-index:60;
+  font-size:.82rem;letter-spacing:.12em;text-decoration:none;color:var(--linen);
+  background:rgba(11,16,29,.55);border:1px solid var(--line);border-radius:999px;
+  padding:.4rem .95rem;
+  transition:background .3s,color .3s;
+}
+.back:hover{background:var(--brass);color:var(--deep);border-color:var(--brass)}
+nav.top{
+  position:fixed;inset:0 0 auto 0;z-index:50;
+  display:flex;align-items:center;justify-content:center;gap:2.2rem;
+  padding:.95rem 5.5rem;
+  transition:background .45s,border-color .45s;
+  border-bottom:1px solid transparent;
+}
+nav.top.scrolled{background:rgba(11,16,29,.92);border-bottom-color:var(--line-soft)}
+nav.top a{font-size:.72rem;letter-spacing:.3em;text-transform:uppercase;text-decoration:none;color:var(--dim);transition:color .3s}
+nav.top a:hover{color:var(--brass)}
+nav.top .wordmark{font-family:"Cinzel",serif;font-size:.95rem;letter-spacing:.42em;color:var(--linen);margin:0 .6rem}
+nav.top .wordmark:hover{color:var(--brass)}
+@media(max-width:860px){
+  nav.top{gap:1rem;padding:.9rem 4.5rem .9rem 5.2rem;justify-content:flex-end}
+  nav.top a:not(.wordmark){display:none}
+  nav.top .wordmark{margin:0}
+}
+
+/* ---------- deco bits ---------- */
+.kicker{font-size:.68rem;letter-spacing:.42em;text-transform:uppercase;color:var(--brass);font-weight:400}
+.rule{display:flex;align-items:center;gap:.9rem;justify-content:center;margin:1.15rem auto}
+.rule::before,.rule::after{content:"";height:1px;width:min(120px,22vw);background:linear-gradient(90deg,transparent,var(--brass));}
+.rule::after{background:linear-gradient(90deg,var(--brass),transparent)}
+.rule .gem{width:7px;height:7px;background:var(--brass);transform:rotate(45deg);flex:none}
+section{position:relative}
+.shell{max-width:1120px;margin:0 auto;padding:0 1.4rem}
+.sec-head{text-align:center;padding:6.5rem 1.4rem 3rem}
+.sec-head h2{font-family:"Cormorant Garamond",serif;font-size:clamp(2rem,4.6vw,3.1rem);font-weight:400;line-height:1.15;margin-top:1.1rem}
+.sec-head h2 em{font-style:italic;color:var(--rose)}
+.sec-head p.lede{max-width:34rem;margin:1.1rem auto 0;color:var(--dim);font-size:1rem}
+
+/* chapter numeral in a self-drawing brass frame */
+.chapno{position:relative;width:74px;height:74px;margin:0 auto;display:grid;place-items:center}
+.chapno svg{position:absolute;inset:0;width:100%;height:100%;overflow:visible}
+.chapno svg *{fill:none;stroke:var(--brass);stroke-width:1.1;
+  stroke-dasharray:var(--len,300);stroke-dashoffset:var(--len,300);
+  transition:stroke-dashoffset 1.6s cubic-bezier(.6,.05,.2,1)}
+.chapno svg .d2{transition-delay:.45s}
+.in .chapno svg *,.chapno.in svg *{stroke-dashoffset:0}
+.chapno b{font-family:"Cinzel",serif;font-weight:500;font-size:1.5rem;color:var(--brass);letter-spacing:.05em}
+
+/* reveal */
+.rv{opacity:0;transform:translateY(26px);transition:opacity 1s ease,transform 1s cubic-bezier(.2,.7,.2,1)}
+.rv.in{opacity:1;transform:none}
+
+/* ---------- hero ---------- */
+.hero{position:relative;min-height:100svh;display:flex;flex-direction:column;justify-content:flex-end;overflow:clip}
+.hero .bg,.hero .bg img{position:absolute;inset:0;width:100%;height:100%}
+.hero .bg img{object-fit:cover;object-position:center 38%}
+.hero .scrim{position:absolute;inset:0;background:
+  linear-gradient(180deg,rgba(11,16,29,.62) 0%,rgba(11,16,29,.08) 30%,rgba(17,24,38,.05) 55%,rgba(17,24,38,.88) 92%,var(--night) 100%)}
+.hero .vig{position:absolute;inset:0;background:radial-gradient(120% 90% at 50% 42%,transparent 55%,rgba(11,16,29,.55) 100%)}
+.steam{position:absolute;left:-20%;bottom:-6%;width:70%;height:55%;pointer-events:none;
+  background:radial-gradient(48% 42% at 50% 60%,rgba(242,237,226,.16),transparent 70%);
+  filter:blur(18px);opacity:.8;animation:drift 26s linear infinite}
+.steam.s2{left:15%;bottom:-14%;width:60%;animation-duration:34s;animation-delay:-14s;opacity:.55}
+.steam.s3{left:45%;bottom:-4%;width:50%;animation-duration:21s;animation-delay:-7s;opacity:.4}
+@keyframes drift{
+  0%{transform:translate3d(-6%,4%,0) scale(.9)}
+  50%{transform:translate3d(22%,-10%,0) scale(1.12)}
+  100%{transform:translate3d(52%,-22%,0) scale(1.28);opacity:0}
+}
+.hero-inner{position:relative;z-index:2;text-align:center;padding:0 1.3rem 12svh;max-width:60rem;margin:0 auto;width:100%}
+.hero .kicker{text-shadow:0 1px 14px rgba(11,16,29,.8)}
+.hero h1{
+  font-family:"Cinzel",serif;font-weight:500;color:var(--linen);
+  font-size:clamp(2.9rem,9.5vw,6.4rem);letter-spacing:.16em;line-height:1.04;
+  margin:.9rem 0 0;text-shadow:0 2px 30px rgba(11,16,29,.85);
+  text-indent:.16em; /* optically balance tracking */
+}
+.hero .tag{font-family:"Cormorant Garamond",serif;font-style:italic;font-weight:300;
+  font-size:clamp(1.3rem,3.1vw,1.9rem);color:var(--linen);opacity:.95;text-shadow:0 1px 18px rgba(11,16,29,.9)}
+.hero .sub{margin:1.05rem auto 0;max-width:36rem;color:#c8ccd8;font-size:.98rem;text-shadow:0 1px 12px rgba(11,16,29,.9)}
+.cta-row{display:flex;gap:.9rem;justify-content:center;flex-wrap:wrap;margin-top:1.9rem}
+.btn{
+  font-family:"Jost",sans-serif;font-size:.78rem;letter-spacing:.28em;text-transform:uppercase;
+  text-decoration:none;padding:.95rem 1.9rem;border-radius:2px;transition:all .35s;cursor:pointer
+}
+.btn.solid{background:var(--brass);color:var(--deep);border:1px solid var(--brass)}
+.btn.solid:hover{background:#e8bb6d;box-shadow:0 6px 30px rgba(217,165,84,.35)}
+.btn.ghost{border:1px solid rgba(242,237,226,.45);color:var(--linen);background:rgba(11,16,29,.35)}
+.btn.ghost:hover{border-color:var(--brass);color:var(--brass)}
+.scrollcue{position:absolute;left:50%;bottom:1.4svh;transform:translateX(-50%);z-index:3;
+  font-size:.62rem;letter-spacing:.4em;text-transform:uppercase;color:var(--dim);text-decoration:none}
+.scrollcue::after{content:"";display:block;width:1px;height:34px;margin:.5rem auto 0;
+  background:linear-gradient(180deg,var(--brass),transparent);animation:cue 2.4s ease-in-out infinite}
+@keyframes cue{0%,100%{transform:scaleY(.4);transform-origin:top;opacity:.4}50%{transform:scaleY(1);opacity:1}}
+
+/* ---------- die fahrt : the window journey ---------- */
+.journey{height:520vh}
+.jstage{position:sticky;top:0;height:100svh;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:1.1rem;overflow:clip;padding-top:3.4rem;
+  background:
+    radial-gradient(90% 60% at 50% 118%,rgba(122,90,58,.22),transparent 60%),
+    linear-gradient(180deg,var(--night),var(--deep) 70%)}
+/* wood wall + subtle inlay behind the window */
+.jstage::before{content:"";position:absolute;inset:0;opacity:.5;pointer-events:none;background:
+  repeating-linear-gradient(90deg,rgba(122,90,58,.06) 0 3px,transparent 3px 90px),
+  repeating-linear-gradient(0deg,rgba(122,90,58,.05) 0 2px,transparent 2px 120px)}
+.window{
+  position:relative;width:min(880px,92vw);aspect-ratio:16/10;max-height:52svh;
+  border-radius:26px 26px 20px 20px;
+  padding:12px;
+  background:linear-gradient(160deg,#e8c07a,#8f6a33 30%,#d9a554 52%,#7a5a3a 78%,#c79a4e);
+  box-shadow:
+    0 30px 80px rgba(0,0,0,.6),
+    inset 0 1px 0 rgba(255,235,190,.6),
+    0 0 0 6px rgba(58,42,26,.85),
+    0 0 0 7px rgba(217,165,84,.28);
+}
+.glass{position:absolute;inset:12px;border-radius:16px 16px 10px 10px;overflow:hidden;background:#0b101d;transform:translateZ(0)}
+.layer{position:absolute;inset:0;pointer-events:none}
+.sky-night{background:linear-gradient(180deg,#0b101d 0%,#131b2e 42%,#243350 74%,#3a4c74 100%)}
+.sky-dusk{background:linear-gradient(180deg,#252c4a 0%,#4c4468 42%,#a56d76 72%,#e0a583 92%,#f0bd8f 100%)}
+.sky-dawn{background:linear-gradient(180deg,#182137 0%,#3c3f63 40%,#8d6478 66%,#c88a7e 82%,#f2c79c 100%);opacity:0}
+.stars{opacity:0}
+.stars i{position:absolute;width:2px;height:2px;border-radius:50%;background:#f6f1de;animation:twk 3.4s ease-in-out infinite}
+@keyframes twk{0%,100%{opacity:.25}50%{opacity:1}}
+.moon{
+  position:absolute;width:9.5%;aspect-ratio:1;left:0;top:0;border-radius:50%;
+  background:radial-gradient(circle at 36% 34%,#fdf7e4,#e9dcb4 58%,#cbbd90 100%);
+  opacity:0;
+}
+.moon::before{content:"";position:absolute;inset:-120%;border-radius:50%;
+  background:radial-gradient(circle,rgba(246,238,210,.32) 28%,rgba(246,238,210,.1) 48%,transparent 68%)}
+.moon::after{content:"";position:absolute;inset:0;border-radius:50%;
+  background:radial-gradient(circle at 62% 30%,rgba(180,168,128,.5) 3%,transparent 8%),
+             radial-gradient(circle at 38% 62%,rgba(180,168,128,.45) 4%,transparent 10%),
+             radial-gradient(circle at 60% 68%,rgba(180,168,128,.4) 3%,transparent 8%)}
+.strip{position:absolute;left:0;right:0;bottom:0;background-repeat:repeat-x;background-position:0 bottom}
+.glass{contain:strict}
+/* the strips get their SVG backgrounds + sizes from JS (keeps markup light) */
+.tint{mix-blend-mode:soft-light}
+.tint.dusk{background:linear-gradient(180deg,rgba(200,138,126,.0) 30%,rgba(200,138,126,.75) 100%)}
+.tint.dawn{background:linear-gradient(180deg,rgba(200,138,126,.05) 20%,rgba(240,190,140,.85) 100%);opacity:0}
+.snowfx{position:absolute;inset:0;pointer-events:none}
+.reflect{background:
+  radial-gradient(20% 26% at 78% 62%,rgba(217,165,84,.5),rgba(217,165,84,.12) 55%,transparent 72%),
+  radial-gradient(9% 12% at 71.5% 47%,rgba(255,226,168,.55),transparent 70%);
+  opacity:0}
+.sheen{background:linear-gradient(112deg,transparent 34%,rgba(242,237,226,.03) 44%,rgba(242,237,226,.07) 47%,transparent 56%,transparent 72%,rgba(242,237,226,.035) 79%,transparent 85%);opacity:.4}
+.gvig{background:radial-gradient(115% 105% at 50% 45%,transparent 58%,rgba(5,8,16,.6) 100%)}
+.tunnel{background:#020409;opacity:0}
+.streaks{opacity:0}
+.streaks i{position:absolute;top:0;height:100%;width:180px;
+  background:linear-gradient(90deg,transparent,rgba(217,165,84,.5) 45%,rgba(255,230,180,.85) 50%,rgba(217,165,84,.5) 55%,transparent);
+  transform:skewX(-14deg)}
+.streaks.run i{animation:rush .5s linear infinite}
+.streaks i:nth-child(1){left:8%;animation-delay:0s}
+.streaks i:nth-child(2){left:46%;animation-delay:-.18s;opacity:.7}
+.streaks i:nth-child(3){left:78%;animation-delay:-.33s;opacity:.5}
+@keyframes rush{0%{transform:translateX(60vw) skewX(-14deg)}100%{transform:translateX(-60vw) skewX(-14deg)}}
+.wjolt{animation:none}
+@keyframes jolt{0%,100%{transform:translate3d(0,0,0)}25%{transform:translate3d(0,-1px,0)}60%{transform:translate3d(0,1px,0)}}
+.window .plaque{
+  position:absolute;left:50%;top:-7px;transform:translate(-50%,-100%);
+  font-size:.6rem;letter-spacing:.5em;text-transform:uppercase;color:var(--brass-dim);white-space:nowrap}
+
+/* route band */
+.route{width:min(880px,92vw);position:relative;display:flex;flex-direction:column}
+.route .rail{position:relative;height:2px;background:var(--line-soft);border-radius:2px;margin:.3rem 0 .5rem}
+.route .fill{position:absolute;inset:0 auto 0 0;width:0;background:linear-gradient(90deg,var(--brass-dim),var(--brass));box-shadow:0 0 10px rgba(217,165,84,.5);border-radius:2px}
+.route .locdot{position:absolute;top:50%;left:0;width:11px;height:11px;border-radius:50%;background:var(--brass);
+  transform:translate(-50%,-50%);box-shadow:0 0 12px 3px rgba(217,165,84,.55)}
+.stations{display:flex;justify-content:space-between;list-style:none}
+.stations li{position:relative;flex:1;font-size:.66rem;letter-spacing:.18em;text-transform:uppercase;color:var(--dim);transition:color .5s}
+.stations li:nth-child(2){text-align:center}
+.stations li:nth-child(3){text-align:center}
+.stations li:last-child{text-align:right}
+.stations li::before{content:"";position:absolute;top:-14px;width:7px;height:7px;border-radius:50%;
+  background:var(--deep);border:1px solid var(--dim);transform:translate(-50%,-50%) rotate(45deg);left:0;transition:all .5s}
+.stations li:nth-child(2)::before{left:50%}
+.stations li:nth-child(3)::before{left:50%}
+.stations li:last-child::before{left:100%}
+.stations li b{display:block;font-weight:400;color:#aab0c0;font-size:.72rem;letter-spacing:.22em;transition:color .5s}
+.stations li span{opacity:.85}
+.stations li.passed{color:var(--brass-dim)}
+.stations li.passed b{color:var(--brass)}
+.stations li.passed::before{background:var(--brass);border-color:var(--brass);box-shadow:0 0 10px rgba(217,165,84,.6)}
+.bordzeit{text-align:right;font-size:.68rem;letter-spacing:.3em;color:var(--dim);text-transform:uppercase;margin-bottom:.15rem}
+.bordzeit b{color:var(--brass);font-weight:400;font-variant-numeric:tabular-nums}
+
+/* chapters */
+.chapters{position:relative;width:min(880px,92vw);height:7.2rem;margin-top:.4rem}
+.chapter{position:absolute;inset:0;display:flex;align-items:flex-start;gap:1.2rem;opacity:0;transform:translateY(14px);
+  transition:opacity .7s ease,transform .7s ease;pointer-events:none}
+.chapter.active{opacity:1;transform:none}
+.chapter .chapno{flex:none;width:58px;height:58px}
+.chapter .chapno b{font-size:1.15rem}
+.chapter h3{font-family:"Cormorant Garamond",serif;font-size:1.35rem;font-weight:400;letter-spacing:.02em}
+.chapter h3 em{font-style:italic;color:var(--rose)}
+.chapter p{font-size:.9rem;color:var(--dim);max-width:44rem;line-height:1.55;margin-top:.15rem}
+@media(max-width:640px){
+  .window{max-height:44svh}
+  .chapters{height:9.5rem}
+  .chapter p{font-size:.84rem}
+  .bordzeit{display:none}
+  .stations li span{display:none}
+}
+
+/* ---------- kabine ---------- */
+.kabine-grid{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:3.5rem;align-items:center;padding-bottom:6rem}
+@media(max-width:900px){.kabine-grid{grid-template-columns:minmax(0,1fr);gap:2.4rem}}
+.cabin-frame{position:relative;border-radius:4px;padding:10px;
+  background:linear-gradient(150deg,#caa059,#6f5230 35%,#b98f4a 60%,#5c452a 90%);
+  box-shadow:0 26px 70px rgba(0,0,0,.55),inset 0 1px 0 rgba(255,235,190,.5)}
+.cabin-scene{position:relative;overflow:hidden;border-radius:2px;--lamp:1}
+.cabin-scene img{width:100%;height:auto;transition:filter .9s ease;
+  filter:brightness(calc(.42 + .58*var(--lamp))) saturate(calc(.72 + .28*var(--lamp)))}
+.cabin-scene .ovl{position:absolute;inset:0;pointer-events:none;transition:opacity .9s ease}
+.ovl.dark{background:linear-gradient(200deg,rgba(6,10,20,.55),rgba(6,10,20,.82));opacity:calc((1 - var(--lamp))*.62)}
+.ovl.glow{opacity:var(--lamp);background:
+  radial-gradient(24% 15% at 44.5% 30%,rgba(255,214,150,.55),rgba(255,190,110,.18) 55%,transparent 75%),
+  radial-gradient(20% 11% at 18% 45%,rgba(255,205,140,.5),rgba(255,190,110,.14) 55%,transparent 78%),
+  radial-gradient(80% 55% at 35% 62%,rgba(217,165,84,.12),transparent 70%)}
+.ovl.moon-ovl{opacity:calc((1 - var(--lamp))*.85);background:
+  radial-gradient(38% 30% at 67% 38%,rgba(150,180,235,.28),rgba(120,150,215,.1) 55%,transparent 75%),
+  radial-gradient(60% 46% at 67% 45%,rgba(90,120,190,.14),transparent 70%)}
+/* the cabin window keeps travelling: masked strip of moving silhouettes */
+.ovl.wmotion{
+  left:52.5%;top:22.5%;width:29.5%;height:34.5%;inset:auto;position:absolute;
+  border-radius:6px;overflow:hidden;mix-blend-mode:screen;
+  opacity:calc(.32 + (1 - var(--lamp))*.35)}
+.ovl.wmotion::before,.ovl.wmotion::after{content:"";position:absolute;inset:0;background-repeat:repeat-x;background-position:0 bottom}
+.ovl.wmotion::before{background-image:var(--cab-far);background-size:auto 62%;animation:cabscroll 46s linear infinite;opacity:.5}
+.ovl.wmotion::after{background-image:var(--cab-near);background-size:auto 46%;animation:cabscroll 14s linear infinite}
+@keyframes cabscroll{0%{background-position-x:0}100%{background-position-x:-1200px}}
+.paused .ovl.wmotion::before,.paused .ovl.wmotion::after,
+.paused .steam,.paused .stars i,.paused .streaks i,.paused .scrollcue::after{animation-play-state:paused}
+.dimmer{display:flex;align-items:center;gap:1rem;margin-top:1.6rem;flex-wrap:wrap;min-width:0}
+.dimmer input{flex:1 1 130px;min-width:0}
+.dimmer label{font-size:.66rem;letter-spacing:.34em;text-transform:uppercase;color:var(--brass);white-space:nowrap}
+input[type=range]{-webkit-appearance:none;appearance:none;width:180px;height:2px;border-radius:2px;
+  background:linear-gradient(90deg,var(--deep),var(--brass));outline:none;cursor:pointer}
+input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;appearance:none;width:20px;height:20px;border-radius:50%;
+  background:radial-gradient(circle at 35% 32%,#f0d29a,var(--brass) 55%,#8a6630);border:1px solid #5c452a;
+  box-shadow:0 2px 8px rgba(0,0,0,.6)}
+input[type=range]::-moz-range-thumb{width:20px;height:20px;border-radius:50%;
+  background:radial-gradient(circle at 35% 32%,#f0d29a,var(--brass) 55%,#8a6630);border:1px solid #5c452a;
+  box-shadow:0 2px 8px rgba(0,0,0,.6)}
+.dimmer .state{font-family:"Cormorant Garamond",serif;font-style:italic;color:var(--dim);font-size:.95rem;min-width:7.5rem}
+.kabine-copy h3{font-family:"Cormorant Garamond",serif;font-size:clamp(1.7rem,3vw,2.3rem);line-height:1.2;margin:1rem 0 1rem}
+.kabine-copy h3 em{font-style:italic;color:var(--rose)}
+.kabine-copy p{color:#b9bdc9;font-size:.98rem;margin-bottom:1rem}
+.spec{list-style:none;margin-top:1.6rem;border-top:1px solid var(--line-soft)}
+.spec li{display:flex;justify-content:space-between;gap:1rem;padding:.7rem 0;border-bottom:1px solid var(--line-soft);font-size:.86rem}
+.spec li span{color:var(--dim);letter-spacing:.14em;text-transform:uppercase;font-size:.68rem;padding-top:.15rem}
+.spec li b{font-weight:400;color:var(--linen);text-align:right}
+
+/* ---------- speisewagen ---------- */
+.speise{background:linear-gradient(180deg,var(--night),#151d30 50%,var(--night))}
+.speise-grid{display:grid;grid-template-columns:minmax(0,.85fr) minmax(0,1.15fr);gap:3.5rem;align-items:start;padding-bottom:6.5rem}
+@media(max-width:900px){.speise-grid{grid-template-columns:minmax(0,1fr);gap:2.5rem}}
+.speise-copy{position:sticky;top:16vh}
+@media(max-width:900px){.speise-copy{position:static}}
+.speise-copy h3{font-family:"Cormorant Garamond",serif;font-size:clamp(1.7rem,3vw,2.3rem);line-height:1.2;margin:1rem 0}
+.speise-copy p{color:#b9bdc9;font-size:.98rem;margin-bottom:1rem}
+.menu-card{
+  position:relative;background:var(--linen);color:#241c12;border-radius:3px;
+  padding:3.2rem 2.6rem 2.8rem;max-width:560px;margin:0 auto;width:100%;
+  box-shadow:0 30px 80px rgba(0,0,0,.55),0 4px 18px rgba(0,0,0,.35)}
+.menu-card::before{content:"";position:absolute;inset:12px;border:1px solid rgba(122,90,58,.6);pointer-events:none}
+.menu-card::after{content:"";position:absolute;inset:17px;border:1px solid rgba(122,90,58,.3);pointer-events:none}
+.menu-card .corner{position:absolute;width:26px;height:26px;color:var(--wood)}
+.menu-card .corner svg{width:100%;height:100%;display:block}
+.menu-card .c1{top:20px;left:20px}.menu-card .c2{top:20px;right:20px;transform:rotate(90deg)}
+.menu-card .c3{bottom:20px;right:20px;transform:rotate(180deg)}.menu-card .c4{bottom:20px;left:20px;transform:rotate(270deg)}
+.menu-card header{text-align:center;margin-bottom:1.9rem}
+.menu-card header .mk{font-size:.6rem;letter-spacing:.5em;text-transform:uppercase;color:var(--wood)}
+.menu-card header h4{font-family:"Cinzel",serif;font-weight:500;font-size:1.5rem;letter-spacing:.24em;margin:.5rem 0 .2rem;color:#241c12;text-indent:.24em}
+.menu-card header .serif{font-style:italic;color:#6b5540;font-size:1rem}
+.mdiv{display:flex;align-items:center;gap:.7rem;margin:1.5rem 0;color:var(--wood)}
+.mdiv::before,.mdiv::after{content:"";flex:1;height:1px;background:currentColor;opacity:.4}
+.mdiv svg{width:44px;height:12px;flex:none}
+.course{text-align:center;margin:1.25rem 0}
+.course .cn{font-size:.58rem;letter-spacing:.44em;text-transform:uppercase;color:var(--wood);margin-bottom:.35rem}
+.course h5{font-family:"Cormorant Garamond",serif;font-weight:500;font-size:1.28rem;line-height:1.3;color:#241c12}
+.course p{font-family:"Cormorant Garamond",serif;font-style:italic;font-size:1rem;color:#6b5540;line-height:1.45}
+.course .wine{font-size:.72rem;letter-spacing:.16em;text-transform:uppercase;color:#9a6b2f;margin-top:.4rem}
+.menu-card footer{text-align:center;margin-top:2rem;font-size:.62rem;letter-spacing:.3em;text-transform:uppercase;color:var(--wood)}
+
+/* ---------- fahrplan / departure board ---------- */
+.board-wrap{padding-bottom:6.5rem}
+.board{
+  background:linear-gradient(180deg,#0d131f,var(--abyss));border:1px solid rgba(217,165,84,.35);border-radius:8px;
+  max-width:980px;margin:0 auto;overflow:hidden;
+  box-shadow:0 30px 80px rgba(0,0,0,.6),inset 0 1px 0 rgba(217,165,84,.25)}
+.board .bhead{display:flex;align-items:center;justify-content:space-between;gap:1rem;
+  padding:1.05rem 1.6rem;border-bottom:1px solid var(--line);background:rgba(217,165,84,.06)}
+.board .bhead h3{font-family:"Cinzel",serif;font-size:.95rem;letter-spacing:.4em;color:var(--brass);font-weight:500}
+.board .bhead span{font-size:.64rem;letter-spacing:.3em;color:var(--dim);text-transform:uppercase}
+.board-scroll{overflow-x:auto}
+.board table{width:100%;border-collapse:collapse;min-width:640px}
+.board th{font-size:.6rem;letter-spacing:.38em;text-transform:uppercase;color:var(--dim);font-weight:400;
+  text-align:left;padding:.85rem 1rem .6rem;border-bottom:1px solid var(--line-soft)}
+.board td{padding:.85rem 1rem;border-bottom:1px solid rgba(139,144,160,.1);white-space:nowrap}
+.board tr:last-child td{border-bottom:none}
+.board th:first-child,.board td:first-child{padding-left:1.6rem}
+.board th:last-child,.board td:last-child{padding-right:1.6rem}
+.flap{
+  display:inline-block;width:1.06em;height:1.5em;line-height:1.5em;text-align:center;margin-right:1.5px;
+  font-family:"Jost",sans-serif;font-weight:400;font-size:.95rem;letter-spacing:0;color:#f3e9cf;
+  background:linear-gradient(180deg,#232c40 0%,#182031 48%,#101724 52%,#161e2e 100%);
+  border-radius:3px;box-shadow:inset 0 1px 0 rgba(242,237,226,.08),0 1px 2px rgba(0,0,0,.5);
+  position:relative;vertical-align:middle}
+.flap::after{content:"";position:absolute;left:0;right:0;top:calc(50% - .5px);height:1px;background:rgba(0,0,0,.55)}
+.flap.sp{background:transparent;box-shadow:none}
+.flap.sp::after{display:none}
+.flap.brass{color:var(--brass)}
+td.note .flap{color:var(--rose);font-size:.78rem;width:1em}
+.board .bfoot{padding:1rem 1.6rem;font-family:"Cormorant Garamond",serif;font-style:italic;color:var(--dim);font-size:.95rem;border-top:1px solid var(--line-soft)}
+
+/* ---------- reservierung ---------- */
+.resa{background:
+  radial-gradient(80% 60% at 50% 0%,rgba(217,165,84,.07),transparent 60%),
+  linear-gradient(180deg,var(--night),var(--deep))}
+.resa-card{
+  max-width:980px;margin:0 auto 7rem;border:1px solid var(--line);border-radius:6px;background:var(--card);
+  display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);overflow:hidden;
+  box-shadow:0 30px 80px rgba(0,0,0,.5)}
+@media(max-width:860px){.resa-card{grid-template-columns:minmax(0,1fr)}}
+.resa-left{padding:2.8rem 2.6rem;border-right:1px solid var(--line-soft)}
+@media(max-width:860px){.resa-left{border-right:none;border-bottom:1px solid var(--line-soft)}}
+.resa-left h3{font-family:"Cormorant Garamond",serif;font-size:1.9rem;line-height:1.2;margin:.9rem 0 1rem}
+.resa-left h3 em{font-style:italic;color:var(--rose)}
+.resa-left p{color:#b9bdc9;font-size:.95rem;margin-bottom:1rem}
+.resa-left .price{font-family:"Cormorant Garamond",serif;font-size:1.35rem;color:var(--brass);margin-top:1.4rem}
+.resa-left .price small{font-family:"Jost";font-size:.62rem;letter-spacing:.3em;color:var(--dim);display:block;text-transform:uppercase;margin-top:.2rem}
+form.resa-form{padding:2.8rem 2.6rem;display:flex;flex-direction:column;gap:1.15rem}
+.field label{display:block;font-size:.62rem;letter-spacing:.32em;text-transform:uppercase;color:var(--dim);margin-bottom:.45rem}
+.field select,.field input{
+  width:100%;background:rgba(11,16,29,.6);border:1px solid var(--line-soft);border-radius:3px;color:var(--linen);
+  font-family:"Jost";font-weight:300;font-size:.95rem;padding:.75rem .9rem;outline:none;transition:border-color .3s;
+  appearance:none;-webkit-appearance:none}
+.field{position:relative}
+.field.has-caret::after{content:"";position:absolute;right:1rem;bottom:1.25rem;width:7px;height:7px;
+  border-right:1px solid var(--brass);border-bottom:1px solid var(--brass);transform:rotate(45deg);pointer-events:none}
+.field select:focus,.field input:focus{border-color:var(--brass)}
+form.resa-form button{margin-top:.4rem;border:none}
+.resa-note{font-family:"Cormorant Garamond",serif;font-style:italic;color:var(--brass);font-size:1.05rem;min-height:1.4em}
+
+/* ---------- footer ---------- */
+footer.site{border-top:1px solid var(--line-soft);padding:3.2rem 1.4rem 3.6rem;text-align:center;background:var(--deep)}
+footer.site .mono{font-family:"Cinzel",serif;letter-spacing:.5em;color:var(--brass);font-size:.9rem;text-indent:.5em}
+footer.site p{color:var(--dim);font-size:.8rem;max-width:34rem;margin:.9rem auto 0}
+footer.site nav{display:flex;gap:1.6rem;justify-content:center;flex-wrap:wrap;margin-top:1.4rem}
+footer.site nav a{font-size:.68rem;letter-spacing:.3em;text-transform:uppercase;color:var(--dim);text-decoration:none;transition:color .3s}
+footer.site nav a:hover{color:var(--brass)}
+footer.site .guide-link{color:var(--brass)}
+
+/* ---------- reduced motion ---------- */
+@media (prefers-reduced-motion: reduce){
+  html{scroll-behavior:auto}
+  *,*::before,*::after{animation:none !important;transition:none !important}
+  .rv{opacity:1;transform:none}
+  .chapno svg *{stroke-dashoffset:0 !important}
+  .journey{height:auto;padding:2rem 0 4rem}
+  .jstage{position:static;height:auto;padding:2rem 0;gap:1.4rem}
+  .window{aspect-ratio:16/10;max-height:none}
+  .sky-dusk,.tint.dusk{opacity:0}
+  .stars,.reflect{opacity:1 !important}
+  .moon{opacity:1;left:64%;top:12%;transform:none !important}
+  .chapters{height:auto;position:static;display:flex;flex-direction:column;gap:1.4rem;width:min(880px,92vw)}
+  .chapter{position:static;opacity:1;transform:none;pointer-events:auto}
+  .route .fill{width:46%}
+  .route .locdot{left:46%}
+  .streaks{display:none}
+  .ovl.wmotion::before,.ovl.wmotion::after{animation:none}
+}
+</style>
+</head>
+<body>
+
+<a class="back" href="/">←&nbsp;25</a>
+
+<nav class="top" id="topnav" aria-label="Hauptnavigation">
+  <a href="#fahrt">Die Fahrt</a>
+  <a href="#kabine">Die Kabine</a>
+  <a class="wordmark" href="#top">L'ÉTOILE</a>
+  <a href="#speisewagen">Speisewagen</a>
+  <a href="#fahrplan">Fahrplan</a>
+</nav>
+
+<!-- ============ HERO ============ -->
+<header class="hero" id="top">
+  <div class="bg">
+    <img src="assets/train.webp" alt="Der dunkelblaue Nachtzug L'Étoile überquert bei Dämmerung ein steinernes Viadukt vor verschneiten Alpengipfeln, die Fenster warm erleuchtet." width="1920" height="1072" fetchpriority="high">
+  </div>
+  <div class="scrim"></div>
+  <div class="vig"></div>
+  <div class="steam" aria-hidden="true"></div>
+  <div class="steam s2" aria-hidden="true"></div>
+  <div class="steam s3" aria-hidden="true"></div>
+  <div class="hero-inner">
+    <p class="kicker">Grand-Voyage &middot; Alpen-Nachtzug &middot; seit 1931</p>
+    <h1>L'ÉTOILE</h1>
+    <div class="rule" aria-hidden="true"><span class="gem"></span></div>
+    <p class="tag serif">Die Nacht gehört der Strecke.</p>
+    <p class="sub">Zürlenz ab 21:04 — St.&nbsp;Alvra an 07:26. Eine Nacht, elf Viadukte, zwei Tunnel, ein Erwachen im Alpenglühen.</p>
+    <div class="cta-row">
+      <a class="btn solid" href="#reservierung">Reservierung anfragen</a>
+      <a class="btn ghost" href="#fahrt">Die Fahrt erleben</a>
+    </div>
+  </div>
+  <a class="scrollcue" href="#fahrt">Einsteigen</a>
+</header>
+
+<!-- ============ DIE FAHRT ============ -->
+<section id="fahrt" aria-label="Die Fahrt — das Fenster zur Strecke">
+  <div class="sec-head rv">
+    <div class="chapno" aria-hidden="true">
+      <svg viewBox="0 0 74 74"><rect class="d1" x="4" y="4" width="66" height="66" style="--len:270"/><rect class="d2" x="11" y="11" width="52" height="52" style="--len:210"/></svg>
+      <b>&#9733;</b>
+    </div>
+    <h2>Die Fahrt <em>— am Fenster</em></h2>
+    <p class="lede">Lehnen Sie sich zurück. Was Sie hier scrollen, ist die Nacht selbst: von der Dämmerung über den Mond bis zum ersten Rosa an den Graten. Das Fenster fährt mit.</p>
+  </div>
+
+  <div class="journey" id="journey">
+    <div class="jstage">
+      <div class="window" id="wjolt" aria-label="Zugfenster: vorbeiziehende Alpenlandschaft von der Abenddämmerung durch die Nacht bis zum Morgengrauen" role="img">
+        <span class="plaque">Wagen №&nbsp;5 &middot; Fenster&nbsp;B</span>
+        <div class="glass" id="glass">
+          <div class="layer sky-night"></div>
+          <div class="layer sky-dusk" id="skyDusk"></div>
+          <div class="layer sky-dawn" id="skyDawn"></div>
+          <div class="layer stars" id="stars"></div>
+          <div class="moon" id="moon"></div>
+          <div class="layer strip" id="l1"></div>
+          <div class="layer strip" id="l2"></div>
+          <div class="layer strip" id="l3"></div>
+          <canvas class="snowfx" id="snow" aria-hidden="true"></canvas>
+          <div class="layer strip" id="l4"></div>
+          <div class="layer tint dusk" id="tintDusk"></div>
+          <div class="layer tint dawn" id="tintDawn"></div>
+          <div class="layer reflect" id="reflect"></div>
+          <div class="layer sheen" id="sheen"></div>
+          <div class="layer gvig"></div>
+          <div class="layer streaks" id="streaks" aria-hidden="true"><i></i><i></i><i></i></div>
+          <div class="layer tunnel" id="tunnel"></div>
+        </div>
+      </div>
+
+      <div class="route" aria-label="Streckenverlauf">
+        <p class="bordzeit">Bordzeit&nbsp;&nbsp;<b id="clock">21:04</b></p>
+        <div class="rail"><div class="fill" id="rfill"></div><div class="locdot" id="rdot"></div></div>
+        <ul class="stations" id="stations">
+          <li data-at="0"><b>Zürlenz</b> <span>ab 21:04</span></li>
+          <li data-at="0.3"><b>Churwald</b> <span>23:12</span></li>
+          <li data-at="0.62"><b>Predalin</b> <span>02:47</span></li>
+          <li data-at="0.97"><b>St. Alvra</b> <span>an 07:26</span></li>
+        </ul>
+      </div>
+
+      <div class="chapters" id="chapters">
+        <div class="chapter" data-from="0.0" data-to="0.30">
+          <div class="chapno" aria-hidden="true"><svg viewBox="0 0 58 58"><rect class="d1" x="3" y="3" width="52" height="52" style="--len:215"/><rect class="d2" x="9" y="9" width="40" height="40" style="--len:165"/></svg><b>I</b></div>
+          <div><h3>Abfahrt bei <em>Dämmerung</em></h3>
+          <p>Zürlenz versinkt hinter dem ersten Hügel. Der Himmel hält noch eine Minute lang das letzte Kupfer des Tages, dann übernimmt das Blau.</p></div>
+        </div>
+        <div class="chapter" data-from="0.33" data-to="0.68">
+          <div class="chapno" aria-hidden="true"><svg viewBox="0 0 58 58"><rect class="d1" x="3" y="3" width="52" height="52" style="--len:215"/><rect class="d2" x="9" y="9" width="40" height="40" style="--len:165"/></svg><b>II</b></div>
+          <div><h3>Tiefe <em>Nacht</em></h3>
+          <p>Der Mond steigt über die Grate, die Lampe spiegelt sich im Glas. Zwei Tunnel schlucken die Welt für einen Atemzug — dann wieder Schnee, Sterne, Stille.</p></div>
+        </div>
+        <div class="chapter" data-from="0.72" data-to="1.01">
+          <div class="chapno" aria-hidden="true"><svg viewBox="0 0 58 58"><rect class="d1" x="3" y="3" width="52" height="52" style="--len:215"/><rect class="d2" x="9" y="9" width="40" height="40" style="--len:165"/></svg><b>III</b></div>
+          <div><h3>Ankunft im <em>Alpenglühen</em></h3>
+          <p>Kurz vor St.&nbsp;Alvra färbt die Sonne die Wände rosa, lange bevor sie das Tal erreicht. Der Kaffee kommt ans Bett. Sie sind da.</p></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ DIE KABINE ============ -->
+<section id="kabine" aria-label="Die Kabine">
+  <div class="sec-head rv">
+    <div class="chapno" aria-hidden="true">
+      <svg viewBox="0 0 74 74"><rect class="d1" x="4" y="4" width="66" height="66" style="--len:270"/><rect class="d2" x="11" y="11" width="52" height="52" style="--len:210"/></svg>
+      <b>K</b>
+    </div>
+    <h2>Die Kabine <em>bei Nacht</em></h2>
+    <p class="lede">Nussbaum-Marketerie, Messing, ein Bett quer zur Fahrtrichtung. Drehen Sie am Dimmer — und sehen Sie, was die Nacht mit dem Raum macht.</p>
+  </div>
+  <div class="shell kabine-grid">
+    <div class="rv">
+      <div class="cabin-frame">
+        <div class="cabin-scene" id="cabinScene">
+          <img src="assets/cabin.webp" alt="Schlafkabine des L'Étoile bei Nacht: Nussbaum-Intarsien, Messingleuchte, gemachtes Bett — im Fenster Mondsichel und verschneite Berge." width="1400" height="1738" loading="lazy" decoding="async">
+          <div class="ovl dark" aria-hidden="true"></div>
+          <div class="ovl moon-ovl" aria-hidden="true"></div>
+          <div class="ovl wmotion" aria-hidden="true"></div>
+          <div class="ovl glow" aria-hidden="true"></div>
+        </div>
+      </div>
+      <div class="dimmer">
+        <label for="lampRange">Messing&shy;dimmer</label>
+        <input type="range" id="lampRange" min="0" max="100" value="100" aria-label="Leselampe dimmen">
+        <span class="state serif" id="lampState">Lampe an.</span>
+      </div>
+    </div>
+    <div class="kabine-copy rv">
+      <p class="kicker">Kabine Étoile &middot; Wagen № 5</p>
+      <h3>Ein Zimmer, das <em>durch die Nacht</em> getragen wird.</h3>
+      <p>Die Wände sind Nussbaum und Ahorn, gelegt in Fischgrat und Rauten — Marketerie aus der Werkstatt Brenner &amp; Fils, wie 1931. Die Leselampe hat einen eigenen Dimmer aus Messing; wer ihn ganz zurückdreht, bekommt statt des Lampenlichts den Mond.</p>
+      <p>Das Fenster fährt derweil weiter. Es hört nie auf zu fahren.</p>
+      <ul class="spec">
+        <li><span>Bett</span><b>96 × 200 cm, Rosshaar &amp; Daune</b></li>
+        <li><span>Wäsche</span><b>Leinen, gewaschen in Churwald</b></li>
+        <li><span>Bad</span><b>Privat, Regenbrause, beheizter Boden</b></li>
+        <li><span>Nachtmahl</span><b>Ans Bett, bis 01:00 Uhr</b></li>
+        <li><span>Weckruf</span><b>20 Minuten vor dem Alpenglühen</b></li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<!-- ============ SPEISEWAGEN ============ -->
+<section id="speisewagen" class="speise" aria-label="Der Speisewagen">
+  <div class="sec-head rv">
+    <div class="chapno" aria-hidden="true">
+      <svg viewBox="0 0 74 74"><rect class="d1" x="4" y="4" width="66" height="66" style="--len:270"/><rect class="d2" x="11" y="11" width="52" height="52" style="--len:210"/></svg>
+      <b>S</b>
+    </div>
+    <h2>Der <em>Speisewagen</em></h2>
+    <p class="lede">Wagen № 3, zweiundzwanzig Plätze, ein Flügeltürchen zur Küche. Serviert wird, was die Täler hergeben — auf Damast, bei 80 km/h.</p>
+  </div>
+  <div class="shell speise-grid">
+    <div class="speise-copy rv">
+      <p class="kicker">Menü der Nacht</p>
+      <h3>Fünf Gänge zwischen zwei Tunneln.</h3>
+      <p>Der Küchenchef kauft am Nachmittag in Zürlenz ein und kocht, während draußen die Dämmerung fällt. Die Weinkarte ist kurz und ernst gemeint. Wer nach dem Digestif noch sitzen bleibt, sitzt meistens bis Predalin.</p>
+      <p>Ein Tisch ist in jeder Reservierung enthalten. Das Nachtmahl kommt auf Wunsch auch in die Kabine — bis ein Uhr früh.</p>
+    </div>
+    <div class="menu-card rv" role="figure" aria-label="Menükarte der Nacht">
+      <span class="corner c1" aria-hidden="true"><svg viewBox="0 0 26 26" fill="none" stroke="currentColor" stroke-width="1.2"><path d="M1 25V6C1 3 3 1 6 1h19"/><path d="M6 25V10c0-2.2 1.8-4 4-4h15"/></svg></span>
+      <span class="corner c2" aria-hidden="true"><svg viewBox="0 0 26 26" fill="none" stroke="currentColor" stroke-width="1.2"><path d="M1 25V6C1 3 3 1 6 1h19"/><path d="M6 25V10c0-2.2 1.8-4 4-4h15"/></svg></span>
+      <span class="corner c3" aria-hidden="true"><svg viewBox="0 0 26 26" fill="none" stroke="currentColor" stroke-width="1.2"><path d="M1 25V6C1 3 3 1 6 1h19"/><path d="M6 25V10c0-2.2 1.8-4 4-4h15"/></svg></span>
+      <span class="corner c4" aria-hidden="true"><svg viewBox="0 0 26 26" fill="none" stroke="currentColor" stroke-width="1.2"><path d="M1 25V6C1 3 3 1 6 1h19"/><path d="M6 25V10c0-2.2 1.8-4 4-4h15"/></svg></span>
+      <header>
+        <p class="mk">Wagen № 3 &middot; Service ab 21:30</p>
+        <h4>MENÜ DER NACHT</h4>
+        <p class="serif">Winterfahrplan · Zürlenz — St. Alvra</p>
+      </header>
+      <div class="course">
+        <p class="cn">Aperitif</p>
+        <h5>Champagner «Comtesse d'Alvra», brut</h5>
+        <p>mit gerösteten Walnüssen aus dem Kurwald</p>
+      </div>
+      <div class="mdiv" aria-hidden="true"><svg viewBox="0 0 44 12" fill="none" stroke="currentColor" stroke-width="1"><path d="M0 6h14M30 6h14"/><path d="M22 1l4 5-4 5-4-5z"/></svg></div>
+      <div class="course">
+        <p class="cn">Erster Gang</p>
+        <h5>Randen-Consommé mit Wacholder</h5>
+        <p>und einem Blatt Kerbel, klar wie Bergluft</p>
+        <p class="wine">Glas: Completer «Predalin» 2019</p>
+      </div>
+      <div class="mdiv" aria-hidden="true"><svg viewBox="0 0 44 12" fill="none" stroke="currentColor" stroke-width="1"><path d="M0 6h14M30 6h14"/><path d="M22 1l4 5-4 5-4-5z"/></svg></div>
+      <div class="course">
+        <p class="cn">Hauptgang</p>
+        <h5>Geschmorte Kalbsbacke, Kastanienpüree</h5>
+        <p>Preiselbeerjus, Schwarzwurzel aus dem Ofen</p>
+        <p class="wine">Glas: Pinot Noir «Viadukt XI» 2020</p>
+      </div>
+      <div class="mdiv" aria-hidden="true"><svg viewBox="0 0 44 12" fill="none" stroke="currentColor" stroke-width="1"><path d="M0 6h14M30 6h14"/><path d="M22 1l4 5-4 5-4-5z"/></svg></div>
+      <div class="course">
+        <p class="cn">Süsses</p>
+        <h5>Alvra-Nusstorte, halbwarm</h5>
+        <p>mit doppeltem Rahm von der Alp Lumnera</p>
+      </div>
+      <div class="course">
+        <p class="cn">Digestif</p>
+        <h5>Génépi «Étoile du Berger»</h5>
+        <p>eingelegt über zwei Sommer, serviert eiskalt</p>
+      </div>
+      <footer>Der Berg schreibt die Karte. Änderungen vorbehalten.</footer>
+    </div>
+  </div>
+</section>
+
+<!-- ============ FAHRPLAN ============ -->
+<section id="fahrplan" aria-label="Fahrplan">
+  <div class="sec-head rv">
+    <div class="chapno" aria-hidden="true">
+      <svg viewBox="0 0 74 74"><rect class="d1" x="4" y="4" width="66" height="66" style="--len:270"/><rect class="d2" x="11" y="11" width="52" height="52" style="--len:210"/></svg>
+      <b>F</b>
+    </div>
+    <h2>Fahrplan <em>— Abfahrt Zürlenz</em></h2>
+    <p class="lede">Die Anzeigetafel in der Bahnhofshalle von Zürlenz, Gleis 7. Sie klappert noch. Wir haben es nie übers Herz gebracht, sie zu ersetzen.</p>
+  </div>
+  <div class="shell board-wrap rv">
+    <div class="board" id="board">
+      <div class="bhead">
+        <h3>ABFAHRT</h3>
+        <span>Zürlenz Hauptbahnhof &middot; Halle Ost</span>
+      </div>
+      <div class="board-scroll">
+        <table>
+          <thead>
+            <tr><th>Zeit</th><th>Zug</th><th>Nach</th><th>Gleis</th><th class="note">Hinweis</th></tr>
+          </thead>
+          <tbody id="boardBody">
+            <tr><td data-flap="21:04" data-brass></td><td data-flap="ÉT 1"></td><td data-flap="ST. ALVRA"></td><td data-flap="7"></td><td class="note" data-flap="TÄGLICH · SPEISEWAGEN"></td></tr>
+            <tr><td data-flap="21:38" data-brass></td><td data-flap="ÉT 3"></td><td data-flap="CHURWALD SEE"></td><td data-flap="7"></td><td class="note" data-flap="FR – SO"></td></tr>
+            <tr><td data-flap="22:12" data-brass></td><td data-flap="ÉT 5"></td><td data-flap="PREDALIN"></td><td data-flap="9"></td><td class="note" data-flap="NUR WINTER"></td></tr>
+            <tr><td data-flap="23:55" data-brass></td><td data-flap="ÉT 7"></td><td data-flap="COL DE LUME"></td><td data-flap="9"></td><td class="note" data-flap="MONDNÄCHTE"></td></tr>
+            <tr><td data-flap="07:26" data-brass></td><td data-flap="ÉT 2"></td><td data-flap="ZÜRLENZ AN"></td><td data-flap="4"></td><td class="note" data-flap="GEGENZUG · ANKUNFT"></td></tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="bfoot">Alle Angaben ohne Gewähr. Der Berg hat das letzte Wort.</div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ RESERVIERUNG ============ -->
+<section id="reservierung" class="resa" aria-label="Reservierung">
+  <div class="sec-head rv">
+    <div class="chapno" aria-hidden="true">
+      <svg viewBox="0 0 74 74"><rect class="d1" x="4" y="4" width="66" height="66" style="--len:270"/><rect class="d2" x="11" y="11" width="52" height="52" style="--len:210"/></svg>
+      <b>R</b>
+    </div>
+    <h2>Reservierung <em>anfragen</em></h2>
+    <p class="lede">Achtzehn Kabinen pro Nacht, nicht mehr. Wir antworten persönlich — meistens noch vor Mitternacht.</p>
+  </div>
+  <div class="shell">
+    <div class="resa-card rv">
+      <div class="resa-left">
+        <p class="kicker">Winterfahrplan 1931/32 — pardon: 2026/27</p>
+        <h3>Eine Nacht, die wie <em>eine Reise von Tagen</em> wirkt.</h3>
+        <p>Im Preis inbegriffen: Kabine mit privatem Bad, fünf Gänge im Speisewagen, Nachtmahl ans Bett, Weckruf vor dem Alpenglühen — und ein Fensterplatz für die ganze Nacht.</p>
+        <p class="price">ab CHF 1'450<small>pro Person &middot; Kabine Étoile, Doppelbelegung</small></p>
+      </div>
+      <form class="resa-form" id="resaForm" novalidate>
+        <div class="field has-caret">
+          <label for="fDate">Abfahrt</label>
+          <select id="fDate" name="datum">
+            <option>Fr 18. Dezember 2026</option>
+            <option>Sa 19. Dezember 2026</option>
+            <option>Do 24. Dezember 2026 — Heiligabend</option>
+            <option>Do 31. Dezember 2026 — Silvesterfahrt</option>
+            <option>Sa 16. Januar 2027 — Vollmond</option>
+          </select>
+        </div>
+        <div class="field has-caret">
+          <label for="fCat">Kategorie</label>
+          <select id="fCat" name="kategorie">
+            <option>Kabine Étoile — ab CHF 1'450 p.P.</option>
+            <option>Suite Alvra — ab CHF 2'300 p.P.</option>
+            <option>Grand Suite «Viadukt» — ab CHF 3'900 p.P.</option>
+          </select>
+        </div>
+        <div class="field has-caret">
+          <label for="fGuests">Gäste</label>
+          <select id="fGuests" name="gaeste">
+            <option>2 Gäste</option><option>1 Gast</option><option>3 Gäste</option><option>4 Gäste</option>
+          </select>
+        </div>
+        <button class="btn solid" type="submit">Anfrage senden</button>
+        <p class="resa-note" id="resaNote" role="status" aria-live="polite"></p>
+      </form>
+    </div>
+  </div>
+</section>
+
+<footer class="site">
+  <p class="mono">L'ÉTOILE</p>
+  <p>Compagnie du Chemin de Fer de l'Étoile AG, Zürlenz. Ein fiktives Bahnunternehmen — die Sehnsucht ist echt. Teil der FABLE/25-Flotte.</p>
+  <nav>
+    <a href="/">← alle 25 Sites</a>
+    <a href="#fahrt">Die Fahrt</a>
+    <a href="#fahrplan">Fahrplan</a>
+    <a class="guide-link" href="/58-etoile/guide/">guide &amp; prompt →</a>
+  </nav>
+</footer>
+
+<script>
+(function(){
+'use strict';
+var RM = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+var clamp = function(v,a,b){ return v<a?a:(v>b?b:v); };
+var smooth = function(t){ return t*t*(3-2*t); };
+
+/* ---------- nav bg on scroll ---------- */
+var topnav = document.getElementById('topnav');
+var navTick = false;
+addEventListener('scroll', function(){
+  if(navTick) return; navTick = true;
+  requestAnimationFrame(function(){
+    topnav.classList.toggle('scrolled', scrollY > 40);
+    navTick = false;
+  });
+}, {passive:true});
+
+/* ---------- reveal on entry ---------- */
+var rio = new IntersectionObserver(function(es){
+  es.forEach(function(e){ if(e.isIntersecting){ e.target.classList.add('in'); rio.unobserve(e.target); } });
+},{threshold:.18});
+document.querySelectorAll('.rv').forEach(function(el){ rio.observe(el); });
+
+/* ---------- landscape strips (SVG tiles as data URIs) ---------- */
+function tile(w,h,body){
+  return "url(\"data:image/svg+xml," + encodeURIComponent(
+    "<svg xmlns='http://www.w3.org/2000/svg' width='"+w+"' height='"+h+"' viewBox='0 0 "+w+" "+h+"'>"+body+"</svg>"
+  ) + "\")";
+}
+/* far peaks — starts/ends at same height for seamless repeat */
+var FAR = tile(1600,300,
+  "<path fill='#354260' d='M0 190 L90 120 L170 168 L260 84 L340 150 L430 96 L520 170 L610 120 L700 178 L790 108 L880 160 L980 70 L1070 150 L1160 110 L1250 172 L1330 128 L1420 88 L1500 152 L1600 190 L1600 300 L0 300 Z'/>"+
+  "<path fill='#c9d2e8' fill-opacity='.3' d='M260 84 L310 128 L280 132 L238 106 Z M980 70 L1034 122 L1000 126 L950 96 Z M1420 88 L1460 122 L1434 126 L1398 108 Z M430 96 L462 124 L440 128 L412 112 Z M1160 110 L1190 134 L1168 138 L1142 124 Z'/>");
+var MID = tile(1600,260,
+  "<path fill='#273350' fill-rule='evenodd' d='M0 150 L120 96 L230 140 L330 104 L430 148 L470 146 L470 118 L1030 118 L1030 146 L1120 128 L1230 88 L1340 138 L1450 106 L1600 150 L1600 260 L0 260 Z M510 146 L510 196 A45 64 0 0 0 600 196 L600 146 Z M640 146 L640 196 A45 64 0 0 0 730 196 L730 146 Z M770 146 L770 196 A45 64 0 0 0 860 196 L860 146 Z M900 146 L900 196 A45 64 0 0 0 990 196 L990 146 Z'/>"+
+  "<path fill='#c9d2e8' fill-opacity='.22' d='M120 96 L150 122 L128 126 L102 110 Z M1230 88 L1264 118 L1240 122 L1210 106 Z'/>"+
+  "<g fill='#ffd992'><circle cx='150' cy='138' r='2.4' opacity='.9' fill='#ffdb94'/><circle cx='166' cy='146' r='1.8' opacity='.7' fill='#ffdb94'/><circle cx='1250' cy='130' r='2.2' opacity='.85' fill='#ffdb94'/><circle cx='1268' cy='138' r='1.7' opacity='.6' fill='#ffdb94'/><circle cx='1284' cy='131' r='1.5' opacity='.7' fill='#ffdb94'/></g>");
+var FOREST = tile(1600,180,
+  "<path fill='#1b2540' d='M0 120 Q100 84 200 108 Q300 130 400 96 Q500 66 600 104 Q700 136 800 100 Q900 70 1000 108 Q1100 140 1200 104 Q1300 74 1400 100 Q1500 122 1600 120 L1600 180 L0 180 Z'/>"+
+  "<g fill='#121a2e'><path d='M120 122 L134 76 L148 122 Z'/><path d='M300 108 L316 58 L332 108 Z'/><path d='M700 128 L714 84 L728 128 Z'/><path d='M980 118 L996 66 L1012 118 Z'/><path d='M1330 106 L1346 60 L1362 106 Z'/><path d='M560 118 L572 82 L584 118 Z'/><path d='M1180 116 L1192 78 L1204 116 Z'/></g>"+
+  "<g fill='#ffdb94'><circle cx='520' cy='118' r='1.8' opacity='.8'/><circle cx='536' cy='124' r='1.4' opacity='.6'/><circle cx='1130' cy='126' r='1.8' opacity='.8'/></g>");
+var NEAR = tile(1200,220,
+  "<path fill='#404f75' d='M0 148 Q150 128 300 142 Q450 156 600 138 Q750 122 900 142 Q1050 158 1200 148 L1200 220 L0 220 Z'/>"+
+  "<path fill='#aab6d6' fill-opacity='.35' d='M0 148 Q150 128 300 142 Q450 156 600 138 Q750 122 900 142 Q1050 158 1200 148 L1200 156 Q1050 166 900 150 Q750 130 600 146 Q450 164 300 150 Q150 136 0 156 Z'/>"+
+  "<path fill='#222c49' d='M0 190 Q300 178 600 186 Q900 194 1200 190 L1200 220 L0 220 Z'/>"+
+  "<g fill='#0c1122'><path d='M60 176 L92 40 L124 176 Z'/><path d='M96 178 L120 90 L144 178 Z'/><path d='M340 172 L376 24 L412 172 Z'/><path d='M390 176 L416 96 L442 176 Z'/><path d='M700 170 L734 46 L768 170 Z'/><path d='M1020 176 L1056 32 L1092 176 Z'/><path d='M1068 178 L1092 100 L1116 178 Z'/></g>");
+/* strips for the cabin-photo window */
+var CABFAR = tile(1200,140,
+  "<path fill='#101a30' d='M0 96 L140 44 L260 82 L400 30 L520 78 L660 40 L800 86 L930 48 L1060 84 L1200 96 L1200 140 L0 140 Z'/>"+
+  "<path fill='#f2ede2' fill-opacity='.22' d='M400 30 L436 58 L410 62 L380 46 Z M660 40 L692 64 L668 68 L642 54 Z'/>");
+var CABNEAR = tile(1200,120,
+  "<g fill='#070b16'><path d='M80 112 L108 22 L136 112 Z'/><path d='M320 112 L352 8 L384 112 Z'/><path d='M600 112 L626 34 L652 112 Z'/><path d='M880 112 L914 12 L948 112 Z'/><path d='M1120 112 L1144 44 L1168 112 Z'/></g>"+
+  "<path fill='#060a14' d='M0 104 Q300 92 600 100 Q900 108 1200 100 L1200 120 L0 120 Z'/>");
+document.documentElement.style.setProperty('--cab-far', CABFAR);
+document.documentElement.style.setProperty('--cab-near', CABNEAR);
+
+var L = {
+  l1:{el:document.getElementById('l1'), img:FAR,   tileW:1600, hFrac:.60, speed:900},
+  l2:{el:document.getElementById('l2'), img:MID,   tileW:1600, hFrac:.47, speed:2600},
+  l3:{el:document.getElementById('l3'), img:FOREST,tileW:1600, hFrac:.33, speed:5200},
+  l4:{el:document.getElementById('l4'), img:NEAR,  tileW:1200, hFrac:.30, speed:11000}
+};
+Object.keys(L).forEach(function(k){
+  var o=L[k];
+  o.el.style.top='auto';
+  o.el.style.height=(o.hFrac*100)+'%';
+  o.el.style.backgroundImage=o.img;
+  o.el.style.backgroundSize='auto 100%';
+});
+
+/* ---------- stars ---------- */
+var starsEl = document.getElementById('stars');
+(function(){
+  var n = 46, frag = document.createDocumentFragment();
+  for(var i=0;i<n;i++){
+    var s=document.createElement('i');
+    s.style.left=(Math.random()*100)+'%';
+    s.style.top=(Math.random()*52)+'%';
+    var sc=(.5+Math.random()*1);
+    s.style.transform='scale('+sc.toFixed(2)+')';
+    s.style.animationDelay=(-Math.random()*3.4).toFixed(2)+'s';
+    s.style.animationDuration=(2.4+Math.random()*3).toFixed(2)+'s';
+    frag.appendChild(s);
+  }
+  starsEl.appendChild(frag);
+})();
+
+/* ---------- journey scroll choreography ---------- */
+var journey = document.getElementById('journey');
+var glass = document.getElementById('glass');
+var skyDusk=document.getElementById('skyDusk'), skyDawn=document.getElementById('skyDawn');
+var tintDusk=document.getElementById('tintDusk'), tintDawn=document.getElementById('tintDawn');
+var moon=document.getElementById('moon'), reflect=document.getElementById('reflect');
+var tunnelEl=document.getElementById('tunnel'), streaksEl=document.getElementById('streaks');
+var sheenEl=document.getElementById('sheen');
+var rfill=document.getElementById('rfill'), rdot=document.getElementById('rdot');
+var clock=document.getElementById('clock');
+var stationEls=[].slice.call(document.querySelectorAll('#stations li'));
+var chapterEls=[].slice.call(document.querySelectorAll('.chapter'));
+var wjolt=document.getElementById('wjolt');
+
+function range(p,a,b){ return clamp((p-a)/(b-a),0,1); }
+/* tunnel windows: two blackouts */
+function tunnelAmt(p){
+  function tw(c,w,e){ // center, half-width, edge
+    var d=Math.abs(p-c);
+    if(d>w) return 0;
+    return smooth(clamp((w-d)/e,0,1));
+  }
+  return Math.max(tw(.435,.038,.014), tw(.685,.03,.012));
+}
+var lastP=-1, journeyVisible=false, pageHidden=false;
+var pTarget=0, pCur=0;
+
+function measure(){
+  var r=journey.getBoundingClientRect();
+  var total=r.height-innerHeight;
+  pTarget = total>0 ? clamp(-r.top/total,0,1) : 0;
+}
+function paint(p){
+  var gw = glass.clientWidth, gh = glass.clientHeight;
+  /* sky phases */
+  skyDusk.style.opacity = (1-range(p,.10,.34)).toFixed(3);
+  skyDawn.style.opacity = range(p,.72,.94).toFixed(3);
+  tintDusk.style.opacity = (1-range(p,.08,.3)).toFixed(3);
+  tintDawn.style.opacity = range(p,.75,.95).toFixed(3);
+  var night = Math.min(range(p,.22,.42), 1-range(p,.72,.9));
+  starsEl.style.opacity = (night*.95).toFixed(3);
+  reflect.style.opacity = (night*.6).toFixed(3);
+  sheenEl.style.opacity = (.18+night*.55).toFixed(3);
+  /* moon arc: rises right, crests, drifts left */
+  var mp = range(p,.26,.92);
+  var mx = (0.82 - mp*0.62)*gw;
+  var my = (0.55 - Math.sin(mp*Math.PI)*0.42)*gh;
+  moon.style.transform='translate3d('+mx.toFixed(1)+'px,'+my.toFixed(1)+'px,0)';
+  moon.style.opacity = (Math.min(range(p,.26,.34),1-range(p,.8,.92))*.95).toFixed(3);
+  /* landscape strips */
+  Object.keys(L).forEach(function(k){
+    var o=L[k];
+    var x = -((p*o.speed) % o.tileW);
+    o.el.style.backgroundPositionX = x.toFixed(1)+'px';
+  });
+  /* tunnels */
+  var t = tunnelAmt(p);
+  tunnelEl.style.opacity = (t*.97).toFixed(3);
+  var running = t>0.12;
+  streaksEl.style.opacity = running ? (t*.85).toFixed(3) : '0';
+  streaksEl.classList.toggle('run', running);
+  /* route band */
+  rfill.style.width=(p*100).toFixed(2)+'%';
+  rdot.style.left=(p*100).toFixed(2)+'%';
+  for(var i=0;i<stationEls.length;i++){
+    stationEls[i].classList.toggle('passed', p >= +stationEls[i].dataset.at - .005);
+  }
+  /* bordzeit 21:04 -> 07:26 */
+  var mins = 21*60+4 + p*((31*60+26)-(21*60+4));
+  var hh = Math.floor(mins/60)%24, mm=Math.floor(mins%60);
+  clock.textContent=(hh<10?'0':'')+hh+':'+(mm<10?'0':'')+mm;
+  /* chapters */
+  chapterEls.forEach(function(ch){
+    var on = p>=+ch.dataset.from && p<+ch.dataset.to;
+    ch.classList.toggle('active', on);
+    if(on) ch.querySelector('.chapno').classList.add('in');
+  });
+}
+
+/* ---------- snow (canvas, DPR cap 2) ---------- */
+var snow = document.getElementById('snow');
+var sctx = snow.getContext('2d');
+var flakes=[], snowW=0, snowH=0, DPR=1;
+function snowSize(){
+  DPR=Math.min(devicePixelRatio||1,2);
+  snowW=glass.clientWidth; snowH=glass.clientHeight;
+  snow.width=Math.round(snowW*DPR); snow.height=Math.round(snowH*DPR);
+  sctx.setTransform(DPR,0,0,DPR,0,0);
+  var n = snowW<600 ? 34 : 64;
+  flakes.length=0;
+  for(var i=0;i<n;i++){
+    flakes.push({x:Math.random()*snowW,y:Math.random()*snowH,
+      r:.6+Math.random()*1.7, vx:-(30+Math.random()*80), vy:12+Math.random()*22,
+      o:.25+Math.random()*.5});
+  }
+}
+var lastT=0;
+function drawSnow(t){
+  var dt=Math.min((t-lastT)/1000,.05); lastT=t;
+  sctx.clearRect(0,0,snowW,snowH);
+  var vis = Math.max(starsEl.style.opacity?+starsEl.style.opacity:0, .12);
+  for(var i=0;i<flakes.length;i++){
+    var f=flakes[i];
+    f.x+=f.vx*dt*(1+f.r*.4); f.y+=f.vy*dt;
+    if(f.x<-4){f.x=snowW+4;f.y=Math.random()*snowH;}
+    if(f.y>snowH+4){f.y=-4;f.x=Math.random()*snowW;}
+    sctx.globalAlpha=f.o*vis;
+    sctx.beginPath();sctx.arc(f.x,f.y,f.r,0,6.2832);sctx.fillStyle='#f2ede2';sctx.fill();
+  }
+  sctx.globalAlpha=1;
+}
+
+/* ---------- main loop, gated by visibility ---------- */
+var rafId=null;
+function loop(t){
+  rafId=null;
+  if(pageHidden || !journeyVisible) return;
+  measure();
+  pCur += (pTarget-pCur)*.22;
+  if(Math.abs(pTarget-pCur)<.0004) pCur=pTarget;
+  if(Math.abs(pCur-lastP)>.00015){ paint(pCur); lastP=pCur; }
+  drawSnow(t);
+  rafId=requestAnimationFrame(loop);
+}
+function wake(){ if(!RM && rafId===null && journeyVisible && !pageHidden){ lastT=performance.now(); rafId=requestAnimationFrame(loop); } }
+
+if(!RM){
+  var jio=new IntersectionObserver(function(es){
+    journeyVisible=es[0].isIntersecting;
+    wake();
+  },{rootMargin:'120px 0px'});
+  jio.observe(journey);
+  document.addEventListener('visibilitychange',function(){
+    pageHidden=document.hidden;
+    document.body.classList.toggle('paused',pageHidden);
+    wake();
+  });
+  addEventListener('resize',function(){ snowSize(); lastP=-1; wake(); },{passive:true});
+  addEventListener('scroll',wake,{passive:true});
+  snowSize();
+  measure(); pCur=pTarget; paint(pCur);
+}else{
+  /* static night scene */
+  paint(0.5);
+  snow.style.display='none';
+  chapterEls.forEach(function(ch){ ch.classList.add('active'); ch.querySelector('.chapno').classList.add('in'); });
+}
+
+/* pause CSS anims when offscreen too: hero steam + cabin loop */
+if(!RM){
+  var pauseIO=new IntersectionObserver(function(es){
+    es.forEach(function(e){ e.target.classList.toggle('paused', !e.isIntersecting); });
+  },{rootMargin:'60px 0px'});
+  document.querySelectorAll('.hero, .cabin-scene').forEach(function(el){ pauseIO.observe(el); });
+}
+
+/* ---------- cabin lamp choreography ---------- */
+var scene=document.getElementById('cabinScene');
+var lampRange=document.getElementById('lampRange');
+var lampState=document.getElementById('lampState');
+var lampBase=1, hoverDim=false;
+function setLamp(v){
+  scene.style.setProperty('--lamp', v.toFixed(3));
+  lampState.textContent = v>.8 ? 'Lampe an.' : v>.45 ? 'Gedämpft…' : v>.12 ? 'Fast Nacht…' : 'Nur noch der Mond.';
+}
+lampRange.addEventListener('input',function(){
+  lampBase=+lampRange.value/100;
+  if(!hoverDim) setLamp(lampBase);
+});
+/* hovering the scene leans it toward night; leaving restores the dimmer */
+if(matchMedia('(hover:hover)').matches && !RM){
+  scene.addEventListener('pointerenter',function(){ hoverDim=true; setLamp(Math.min(lampBase,.18)); });
+  scene.addEventListener('pointerleave',function(){ hoverDim=false; setLamp(lampBase); });
+}
+setLamp(1);
+
+/* ---------- departure board: split-flap settle ---------- */
+var CHARSET='ABCDEFGHIJKLMNOPQRSTUVWXYZÄÖÜÉ0123456789:·–. ';
+var flapCells=[].slice.call(document.querySelectorAll('[data-flap]'));
+flapCells.forEach(function(td){
+  var txt=td.getAttribute('data-flap');
+  var frag=document.createDocumentFragment();
+  for(var i=0;i<txt.length;i++){
+    var sp=document.createElement('span');
+    sp.className='flap'+(txt[i]===' '?' sp':'')+(td.hasAttribute('data-brass')?' brass':'');
+    sp.textContent = RM ? txt[i] : ' ';
+    sp.dataset.ch=txt[i];
+    frag.appendChild(sp);
+  }
+  td.textContent='';
+  td.appendChild(frag);
+  td.setAttribute('aria-label',txt);
+});
+if(!RM){
+  var boardDone=false;
+  var bio=new IntersectionObserver(function(es){
+    if(!es[0].isIntersecting || boardDone) return;
+    boardDone=true; bio.disconnect();
+    var rows=[].slice.call(document.querySelectorAll('#boardBody tr'));
+    var spans=[];
+    rows.forEach(function(row,r){
+      var cs=[].slice.call(row.querySelectorAll('.flap'));
+      cs.forEach(function(sp,c){
+        spans.push({sp:sp, settle: 4 + r*5 + c*1.6 + Math.random()*3});
+      });
+    });
+    var tick=0;
+    var iv=setInterval(function(){
+      tick++;
+      var live=0;
+      for(var i=0;i<spans.length;i++){
+        var s=spans[i];
+        if(s.sp.dataset.ch===' '){ s.sp.textContent=' '; continue; }
+        if(tick>=s.settle){ s.sp.textContent=s.sp.dataset.ch; }
+        else{ s.sp.textContent=CHARSET[(Math.random()*CHARSET.length)|0]; live++; }
+      }
+      if(!live) clearInterval(iv);
+    },55);
+  },{threshold:.35});
+  bio.observe(document.getElementById('board'));
+}
+
+/* ---------- reservation ---------- */
+document.getElementById('resaForm').addEventListener('submit',function(e){
+  e.preventDefault();
+  document.getElementById('resaNote').textContent='Merci. Ihre Anfrage ist notiert — wir melden uns vor Mitternacht.';
+});
+})();
+</script>
+
+<!-- CHANGELOG
+PASS 1 (structure & journey system): single-file build — hero on train.webp with CSS steam drift;
+  sticky 520vh window journey (4 seamless repeat-x SVG silhouette strips at different speeds, dusk/night/dawn
+  sky crossfades, rising moon, star field, two tunnel blackouts with light streaks, glass reflections,
+  DPR-capped snow canvas); route band with progress, station lighting, interpolated Bordzeit;
+  chapter captions with self-drawing deco numeral frames; cabin lamp choreography via --lamp variable
+  (brightness/saturate on the photo + warm glow / moonlight / darkness overlays + travelling window strips
+  masked to the photo's glass); linen deco menu card; split-flap departure board; reservation card; footer.
+PASS 2 (overflow & software-raster performance): hero got position:relative so its overflow:clip actually
+  contains the steam blobs (they were widening the document); mobile grids switched to minmax(0,1fr) and the
+  dimmer row made wrappable to kill a min-content blowout; strips moved from huge translated elements to
+  background-position-x on inset:0 layers; tunnel streak animation only runs while a tunnel is active;
+  backdrop-filters and oversized box-shadow glows replaced with gradients (CDP capture under SwiftShader
+  went from >30s to ~2s). scrollWidth now exactly 390/1280, zero console/page errors.
+PASS 3 (scene art & stage layout): full silhouette re-grade — moonlit snowfield foreground, tonally
+  separated far/mid/forest layers with snow caps, viaduct arches and warm village lights; layer heights
+  retuned; glass sheen tied to night phase; jstage padded below the fixed nav; Bordzeit moved into flow;
+  hero bottom padding so the scroll cue clears the CTAs.
+PASS 4 (the fill bug & final grade): tile() URL-encodes the whole SVG, so pre-encoded '%23' fills were
+  double-encoded and every landscape rendered black — switched to literal '#'; lamp reflection opacity
+  eased to .6; scroll lerp .16→.22 so captions settle faster. Verified: both viewports, reduced-motion
+  static night + settled board, dusk/night/tunnel/dawn states, cabin dim, flap settle. Zero errors.
+-->
+</body>
+</html>

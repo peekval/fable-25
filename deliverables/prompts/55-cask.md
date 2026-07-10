@@ -1,0 +1,15 @@
+# CASK No. 9 — Patience, bottled.
+
+## Full Reproduction Prompt
+
+Build a one-page fictional Highland single-malt showcase for CASK No. 9 ("Patience, bottled.") from Auchenmor Distillery — as a single self-contained HTML file (Google Fonts allowed, no JS libraries; local assets assets/warehouse.webp 1920×1072 and assets/dram.webp 1400×1738). English copy with scotch-dry wit ("The angels take two percent a year. They have excellent taste."). The warmest dark site imaginable: warehouse dark #1C1410 (deep #120D0A), aging ramp #E8A94E → #B5651D → #7A3E12, oak #8A5A32, cream #EFE5D2, dim #8F7E6C. Fonts: Besley (a Scotch-roman revival) for display and body, Saira Stencil One for cask stencils, counters and labels.
+
+The money shot: the whisky ages as you scroll. A 540vh chapter pins a 100svh stage holding an SVG cask cutaway — oak barrel with hoops clipped to the barrel path so they follow its curvature, charred cavity behind a clipPath. The liquid is a nested svg whose y/height move per frame (nested svg = free rectangular clipping): scroll progress maps to year 0→25 on a big stencil counter, the liquid colour interpolates through seven [year,r,g,b,alpha] keyframes from near-clear new-make to deep mahogany (top gradient stop ×1.22 brighter, bottom ×0.62 darker), and the fill drops 1.1%/year — the angels' share — with a translating meniscus, a dashed original-fill line and an italic "the angels' share" label fading into the headspace. Tasting notes carry data-y vintages (honey 3, vanilla 5, peat 8, dried fruit 12, oak spice 16, leather 20) and light up as their year arrives; ABV decays 63.5→54.8%; a radial glow behind the cask reads its hue from CSS vars set by the same ramp. Caustic shimmer: three blurred warm ellipses + a backlit glint band on mix-blend screen, CSS-animated.
+
+Peat smoke: two canvases (hero + warehouse) run ~30 soft radial-gradient wisps steered by a sin/cos pseudo-curl field, drifting up and coiling around the headline on load; fast scrolling feeds a decaying stir impulse that visibly swirls them. DPR capped at 2, rAF loops stopped by IntersectionObserver and visibilitychange.
+
+The warehouse walk: a 340vh sticky section pans a 172%-wide warehouse photo laterally (ease-out ^1.55) while a stencil counter ticks CASK 0001→0247; past 80% it flips to "CASK Nº 9 — yours, if you like", a private-cask ownership card slides in and a wax seal stamps down once (scale 2.6→0.92→1.05→1, blur decay, −8°).
+
+Then: The Dram — dram.webp revealed by a light-raise (brightness .28→1 on intersection) beside Nose/Palate/Finish tasting rows and specs; Provenance grid (ground, grain, wood, time); footer with "guide & prompt →". Fixed "← 25" pill to the hub.
+
+Generate both photos with Nano Banana 2 (via the Higgsfield MCP) — a dunnage warehouse with one shaft of window light, and a backlit crystal tumbler on wet slate — palette-locked, then ffmpeg to WebP (~185 KB each), lazy-loaded with real dimensions. prefers-reduced-motion: everything static at the 18-year state, no smoke, no pan, seal pre-stamped. Mobile: single-column stage with a current-note ribbon; scrollWidth ≤ 392 at 390px; zero console errors from file://.

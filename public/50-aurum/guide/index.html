@@ -1,0 +1,103 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>AURUM — Guide &amp; Prompt</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant:ital,wght@0,400;0,500;0,600;1,400&family=Cormorant+SC:wght@500&family=EB+Garamond:ital,wght@0,400;0,500;1,400&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --marble:#17151A;--panel:#1E1B22;--gold:#C2A14D;--gold-bright:#E8CE8C;
+    --ink:#2E2B33;--cream:#EFE9DC;--dim:#8C8694;
+    --serif:"Cormorant",Georgia,serif;--sc:"Cormorant SC",Georgia,serif;--body:"EB Garamond",Georgia,serif;
+  }
+  *{margin:0;padding:0;box-sizing:border-box}
+  body{font-family:var(--body);background:var(--marble);color:var(--cream);line-height:1.68}
+  ::selection{background:var(--gold);color:var(--marble)}
+  .wrap{max-width:820px;margin:0 auto;padding:0 clamp(1.2rem,4vw,2rem)}
+  header{background:var(--panel);border-bottom:1px solid rgba(194,161,77,.25);padding:4.5rem 0 3.5rem}
+  header .back{display:inline-block;font-family:var(--sc);font-size:.85rem;letter-spacing:.2em;
+    color:var(--gold-bright);text-decoration:none;border:1px solid rgba(194,161,77,.35);
+    border-radius:99px;padding:.45rem .95rem;margin-bottom:2.2rem}
+  header .back:hover{border-color:var(--gold)}
+  .eyebrow{font-family:var(--sc);font-size:.78rem;letter-spacing:.4em;color:var(--gold)}
+  h1{font-family:var(--serif);font-weight:500;font-size:clamp(2.2rem,6vw,3.6rem);line-height:1.08;margin:.6rem 0 .8rem}
+  header p{max-width:38em;color:var(--dim)}
+  main{padding:3.5rem 0 5rem}
+  h2{font-family:var(--serif);font-weight:500;font-size:1.9rem;margin:2.6rem 0 .8rem;color:var(--gold-bright)}
+  h2:first-child{margin-top:0}
+  p{max-width:44em}
+  p+p{margin-top:.8em}
+  em{color:var(--gold-bright)}
+  code{font-family:ui-monospace,Menlo,monospace;font-size:.85em;background:#26232B;padding:.12em .38em;border-radius:3px;color:var(--cream)}
+  ol,ul{margin:.6em 0 .6em 1.3em;max-width:42em}
+  li{margin:.35em 0}
+  .swatches{display:flex;gap:.5rem;flex-wrap:wrap;margin:1rem 0}
+  .swatches span{width:3.2rem;height:3.2rem;border-radius:4px;display:inline-block;border:1px solid rgba(239,233,220,.15)}
+  pre{
+    background:#121016;color:#D9D2C4;border-radius:6px;
+    padding:1.5rem 1.4rem;margin:1.2rem 0 0;white-space:pre-wrap;
+    font-family:ui-monospace,Menlo,monospace;font-size:.85rem;line-height:1.6;
+    overflow-x:auto;border-left:4px solid var(--gold);
+  }
+  footer{border-top:1px solid rgba(194,161,77,.2);padding:1.6rem 0 2.4rem;font-size:.85rem;color:var(--dim)}
+  footer a{color:var(--gold-bright)}
+</style>
+</head>
+<body>
+<header>
+  <div class="wrap">
+    <a class="back" href="/50-aurum/">&larr; zurück zur Bank</a>
+    <p class="eyebrow">FABLE/25 · Nº 50 · Guide</p>
+    <h1>AURUM — wie man eine Banknote in den Browser graviert</h1>
+    <p>Technik-Breakdown der Live-Guilloche, der Tresor-Choreografie und der Ledger-Typografie — und der vollständige Repro-Prompt.</p>
+  </div>
+</header>
+<main>
+  <div class="wrap">
+    <h2>1 · Guilloche: die Mathematik der Gravur-Drehbank</h2>
+    <p>Das Hero-Medaillon ist keine Textur, sondern <em>lebende Geometrie</em>: Auf einem Canvas werden rund hundert Haarlinien als geschlossene Hypotrochoiden gezeichnet — Summen rotierender Kreise, genau das, was eine geometrische Drehbank ins Druckklischee schneidet. Jede Linie <code>j</code> folgt <code>r(θ) = R·(base + j·gap + A₁·cos(k₁θ + j·d₁) + A₂·cos(k₂θ − j·d₂))</code>, dazu ein kleiner Epizykel <code>e·R·[cos mθ, sin mθ]</code>. Entscheidend gegen den „Spirograph-Spielzeug"-Look: <em>kleine</em> Amplituden, ganzzahlige Harmonische (damit die Kurven sich schliessen) und drei ineinander geschachtelte Familien — äussere Spitzenkante, feines Moiré-Band, Blüten-Medaillon — statt einer einzigen lauten.</p>
+    <p>Beim Eintritt <em>graviert sich das Muster selbst</em>: Ein globaler Fortschritt lässt Linie um Linie kaskadierend von 0 bis 2π wachsen. Danach rotiert die Platte unmerklich (0,016 rad/s). Nähert sich der Zeiger, wird seine Position in den Musterraum zurückrotiert und jede Vertex-Radialkomponente mit einer Gauss-Glocke zur Bandmitte hin komprimiert — die Linien rücken lokal zusammen, das Muster <em>atmet</em>. Performance: Im Ruhezustand wird das fertige Muster in ein Offscreen-Canvas gebrannt und pro Frame nur rotiert gezeichnet; Live-Geometrie rechnet nur, solange der Zeiger wirkt oder graviert wird. DPR-Cap 2, IntersectionObserver und <code>visibilitychange</code> pausieren alles Unsichtbare.</p>
+
+    <h2>2 · Der Tresor: eine Choreografie in drei Phasen</h2>
+    <p>Die Tresortür ist ein per JS gebautes SVG (Ringplatten, Zahnkranz, acht Riegel in rotierten Armen, fünfspeichiges Handrad, Graveurssignatur) in einem 320vh-Sticky-Track. Der Scroll-Fortschritt wird in drei überlappende Fenster geschnitten, jedes kubisch geeast:</p>
+    <ol>
+      <li><em>0 – 0.42</em> — das Handrad dreht 540°, drei Ringe kontern gegenläufig (−60°, +95°, −140°): das Getriebe arbeitet.</li>
+      <li><em>0.30 – 0.58</em> — die acht Riegel fahren <em>sequenziell</em> ein (je 28&thinsp;‰ versetzt), jeder gleitet in seiner Führungsnut zurück.</li>
+      <li><em>0.55 – 0.96</em> — die Tür schwingt per CSS-3D (<code>rotateY</code> um ein links liegendes Scharnier, <code>perspective: 1400px</code>) auf und gibt den kreisrunden Blick auf das Tresorfoto frei; ein Status-Schriftzug kippt von <em>verriegelt</em> auf <em>entriegelt</em>.</li>
+    </ol>
+    <p>Bei <code>prefers-reduced-motion</code> wird der Fortschritt statisch auf 1 gesetzt: Tür offen, Foto sichtbar, nichts bewegt sich — auch die Rosetten stehen dann fertig graviert still.</p>
+
+    <h2>3 · Ledger-Typografie</h2>
+    <p>Alle Zahlen sind wie Hauptbucheinträge gesetzt: Cormorant-Ziffern in <em>Digit-Cells</em> — jede Ziffer in einer festen <code>.62em</code>-Zelle, damit tickende Zähler nicht zittern, egal welche Metrik die Schrift liefert. Gruppierung nach Schweizer Art mit Apostroph (<code>1'590'648</code>), Labels in Cormorant SC mit <code>.3em</code> Sperrung, Haarlinien als Gradients, die zum Rand hin verlaufen. Die Jahrhundert-Kurve ist ein SVG-Pfad aus <code>10'000 · 1.052^(t−1926)</code>, per <code>stroke-dashoffset</code> vom Scroll gezeichnet, während ein Punkt der Kurve folgt und der Kontostand samt Jahreszahl mitläuft — Zinseszins als Leseerlebnis.</p>
+    <div class="swatches" aria-hidden="true">
+      <span style="background:#17151A"></span><span style="background:#1E1B22"></span>
+      <span style="background:#C2A14D"></span><span style="background:#E8CE8C"></span>
+      <span style="background:#2E2B33"></span><span style="background:#EFE9DC"></span>
+      <span style="background:#8C8694"></span>
+    </div>
+
+    <h2>4 · Das Asset</h2>
+    <p>Das Tresor-Foto (<code>assets/vault.webp</code>, 1400×1738) entstand mit <em>Nano Banana 2 via Higgsfield MCP</em>: ein einziger, palette-locked Prompt — Vorraum eines Schweizer Banktresors, Granitwände mit goldenen Adern, offene Rundtür mit Messingwerk, warmes Streiflicht, Lederbank — anschliessend mit <em>ffmpeg</em> auf 4:5 WebP encodiert (~180 KB). Es lädt lazy mit echten <code>width/height</code>-Attributen und wird erst hinter der aufschwingenden Tür sichtbar: Die Illustration verspricht, die Fotografie beweist.</p>
+
+    <h2>5 · Repro-Prompt</h2>
+    <pre id="prompt">Build a one-page site for AURUM, a fictional Swiss private bank, as a single self-contained HTML file (Google Fonts only, no libraries; the only local asset is assets/vault.webp, a 1400×1738 photo of a bank-vault antechamber). All copy in elevated German ("Vermögen, das bleibt."). Aesthetic: engraved-banknote precision meets dark marble — the most typographically disciplined site imaginable. Palette: dark marble #17151A, panel #1E1B22, gold #C2A14D, bright gold #E8CE8C, engraving ink #2E2B33, paper cream #EFE9DC, dim #8C8694. Fonts: Cormorant for display serif, Cormorant SC for small-caps labels with wide letter-spacing, EB Garamond for body. Background: fixed layered radial gradients plus a faint feTurbulence data-URI for marble veining.
+
+Signature technique 1 — live guilloché engraving on canvas: closed hypotrochoid families, r(θ) = R(base + j·gap + A1·cos(k1θ + j·d1) + A2·cos(k2θ − j·d2)) plus a small epicycle term, integer harmonics, SMALL amplitudes, three nested families (outer lace ~22 lines, fine moiré band ~58, petal medallion ~26) in gold hairlines (~0.45px·DPR, alpha .12–.20). The pattern DRAWS ITSELF on entry (cascading per-line 0→2π sweep), then rotates at 0.016 rad/s; when idle serve a cached offscreen bitmap and only rotate it, switching back to live geometry while the pointer is near — pointer position (un-rotated into pattern space) compresses each vertex's radial component toward the band midline through a Gaussian falloff, so line spacing tightens locally and the engraving breathes. Small corner rosettes ornament three "Prinzipien" ledger cards (Diskretion, Substanz, Haftung), each card double-framed with hairlines, numbered "Eintrag Nº", closing with a counted figure.
+
+Signature technique 2 — the vault moment: a JS-built SVG vault door (annulus plates, 72-tick dial ring, 32-tooth gear ring, inner engraved band, 8 gold bolts in rotated guide slots crossing the rim, five-spoke handwheel, engraved maker's mark) inside a 320vh sticky track. Scroll progress maps to three eased phases: wheel spins 540° while three rings counter-rotate (−60°/+95°/−140°); the eight bolts retract in sequence; the door swings open via CSS 3D rotateY around a left hinge under 1400px perspective, revealing the circular vault photo (lazy, real dimensions) with a "verriegelt → entriegelt" small-caps status line and caption.
+
+Signature technique 3 — ledger typography: every number in serif digit-cells (fixed .62em per digit) so tick-up counters never jitter, Swiss apostrophe grouping, hairline rules fading at both ends, plus a century compounding chart: SVG path of 10'000·1.052^(t−1926) from 1926–2026, drawn by stroke-dashoffset on scroll with a travelling dot and live CHF/year readout.
+
+Sections: hero (giant rosette + AURUM claim + ledger strip of four counters), Prinzipien, Der Tresor, Ein Jahrhundert, Mandat/Kontakt with mailto CTA. Fixed "← 25" pill to the hub, footer "guide & prompt →" link. Hard requirements: prefers-reduced-motion = static finished rosettes and pre-opened vault; canvases pause offscreen and on hidden tabs; DPR cap 2; zero console errors from file://; no horizontal scroll at 390px. Generate the vault photo with Nano Banana 2 via the Higgsfield MCP (palette-locked prompt: granite antechamber, brass vault door ajar, warm sidelight) and encode to 4:5 WebP with ffmpeg.</pre>
+  </div>
+</main>
+<footer>
+  <div class="wrap">
+    <p><a href="/50-aurum/">&larr; AURUM</a> · <a href="/">FABLE/25 Übersicht</a></p>
+  </div>
+</footer>
+</body>
+</html>

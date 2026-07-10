@@ -1,0 +1,735 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ZENITH — Eleven minutes above the world</title>
+<meta name="description" content="ZENITH flies seven civilians past the Kármán line and back — eleven minutes, three of them weightless. Suborbital spaceflight, told as the flight itself.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Archivo:ital,wdth,wght@0,62..125,200..900&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --dawn:#DCE6F0;
+  --strato:#7FA3CC;
+  --space:#05070C;
+  --white:#F4F6F8;
+  --gold:#E8B84A;
+  --tele:#59D98C;
+  --ink:#10151C;
+  --hud:var(--ink);
+  --hud-dim:rgba(16,21,28,.55);
+  --hud-line:rgba(16,21,28,.28);
+  --hw:112;   /* headline wdth axis (g-force) */
+  --hwt:640;  /* headline wght axis (g-force) */
+}
+*{margin:0;padding:0;box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{
+  font-family:"Archivo",system-ui,sans-serif;
+  font-variation-settings:'wdth' 100,'wght' 400;
+  color:var(--ink);
+  background:var(--dawn);
+  overflow-x:hidden;
+  -webkit-font-smoothing:antialiased;
+}
+body.dark-sky{
+  --hud:var(--white);
+  --hud-dim:rgba(244,246,248,.55);
+  --hud-line:rgba(244,246,248,.24);
+  color:var(--white);
+}
+::selection{background:var(--gold);color:var(--ink)}
+.mono{font-family:"JetBrains Mono",monospace}
+
+/* ---------- fixed sky layers ---------- */
+#sky{position:fixed;inset:0;z-index:-4;background:linear-gradient(180deg,#c9d8e8,#DCE6F0)}
+#stars{position:fixed;inset:0;z-index:-3;opacity:0;pointer-events:none}
+#horizon{position:fixed;inset:auto 0 0 0;height:62vh;z-index:-2;pointer-events:none;
+  background:
+    radial-gradient(34vmin 34vmin at 72% 96%,rgba(255,236,190,.85) 0%,rgba(248,214,130,.5) 26%,rgba(232,184,74,0) 62%),
+    radial-gradient(130% 95% at 60% 110%,rgba(232,184,74,.6) 0%,rgba(236,196,120,.26) 38%,rgba(232,184,74,0) 70%)}
+#reentry{position:fixed;inset:0;z-index:-1;opacity:0;pointer-events:none;
+  background:radial-gradient(90% 70% at 50% 100%,rgba(255,148,64,.42) 0%,rgba(232,120,52,.16) 45%,rgba(232,120,52,0) 75%)}
+
+/* ---------- chrome: back pill + HUD ---------- */
+.back{
+  position:fixed;top:1rem;left:1.05rem;z-index:40;
+  font-family:"JetBrains Mono",monospace;font-size:.78rem;letter-spacing:.08em;
+  text-decoration:none;color:var(--hud);
+  border:1px solid var(--hud-line);border-radius:999px;padding:.42rem .9rem;
+  background:rgba(255,255,255,.06);backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px);
+  transition:color .4s,border-color .4s;
+}
+.back:hover{border-color:var(--hud)}
+#hud{
+  position:fixed;top:1rem;right:1.05rem;z-index:40;
+  display:grid;grid-template-columns:auto auto;gap:.28rem 1.1rem;
+  font-family:"JetBrains Mono",monospace;font-size:.72rem;line-height:1.25;
+  color:var(--hud);text-align:right;pointer-events:none;
+  transition:color .4s;
+}
+#hud .lab{color:var(--hud-dim);font-size:.6rem;letter-spacing:.14em;align-self:center;transition:color .4s}
+#hud .val{font-weight:500;min-width:7.4ch}
+#clock.shudder{animation:shud .09s steps(2) infinite}
+@keyframes shud{0%{transform:translate(0,0)}50%{transform:translate(1px,-1px)}100%{transform:translate(-1px,1px)}}
+
+/* altitude rail */
+#rail{
+  position:fixed;left:1.35rem;top:50%;transform:translateY(-50%);z-index:39;
+  height:min(58vh,460px);width:34px;pointer-events:none;
+  color:var(--hud);transition:color .4s;
+}
+#rail .line{position:absolute;left:8px;top:0;bottom:0;width:1px;background:var(--hud-line);transition:background .4s}
+#rail .tick{position:absolute;left:4px;width:9px;height:1px;background:var(--hud-line);transition:background .4s}
+#rail .tick.major{width:13px;left:2px;background:var(--hud-dim)}
+#rail .tick{transform:translateY(.5px)}
+#rail .tlab{position:absolute;left:19px;transform:translateY(50%);font-family:"JetBrains Mono",monospace;font-size:.52rem;color:var(--hud-dim);letter-spacing:.05em;transition:color .4s}
+#rail .cursor{
+  position:absolute;left:-4px;width:25px;height:2px;background:var(--gold);
+  box-shadow:0 0 8px rgba(232,184,74,.7);
+}
+#rail .kmark{position:absolute;left:2px;top:-1px;width:13px;height:1px;background:var(--tele);opacity:.9;box-shadow:0 0 6px rgba(89,217,140,.6)}
+#rail .kmlab{position:absolute;left:19px;top:0;transform:translateY(-50%);font-family:"JetBrains Mono",monospace;font-size:.5rem;letter-spacing:.08em;color:var(--tele);opacity:.85;white-space:nowrap}
+
+/* ---------- layout ---------- */
+.wrap{max-width:820px;margin:0 auto;padding:0 clamp(1.2rem,5vw,2.5rem)}
+section{position:relative}
+h1,h2,h3{font-variation-settings:'wdth' 112,'wght' 700;letter-spacing:-.01em}
+.phase-tag{
+  font-family:"JetBrains Mono",monospace;font-size:.72rem;letter-spacing:.22em;
+  color:var(--gold);margin-bottom:1rem;display:flex;align-items:center;gap:.8rem;
+}
+.phase-tag::after{content:"";flex:1;height:1px;background:var(--hud-line);max-width:120px}
+.phase-tag .t{color:var(--hud-dim)}
+
+/* ---------- hero / pre-flight ---------- */
+#preflight{min-height:100vh;display:flex;flex-direction:column;justify-content:center;padding:7rem 0 4rem}
+.brand{font-family:"JetBrains Mono",monospace;font-size:.78rem;letter-spacing:.5em;margin-bottom:2.2rem;color:var(--ink)}
+.brand b{color:var(--gold)}
+#preflight h1{
+  font-size:clamp(2.6rem,8.4vw,5.6rem);line-height:.98;max-width:12ch;
+  font-variation-settings:'wdth' 118,'wght' 780;
+}
+#preflight .promise{
+  margin-top:2rem;max-width:34rem;font-size:clamp(1.02rem,2.4vw,1.2rem);line-height:1.65;
+  color:rgba(16,21,28,.78);
+}
+.scrollcue{margin-top:3.4rem;font-family:"JetBrains Mono",monospace;font-size:.68rem;letter-spacing:.2em;color:rgba(16,21,28,.55);display:flex;align-items:center;gap:.7rem}
+.scrollcue .arrow{display:inline-block;animation:cue 2.4s ease-in-out infinite}
+@keyframes cue{0%,100%{transform:translateY(0)}50%{transform:translateY(6px)}}
+
+.checklist{padding:8vh 0 16vh}
+.checklist .card{
+  border:1px solid var(--hud-line);border-radius:14px;padding:1.6rem 1.7rem;max-width:34rem;
+  background:rgba(255,255,255,.32);backdrop-filter:blur(4px);-webkit-backdrop-filter:blur(4px);
+}
+.checklist .row{display:flex;justify-content:space-between;gap:1rem;font-family:"JetBrains Mono",monospace;font-size:.78rem;padding:.5rem 0;border-bottom:1px dashed var(--hud-line)}
+.checklist .row:last-child{border-bottom:none}
+.checklist .ok{color:#2e8b57;font-weight:700}
+.checklist p{margin-top:1.2rem;font-size:.98rem;line-height:1.6;color:rgba(16,21,28,.75)}
+
+/* ---------- ascent ---------- */
+#ascent .phase{min-height:92vh;display:flex;flex-direction:column;justify-content:center}
+#ascent h2{
+  font-size:clamp(2rem,6.4vw,3.9rem);line-height:1.02;max-width:14ch;
+  font-variation-settings:'wdth' var(--hw),'wght' var(--hwt);
+  transition:font-variation-settings .12s linear;
+}
+#ascent .phase p{margin-top:1.4rem;max-width:31rem;font-size:clamp(1rem,2.2vw,1.12rem);line-height:1.68;color:inherit;opacity:.82}
+.gmeter{margin-top:1.6rem;font-family:"JetBrains Mono",monospace;font-size:.72rem;letter-spacing:.14em;opacity:.6}
+
+.karman{min-height:64vh;display:flex;align-items:center}
+.karman .inner{width:100%}
+.karman .kline{height:1px;background:linear-gradient(90deg,transparent,var(--tele) 18%,var(--tele) 82%,transparent);
+  box-shadow:0 0 12px rgba(89,217,140,.55);transform:scaleX(.2);opacity:0;transition:transform 1.2s cubic-bezier(.2,.7,.2,1),opacity .9s}
+.karman.lit .kline{transform:scaleX(1);opacity:1}
+.karman .klab{display:flex;justify-content:space-between;margin-top:.9rem;font-family:"JetBrains Mono",monospace;font-size:.7rem;letter-spacing:.24em;color:var(--tele)}
+.karman .ksub{margin-top:2.2rem;max-width:30rem;font-size:1.05rem;line-height:1.65;opacity:.85}
+
+/* ---------- apogee window ---------- */
+#stage{height:300vh}
+#stage .sticky{position:sticky;top:0;height:100vh;overflow:hidden}
+#stage .img{
+  position:absolute;inset:0;
+  clip-path:inset(33% 27% 33% 27% round 30% 42%);
+  transform:scale(1.16);
+  will-change:clip-path,transform;
+}
+#stage img{width:100%;height:100%;object-fit:cover;display:block}
+#stage .frame{
+  position:absolute;inset:0;pointer-events:none;opacity:0;
+  font-family:"JetBrains Mono",monospace;font-size:.68rem;letter-spacing:.16em;color:var(--tele);
+  text-shadow:0 1px 4px rgba(0,0,0,.6);
+}
+#stage .frame .fh{position:absolute;display:flex;gap:1.6rem}
+#stage .frame .tl{top:1rem;left:50%;transform:translateX(-50%)}
+#stage .frame .bl{bottom:1.1rem;left:50%;transform:translateX(-50%)}
+#stage .frame .corner{position:absolute;width:26px;height:26px;border:1px solid rgba(89,217,140,.7)}
+#stage .frame .c1{top:14px;left:14px;border-right:none;border-bottom:none}
+#stage .frame .c2{top:14px;right:14px;border-left:none;border-bottom:none}
+#stage .frame .c3{bottom:14px;left:14px;border-right:none;border-top:none}
+#stage .frame .c4{bottom:14px;right:14px;border-left:none;border-top:none}
+#stage .cap{
+  position:absolute;left:50%;bottom:10vh;transform:translate(-50%,14px);
+  font-family:"JetBrains Mono",monospace;font-size:.72rem;letter-spacing:.3em;color:var(--white);
+  text-shadow:0 1px 6px rgba(0,0,0,.7);opacity:0;transition:opacity .8s,transform .8s;white-space:nowrap;
+}
+#stage.open .cap{opacity:.95;transform:translate(-50%,0)}
+
+/* ---------- weightlessness ---------- */
+#apogee{padding:16vh 0 20vh}
+#apogee h2{font-size:clamp(2.1rem,6.5vw,3.8rem);line-height:1.02;font-variation-settings:'wdth' 118,'wght' 740}
+#apogee .lead{margin-top:1.3rem;max-width:31rem;font-size:1.1rem;line-height:1.66;opacity:.82}
+.floatgrid{margin-top:4.5rem;display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:2.2rem}
+.fcard{
+  border:1px solid rgba(244,246,248,.18);border-radius:16px;padding:1.5rem 1.55rem;
+  background:rgba(244,246,248,.045);backdrop-filter:blur(3px);-webkit-backdrop-filter:blur(3px);
+  font-size:1rem;line-height:1.6;
+}
+.fcard .tag{font-family:"JetBrains Mono",monospace;font-size:.62rem;letter-spacing:.22em;color:var(--tele);display:block;margin-bottom:.9rem}
+.fcard q{quotes:"“" "”"}
+#apogee.floating .fcard{animation:floaty var(--fd,9s) ease-in-out var(--fdelay,0s) infinite alternate}
+#apogee.floating .fcard:nth-child(2){--fd:11s;--fdelay:-3s}
+#apogee.floating .fcard:nth-child(3){--fd:8s;--fdelay:-5s}
+#apogee.floating .fcard:nth-child(4){--fd:12s;--fdelay:-7s}
+@keyframes floaty{
+  0%{transform:translate(0,0) rotate(0deg)}
+  33%{transform:translate(6px,-10px) rotate(1.1deg)}
+  66%{transform:translate(-5px,-4px) rotate(-.9deg)}
+  100%{transform:translate(3px,-12px) rotate(.7deg)}
+}
+
+/* ---------- return ---------- */
+#return .phase{min-height:88vh;display:flex;flex-direction:column;justify-content:center}
+#return h2{font-size:clamp(2rem,6vw,3.6rem);line-height:1.03;max-width:14ch;font-variation-settings:'wdth' 106,'wght' 700}
+#return .phase p{margin-top:1.4rem;max-width:31rem;font-size:clamp(1rem,2.2vw,1.1rem);line-height:1.68;opacity:.82}
+
+/* ---------- your seat ---------- */
+#seat{padding:14vh 0 10vh}
+#seat h2{font-size:clamp(2.2rem,6.6vw,4rem);line-height:1;font-variation-settings:'wdth' 116,'wght' 760}
+#seat .lead{margin-top:1.3rem;max-width:32rem;font-size:1.1rem;line-height:1.65;color:rgba(16,21,28,.78)}
+.days{margin-top:3.4rem;display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:1.4rem}
+.day{border:1px solid var(--hud-line);border-radius:14px;padding:1.4rem 1.45rem;background:rgba(255,255,255,.35)}
+.day .dnum{font-family:"JetBrains Mono",monospace;font-size:.66rem;letter-spacing:.26em;color:var(--gold);display:block;margin-bottom:.8rem;font-weight:700}
+.day h3{font-size:1.06rem;margin-bottom:.5rem}
+.day p{font-size:.92rem;line-height:1.6;color:rgba(16,21,28,.72)}
+.price{
+  margin-top:4.5rem;border-top:1px solid var(--hud-line);border-bottom:1px solid var(--hud-line);
+  padding:2.6rem 0;display:flex;flex-wrap:wrap;gap:2rem;align-items:baseline;justify-content:space-between;
+}
+.price .amount{font-family:"JetBrains Mono",monospace;font-size:clamp(1.9rem,5.5vw,2.9rem);font-weight:700;letter-spacing:-.02em}
+.price .amount small{font-size:.5em;color:rgba(16,21,28,.6);letter-spacing:.1em}
+.price p{max-width:26rem;font-size:.98rem;line-height:1.62;color:rgba(16,21,28,.75)}
+.cta-row{margin-top:3rem;display:flex;gap:1.2rem;flex-wrap:wrap;align-items:center}
+.cta{
+  display:inline-block;font-family:"JetBrains Mono",monospace;font-size:.85rem;letter-spacing:.14em;
+  color:var(--dawn);background:var(--ink);text-decoration:none;border-radius:999px;
+  padding:1rem 1.9rem;transition:transform .25s,box-shadow .25s;
+}
+.cta:hover{transform:translateY(-2px);box-shadow:0 10px 30px rgba(16,21,28,.28)}
+.cta-note{font-size:.82rem;color:rgba(16,21,28,.6);font-family:"JetBrains Mono",monospace}
+
+/* ---------- footer ---------- */
+footer{padding:5rem 0 3rem;font-size:.85rem}
+footer .frow{display:flex;flex-wrap:wrap;gap:1.4rem;justify-content:space-between;align-items:center;border-top:1px solid var(--hud-line);padding-top:2rem}
+footer .fict{color:rgba(16,21,28,.55);max-width:34rem;line-height:1.55}
+footer a.guide{color:var(--ink);font-family:"JetBrains Mono",monospace;letter-spacing:.1em;text-decoration:none;border-bottom:1px solid var(--gold);padding-bottom:2px}
+footer a.guide:hover{color:var(--gold)}
+
+/* dark section text handled by body.dark-sky; light sections force ink */
+#seat,#seat *,footer,footer *{color:var(--ink)}
+#seat .day .dnum{color:#b8862a}.price .amount small,#seat .day p,#seat .lead,.price p,footer .fict,.cta-note{color:rgba(16,21,28,.7)}
+.cta{color:var(--dawn)}
+
+@media (max-width:760px){
+  #rail{display:none}
+  #hud{grid-template-columns:auto auto;gap:.2rem .7rem;font-size:.62rem}
+  #hud .lab{font-size:.52rem}
+  #hud .val{min-width:6.6ch}
+  #stage .img{clip-path:inset(32% 13% 32% 13% round 30% 42%)}
+  #stage .frame{font-size:.56rem;letter-spacing:.1em}
+  #stage .frame .fh{gap:.9rem}
+  #stage .frame .tl{display:none}
+  #stage .frame .bl{width:max-content;max-width:92vw;justify-content:center;flex-wrap:wrap;row-gap:.2rem}
+  #stage .cap{font-size:.62rem;letter-spacing:.22em;bottom:13vh}
+}
+@media (prefers-reduced-motion:reduce){
+  html{scroll-behavior:auto}
+  .scrollcue .arrow{animation:none}
+  #clock.shudder{animation:none}
+  #apogee.floating .fcard{animation:none}
+  #ascent h2{transition:none}
+  .karman .kline{transition:none;transform:scaleX(1);opacity:1}
+  #stage .img{clip-path:inset(0 0 0 0 round 0);transform:scale(1)}
+  #stage .frame{opacity:1}
+  #stage .cap{opacity:.95;transform:translate(-50%,0)}
+}
+</style>
+</head>
+<body>
+
+<div id="sky" aria-hidden="true"></div>
+<canvas id="stars" aria-hidden="true"></canvas>
+<div id="horizon" aria-hidden="true"></div>
+<div id="reentry" aria-hidden="true"></div>
+
+<a class="back" href="/">←&nbsp;25</a>
+
+<div id="hud" aria-hidden="true">
+  <span class="lab">ALT</span><span class="val" id="altv">000.0 KM</span>
+  <span class="lab">MET</span><span class="val" id="clock">T−10:00</span>
+  <span class="lab">VEL</span><span class="val" id="velv">0000 KM/H</span>
+  <span class="lab">CABIN</span><span class="val" id="gv">1.00 G</span>
+</div>
+
+<div id="rail" aria-hidden="true">
+  <div class="line"></div>
+  <div class="kmark"></div>
+  <div class="kmlab">100 · KÁRMÁN</div>
+  <div class="cursor" id="railcur" style="bottom:0"></div>
+</div>
+
+<main>
+
+<!-- ============ PRE-FLIGHT ============ -->
+<section id="preflight">
+  <div class="wrap">
+    <div class="brand">Z E N I T H <b>·</b> SUBORBITAL</div>
+    <h1>Eleven minutes above the world.</h1>
+    <p class="promise">At dawn, on a quiet desert runway, seven people trade the ground for the sky.
+      The engine lights, the Earth lets go, and for a short while — the rarest while there is —
+      you are somewhere almost no one has ever been. Then it gives you back.</p>
+    <div class="scrollcue mono"><span class="arrow">↓</span> SCROLL TO FLY · FULL PROFILE, 0–100 KM</div>
+  </div>
+  <span data-key data-t="-600" data-alt="0" data-vel="0" data-g="1" data-glow="0"></span>
+</section>
+
+<section class="checklist">
+  <div class="wrap">
+    <div class="phase-tag"><span>PRE-FLIGHT</span><span class="t">T−00:10:00</span></div>
+    <div class="card">
+      <div class="row mono"><span>CABIN PRESSURE</span><span class="ok">NOMINAL</span></div>
+      <div class="row mono"><span>PROPELLANT LOAD</span><span class="ok">100%</span></div>
+      <div class="row mono"><span>RANGE &amp; SKY</span><span class="ok">CLEAR</span></div>
+      <div class="row mono"><span>YOUR HEART RATE</span><span class="ok">ELEVATED</span></div>
+      <p>That last one is correct. Everyone's is. You trained three days for this morning,
+      and the vehicle trained for eleven years. Harness tight. Visor down. The desert is
+      pink at the edges and utterly still.</p>
+    </div>
+  </div>
+</section>
+
+<!-- ============ ASCENT ============ -->
+<section id="ascent">
+  <div class="wrap">
+
+    <div class="phase">
+      <span data-key data-t="0" data-alt="0" data-vel="0" data-g="1.2" data-glow="0"></span>
+      <div class="phase-tag"><span>IGNITION</span><span class="t">T+00:00</span></div>
+      <h2>The runway falls away like something you dreamed.</h2>
+      <p>Full thrust in 3.2 seconds. The push is steady, not violent — a large hand,
+      patient and absolutely certain. Below you, the hangars shrink into geometry.</p>
+      <div class="gmeter mono">CABIN LOAD — CLIMBING</div>
+    </div>
+
+    <div class="phase">
+      <span data-key data-t="72" data-alt="12" data-vel="1180" data-g="3.6" data-glow="0"></span>
+      <div class="phase-tag"><span>MAX-Q</span><span class="t">T+01:12</span></div>
+      <h2>The thickest air the vehicle will ever meet.</h2>
+      <p>Maximum dynamic pressure. The airframe shoulders through it; the hull hums one low
+      note. Three-point-six g. You weigh more than you ever have — and you have never
+      felt lighter.</p>
+      <div class="gmeter mono">CABIN LOAD — 3.6 G · STRUCTURE NOMINAL</div>
+    </div>
+
+    <div class="phase">
+      <span data-key data-t="161" data-alt="42" data-vel="3560" data-g="3.1" data-glow="0"></span>
+      <span data-key data-t="176" data-alt="52" data-vel="3480" data-g="0" data-glow="0"></span>
+      <div class="phase-tag"><span>MECO</span><span class="t">T+02:41</span></div>
+      <h2>The roar stops mid-syllable.</h2>
+      <p>Main engine cut-off. What's left is the sound of your own breathing — and
+      forty-eight kilometres of falling upward, engine off, momentum spending itself
+      against the last of the sky.</p>
+      <div class="gmeter mono">CABIN LOAD — 0.0 G · COAST PHASE</div>
+    </div>
+
+    <div class="karman" id="karman">
+      <span data-key data-t="205" data-alt="100" data-vel="2350" data-g="0" data-glow="0"></span>
+      <div class="inner wrap-inner">
+        <div class="kline"></div>
+        <div class="klab"><span>KÁRMÁN LINE</span><span>100 KM</span></div>
+        <p class="ksub">By every definition written on Earth, you have now left it.
+        The sky you grew up under is below you, a thin blue lens on the edge of everything.</p>
+      </div>
+    </div>
+
+  </div>
+</section>
+
+<!-- ============ APOGEE WINDOW ============ -->
+<section id="stage" aria-label="The view from apogee">
+  <span data-key data-t="235" data-alt="103" data-vel="640" data-g="0" data-glow="0"></span>
+  <div class="sticky">
+    <div class="img">
+      <img src="assets/capsule.webp" alt="The ZENITH capsule floating above the curve of the Earth at apogee, crew visible through the cabin windows, the sunlit planet below and black space above" width="1920" height="1072" loading="lazy" decoding="async">
+    </div>
+    <div class="frame" id="frame">
+      <div class="fh tl"><span>ALT 104.2 KM</span><span>VEL 0012 KM/H</span><span>CABIN 0.00 G</span></div>
+      <div class="fh bl"><span>APOGEE</span><span>T+04:30</span><span>ATT HOLD · WINDOW FULL</span></div>
+      <div class="corner c1"></div><div class="corner c2"></div><div class="corner c3"></div><div class="corner c4"></div>
+    </div>
+    <div class="cap">THIS IS THE WHOLE POINT.</div>
+  </div>
+  <span data-key data-t="330" data-alt="104.2" data-vel="12" data-g="0" data-glow="0"></span>
+</section>
+
+<!-- ============ WEIGHTLESSNESS ============ -->
+<section id="apogee">
+  <span data-key data-t="360" data-alt="104" data-vel="180" data-g="0" data-glow="0"></span>
+  <div class="wrap">
+    <div class="phase-tag"><span>APOGEE · WEIGHTLESS</span><span class="t">T+04:30 → T+07:30</span></div>
+    <h2>Unbuckle.</h2>
+    <p class="lead">Three minutes without weight. The cabin becomes a small, bright room with
+    no floor. Nothing here is holding anything down — including these words.</p>
+    <div class="floatgrid">
+      <div class="fcard"><span class="tag">CREW NOTE · FLIGHT 014</span>
+        <q>The horizon curves. Not a diagram — the actual edge of the actual world, bending away in blue.</q></div>
+      <div class="fcard"><span class="tag">CREW NOTE · FLIGHT 009</span>
+        <q>Long enough to somersault. Long enough, after that, to go completely quiet.</q></div>
+      <div class="fcard"><span class="tag">CABIN LOG</span>
+        <q>0.00 g. Seven humans, one shared window, nobody saying anything useful. Correct behaviour.</q></div>
+      <div class="fcard"><span class="tag">CREW NOTE · FLIGHT 021</span>
+        <q>Sixteen sunrises a day happen up here. You get one. It's enough.</q></div>
+    </div>
+  </div>
+  <span data-key data-t="450" data-alt="98" data-vel="900" data-g="0" data-glow="0"></span>
+</section>
+
+<!-- ============ RETURN ============ -->
+<section id="return">
+  <div class="wrap">
+
+    <div class="phase">
+      <span data-key data-t="470" data-alt="72" data-vel="2900" data-g="0.4" data-glow="0"></span>
+      <span data-key data-t="500" data-alt="46" data-vel="3540" data-g="4.2" data-glow="1"></span>
+      <div class="phase-tag"><span>RE-ENTRY INTERFACE</span><span class="t">T+08:20</span></div>
+      <h2>The atmosphere takes you back the way it let you go.</h2>
+      <p>Gradually, then firmly. The window glows faintly amber at the edges as the capsule
+      trades speed for heat, exactly as designed. Four-point-two g, brief and honest.
+      The sky is finding its colour again.</p>
+      <div class="gmeter mono">CABIN LOAD — 4.2 G PEAK · HULL TEMP NOMINAL</div>
+    </div>
+
+    <div class="phase">
+      <span data-key data-t="598" data-alt="6" data-vel="480" data-g="1.6" data-glow="0"></span>
+      <div class="phase-tag"><span>DROGUES · MAINS</span><span class="t">T+09:58</span></div>
+      <h2>Two hard tugs, then a long, slow forgiveness.</h2>
+      <p>Drogues first, to steady. Mains at three kilometres — the deceleration eases into a
+      sway, and the desert reassembles itself below you: runway, hangars, the small crowd
+      that has not moved since ignition.</p>
+    </div>
+
+    <div class="phase">
+      <span data-key data-t="664" data-alt="0" data-vel="0" data-g="1" data-glow="0"></span>
+      <div class="phase-tag"><span>TOUCHDOWN</span><span class="t">T+11:04</span></div>
+      <h2>Nothing about the ground has changed.</h2>
+      <p>Eleven minutes and four seconds after ignition, the legs settle on the same desert
+      floor, in the same dawn light. Nothing about the ground has changed. Everything about
+      the way you will look at it has.</p>
+    </div>
+
+  </div>
+</section>
+
+<!-- ============ YOUR SEAT ============ -->
+<section id="seat">
+  <div class="wrap">
+    <div class="phase-tag"><span>YOUR SEAT</span><span class="t">NEXT MANIFEST</span></div>
+    <h2>Three days of training. One morning of flight.</h2>
+    <p class="lead">A different rest of your life. Every ZENITH crew trains together at the
+    spaceport before flying together. No simulators skipped, no questions too small.</p>
+
+    <div class="days">
+      <div class="day"><span class="dnum">DAY 01</span><h3>Fit &amp; physiology</h3>
+        <p>Suit fitting, medical baseline, and an honest conversation about what 4 g feels
+        like — in a centrifuge, not a brochure.</p></div>
+      <div class="day"><span class="dnum">DAY 02</span><h3>Cabin drills</h3>
+        <p>Your seat, your harness, your window. Egress practice until it bores you.
+        Boredom, here, is the goal.</p></div>
+      <div class="day"><span class="dnum">DAY 03</span><h3>Full dress rehearsal</h3>
+        <p>The complete flight profile in the integrated simulator, twice. The second run
+        is for the part of you that didn't believe the first.</p></div>
+    </div>
+
+    <div class="price">
+      <div class="amount">$450,000 <small>PER SEAT</small></div>
+      <p>We won't call it affordable, and we won't dress it up. It is what flying seven
+      people past the Kármán line safely costs, flown by a crew that would rather be
+      honest than popular. Deposits are refundable until vehicle assignment.</p>
+    </div>
+
+    <div class="cta-row">
+      <a class="cta" href="#preflight">REQUEST A SEAT BRIEFING →</a>
+      <span class="cta-note">NEXT WINDOW · SPRING MANIFEST</span>
+    </div>
+  </div>
+</section>
+
+<footer>
+  <div class="wrap">
+    <div class="frow">
+      <p class="fict">ZENITH is a fictional company. This page is a FABLE/25 design study —
+      a flight profile you can scroll.</p>
+      <a class="guide" href="/56-zenith/guide/">guide &amp; prompt →</a>
+    </div>
+  </div>
+</footer>
+
+</main>
+
+<script>
+(function(){
+'use strict';
+var reduced = matchMedia('(prefers-reduced-motion: reduce)').matches;
+var $ = function(s){ return document.querySelector(s); };
+
+/* ---------- flight keyframes from markers ---------- */
+var KEYS = [];
+function measure(){
+  KEYS = [];
+  var els = document.querySelectorAll('[data-key]');
+  for(var i=0;i<els.length;i++){
+    var el = els[i], r = el.getBoundingClientRect();
+    KEYS.push({ y: r.top + window.scrollY,
+      t:+el.getAttribute('data-t'), alt:+el.getAttribute('data-alt'),
+      vel:+el.getAttribute('data-vel'), g:+el.getAttribute('data-g'),
+      glow:+el.getAttribute('data-glow') });
+  }
+  KEYS.sort(function(a,b){ return a.y-b.y; });
+}
+function lerp(a,b,m){ return a+(b-a)*m; }
+function sample(y){
+  if(!KEYS.length) return {t:-600,alt:0,vel:0,g:1,glow:0};
+  if(y<=KEYS[0].y) return KEYS[0];
+  var last = KEYS[KEYS.length-1];
+  if(y>=last.y) return last;
+  for(var i=1;i<KEYS.length;i++){
+    if(y<KEYS[i].y){
+      var a=KEYS[i-1], b=KEYS[i];
+      var m=(y-a.y)/Math.max(1,(b.y-a.y));
+      return { t:lerp(a.t,b.t,m), alt:lerp(a.alt,b.alt,m),
+               vel:lerp(a.vel,b.vel,m), g:lerp(a.g,b.g,m), glow:lerp(a.glow,b.glow,m) };
+    }
+  }
+  return last;
+}
+
+/* ---------- sky colour ramp (altitude → colour) ---------- */
+var RAMP = [
+  [0,  [220,230,240]], [10, [184,204,224]], [22, [127,163,204]],
+  [40, [ 70,104,146]], [58, [ 32, 52, 84]], [76, [ 12, 20, 36]],
+  [100,[  5,  7, 12]]
+];
+function rampColor(alt){
+  alt = Math.max(0, Math.min(100, alt));
+  for(var i=1;i<RAMP.length;i++){
+    if(alt<=RAMP[i][0]){
+      var a=RAMP[i-1], b=RAMP[i];
+      var m=(alt-a[0])/(b[0]-a[0]);
+      return [ Math.round(lerp(a[1][0],b[1][0],m)),
+               Math.round(lerp(a[1][1],b[1][1],m)),
+               Math.round(lerp(a[1][2],b[1][2],m)) ];
+    }
+  }
+  return RAMP[RAMP.length-1][1];
+}
+function rgb(c){ return 'rgb('+c[0]+','+c[1]+','+c[2]+')'; }
+function smooth(a,b,x){ x=Math.max(0,Math.min(1,(x-a)/(b-a))); return x*x*(3-2*x); }
+
+/* ---------- stars canvas ---------- */
+var cv = $('#stars'), ctx = cv.getContext('2d');
+var DPR = Math.min(2, window.devicePixelRatio||1);
+var STARS = [];
+function sizeCanvas(){
+  cv.width = Math.round(innerWidth*DPR); cv.height = Math.round(innerHeight*DPR);
+  cv.style.width = innerWidth+'px'; cv.style.height = innerHeight+'px';
+  STARS = [];
+  var n = innerWidth<760 ? 110 : 190;
+  for(var i=0;i<n;i++) STARS.push({
+    x:Math.random(), y:Math.random(), r:(Math.random()*1.1+.35)*DPR,
+    p:Math.random()*Math.PI*2, s:.4+Math.random()*1.2, b:.35+Math.random()*.6
+  });
+}
+var starAlpha = 0, hidden = false, twinkleRaf = null;
+function drawStars(now){
+  ctx.clearRect(0,0,cv.width,cv.height);
+  if(starAlpha<=0.01) return;
+  for(var i=0;i<STARS.length;i++){
+    var st=STARS[i];
+    var tw = reduced ? 1 : (0.72 + 0.28*Math.sin(st.p + now*0.001*st.s));
+    ctx.globalAlpha = starAlpha * st.b * tw;
+    ctx.fillStyle = '#EAF2FF';
+    ctx.beginPath();
+    ctx.arc(st.x*cv.width, st.y*cv.height, st.r, 0, 6.2832);
+    ctx.fill();
+  }
+  ctx.globalAlpha = 1;
+}
+function twinkleLoop(now){
+  twinkleRaf = null;
+  if(hidden || reduced) return;
+  if(starAlpha>0.01){ drawStars(now); twinkleRaf = requestAnimationFrame(twinkleLoop); }
+}
+function ensureTwinkle(){
+  if(!twinkleRaf && !hidden && !reduced && starAlpha>0.01)
+    twinkleRaf = requestAnimationFrame(twinkleLoop);
+}
+document.addEventListener('visibilitychange', function(){
+  hidden = document.hidden;
+  if(!hidden){ ensureTwinkle(); update(); }
+});
+
+/* ---------- DOM refs ---------- */
+var sky=$('#sky'), horizon=$('#horizon'), reentry=$('#reentry'),
+    altv=$('#altv'), clock=$('#clock'), velv=$('#velv'), gv=$('#gv'),
+    railcur=$('#railcur'), body=document.body, root=document.documentElement,
+    stage=$('#stage'), stageImg=stage.querySelector('.img'),
+    frame=$('#frame'), apogeeSec=$('#apogee'), karman=$('#karman');
+
+function fmtClock(t){
+  var sign = t<0 ? 'T−' : 'T+';
+  var s = Math.abs(Math.round(t));
+  var m = Math.floor(s/60), ss = s%60;
+  return sign + (m<10?'0':'')+m + ':' + (ss<10?'0':'')+ss;
+}
+function pad(n,w){ n=''+n; while(n.length<w) n='0'+n; return n; }
+
+/* ---------- main scroll-driven update ---------- */
+var ticking=false, lastDark=null, lastShudder=null;
+function update(){
+  ticking=false;
+  if(hidden) return;
+  var anchor = window.scrollY + innerHeight*0.55;
+  var f = sample(anchor);
+
+  /* sky */
+  var cB = rampColor(f.alt), cT = rampColor(Math.min(100,f.alt+16));
+  sky.style.background = 'linear-gradient(180deg,'+rgb(cT)+' 0%,'+rgb(cB)+' 100%)';
+  horizon.style.opacity = Math.max(0, 1 - f.alt/16).toFixed(3);
+  reentry.style.opacity = (f.glow*0.9).toFixed(3);
+
+  /* stars */
+  var sa = smooth(55,85,f.alt);
+  if(Math.abs(sa-starAlpha)>0.005 || sa>0){
+    starAlpha = sa;
+    if(reduced || !twinkleRaf) drawStars(performance.now());
+    ensureTwinkle();
+  }
+
+  /* HUD */
+  altv.textContent = pad(f.alt.toFixed(1),5) + ' KM';
+  clock.textContent = fmtClock(f.t);
+  velv.textContent = pad(Math.round(f.vel),4) + ' KM/H';
+  gv.textContent = f.g.toFixed(2) + ' G';
+  railcur.style.bottom = Math.max(0,Math.min(100,f.alt)) + '%';
+
+  /* dark chrome + text */
+  var dark = f.alt > 34;
+  if(dark!==lastDark){ body.classList.toggle('dark-sky', dark); lastDark=dark; }
+
+  /* g-force typography */
+  if(!reduced){
+    var g = Math.max(1, f.g);
+    var wdt = Math.max(74, 112 - (g-1)*13);
+    var wgt = Math.min(900, 640 + (g-1)*95);
+    root.style.setProperty('--hw', wdt.toFixed(1));
+    root.style.setProperty('--hwt', wgt.toFixed(0));
+    var shud = f.g>3.25 && f.t<200;
+    if(shud!==lastShudder){ clock.classList.toggle('shudder', shud); lastShudder=shud; }
+  }
+
+  /* karman moment */
+  if(!karman.classList.contains('lit') && f.alt>=96 && f.t<300) karman.classList.add('lit');
+
+  /* window reveal */
+  if(!reduced){
+    var st = stage.getBoundingClientRect();
+    var span = stage.offsetHeight - innerHeight;
+    var w = Math.max(0, Math.min(1, -st.top / Math.max(1,span)));
+    var e = w<.5 ? 2*w*w : 1-Math.pow(-2*w+2,2)/2; /* easeInOutQuad */
+    var ix = lerp(27,0,e), iy = lerp(33,0,e), rr = lerp(30,0,e), rr2 = lerp(42,0,e);
+    if(innerWidth<760){ ix = lerp(13,0,e); iy = lerp(32,0,e); }
+    stageImg.style.clipPath = 'inset('+iy.toFixed(2)+'% '+ix.toFixed(2)+'% '+iy.toFixed(2)+'% '+ix.toFixed(2)+'% round '+rr.toFixed(1)+'% '+rr2.toFixed(1)+'%)';
+    stageImg.style.transform = 'scale('+lerp(1.16,1,e).toFixed(4)+')';
+    frame.style.opacity = smooth(.55,.9,w).toFixed(3);
+    stage.classList.toggle('open', w>.72);
+  }
+}
+function onScroll(){
+  if(!ticking){ ticking=true; requestAnimationFrame(update); }
+}
+window.addEventListener('scroll', onScroll, {passive:true});
+window.addEventListener('resize', function(){ sizeCanvas(); measure(); update(); }, {passive:true});
+
+/* weightlessness float only while in view */
+if(!reduced && 'IntersectionObserver' in window){
+  var io = new IntersectionObserver(function(entries){
+    for(var i=0;i<entries.length;i++)
+      apogeeSec.classList.toggle('floating', entries[i].isIntersecting);
+  }, {rootMargin:'10% 0px'});
+  io.observe(apogeeSec);
+}
+
+/* build rail ticks */
+(function(){
+  var rail = $('#rail');
+  for(var a=0;a<=100;a+=10){
+    var tick=document.createElement('div');
+    tick.className='tick'+(a%50===0?' major':'');
+    tick.style.bottom=a+'%';
+    rail.appendChild(tick);
+    if(a===0||a===50){
+      var lab=document.createElement('div');
+      lab.className='tlab'; lab.style.bottom=a+'%'; lab.textContent=a;
+      rail.appendChild(lab);
+    }
+  }
+})();
+
+sizeCanvas();
+/* re-measure after layout settles + font load */
+measure(); update();
+window.addEventListener('load', function(){ measure(); update(); });
+if(document.fonts && document.fonts.ready) document.fonts.ready.then(function(){ measure(); update(); });
+})();
+</script>
+
+<!-- CHANGELOG
+PASS 1 (structure & flight engine):
+  - Full mission architecture: pre-flight → ascent (IGNITION/MAX-Q/MECO) → Kármán moment →
+    sticky capsule-window reveal → weightless apogee → return (re-entry/drogues/touchdown) → seat/CTA.
+  - Data-driven flight model: invisible [data-key] markers in the document carry {t, alt, vel, g, glow};
+    JS interpolates between marker scroll positions, so the HUD, sky ramp, stars, g-typography and
+    re-entry glow all derive from ONE sampled state per frame.
+  - Sky: fixed gradient layer interpolating dawn #DCE6F0 → stratosphere #7FA3CC → space #05070C;
+    gold horizon glow fades by 16 km; star canvas (DPR≤2) fades in 55–85 km, twinkle rAF only
+    while stars visible and tab focused.
+  - G-force typography via Archivo variable axes (wdth compresses, wght loads up with cabin g);
+    mission clock shudders above 3.25 g during boost only. Reduced motion: all of it static,
+    window mask fully open, no float/shudder/twinkle.
+PASS 2 (verified & fixed):
+  - BUG: the rail's Kármán marker used class "karman", colliding with the .karman section rules
+    (min-height:64vh) → a giant green bar above the rail. Renamed to .kmark + added "100 · KÁRMÁN" label.
+  - Rail ticks/labels were styled but never generated — now built in JS (every 10 km, majors at 0/50/100).
+  - Dawn was flat: added a low sun disc + wider gold horizon wash (two-layer radial), fades out by ~16 km.
+  - Window mask reshaped from pill-ellipse to capsule-window rounded-rect (inset … round 30%/42%),
+    slightly tighter start, scale 1.16 → 1 parallax settle.
+PASS 3 (mobile & flow):
+  - @390: capsule-window frame's top HUD row collided with the fixed HUD — hidden on mobile
+    (fixed HUD already carries ALT/VEL/G); bottom frame row wraps cleanly, caption raised.
+  - kmlab nowrap; will-change on the reveal layer; verified weightless float, max-Q compression
+    (wdth 112→~79 under 3.5 g), re-entry amber, RM static window, 0 errors, scrollWidth 390/1280.
+-->
+</body>
+</html>

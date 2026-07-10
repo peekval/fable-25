@@ -1,0 +1,156 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>FACET — how this site was built</title>
+<meta name="description" content="How the FACET dispersive-gem site was built: procedural brilliant geometry, faked dispersion, the atelier scrub, plus a reproduction prompt.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Italiana&family=Cormorant+Garamond:ital,wght@0,400;0,500;1,400&family=IBM+Plex+Mono:wght@300;400&display=swap" rel="stylesheet">
+<style>
+:root{
+  --black:#0B0B0D;--panel:#131316;--plat:#DCDEE3;--white:#F7F5F0;--dim:#85858D;
+  --line:rgba(220,222,227,.14);
+}
+*{margin:0;padding:0;box-sizing:border-box}
+body{
+  font-family:"Cormorant Garamond",Georgia,serif;font-size:19px;line-height:1.75;
+  background:var(--black);color:var(--plat);-webkit-font-smoothing:antialiased;
+}
+::selection{background:var(--plat);color:var(--black)}
+.back{
+  position:fixed;top:1.1rem;left:1.2rem;z-index:9;
+  font-family:"IBM Plex Mono",monospace;font-size:.78rem;letter-spacing:.12em;
+  text-decoration:none;color:var(--plat);
+  background:rgba(11,11,13,.66);border:1px solid var(--line);border-radius:999px;
+  padding:.45rem 1rem;transition:background .35s,color .35s;
+}
+.back:hover{background:var(--plat);color:var(--black)}
+.wrap{max-width:760px;margin:0 auto;padding:6.5rem 1.4rem 5rem}
+.kicker{
+  font-family:"IBM Plex Mono",monospace;font-size:.68rem;letter-spacing:.42em;
+  text-transform:uppercase;color:var(--dim);margin-bottom:1.2rem;
+}
+h1{font-family:"Italiana",serif;font-weight:400;font-size:clamp(2.1rem,5.5vw,3.1rem);letter-spacing:.12em;line-height:1.2;color:var(--white);margin-bottom:2.2rem}
+h2{font-family:"Italiana",serif;font-weight:400;font-size:1.5rem;letter-spacing:.18em;color:var(--white);margin:3rem 0 1rem}
+p{color:var(--dim);margin-bottom:1.05rem}
+p strong{color:var(--plat);font-weight:500}
+.spectral{display:block;width:9rem;height:1px;margin:.4rem 0 2rem;
+  background:linear-gradient(90deg,transparent,#ff5a5a,#ffc65a,#7dff8a,#5ab8ff,#b45aff,transparent)}
+pre{
+  background:var(--panel);border:1px solid var(--line);
+  padding:1.7rem 1.8rem;margin:1.4rem 0 1rem;
+  font-family:"IBM Plex Mono",monospace;font-size:.82rem;line-height:1.7;color:var(--plat);
+  white-space:pre-wrap;word-wrap:break-word;
+}
+.copy-btn{
+  cursor:pointer;font-family:"IBM Plex Mono",monospace;font-size:.74rem;letter-spacing:.22em;
+  text-transform:uppercase;background:none;color:var(--white);
+  border:1px solid rgba(220,222,227,.3);padding:.85rem 1.8rem;margin-top:.6rem;
+  transition:background .35s,color .35s;
+}
+.copy-btn:hover,.copy-btn.done{background:var(--plat);color:var(--black)}
+.links{display:flex;gap:1rem;flex-wrap:wrap;margin-top:3.2rem}
+.links a{
+  font-family:"IBM Plex Mono",monospace;font-size:.76rem;letter-spacing:.18em;
+  text-decoration:none;color:var(--plat);border:1px solid var(--line);
+  padding:.85rem 1.6rem;transition:background .35s,color .35s;
+}
+.links a:hover{background:var(--plat);color:var(--black)}
+</style>
+</head>
+<body>
+
+<a class="back" href="/">←&nbsp;25</a>
+
+<main class="wrap">
+  <p class="kicker">FACET · build notes</p>
+  <h1>Cutting a diamond out of mathematics.</h1>
+  <span class="spectral" aria-hidden="true"></span>
+
+  <h2>The stone</h2>
+  <p>The hero is raw WebGL — no library. The round brilliant is generated procedurally from
+     rotational symmetry: an octagonal table ring, a 16-point girdle ring, a half-step-rotated
+     pavilion break ring and a culet point, stitched into <strong>112 triangles</strong>
+     (table 8, crown 24, girdle 32, pavilion 48). Every triangle duplicates its vertices and
+     carries a per-face normal, so each facet shades as one flat, decisive plane.</p>
+  <p>There is no environment map. A tiny shader function invents the studio: a near-black velvet
+     base with three razor-sharp vertical softbox strips (cosine powers of 90–260) plus one broad
+     dim fill. Because a facet's refracted direction is constant across its surface, each facet
+     samples exactly one point of that environment — so facets snap between black, platinum and
+     blazing white as the stone turns, which is what a real brilliant does.</p>
+  <p><strong>Dispersion is faked twice.</strong> The refraction runs per channel with three
+     different etas, and each channel also rotates the environment a few degrees — thin rainbow
+     fringes appear where a facet straddles a light edge. On top of that, "fire": each facet hashes
+     its normal into a hue, and that spectral flash is gated by the local luminance gradient of the
+     environment, so it only ignites where light is actually dispersing. A faked pavilion bounce
+     (reflect the refracted ray, flip it upward, resample) lifts light back through the table.</p>
+  <p>The pointer, heavily damped, rotates the environment and tilts the stone — the fire migrates
+     across the crown as you move. DPR is capped at 1.5; if the frame rate sits under 14fps the
+     loop stops and the last frame stands as a still-life render. Reduced motion draws exactly one
+     considered frame; no WebGL falls back to a CSS conic-gradient gem; the loop pauses offscreen
+     and when the tab hides.</p>
+
+  <h2>Caustics on velvet</h2>
+  <p>Below the stone, a 2D canvas paints the light the gem throws: ellipse-squashed arc segments
+     and rare spectral threads inside a soft radial pool, phase-locked to the same rotation value
+     the shader uses. The layer's edges are erased with <strong>destination-out</strong> so the
+     canvas has no visible boundary against the velvet.</p>
+
+  <h2>The atelier scrub</h2>
+  <p>"The cut" is a 520vh track with a sticky stage, scrubbed by scroll position. An irregular
+     rough-stone polygon gives way to five cleave lines drawn on with stroke-dashoffset; then a
+     face-up cut plan — generated in JS from the same rotational symmetry as the mesh — reveals its
+     <strong>57 elements one at a time</strong> (table, 8 stars, 8 kites, 16 upper-girdle, then the
+     pavilion's dashed mains and lower-girdle lines) while a mono counter keeps score. A gradient
+     polish sweep, clipped to the girdle circle, passes once; five thin spectral arcs settle on the
+     finished plan. Stage captions I–V change with the phase.</p>
+
+  <h2>Generated asset</h2>
+  <p>The vitrine photograph — a 2-carat round brilliant held in tweezers over black velvet, rainbow
+     caustics scattered beneath — was generated with <strong>Nano Banana 2 via the Higgsfield
+     MCP</strong> and finished with <strong>ffmpeg</strong> into a 1400×1738 WebP
+     (<code>assets/diamond.webp</code>, ~170KB). On the page it loads lazily with real dimensions
+     and reveals like a vitrine: brightness raised from 0.12 to 1 under a descending radial
+     spotlight when scrolled into view, with an engraved small-caps caption.</p>
+
+  <h2>Reproduction prompt</h2>
+<pre id="prompt">Build a one-page site for FACET, a fictional high-jewelry house, as a single self-contained HTML file (Google Fonts; only local asset: assets/diamond.webp, 1400×1738 macro photo). Aesthetic: black-velvet minimalism where light is the product. Palette: velvet black #0B0B0D (panels #131316), platinum #DCDEE3, warm diamond white #F7F5F0, dim #85858D, with thin spectral rainbow accents used only where light disperses. Fonts: Italiana for the wordmark and headings with generous letterspacing (.3–.58em), Cormorant Garamond for hushed editorial body, IBM Plex Mono for engravings and counters.
+
+The hero is a raw-WebGL round brilliant, built procedurally from 16-fold rings: octagonal table, 24-triangle crown (table ring 8 → girdle ring 16), a 32-triangle girdle band, 32 upper-pavilion triangles to a half-step-rotated break ring, 16 mains to the culet — 112 triangles, flat facets via duplicated vertices with per-face normals. Shade it with a procedural studio environment: near-black velvet base plus three or four razor-sharp vertical softbox strips (pow(cos,90–260)) at different heights and one broad dim fill so facets flash discretely on/off as the stone slowly rotates (0.1 rad/s). Fake dispersion by refracting per channel (eta .440/.418/.396) with a small per-channel env rotation; add a pavilion bounce (reflect the refracted ray, flip y, resample) so light comes up through the table, fresnel-weighted reflection, and "fire": a facet-hashed spectral hue gated by a smoothstep of the env-luminance gradient so thin rainbow flashes appear only where a facet skims a light edge. Pointer movement (heavily damped) rotates the environment and tilts the stone, shifting the fire. DPR cap 1.5; if measured fps &lt; 14, stop the loop and keep the last frame as a static render; reduced motion renders exactly one considered frame; rAF pauses offscreen and when hidden; no WebGL falls back to a CSS conic-gradient gem. Beneath the stone, a 2D-canvas caustic pool: ellipse-squashed thin arcs and rare spectral threads in a soft radial glow, phase-locked to the stone's rotation, edges alpha-faded with destination-out so no canvas box shows.
+
+Follow with "The cut", a 520vh scroll-scrubbed sticky atelier: an irregular rough-stone polygon; five cleave lines drawing on via stroke-dashoffset; a JS-generated face-up cut plan whose 57 elements (table, 8 stars, 8 kites, 16 upper-girdle, then dashed pavilion mains and lower-girdle lines) appear one by one with a mono counter "facet 41 ⁄ 57"; a gradient polish sweep clipped to the girdle; then the finished plan with five thin spectral edge arcs. Stage captions I–V in Italiana with stage-specific atelier copy.
+
+Then "In the flesh": the photo as a vitrine plate (panel with double platinum keyline) that reveals via a spotlight raise — image brightness .12 → 1 with a descending radial light — when scrolled into view, engraved small-caps caption "facet nº 1 · 2.04 ct · round brilliant · colour d · vvs1". Then three collection cards with 1px platinum borders, stroke-drawn SVG pieces and a spectral hairline on hover; a private-viewing CTA; footer with "guide &amp; prompt →". Generate the macro photo with Nano Banana 2 via the Higgsfield MCP (round brilliant in tweezers on black velvet, thin rainbow caustics) and convert to WebP with ffmpeg. Fixed "← 25" pill, zero console errors from file://, no horizontal overflow at 390px.</pre>
+  <button class="copy-btn" id="copyBtn" type="button">Copy prompt</button>
+
+  <div class="links">
+    <a href="/57-facet/">visit FACET</a>
+    <a href="/">← all sites</a>
+  </div>
+</main>
+
+<script>
+(function(){
+"use strict";
+var btn=document.getElementById("copyBtn");
+btn.addEventListener("click",function(){
+  var txt=document.getElementById("prompt").textContent;
+  function ok(){btn.textContent="Copied";btn.classList.add("done");
+    setTimeout(function(){btn.textContent="Copy prompt";btn.classList.remove("done");},2200);}
+  function fallback(){
+    var ta=document.createElement("textarea");
+    ta.value=txt;ta.style.position="fixed";ta.style.opacity="0";
+    document.body.appendChild(ta);ta.select();
+    try{document.execCommand("copy");ok();}catch(e){}
+    ta.remove();
+  }
+  if(navigator.clipboard&&navigator.clipboard.writeText){
+    navigator.clipboard.writeText(txt).then(ok,fallback);
+  }else{fallback();}
+});
+})();
+</script>
+</body>
+</html>

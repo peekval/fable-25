@@ -1,0 +1,760 @@
+<!DOCTYPE html>
+<!--
+  FABLE/25 — 51-NOCTURNE
+  "NOCTURNE — Saison 2027" · fictional concert hall season announcement
+
+  PASS 1 changelog:
+  - Signature system: (1) stage-light choreography — per-act volumetric beams (blurred
+    linear-gradient wedges, screen blend) that sweep in and settle when an act "takes the
+    stage" (IntersectionObserver adds .lit), lights dip to black between acts; a followspot
+    (fixed radial gradient) lerps after the pointer in dark sections, fine pointers only.
+    (2) music made visible — one fixed canvas "score line": a single calligraphic line of
+    light (sum of sines, edge-tapered envelope) that swells near [data-swell] elements
+    (gaussian falloff vs viewport centre) and gains tremolo from scroll velocity; glowing
+    bow-particles ride the same curve. (3) the program as acts — Akt I–V playbill sections
+    with soft velvet curtain wipes, plus a seat-selection fan (SVG rows, hover/focus lights
+    a row gold and updates the playbill caption).
+  - Type: Bodoni Moda (didone display, italic accents) + Hanken Grotesk (text/UI).
+  - Palette: hall #100A0D, velvet #5C1E2E, gold #C9A25E, bright #EFD9A7, cream #F2EAD8,
+    dim #8A7A80. German copy throughout (Konzerthaus register).
+  - Das Haus: hall.webp full-bleed (lazy, 1920x1072) with overlay beams aligned to the
+    organ (top centre, spreading down) and the stage spot (bottom centre, cone up).
+  - prefers-reduced-motion: lights up static (no sweeps, no followspot), score line drawn
+    once static, curtain wipes replaced by simple fades.
+  - rAF stops when tab hidden; score canvas is fixed (always in view) but skips work while
+    document.hidden; DPR capped at 2; particles/amplitude reduced under 720px.
+  - Mobile: clamp() type scale, single-column playbills, fan scales to viewport, no
+    horizontal overflow (beams live in overflow-clipped section wrappers).
+
+  PASS 2 changelog:
+  - FIX: hero <h1> never appeared — it had the fade-out base styles but not the .fadein
+    class, so .lit never revealed it. Playwright screenshot caught it; class added.
+  - Hero beam composition reworked: narrower cones (clip-path tightened), crossing point
+    raised to the title, added a stage-floor glow ellipse where the beams land.
+  - Score line: core stroke brightened (.30 → .36 alpha), line raised to 56% viewport
+    height so it threads between playbill cards instead of grazing their CTAs.
+  - Das Haus caption moved below the photo on <=720px (it collided with the organ/chair
+    on tall narrow screens); desktop keeps the overlaid playbill caption.
+  - Perf: beam blur 22px → 16px (12px mobile) — SwiftShader raster time confirmed the
+    old blur was the single most expensive layer; visually indistinguishable at night.
+
+  PASS 3 changelog:
+  - FIX: hero .season/.sub stayed invisible — their opacity:0 rules were declared after
+    .lit .fadein at equal specificity, so the reveal lost the cascade. All fade targets
+    now share one .fadein base rule declared before the .lit reveal.
+  - FIX: beam wedges showed hard vertical seams where the 16px blur was clipped by the
+    element's border box. Beams widened (46vw/480px) with tighter clip-path insets so
+    the blur halo never reaches the box edge; gold mix nudged 34% → 38%.
+  - Seating fan: each row gained an invisible 26px-wide hit path (pointer-events:stroke)
+    — the dotted 7px arcs were needle-thin targets; scripted hover missed them too.
+  - Das Haus: bottom scrim deepened (starts at 66%) so the playbill caption stays
+    legible over the lit stage; caption given a touch more bottom clearance.
+
+  PASS 4 changelog:
+  - FIX: the outermost fan row's arc apex (y=-35) sat above the viewBox, so its dots were
+    clipped and its centre stretch could never be hovered. viewBox extended to -45.
+  - Interaction verified with a real mouse path (getPointAtLength midpoints): rows light
+    gold and the playbill caption updates on hover, focus and keyboard (Enter/Space).
+-->
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>NOCTURNE — Saison 2027</title>
+<meta name="description" content="Konzerthaus NOCTURNE, Saison 2027: fünf Akte zwischen Dunkelheit und Goldlicht. Mahler, Schubert, Bach, Strawinsky, Beethoven. Fiktive Schauseite.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bodoni+Moda:ital,opsz,wght@0,6..96,400..800;1,6..96,400..700&family=Hanken+Grotesk:ital,wght@0,300..600;1,300..500&display=swap" rel="stylesheet">
+<style>
+:root{
+  --hall:#100A0D;
+  --hall2:#17090e;
+  --velvet:#5C1E2E;
+  --gold:#C9A25E;
+  --bright:#EFD9A7;
+  --cream:#F2EAD8;
+  --dim:#8A7A80;
+  --line:rgba(201,162,94,.26);
+  --line-soft:rgba(201,162,94,.14);
+}
+*{margin:0;padding:0;box-sizing:border-box}
+html{scroll-behavior:smooth}
+html,body{overflow-x:clip}
+body{
+  background:var(--hall);
+  color:var(--cream);
+  font-family:"Hanken Grotesk",system-ui,sans-serif;
+  font-weight:330;
+  line-height:1.7;
+  -webkit-font-smoothing:antialiased;
+}
+::selection{background:var(--gold);color:var(--hall)}
+h1,h2,h3,.didone{font-family:"Bodoni Moda",serif;font-weight:480;line-height:1.05}
+em{font-style:italic}
+img{max-width:100%;height:auto;display:block}
+a{color:inherit}
+
+/* ---------- fixed layers ---------- */
+#score{position:fixed;inset:0;width:100%;height:100%;z-index:1;pointer-events:none}
+#spot{
+  position:fixed;top:0;left:0;width:56vmax;height:56vmax;z-index:2;pointer-events:none;
+  margin:-28vmax 0 0 -28vmax;border-radius:50%;opacity:0;
+  background:radial-gradient(circle,rgba(239,217,167,.10) 0%,rgba(201,162,94,.05) 38%,transparent 68%);
+  mix-blend-mode:screen;transition:opacity 1.2s ease;
+}
+main{position:relative;z-index:3}
+
+/* ---------- back pill ---------- */
+.back{
+  position:fixed;top:1.1rem;left:1.2rem;z-index:20;
+  font-size:.85rem;letter-spacing:.1em;text-decoration:none;color:var(--cream);
+  background:rgba(16,10,13,.6);border:1px solid var(--line);border-radius:999px;
+  padding:.42rem .95rem;backdrop-filter:blur(6px);
+  transition:background .3s,color .3s;
+}
+.back:hover{background:var(--gold);color:var(--hall);border-color:var(--gold)}
+
+/* ---------- beams ---------- */
+.stagewrap{position:relative;overflow:clip}
+.beam{
+  position:absolute;top:-12%;left:50%;width:min(46vw,480px);height:130%;
+  transform-origin:50% 0;pointer-events:none;
+  background:linear-gradient(180deg,
+    color-mix(in srgb,var(--beamc,#EFD9A7) 38%,transparent) 0%,
+    color-mix(in srgb,var(--beamc,#EFD9A7) 15%,transparent) 45%,
+    transparent 92%);
+  clip-path:polygon(46% 0,54% 0,82% 100%,18% 100%);
+  filter:blur(16px);
+  mix-blend-mode:screen;
+  opacity:0;
+  transform:translateX(-50%) rotate(var(--sweepFrom,-40deg));
+}
+.lit .beam{
+  opacity:var(--beamo,.8);
+  transform:translateX(-50%) rotate(var(--settle,-12deg));
+  transition:transform 2.6s cubic-bezier(.24,.9,.28,1),opacity 2.2s ease;
+}
+.beam.b2{transform:translateX(-50%) rotate(var(--sweepFrom2,40deg))}
+.lit .beam.b2{
+  transform:translateX(-50%) rotate(var(--settle2,12deg));
+  transition:transform 3.1s cubic-bezier(.24,.9,.28,1) .18s,opacity 2.6s ease .18s;
+}
+.fadein{opacity:0;transform:translateY(12px)}
+.lit .fadein{opacity:1;transform:none;transition:opacity 2.4s ease .9s,transform 2.4s ease .9s}
+
+/* ---------- hero ---------- */
+.hero{
+  min-height:100svh;display:flex;flex-direction:column;justify-content:center;align-items:center;
+  text-align:center;padding:5rem 1.4rem 6rem;position:relative;
+  background:
+    radial-gradient(120% 60% at 50% 108%,rgba(92,30,46,.5) 0%,transparent 60%),
+    radial-gradient(90% 55% at 50% -12%,rgba(92,30,46,.32) 0%,transparent 62%),
+    var(--hall);
+}
+.hero .beam{--beamc:#EFD9A7;--beamo:.7;--settle:-11deg;--sweepFrom:-44deg;left:41%}
+.hero .beam.b2{--settle2:11deg;--sweepFrom2:44deg;left:59%;--beamc:#C9A25E}
+.floorglow{
+  position:absolute;left:50%;bottom:-6%;width:80vw;height:26vh;transform:translateX(-50%);
+  background:radial-gradient(50% 60% at 50% 60%,rgba(201,162,94,.22),transparent 70%);
+  filter:blur(10px);mix-blend-mode:screen;pointer-events:none;opacity:0;transition:opacity 2.6s ease .8s;
+}
+.lit .floorglow{opacity:1}
+.kicker{
+  font-size:.72rem;letter-spacing:.42em;text-transform:uppercase;color:var(--gold);
+  font-weight:500;margin-bottom:1.6rem;
+}
+.hero h1{
+  font-size:clamp(3.4rem,14vw,10.5rem);
+  font-weight:560;letter-spacing:.06em;color:var(--cream);
+  text-shadow:0 0 60px rgba(239,217,167,.18);
+}
+.hero .season{
+  font-family:"Bodoni Moda",serif;font-style:italic;font-weight:430;
+  font-size:clamp(1.2rem,3.4vw,1.9rem);color:var(--bright);margin-top:1.1rem;
+}
+.hero .sub{
+  max-width:34em;margin-top:2rem;color:var(--dim);font-size:.98rem;
+}
+.scrollcue{
+  position:absolute;bottom:2.2rem;left:50%;transform:translateX(-50%);
+  color:var(--dim);font-size:.7rem;letter-spacing:.34em;text-transform:uppercase;
+}
+.scrollcue::after{
+  content:"";display:block;width:1px;height:44px;margin:.7rem auto 0;
+  background:linear-gradient(180deg,var(--gold),transparent);
+}
+@media (prefers-reduced-motion:no-preference){
+  .scrollcue::after{animation:cue 2.8s ease-in-out infinite}
+  @keyframes cue{0%,100%{transform:scaleY(.55);transform-origin:top;opacity:.5}50%{transform:scaleY(1);opacity:1}}
+}
+
+/* ---------- section chrome ---------- */
+.wrap{max-width:1060px;margin:0 auto;padding:0 1.4rem}
+.sec-head{text-align:center;padding:7rem 1.4rem 3rem}
+.sec-head h2{font-size:clamp(2rem,5.6vw,3.4rem);color:var(--cream)}
+.sec-head .rule{
+  width:72px;height:1px;margin:1.6rem auto 0;
+  background:linear-gradient(90deg,transparent,var(--gold),transparent);
+}
+.sec-head p{color:var(--dim);max-width:36em;margin:1.4rem auto 0;font-size:.98rem}
+
+/* ---------- interlude (scene change) ---------- */
+.interlude{
+  height:26svh;min-height:150px;
+  background:linear-gradient(180deg,transparent,rgba(0,0,0,.72) 45%,rgba(0,0,0,.72) 55%,transparent);
+}
+
+/* ---------- acts ---------- */
+.act{
+  position:relative;padding:15svh 1.4rem;min-height:88svh;
+  display:flex;align-items:center;justify-content:center;
+}
+.act .beam{--beamo:.62}
+.act:nth-of-type(odd) .beam{left:30%}
+.act:nth-of-type(even) .beam{left:70%}
+.playbill{
+  position:relative;max-width:640px;width:100%;
+  padding:3rem clamp(1.4rem,5vw,3.4rem) 3.2rem;
+  border:1px solid var(--line-soft);
+  background:linear-gradient(180deg,rgba(23,9,14,.82),rgba(16,10,13,.9));
+  overflow:hidden;
+}
+.playbill::before,.playbill::after{ /* velvet curtain wipe, two soft layers */
+  content:"";position:absolute;inset:-2%;z-index:5;pointer-events:none;
+  background:linear-gradient(100deg,#3a0f1c 0%,var(--velvet) 46%,#2a0a14 78%,rgba(42,10,20,0) 100%);
+  transform:translateX(0);
+}
+.playbill::after{
+  background:linear-gradient(100deg,rgba(92,30,46,0) 0%,rgba(92,30,46,.85) 30%,#1c0710 100%);
+  transform:translateX(4%);
+}
+.lit .playbill::before{transform:translateX(-108%);transition:transform 1.7s cubic-bezier(.6,.05,.25,1)}
+.lit .playbill::after{transform:translateX(112%);transition:transform 1.9s cubic-bezier(.6,.05,.25,1) .08s}
+.act-no{
+  font-family:"Bodoni Moda",serif;font-size:.86rem;letter-spacing:.44em;text-transform:uppercase;
+  color:var(--gold);display:flex;align-items:center;gap:1rem;
+}
+.act-no::after{content:"";flex:1;height:1px;background:linear-gradient(90deg,var(--line),transparent)}
+.act-date{margin-top:1.5rem;font-size:.8rem;letter-spacing:.22em;text-transform:uppercase;color:var(--dim)}
+.act h3{font-size:clamp(1.9rem,5.4vw,3rem);margin-top:.55rem;color:var(--cream)}
+.act h3 em{color:var(--bright);font-weight:430}
+.program{margin-top:1.8rem;border-top:1px solid var(--line-soft);padding-top:1.4rem;display:grid;gap:.7rem}
+.program li{list-style:none;display:flex;justify-content:space-between;gap:1.4rem;align-items:baseline}
+.program .comp{font-family:"Bodoni Moda",serif;font-style:italic;font-size:1.06rem;color:var(--bright);white-space:nowrap}
+.program .werk{color:var(--dim);font-size:.92rem;text-align:right}
+.artists{margin-top:1.7rem;font-size:.92rem;color:var(--dim)}
+.artists b{color:var(--cream);font-weight:500}
+.act-cta{
+  display:inline-block;margin-top:2rem;font-size:.78rem;letter-spacing:.3em;text-transform:uppercase;
+  color:var(--gold);text-decoration:none;border-bottom:1px solid var(--line);padding-bottom:.35rem;
+  transition:color .3s,border-color .3s;
+}
+.act-cta:hover{color:var(--bright);border-color:var(--bright)}
+
+/* ---------- das haus ---------- */
+.haus{position:relative;overflow:clip;background:#000}
+.haus img{width:100%;height:auto}
+.haus .hbeam{
+  position:absolute;pointer-events:none;mix-blend-mode:screen;filter:blur(14px);opacity:0;
+  transition:opacity 2.8s ease .4s;
+}
+.lit .hbeam{opacity:1}
+.hbeam.organ{ /* fans down from the organ, top centre */
+  left:50%;top:2%;width:min(46vw,52%);height:96%;transform:translateX(-50%);
+  background:linear-gradient(180deg,rgba(239,217,167,.30),rgba(201,162,94,.10) 55%,transparent 90%);
+  clip-path:polygon(46% 0,54% 0,100% 100%,0 100%);
+}
+.hbeam.spot{ /* cone up from the stage spot, bottom centre */
+  left:50%;bottom:-2%;width:34%;height:64%;transform:translateX(-50%);
+  background:linear-gradient(0deg,rgba(239,217,167,.34),rgba(239,217,167,.08) 60%,transparent 95%);
+  clip-path:polygon(40% 100%,60% 100%,86% 0,14% 0);
+}
+.haus .scrim{
+  position:absolute;inset:0;pointer-events:none;
+  background:
+    linear-gradient(180deg,var(--hall) 0%,transparent 14%,transparent 66%,rgba(16,10,13,.78) 88%,var(--hall) 100%),
+    radial-gradient(120% 90% at 50% 50%,transparent 55%,rgba(16,10,13,.55) 100%);
+}
+.haus-caption{
+  position:absolute;left:0;right:0;bottom:clamp(1.2rem,5vw,3.4rem);text-align:center;padding:0 1.4rem;
+}
+.haus-caption .didone{
+  font-size:clamp(1.5rem,4.6vw,2.6rem);font-style:italic;color:var(--cream);
+  text-shadow:0 2px 30px rgba(0,0,0,.8);
+}
+.haus-caption p{
+  margin-top:.5rem;font-size:.74rem;letter-spacing:.3em;text-transform:uppercase;color:var(--dim);
+}
+
+/* ---------- seating fan ---------- */
+.fanbox{max-width:720px;margin:0 auto;padding:0 1.4rem 2rem;text-align:center}
+.fan{width:100%;height:auto;display:block}
+.fan .row{cursor:pointer;outline:none}
+.fan .row .vis{
+  fill:none;stroke:rgba(138,122,128,.5);stroke-width:7;stroke-linecap:round;
+  stroke-dasharray:.1 13;transition:stroke .45s ease;pointer-events:none;
+}
+.fan .row .hit{fill:none;stroke:#000;stroke-opacity:0;stroke-width:26;pointer-events:stroke}
+.fan .row:hover .vis,.fan .row:focus-visible .vis,.fan .row.on .vis{stroke:var(--bright)}
+.fan .stage-arc{fill:none;stroke:var(--line);stroke-width:1}
+.fan-label{
+  min-height:2.6em;font-family:"Bodoni Moda",serif;font-style:italic;
+  font-size:clamp(1.05rem,3vw,1.35rem);color:var(--bright);
+}
+.fan-hint{font-size:.78rem;letter-spacing:.26em;text-transform:uppercase;color:var(--dim);margin-top:.4rem}
+
+/* ---------- abonnements ---------- */
+.tiers{
+  display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,260px),1fr));
+  gap:1.4rem;padding:1rem 0 2rem;
+}
+.tier{
+  position:relative;padding:2.6rem 2rem 2.4rem;text-align:center;
+  border:1px solid var(--line);background:linear-gradient(180deg,rgba(23,9,14,.7),rgba(16,10,13,.9));
+  transition:transform .5s cubic-bezier(.2,.8,.2,1),border-color .5s,box-shadow .5s;
+}
+.tier::before{
+  content:"";position:absolute;inset:8px;border:1px solid var(--line-soft);pointer-events:none;
+}
+.tier:hover{transform:translateY(-6px);border-color:var(--gold);box-shadow:0 24px 60px -30px rgba(201,162,94,.35)}
+.tier h3{font-size:1.6rem;color:var(--cream)}
+.tier .price{
+  font-family:"Bodoni Moda",serif;font-size:2.4rem;color:var(--bright);margin:1.1rem 0 .2rem;
+}
+.tier .per{font-size:.75rem;letter-spacing:.24em;text-transform:uppercase;color:var(--dim)}
+.tier ul{margin:1.6rem 0 0;display:grid;gap:.55rem}
+.tier li{list-style:none;font-size:.92rem;color:var(--dim)}
+.tier li b{color:var(--cream);font-weight:500}
+.tier.mid{border-color:var(--gold)}
+.tier .tag{
+  position:absolute;top:-0.7em;left:50%;transform:translateX(-50%);
+  background:var(--gold);color:var(--hall);font-size:.66rem;font-weight:600;
+  letter-spacing:.24em;text-transform:uppercase;padding:.28em 1em;white-space:nowrap;
+}
+
+/* ---------- karten / footer ---------- */
+.karten{
+  text-align:center;padding:7rem 1.4rem 5rem;position:relative;
+  background:radial-gradient(90% 70% at 50% 110%,rgba(92,30,46,.45),transparent 65%);
+}
+.karten h2{font-size:clamp(2rem,6vw,3.4rem)}
+.karten p{color:var(--dim);max-width:32em;margin:1.4rem auto 0}
+.btn{
+  display:inline-block;margin-top:2.4rem;padding:1rem 2.8rem;
+  font-size:.8rem;letter-spacing:.32em;text-transform:uppercase;text-decoration:none;
+  color:var(--hall);background:var(--gold);font-weight:600;
+  transition:background .3s,transform .3s;
+}
+.btn:hover{background:var(--bright);transform:translateY(-3px)}
+footer{
+  border-top:1px solid var(--line-soft);padding:2.6rem 1.4rem 3rem;text-align:center;
+  color:var(--dim);font-size:.85rem;
+}
+footer .foot-title{font-family:"Bodoni Moda",serif;letter-spacing:.3em;color:var(--cream);font-size:1rem}
+footer p{margin-top:.7rem}
+footer a{color:var(--gold);text-decoration:none;border-bottom:1px solid var(--line)}
+footer a:hover{color:var(--bright)}
+.foot-note{margin-top:1.6rem;font-size:.72rem;letter-spacing:.16em}
+
+/* ---------- reduced motion: lights up, everything static ---------- */
+@media (prefers-reduced-motion:reduce){
+  html{scroll-behavior:auto}
+  .beam,.lit .beam,.beam.b2,.lit .beam.b2{
+    opacity:var(--beamo,.7);transform:translateX(-50%) rotate(var(--settle,-12deg));transition:none;
+  }
+  .beam.b2,.lit .beam.b2{transform:translateX(-50%) rotate(var(--settle2,12deg))}
+  .playbill::before,.playbill::after{display:none}
+  .hero h1,.hero .season,.hero .sub,.fadein,.lit .fadein{opacity:1;transform:none;transition:none}
+  .hbeam,.lit .hbeam{opacity:1;transition:none}
+  #spot{display:none}
+  .tier,.tier:hover{transform:none}
+}
+@media (max-width:720px){
+  .program li{flex-direction:column;gap:.1rem}
+  .program .werk{text-align:left}
+  .beam{width:52vw;filter:blur(12px)}
+  .haus-caption{position:static;padding:1.6rem 1.4rem .4rem}
+  .haus-caption .didone{text-shadow:none}
+}
+</style>
+</head>
+<body>
+
+<canvas id="score" aria-hidden="true"></canvas>
+<div id="spot" aria-hidden="true"></div>
+<a class="back" href="/">←&nbsp;25</a>
+
+<main>
+
+<!-- ═══════════ HERO ═══════════ -->
+<header class="hero stagewrap" id="hero" data-act>
+  <div class="beam" aria-hidden="true"></div>
+  <div class="beam b2" aria-hidden="true"></div>
+  <div class="floorglow" aria-hidden="true"></div>
+  <p class="kicker fadein">Konzerthaus am Lindengraben · Berlin</p>
+  <h1 class="fadein" data-swell="46">NOCTURNE</h1>
+  <p class="season fadein">Saison 2027 — <em>fünf Akte zwischen Dunkelheit &amp; Goldlicht</em></p>
+  <p class="sub fadein">Wenn der Saal dunkel wird, beginnt die Musik zu leuchten. Ein Jahr, fünf Abende, ein Versprechen: Sie werden das Licht anders hören.</p>
+  <span class="scrollcue">Vorhang</span>
+</header>
+
+<!-- ═══════════ SAISON ═══════════ -->
+<section id="saison" aria-label="Saison 2027 — das Programm">
+  <div class="sec-head stagewrap" data-act>
+    <h2 data-swell="30">Die Saison in fünf Akten</h2>
+    <div class="rule"></div>
+    <p>Kein Spielplan, ein Drama: Jeder Abend betritt die Bühne in seinem eigenen Licht — und zwischen den Akten wird es dunkel im Haus.</p>
+  </div>
+
+  <!-- AKT I -->
+  <article class="act stagewrap" data-act style="--beamc:#EFD9A7;--settle:-16deg;--sweepFrom:-46deg;--settle2:10deg;--sweepFrom2:38deg">
+    <div class="beam" aria-hidden="true"></div>
+    <div class="beam b2" aria-hidden="true"></div>
+    <div class="playbill">
+      <p class="act-no">Akt I · Eröffnung</p>
+      <p class="act-date">Sa · 11. September 2027 · 20 Uhr</p>
+      <h3 data-swell="34"><em>Auferstehung</em></h3>
+      <ul class="program">
+        <li><span class="comp">Gustav Mahler</span><span class="werk">Sinfonie Nr. 2 c-Moll „Auferstehung“</span></li>
+      </ul>
+      <p class="artists"><b>Orchester des Hauses NOCTURNE</b> · Dirigentin <b>Léonore Adler</b> · Sopran <b>Maren Holst</b> · Alt <b>Catena Vielli</b> · Chor der Lindengraben-Akademie</p>
+      <a class="act-cta" href="#karten">Karten ab €38</a>
+    </div>
+  </article>
+  <div class="interlude" aria-hidden="true"></div>
+
+  <!-- AKT II -->
+  <article class="act stagewrap" data-act style="--beamc:#C7CBE0;--settle:14deg;--sweepFrom:48deg;--settle2:-8deg;--sweepFrom2:-36deg">
+    <div class="beam" aria-hidden="true"></div>
+    <div class="beam b2" aria-hidden="true"></div>
+    <div class="playbill">
+      <p class="act-no">Akt II · Liedabend</p>
+      <p class="act-date">Fr · 21. Januar 2027 · 19.30 Uhr</p>
+      <h3 data-swell="34"><em>Winterreise</em></h3>
+      <ul class="program">
+        <li><span class="comp">Franz Schubert</span><span class="werk">Winterreise D 911 — vollständig</span></li>
+      </ul>
+      <p class="artists">Bariton <b>Jonas Reval</b> · Hammerflügel <b>Aiko Brandt</b> · Der Saal bleibt für 75 Minuten im Mondlicht — kein Applaus zwischen den Liedern.</p>
+      <a class="act-cta" href="#karten">Karten ab €32</a>
+    </div>
+  </article>
+  <div class="interlude" aria-hidden="true"></div>
+
+  <!-- AKT III -->
+  <article class="act stagewrap" data-act style="--beamc:#C9A25E;--settle:-10deg;--sweepFrom:-38deg;--settle2:16deg;--sweepFrom2:46deg">
+    <div class="beam" aria-hidden="true"></div>
+    <div class="beam b2" aria-hidden="true"></div>
+    <div class="playbill">
+      <p class="act-no">Akt III · Orgelnacht</p>
+      <p class="act-date">Sa · 20. März 2027 · 22 Uhr</p>
+      <h3 data-swell="34">Die <em>Orgelnacht</em></h3>
+      <ul class="program">
+        <li><span class="comp">J. S. Bach</span><span class="werk">Passacaglia c-Moll BWV 582</span></li>
+        <li><span class="comp">Olivier Messiaen</span><span class="werk">Apparition de l’église éternelle</span></li>
+        <li><span class="comp">Charles-Marie Widor</span><span class="werk">Sinfonie Nr. 5 — Toccata</span></li>
+      </ul>
+      <p class="artists">Orgel <b>Immanuel Skov</b> · Um Mitternacht erlischt alles Licht bis auf die Prospektpfeifen — gespielt wird auswendig.</p>
+      <a class="act-cta" href="#karten">Karten ab €28</a>
+    </div>
+  </article>
+  <div class="interlude" aria-hidden="true"></div>
+
+  <!-- AKT IV -->
+  <article class="act stagewrap" data-act style="--beamc:#D98A7A;--settle:18deg;--sweepFrom:52deg;--settle2:-12deg;--sweepFrom2:-42deg">
+    <div class="beam" aria-hidden="true"></div>
+    <div class="beam b2" aria-hidden="true"></div>
+    <div class="playbill">
+      <p class="act-no">Akt IV · Feuer</p>
+      <p class="act-date">Do · 29. April 2027 · 20 Uhr</p>
+      <h3 data-swell="34"><em>Le Sacre</em> du printemps</h3>
+      <ul class="program">
+        <li><span class="comp">Lili Boulanger</span><span class="werk">D’un soir triste</span></li>
+        <li><span class="comp">Béla Bartók</span><span class="werk">Musik für Saiten, Schlagzeug und Celesta</span></li>
+        <li><span class="comp">Igor Strawinsky</span><span class="werk">Le Sacre du printemps</span></li>
+      </ul>
+      <p class="artists"><b>Orchester des Hauses NOCTURNE</b> · Dirigent <b>Tomas Ilyn</b> · Lichtregie <b>Studio Lumen</b> — der Saal atmet im Takt des Sacre.</p>
+      <a class="act-cta" href="#karten">Karten ab €36</a>
+    </div>
+  </article>
+  <div class="interlude" aria-hidden="true"></div>
+
+  <!-- AKT V -->
+  <article class="act stagewrap" data-act style="--beamc:#EFD9A7;--settle:-14deg;--sweepFrom:-50deg;--settle2:14deg;--sweepFrom2:50deg;--beamo:.85">
+    <div class="beam" aria-hidden="true"></div>
+    <div class="beam b2" aria-hidden="true"></div>
+    <div class="playbill">
+      <p class="act-no">Akt V · Finale</p>
+      <p class="act-date">Sa · 26. Juni 2027 · 20 Uhr</p>
+      <h3 data-swell="34">An die <em>Freude</em></h3>
+      <ul class="program">
+        <li><span class="comp">Arvo Pärt</span><span class="werk">Cantus in Memoriam Benjamin Britten</span></li>
+        <li><span class="comp">Ludwig van Beethoven</span><span class="werk">Sinfonie Nr. 9 d-Moll op. 125</span></li>
+      </ul>
+      <p class="artists"><b>Orchester &amp; Chor des Hauses</b> · Dirigentin <b>Léonore Adler</b> · Solistenquartett <b>Holst / Vielli / Reval / Okafor</b> · anschließend: alle Türen offen, Sommernacht im Foyer.</p>
+      <a class="act-cta" href="#karten">Karten ab €42</a>
+    </div>
+  </article>
+</section>
+
+<!-- ═══════════ DAS HAUS ═══════════ -->
+<section aria-label="Das Haus">
+  <div class="sec-head stagewrap" data-act>
+    <h2 data-swell="28">Das Haus</h2>
+    <div class="rule"></div>
+    <p>1.436 Plätze, vier Ränge, eine Orgel mit 5.712 Pfeifen. Gebaut 1899, verdunkelt mit Absicht.</p>
+  </div>
+  <figure class="haus stagewrap" data-act>
+    <img src="assets/hall.webp" alt="Der Saal des Konzerthauses NOCTURNE von der Bühne aus: vier goldbeleuchtete Ränge, die Orgel über dem letzten Rang, ein einzelner Dirigentenstuhl im Bühnenlicht." width="1920" height="1072" loading="lazy" decoding="async">
+    <div class="hbeam organ" aria-hidden="true"></div>
+    <div class="hbeam spot" aria-hidden="true"></div>
+    <div class="scrim" aria-hidden="true"></div>
+    <figcaption class="haus-caption">
+      <p class="didone" data-swell="26">„Der Blick, den nur das Orchester kennt.“</p>
+      <p>Der Saal · von der Bühne aus · eine Stunde vor Einlass</p>
+    </figcaption>
+  </figure>
+</section>
+
+<!-- ═══════════ SAALPLAN / SEAT FAN ═══════════ -->
+<section aria-label="Saalplan">
+  <div class="sec-head">
+    <h2 data-swell="26">Wählen Sie Ihre Reihe</h2>
+    <div class="rule"></div>
+    <p>Fahren Sie über den Fächer — jede Reihe hat ihr eigenes Licht. Und ihren eigenen Klang.</p>
+  </div>
+  <div class="fanbox stagewrap" data-act>
+    <svg class="fan" viewBox="0 -45 720 375" role="group" aria-label="Saalplan: sieben Reihenbögen, Bühne unten">
+      <path class="stage-arc" d="M 250 318 A 130 60 0 0 1 470 318" />
+      <text x="360" y="322" fill="#8A7A80" font-size="11" letter-spacing="4" text-anchor="middle" font-family="Hanken Grotesk,sans-serif">BÜHNE</text>
+      <g class="row" tabindex="0" role="button" data-info="Reihe A — Parkett vorn · ab €68 · Sie sehen die Noten"><path class="vis" d="M 150 268 A 260 170 0 0 1 570 268"/><path class="hit" d="M 150 268 A 260 170 0 0 1 570 268"/></g>
+      <g class="row" tabindex="0" role="button" data-info="Reihe B — Parkett · ab €58 · der Lieblingsplatz der Dirigentin"><path class="vis" d="M 122 240 A 300 200 0 0 1 598 240"/><path class="hit" d="M 122 240 A 300 200 0 0 1 598 240"/></g>
+      <g class="row" tabindex="0" role="button" data-info="Reihe C — Parkett Mitte · ab €48 · akustischer Sweet Spot"><path class="vis" d="M 96 210 A 340 232 0 0 1 624 210"/><path class="hit" d="M 96 210 A 340 232 0 0 1 624 210"/></g>
+      <g class="row" tabindex="0" role="button" data-info="Reihe D — Parkett hinten · ab €38 · das ganze Bild"><path class="vis" d="M 72 178 A 380 266 0 0 1 648 178"/><path class="hit" d="M 72 178 A 380 266 0 0 1 648 178"/></g>
+      <g class="row" tabindex="0" role="button" data-info="Erster Rang — ab €44 · Goldlicht auf Augenhöhe"><path class="vis" d="M 50 144 A 420 300 0 0 1 670 144"/><path class="hit" d="M 50 144 A 420 300 0 0 1 670 144"/></g>
+      <g class="row" tabindex="0" role="button" data-info="Zweiter Rang — ab €32 · die Orgel im Rücken"><path class="vis" d="M 30 108 A 460 336 0 0 1 690 108"/><path class="hit" d="M 30 108 A 460 336 0 0 1 690 108"/></g>
+      <g class="row" tabindex="0" role="button" data-info="Dritter Rang — ab €24 · am nächsten am Himmel"><path class="vis" d="M 12 70 A 500 374 0 0 1 708 70"/><path class="hit" d="M 12 70 A 500 374 0 0 1 708 70"/></g>
+    </svg>
+    <p class="fan-label" id="fanlabel" aria-live="polite">Reihe C — Parkett Mitte · ab €48 · akustischer Sweet Spot</p>
+    <p class="fan-hint">Alle Preise Saison 2027 · freie Platzwahl innerhalb der Reihe</p>
+  </div>
+</section>
+
+<!-- ═══════════ ABONNEMENTS ═══════════ -->
+<section id="abo" aria-label="Abonnements">
+  <div class="sec-head">
+    <h2 data-swell="26">Abonnements</h2>
+    <div class="rule"></div>
+    <p>Fünf Akte, ein Platz, der Ihnen gehört. Abonnentinnen und Abonnenten behalten ihre Reihe — die ganze Saison.</p>
+  </div>
+  <div class="wrap">
+    <div class="tiers">
+      <div class="tier">
+        <h3>Parkett</h3>
+        <p class="price">€180</p>
+        <p class="per">Fünf Akte · Reihe C–D</p>
+        <ul>
+          <li><b>Alle fünf Konzerte</b> der Saison</li>
+          <li>Fester Platz, ganze Saison</li>
+          <li>Programmheft in Leinen</li>
+          <li>Übertragbar an Begleitung</li>
+        </ul>
+      </div>
+      <div class="tier mid">
+        <span class="tag">Meistgewählt</span>
+        <h3>Loge</h3>
+        <p class="price">€290</p>
+        <p class="per">Fünf Akte · Erster Rang</p>
+        <ul>
+          <li><b>Erster Rang</b>, Goldlicht-Seite</li>
+          <li>Empfang in der Pause, Foyer Nord</li>
+          <li>Garderobe ohne Wartezeit</li>
+          <li>Einführung 45 Minuten vor Beginn</li>
+        </ul>
+      </div>
+      <div class="tier">
+        <h3>Première</h3>
+        <p class="price">€460</p>
+        <p class="per">Fünf Akte · Reihe A–B</p>
+        <ul>
+          <li><b>Reihe A oder B</b>, Mitte</li>
+          <li>Zugang zur Generalprobe</li>
+          <li>Ein Abend mit der Dirigentin</li>
+          <li>Ihr Name im Saisonbuch 2027</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════ KARTEN / FOOTER ═══════════ -->
+<section class="karten stagewrap" id="karten" data-act>
+  <div class="beam" aria-hidden="true" style="--beamc:#C9A25E;--settle:-8deg;--sweepFrom:-30deg;--beamo:.5"></div>
+  <h2 data-swell="30">Der Vorhang wartet.</h2>
+  <p>Kasse am Lindengraben: Di–Sa, 12–18 Uhr — oder am Abend, solange Licht im Foyer brennt. Restkarten jeweils ab 19 Uhr an der Abendkasse.</p>
+  <a class="btn" href="#saison">Karten sichern</a>
+</section>
+
+<footer>
+  <p class="foot-title">NOCTURNE</p>
+  <p>Konzerthaus am Lindengraben 1 · 10117 Berlin · kasse@nocturne-konzerthaus.de</p>
+  <p><a href="/51-nocturne/guide/">guide &amp; prompt →</a></p>
+  <p class="foot-note">Ein fiktives Haus. Teil der FABLE/25-Flotte — Saal, Saison und alle Namen sind erfunden.</p>
+</footer>
+
+</main>
+
+<script>
+(function(){
+'use strict';
+var RM = matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+/* ---------- act lighting (IntersectionObserver) ---------- */
+var acts = document.querySelectorAll('[data-act]');
+if (RM){
+  acts.forEach(function(a){ a.classList.add('lit'); });
+} else {
+  var io = new IntersectionObserver(function(entries){
+    entries.forEach(function(en){
+      if (en.isIntersecting) { en.target.classList.add('lit'); io.unobserve(en.target); }
+    });
+  },{threshold:.28, rootMargin:'0px 0px -6% 0px'});
+  acts.forEach(function(a){ io.observe(a); });
+  /* hero lights find the title immediately */
+  requestAnimationFrame(function(){ document.getElementById('hero').classList.add('lit'); });
+}
+
+/* ---------- followspot ---------- */
+var spot = document.getElementById('spot');
+if (!RM && matchMedia('(pointer: fine)').matches){
+  var sx=innerWidth/2, sy=innerHeight/2, tx=sx, ty=sy, on=false, spotRaf=null;
+  addEventListener('pointermove', function(e){
+    tx=e.clientX; ty=e.clientY;
+    if(!on){ on=true; spot.style.opacity=1; }
+  },{passive:true});
+  var spotStep = function(){
+    sx += (tx-sx)*.045; sy += (ty-sy)*.045;
+    spot.style.transform = 'translate('+sx.toFixed(1)+'px,'+sy.toFixed(1)+'px)';
+  };
+} else { spot.remove(); }
+
+/* ---------- score line canvas ---------- */
+var cv = document.getElementById('score'), ctx = cv.getContext('2d');
+var W=0, H=0, DPR=1, small=false;
+function resize(){
+  DPR = Math.min(devicePixelRatio||1, 2);
+  W = innerWidth; H = innerHeight; small = W < 720;
+  cv.width = Math.round(W*DPR); cv.height = Math.round(H*DPR);
+  ctx.setTransform(DPR,0,0,DPR,0,0);
+}
+resize();
+addEventListener('resize', function(){ resize(); if(RM) drawStatic(); }, {passive:true});
+
+var swells = Array.prototype.slice.call(document.querySelectorAll('[data-swell]'));
+var amp = 8, phase = 0, vel = 0, lastSY = scrollY;
+
+function curveY(px, a, t){
+  var e = Math.pow(Math.sin(px/W*Math.PI), .8);           /* edge taper */
+  return H*.56
+    + Math.sin(px*.0052 + t)        * a       * e
+    + Math.sin(px*.0131 - t*1.6)    * a*.38   * e
+    + Math.sin(px*.031  + t*2.3)    * a*.14   * e
+    + Math.sin(px*.052  + t*7.1)    * vel*.28 * e;        /* tremolo */
+}
+function strokeLine(a, t, alpha, lw){
+  ctx.beginPath();
+  var step = small ? 9 : 6;
+  for (var px=0; px<=W; px+=step){
+    var y = curveY(px, a, t);
+    px===0 ? ctx.moveTo(px,y) : ctx.lineTo(px,y);
+  }
+  ctx.strokeStyle = 'rgba(239,217,167,'+alpha+')';
+  ctx.lineWidth = lw; ctx.stroke();
+}
+/* bow particles riding the curve */
+var N = 10, parts = [];
+for (var i=0;i<N;i++) parts.push({u: Math.random(), v: .00035 + Math.random()*.0009, r: .8+Math.random()*1.6});
+
+function frame(){
+  var sy = scrollY;
+  vel += (Math.min(Math.abs(sy-lastSY), 70) - vel)*.09;
+  lastSY = sy;
+  /* swell: proximity of any [data-swell] centre to viewport centre */
+  var target = small ? 5 : 7;
+  for (var i=0;i<swells.length;i++){
+    var r = swells[i].getBoundingClientRect();
+    if (r.bottom < -80 || r.top > H+80) continue;
+    var d = ((r.top + r.height/2) - H*.52) / (H*.62);
+    var g = Math.exp(-d*d*3.2);
+    var s = target + g * (+swells[i].dataset.swell || 30) * (small ? .6 : 1);
+    if (s > target) target = s;
+  }
+  amp += (target-amp)*.035;
+  phase += .011 + vel*.0007;
+
+  ctx.clearRect(0,0,W,H);
+  ctx.globalCompositeOperation = 'lighter';
+  strokeLine(amp, phase, .05, 8);     /* halo */
+  strokeLine(amp, phase, .36, 1.4);   /* core */
+  /* particles */
+  var n = small ? 6 : N;
+  for (var j=0;j<n;j++){
+    var p = parts[j];
+    p.u += p.v * (1 + vel*.05); if (p.u > 1) p.u -= 1;
+    var px = p.u * W, py = curveY(px, amp, phase);
+    var gr = ctx.createRadialGradient(px,py,0,px,py,p.r*7);
+    gr.addColorStop(0,'rgba(239,217,167,.5)');
+    gr.addColorStop(1,'rgba(239,217,167,0)');
+    ctx.fillStyle = gr;
+    ctx.beginPath(); ctx.arc(px,py,p.r*7,0,6.2832); ctx.fill();
+  }
+  ctx.globalCompositeOperation = 'source-over';
+}
+function drawStatic(){
+  ctx.clearRect(0,0,W,H);
+  ctx.globalCompositeOperation = 'lighter';
+  vel = 0;
+  strokeLine(16, 1.4, .05, 8);
+  strokeLine(16, 1.4, .28, 1.4);
+  ctx.globalCompositeOperation = 'source-over';
+}
+
+if (RM){
+  drawStatic();
+} else {
+  var running = false, rafId = 0;
+  var loop = function(){
+    if (document.hidden){ running=false; return; }
+    frame();
+    if (spot && spot.isConnected && typeof spotStep === 'function') spotStep();
+    rafId = requestAnimationFrame(loop);
+  };
+  var start = function(){ if(!running){ running=true; rafId=requestAnimationFrame(loop); } };
+  document.addEventListener('visibilitychange', function(){
+    if (document.hidden){ cancelAnimationFrame(rafId); running=false; }
+    else start();
+  });
+  start();
+}
+
+/* ---------- seating fan ---------- */
+var label = document.getElementById('fanlabel');
+var rows = document.querySelectorAll('.fan .row');
+rows.forEach(function(row){
+  function show(){
+    rows.forEach(function(r){ r.classList.remove('on'); });
+    row.classList.add('on');
+    label.textContent = row.dataset.info;
+  }
+  row.addEventListener('pointerenter', show);
+  row.addEventListener('focus', show);
+  row.addEventListener('click', show);
+  row.addEventListener('keydown', function(e){
+    if (e.key==='Enter' || e.key===' '){ e.preventDefault(); show(); }
+  });
+});
+/* default highlighted row (matches initial label) */
+rows[2] && rows[2].classList.add('on');
+})();
+</script>
+</body>
+</html>

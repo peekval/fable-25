@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>VELOCE — guide &amp; prompt</title>
+<meta name="description" content="Technique breakdown and full reproduction prompt for the VELOCE showcase site (FABLE/25, site 52).">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Anybody:ital,wdth,wght@0,50..150,100..900;1,50..150,100..900&family=Martian+Mono:wght@300;400;600&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#0A0B0D; --panel:#121317; --blue:#2E52FF; --glow:#6E8CFF;
+  --silver:#D5D9E0; --dim:#737A87; --line:rgba(213,217,224,.12);
+}
+*{margin:0;padding:0;box-sizing:border-box}
+html,body{overflow-x:clip}
+body{
+  font-family:"Martian Mono",monospace;font-size:.85rem;line-height:1.75;
+  color:var(--silver);background:var(--bg);-webkit-font-smoothing:antialiased;
+}
+::selection{background:var(--blue);color:#fff}
+.disp{font-family:"Anybody",sans-serif;font-variation-settings:"wdth" 146;font-weight:830;
+  text-transform:uppercase;line-height:.95}
+.mono{font-size:.62rem;letter-spacing:.22em;text-transform:uppercase;color:var(--dim)}
+.wrap{max-width:840px;margin:0 auto;padding:0 clamp(1.2rem,4vw,2.5rem)}
+.back{
+  position:fixed;top:1rem;left:1rem;z-index:90;
+  font-size:.7rem;letter-spacing:.12em;text-decoration:none;color:var(--silver);
+  background:rgba(10,11,13,.72);border:1px solid var(--line);border-radius:999px;
+  padding:.42rem .95rem;backdrop-filter:blur(8px);transition:border-color .3s,color .3s;
+}
+.back:hover{border-color:var(--blue);color:#fff}
+header{padding:7rem 0 3rem}
+header h1{font-size:clamp(1.9rem,6vw,3.4rem);color:#fff;margin:.9rem 0 1rem}
+header h1 em{font-style:italic;color:var(--glow)}
+header p{max-width:58ch;color:var(--dim)}
+.kicker{display:flex;align-items:center;gap:.8rem}
+.kicker::before{content:"";width:2.4rem;height:2px;background:var(--blue);box-shadow:0 0 8px var(--blue)}
+section{padding:2.3rem 0}
+h2{font-family:"Anybody",sans-serif;font-variation-settings:"wdth" 138;font-weight:780;text-transform:uppercase;
+  font-size:1.15rem;letter-spacing:.02em;color:#fff;margin-bottom:1rem}
+h2 span{color:var(--blue);margin-right:.5em}
+p+p{margin-top:.8em}
+section p{color:rgba(213,217,224,.8)}
+code{font-size:.82em;background:var(--panel);border:1px solid var(--line);
+  border-radius:4px;padding:.08em .35em;white-space:nowrap;color:var(--glow)}
+ul{margin:.8em 0 0 1.2em;color:rgba(213,217,224,.8)}
+li{margin:.45em 0}
+li::marker{color:var(--blue)}
+strong{color:#fff;font-weight:600}
+pre{
+  font-size:.78rem;line-height:1.7;color:var(--silver);
+  background:var(--panel);border:1px solid var(--line);border-left:3px solid var(--blue);
+  border-radius:10px;padding:1.4rem 1.5rem;white-space:pre-wrap;overflow-x:auto;
+  box-shadow:0 14px 40px rgba(0,0,0,.5);
+}
+footer{padding:3rem 0 2.5rem;border-top:1px solid var(--line);margin-top:3rem}
+footer .row{display:flex;justify-content:space-between;flex-wrap:wrap;gap:.6rem}
+footer a{color:var(--glow)}
+</style>
+</head>
+<body>
+<a class="back" href="/52-veloce/">&larr; VELOCE</a>
+<header>
+  <div class="wrap">
+    <span class="kicker"><span class="mono">FABLE/25 &middot; site 52 &middot; guide</span></span>
+    <h1 class="disp">Speed you can <em>feel.</em></h1>
+    <p>VELOCE is a fictional electric hypercar marque. Black-on-black automotive drama, one electric blue, and three systems: an acceleration you scroll, a powertrain that explodes, and a blade of light that runs the whole page.</p>
+  </div>
+</header>
+
+<section>
+  <div class="wrap">
+    <h2><span>01</span>The acceleration scroll</h2>
+    <p>The hero is a 340vh track with a sticky stage. Scroll progress <code>p</code> drives one eased rAF state machine that writes CSS custom properties (<code>--v --ig --cf --hc --g --cm</code>):</p>
+    <ul>
+      <li><strong>Ignition</strong> — two stacked copies of the same photo. The top copy sits in <code>mix-blend-mode:screen</code> over black with <code>contrast(2.8)</code>, so only the LED blade, highlights and underglow survive: headlights-first in darkness. The normal copy fades up underneath as the ignition completes. A two-axis linear-gradient mask (<code>mask-composite:intersect</code>) feathers the photo rectangle into the void.</li>
+      <li><strong>The launch</strong> — <code>--v</code> maps a 2.1s-equivalent scrub: the speedometer counts 0&rarr;100 km/h with a live T-timer, canvas light streaks radiate from a vanishing point (length &prop; v&sup2;, alpha &prop; v, a protected clean radius keeps the car legible), and the hero copy gains scroll-scrubbed <code>blur()</code> motion blur. A G readout follows <code>2.2&middot;sin(&pi;&middot;launch^{.75})</code> and tilts the HUD by <code>rotate(g&middot;1.6deg)</code>.</li>
+      <li><strong>The snap</strong> — past p=.9, <code>--cm</code> flips: streak intensity multiplies by <code>(1-calm)</code> with a faster ease, blur cuts, the headline ghosts back and &ldquo;AT 100, SILENCE.&rdquo; lands. Cruising.</li>
+    </ul>
+    <p>The loop idles after 6 settled frames, pauses on <code>visibilitychange</code> and when the hero leaves the viewport (IntersectionObserver). DPR is capped at 2.</p>
+  </div>
+</section>
+
+<section>
+  <div class="wrap">
+    <h2><span>02</span>The exploded powertrain</h2>
+    <p>A second sticky track (380vh) scrubs an explode factor <code>--e</code> onto a CSS-3D scene: <code>perspective</code> + <code>rotateX(58deg) rotateZ(-28deg)</code> builds an isometric EV skateboard from plain divs. Every part&rsquo;s transform is a <code>calc()</code> of <code>--e</code> &mdash; four battery modules shear apart laterally and in Z, the front and twin rear motors slide out along the axle line, inverters lift straight up. Leader-line labels fade in as <code>opacity:calc((var(--e) - .55)*2.3)</code>, and kW/Nm counters snap in once <code>e&gt;.85</code> (they re-arm on reassembly). The curve is 0&rarr;1&rarr;0, so the chassis reassembles under a glowing SVG silhouette before you leave the section.</p>
+  </div>
+</section>
+
+<section>
+  <div class="wrap">
+    <h2><span>03</span>The light-blade design system</h2>
+    <p>The car&rsquo;s continuous LED blade is the page&rsquo;s design system, not a decoration:</p>
+    <ul>
+      <li><strong>Section rules ignite</strong> &mdash; every section starts with a 1px rule; an IntersectionObserver adds <code>.lit</code> and a white-hot pulse travels the full width (translated gradient, <code>drop-shadow</code> glow), leaving the rule charged blue at its origin.</li>
+      <li><strong>Charged buttons</strong> &mdash; a conic-gradient light pulse orbits the CTA border forever via an animated <code>@property --ba</code> angle and an XOR mask that keeps only the 1px edge.</li>
+      <li><strong>The sign-off</strong> &mdash; the footer wordmark is stroked SVG letterforms with <code>pathLength="1"</code>; when the footer enters, the blade draws V&nbsp;E&nbsp;L&nbsp;O&nbsp;C&nbsp;E stroke by stroke and ends on a solid white dash.</li>
+    </ul>
+  </div>
+</section>
+
+<section>
+  <div class="wrap">
+    <h2><span>04</span>The asset</h2>
+    <p><code>assets/car.webp</code> (1920&times;1072) &mdash; the studio hero shot: exposed carbon weave, one continuous white LED blade across the nose, electric blue underglow on a black reflective floor. Generated with <strong>Nano Banana 2 via the Higgsfield MCP</strong>, palette-locked to <code>#2E52FF</code> against studio black, then converted with <strong>ffmpeg to WebP</strong>. It carries the whole hero: the same file plays the lights-only ignition layer, the full reveal, and the Design section beauty shot (<code>loading="lazy"</code> there, real dimensions everywhere).</p>
+  </div>
+</section>
+
+<section>
+  <div class="wrap">
+    <h2><span>05</span>Type &amp; palette</h2>
+    <ul>
+      <li>Display: <strong>Anybody</strong> variable &mdash; width axis pushed to 146&ndash;150, weight ~840, uppercase, italic for emphasis. Aggressive and extended, pure motorsport.</li>
+      <li>Technical: <strong>Martian Mono</strong> &mdash; HUD, labels, specs, body.</li>
+      <li>Palette: studio black <code>#0A0B0D</code>, panel <code>#121317</code>, electric blue <code>#2E52FF</code>, glow <code>#6E8CFF</code>, silver <code>#D5D9E0</code>, dim <code>#737A87</code>, carbon weave from repeating 45&deg; grey stripes.</li>
+    </ul>
+  </div>
+</section>
+
+<section>
+  <div class="wrap">
+    <h2><span>06</span>Full reproduction prompt</h2>
+    <pre id="prompt">Build a single-file showcase website (index.html, no libraries) for VELOCE — a fictional electric hypercar: "Zero to everything." Aesthetic: black-on-black automotive drama, one electric blue, speed you can feel. Palette: studio black #0A0B0D, panel #121317, electric blue #2E52FF, glow #6E8CFF, silver #D5D9E0, dim #737A87, carbon texture from repeating 45° grey micro-stripes. Google Fonts: Anybody (variable, width ~146–150, weight ~840, uppercase, italic accents) + Martian Mono (HUD, labels, body).
+
+Signature 1 — the acceleration scroll. Hero = 340vh track, sticky 100svh stage, one eased rAF loop writing CSS vars. Ignition reveal of assets/car.webp (1920×1072: black hypercar, one continuous white LED blade across the nose, blue underglow): stack two copies of the photo — the top in mix-blend-mode:screen with brightness(1.15) contrast(2.8) so ONLY the blade/highlights glow in darkness, the normal copy fading up beneath; feather the photo rectangle with a two-axis linear-gradient mask (mask-composite:intersect). The launch: a scroll-scrubbed 2.1s-equivalent counts a HUD speedometer 0→100 km/h with a live T-timer; canvas light streaks radiate from a vanishing point (length ∝ v², alpha ∝ v, mostly silver + ~22% electric blue, clean radius around the car, DPR cap 2); the headline takes blur() motion blur. A G readout = 2.2·sin(π·launch^.75) tilts the HUD by rotate(g·1.6deg). At p>.9 the page SNAPS calm: streaks ×(1−calm) with a faster ease, blur cuts, headline ghosts, "AT 100, SILENCE. — launch complete · 2.10 s". Idle when settled; pause on visibilitychange and offscreen (IntersectionObserver).
+
+Signature 2 — the exploded powertrain. A 380vh sticky section "01 THE SKATEBOARD": CSS-3D isometric EV chassis (perspective, rotateX(58deg) rotateZ(-28deg)) from divs — dashed CFRP deck, four striped battery modules, three donut motors (front + twin rear), two inverters. Scrub an explode factor --e (0→1→hold→0); every part's transform is a calc() of --e: modules shear apart, motors slide out along the axle line, inverters lift in Z. Leader-line labels (battery 120 kWh · 4 modules, front motor 300 kW, rear 2× 394 kW, inverters 900 V SiC) fade in past e=.55; kW/Nm counters snap in at e>.85 and re-arm on reassembly; an SVG silhouette with glowing blue roofline appears as it reassembles. Foot stats: 1088 kW · 1520 Nm · 3 motors.
+
+Signature 3 — the light-blade design system. Section rules ignite on enter (IO adds .lit; a white-hot gradient pulse travels the full width, the rule stays charged blue). The CTA has a charged edge: a conic-gradient pulse orbiting the 1px border via animated @property angle + XOR mask. The footer signs off with the blade drawing a stroked-SVG "VELOCE" wordmark (pathLength=1, dashoffset) ending in a white dash.
+
+Sections: hero; powertrain; Design ("SCULPTED BY AIRFLOW. SIGNED IN LIGHT." + the photo, lazy, real dims, carbon-weave background); Specs mono grid with count-up counters (1088 kW, 1520 Nm, 2.1 s, 412 km/h, 640 km, 18 min, 1420 kg, 0.28 Cd), each topped by a short blue ignition bar; CTA "BUILD YOURS." with charged button "ENTER THE CONFIGURATOR". Terse English copy. Fixed "← 25" pill top-left to "/"; footer "guide & prompt →" to /52-veloce/guide/. prefers-reduced-motion = full car at once, speedo static at 100, no streaks/scrubs, chassis assembled, labels static. Zero console errors on file://; scrollWidth ≤ 392 at 390px; excellent mobile (narrower width axis so the headline fits, compact HUD, scaled-down chassis).</pre>
+  </div>
+</section>
+
+<footer>
+  <div class="wrap row">
+    <span class="mono">VELOCE &mdash; FABLE/25 &middot; 52</span>
+    <span class="mono"><a href="/52-veloce/">&larr; back to the site</a></span>
+  </div>
+</footer>
+</body>
+</html>

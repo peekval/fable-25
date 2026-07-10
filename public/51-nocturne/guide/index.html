@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>NOCTURNE — how this site was built</title>
+<meta name="description" content="How the NOCTURNE Saison 2027 concert-hall site was built: stage-light choreography, the canvas score line, the hall asset pipeline, plus a reproduction prompt.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bodoni+Moda:ital,opsz,wght@0,6..96,400..700;1,6..96,400..700&family=Hanken+Grotesk:ital,wght@0,300..600;1,300..500&display=swap" rel="stylesheet">
+<style>
+:root{
+  --hall:#100A0D;
+  --velvet:#5C1E2E;
+  --gold:#C9A25E;
+  --bright:#EFD9A7;
+  --cream:#F2EAD8;
+  --dim:#8A7A80;
+  --line:rgba(201,162,94,.26);
+  --line-soft:rgba(201,162,94,.14);
+}
+*{margin:0;padding:0;box-sizing:border-box}
+body{
+  font-family:"Hanken Grotesk",system-ui,sans-serif;font-weight:330;
+  color:var(--cream);line-height:1.75;
+  background:
+    radial-gradient(90% 50% at 50% -10%,rgba(92,30,46,.4),transparent 60%),
+    var(--hall);
+  min-height:100vh;-webkit-font-smoothing:antialiased;
+}
+::selection{background:var(--gold);color:var(--hall)}
+h1,h2{font-family:"Bodoni Moda",serif;font-weight:500;line-height:1.1}
+.wrap{max-width:760px;margin:0 auto;padding:6.5rem 1.4rem 5rem}
+.back{
+  position:fixed;top:1.1rem;left:1.2rem;z-index:9;
+  font-size:.85rem;letter-spacing:.08em;text-decoration:none;color:var(--cream);
+  background:rgba(16,10,13,.6);border:1px solid var(--line);border-radius:999px;
+  padding:.42rem .95rem;transition:background .3s,color .3s;
+}
+.back:hover{background:var(--gold);color:var(--hall)}
+.kicker{font-size:.72rem;letter-spacing:.36em;text-transform:uppercase;color:var(--gold);font-weight:500;margin-bottom:1.1rem}
+h1{font-size:clamp(2.1rem,5.5vw,3.2rem);margin-bottom:2.2rem}
+h1 em{font-style:italic;color:var(--bright)}
+h2{font-size:1.5rem;margin:3rem 0 1rem;color:var(--bright)}
+p{color:rgba(242,234,216,.78);margin-bottom:1.05rem}
+p b{color:var(--cream);font-weight:500}
+code{font-family:ui-monospace,monospace;font-size:.88em;color:var(--bright);background:rgba(201,162,94,.1);padding:.1em .4em;border-radius:4px}
+pre{
+  background:rgba(23,9,14,.8);border:1px solid var(--line-soft);
+  padding:1.7rem 1.8rem;margin:1.4rem 0 1rem;
+  font-family:inherit;font-size:.95rem;line-height:1.75;color:var(--cream);
+  white-space:pre-wrap;overflow-x:auto;
+}
+.copy-btn{
+  margin-top:1rem;cursor:pointer;font-family:inherit;font-size:.9rem;font-weight:500;
+  background:var(--gold);color:var(--hall);border:0;border-radius:999px;
+  padding:.7rem 1.6rem;letter-spacing:.02em;transition:transform .3s,background .3s;
+}
+.copy-btn:hover{transform:translateY(-2px);background:var(--bright)}
+.copy-btn.done{background:var(--bright)}
+.links{display:flex;gap:1rem;flex-wrap:wrap;margin-top:3rem}
+.links a{
+  text-decoration:none;font-size:.95rem;font-weight:500;color:var(--cream);
+  border:1px solid var(--line);border-radius:999px;padding:.75rem 1.6rem;
+  transition:background .3s,color .3s,transform .3s;
+}
+.links a:hover{background:var(--gold);color:var(--hall);transform:translateY(-2px)}
+</style>
+</head>
+<body>
+<a class="back" href="/51-nocturne/">← NOCTURNE</a>
+<div class="wrap">
+  <p class="kicker">FABLE/25 · site 51 · how it was built</p>
+  <h1>NOCTURNE — <em>Saison 2027</em>, taken apart</h1>
+
+  <h2>The light system</h2>
+  <p>Every "volumetric" beam is a plain <code>div</code>: a vertical linear-gradient wedge (gold fading to transparent), shaped by <code>clip-path</code>, softened with <code>filter: blur(16px)</code> and composited with <code>mix-blend-mode: screen</code>. Each beam starts rotated 40–50° off axis at zero opacity; when an <code>IntersectionObserver</code> marks its section <code>.lit</code>, a long eased transform transition sweeps it to its settle angle — that's the whole "spotlight finds the stage" choreography, no JS animation at all. Every act carries its own beam colour, angle and sweep direction as CSS custom properties, and short black interlude bands between acts make the lights read as dipping for a scene change. A followspot (fixed radial gradient, screen-blended) lerps after the pointer at 0.045 per frame — fine pointers only, never under reduced motion. Two more wedges are overlaid on the hall photograph, aligned so one fans down from the organ and one cones up from the stage spot already in the image.</p>
+
+  <h2>The score line</h2>
+  <p>One fixed canvas draws a single calligraphic line of light behind the content: a sum of three sines with an edge-taper envelope, stroked twice (wide faint halo, thin bright core, <code>lighter</code> compositing) with ten glowing particles riding the same curve. Its amplitude eases toward a target computed each frame from every <code>[data-swell]</code> element's distance to the viewport centre (gaussian falloff), so the line swells as a concert "takes the stage" and calms in the dark between. Scroll velocity feeds a high-frequency tremolo term. DPR is capped at 2, the rAF loop stops when the tab hides, and reduced motion gets one static stroke.</p>
+
+  <h2>The hall asset</h2>
+  <p><code>assets/hall.webp</code> (1920×1072) was generated with <b>Nano Banana 2 via the Higgsfield MCP</b> — prompted as the view <i>from the stage</i> of a night-lit 1899 concert hall: four gold-ribboned balcony tiers, the organ centred above the top rank, one spotlit conductor's chair, palette-locked to the site's hall-dark/velvet/gold. The pick was then encoded with <b>ffmpeg</b> to a ~190 KB WebP (<code>-c:v libwebp -q 82</code>, 1920 wide) and embedded with real dimensions, <code>loading="lazy"</code> and a German playbill caption.</p>
+
+  <h2>Reproduction prompt</h2>
+  <pre id="prompt">Build "NOCTURNE — Saison 2027", a fictional Berlin concert hall's season announcement, as one self-contained HTML file (Google Fonts allowed; one local image, assets/hall.webp). Palette: hall darkness #100A0D, burgundy velvet #5C1E2E, gold #C9A25E with bright #EFD9A7, cream program #F2EAD8, dim #8A7A80. Type: Bodoni Moda as a dramatic didone display with italic accents, Hanken Grotesk for text. All copy in German, Konzerthaus register.
+
+Combine three signature systems. First, stage-light choreography: volumetric beams built as blurred (16px) clip-path wedges of gold linear-gradient with mix-blend-mode screen, one or two per section, each starting rotated ±40–50° at opacity 0; an IntersectionObserver adds a .lit class that transitions them over ~3s to per-section settle angles and colors set via CSS custom properties, so every concert takes the stage lit differently, with short black interlude bands between acts as scene changes. Add a followspot — a fixed 56vmax screen-blended radial gradient that lerps toward the pointer (fine pointers only). Second, music made visible: a fixed full-viewport canvas draws a single elegant score line — a sum of three sines with an edge-taper envelope, stroked as a wide faint halo plus a thin bright core in "lighter" compositing, with ~10 glowing particles riding the curve. Each frame, ease its amplitude toward a target derived from the distance of [data-swell] elements (act titles, hero) to the viewport centre via gaussian falloff, so the page breathes near concerts; add scroll-velocity tremolo as a high-frequency term. Third, the program as five acts: Akt I–V playbill cards (Mahler II, Winterreise, an organ night, Le Sacre, Beethoven IX) with date, program table (italic didone composers, dim work titles), artists, and a soft velvet curtain wipe — two layered burgundy gradients translating apart when lit. After the acts, a seat-selection fan: seven dotted SVG arcs over a stage arc, each row a focusable group with an invisible 26px hit stroke; hover/focus/Enter lights the row bright gold and updates an italic caption (row, price, one-line character).
+
+Generate the hall photo first: prompt Nano Banana 2 (via the Higgsfield MCP) for a 16:9 view from the stage of an 1899 hall at night — four gold-lit balcony ribbons, organ centred on high, a single spotlit conductor's chair, palette-exact — then ffmpeg it to a ~200 KB 1920-wide WebP. Present it full-bleed as "Das Haus" with two overlay beams aligned to the architecture (one fanning down from the organ, one coning up from the stage spot), dark scrims, playbill caption; lazy-load with real dimensions.
+
+Finish with three gold-line Abonnement cards (Parkett/Loge/Première, inner hairline frames, one flagged Meistgewählt) and a Karten section plus footer. Requirements: prefers-reduced-motion lights everything statically (no sweeps, followspot removed, score line drawn once); rAF stops when the tab hides; DPR capped at 2; fewer particles and narrower beams under 720px; zero console errors from file://; no horizontal overflow at 390px.</pre>
+  <button class="copy-btn" id="copy">Copy prompt</button>
+
+  <div class="links">
+    <a href="/51-nocturne/">View NOCTURNE →</a>
+    <a href="/">← All 25+ sites</a>
+  </div>
+</div>
+<script>
+document.getElementById('copy').addEventListener('click', function(){
+  navigator.clipboard.writeText(document.getElementById('prompt').textContent).then(()=>{
+    this.textContent='Copied'; this.classList.add('done');
+    setTimeout(()=>{ this.textContent='Copy prompt'; this.classList.remove('done'); },1800);
+  });
+});
+</script>
+</body>
+</html>

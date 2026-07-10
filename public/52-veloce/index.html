@@ -1,0 +1,699 @@
+<!DOCTYPE html>
+<!--
+  VELOCE — Zero to everything. (FABLE/25 · site 52)
+  CHANGELOG
+  PASS 1 — Structure + all three signature systems: acceleration scroll (canvas streaks,
+           scroll-scrubbed speedo 0→100 over a 2.1s-equivalent, G-tilted HUD, snap-to-calm),
+           exploded powertrain (CSS 3D skateboard, scrubbed explode factor, leader labels,
+           kW/Nm snap counters), light-blade design system (igniting section rules, charged
+           buttons, footer wordmark drawn by the blade). Ignition reveal via screen-blend
+           lights-only layer over black. Reduced-motion static fallbacks. DPR cap 2,
+           IO + visibilitychange canvas pausing.
+  PASS 2 — Design iteration: feathered mask on the hero car layers (kills the visible photo
+           rectangle in the blade-only state), streak field intensified (+alpha, +length,
+           protected clean zone around the car), scroll-scrubbed motion blur on the hero copy,
+           stronger leader lines, "Design" section header de-duplicated.
+  PASS 3 — Mobile iteration: headline width axis narrows at <=820px so "EVERYTHING." fits 390,
+           HUD sub-row no longer wraps, exploded scene scaled down on small screens; calm-state
+           timing verified; footer wordmark spacing tuned.
+  PASS 4 — Calm snap wired through the streak field (intensity × (1-calm)), motion blur and
+           headline ghost out at 100; blade + copy now ignite on arrival instead of a black
+           landing frame; lights-only filter tuned (less posterized underglow).
+-->
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>VELOCE — Zero to everything.</title>
+<meta name="description" content="VELOCE V-01 Omega. A fictional electric hypercar. 1,088 kW. 0–100 in 2.1 s. One blade of light.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Anybody:ital,wdth,wght@0,50..150,100..900;1,50..150,100..900&family=Martian+Mono:wght@300;400;600&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#0A0B0D; --panel:#121317; --blue:#2E52FF; --glow:#6E8CFF;
+  --silver:#D5D9E0; --dim:#737A87; --line:rgba(213,217,224,.10);
+  --carbon-a:#101115; --carbon-b:#16181D;
+  --v:0; /* speed 0..1 */
+  --e:0; /* explode 0..1 */
+}
+*{margin:0;padding:0;box-sizing:border-box}
+html{scroll-behavior:auto}
+html,body{overflow-x:clip;background:var(--bg)}
+body{
+  font-family:"Martian Mono",monospace;color:var(--silver);
+  font-size:.86rem;line-height:1.7;-webkit-font-smoothing:antialiased;
+}
+::selection{background:var(--blue);color:#fff}
+img{max-width:100%;height:auto;display:block}
+a{color:var(--glow)}
+
+.disp{
+  font-family:"Anybody",sans-serif;
+  font-variation-settings:"wdth" 148;
+  font-weight:840;text-transform:uppercase;line-height:.92;letter-spacing:.005em;
+}
+.mono{font-size:.62rem;letter-spacing:.22em;text-transform:uppercase;color:var(--dim)}
+.wrap{max-width:1180px;margin:0 auto;padding:0 clamp(1.1rem,4vw,2.6rem)}
+
+/* carbon weave texture */
+.carbon{
+  background:
+    repeating-linear-gradient(45deg,var(--carbon-a) 0 3px,var(--carbon-b) 3px 6px),
+    var(--panel);
+}
+
+/* ---------- back pill ---------- */
+.back{
+  position:fixed;top:1rem;left:1rem;z-index:120;
+  font-size:.7rem;letter-spacing:.12em;text-decoration:none;color:var(--silver);
+  background:rgba(10,11,13,.72);border:1px solid var(--line);border-radius:999px;
+  padding:.42rem .95rem;backdrop-filter:blur(8px);
+  transition:border-color .3s,color .3s,box-shadow .3s;
+}
+.back:hover{border-color:var(--blue);color:#fff;box-shadow:0 0 18px rgba(46,82,255,.35)}
+
+/* ---------- light-blade design system ---------- */
+.blade-rule{position:relative;height:1px;background:rgba(213,217,224,.12);overflow:hidden}
+.blade-rule::after{
+  content:"";position:absolute;top:0;left:0;height:1px;width:34%;
+  background:linear-gradient(90deg,transparent,var(--glow) 35%,#fff 50%,var(--glow) 65%,transparent);
+  filter:drop-shadow(0 0 6px var(--blue));
+  transform:translateX(-110%);
+}
+.lit .blade-rule::after{animation:bladeSweep 1.15s cubic-bezier(.55,0,.2,1) forwards}
+@keyframes bladeSweep{to{transform:translateX(320%)}}
+.lit .blade-rule{background:linear-gradient(90deg,rgba(110,140,255,.30),rgba(213,217,224,.10) 60%)}
+
+.sec-head{display:flex;align-items:baseline;gap:1.1rem;padding:0 0 1rem;flex-wrap:wrap}
+.sec-head .idx{color:var(--blue);font-weight:600;font-size:.68rem;letter-spacing:.2em}
+.sec-head h2{font-size:clamp(1.5rem,4.4vw,2.6rem);color:#fff}
+
+.btn{
+  position:relative;display:inline-block;font-family:"Martian Mono",monospace;
+  font-size:.72rem;letter-spacing:.22em;text-transform:uppercase;text-decoration:none;
+  color:#fff;background:var(--panel);padding:1.05rem 2.2rem;border:1px solid rgba(110,140,255,.35);
+  overflow:hidden;transition:box-shadow .35s,border-color .35s;
+}
+.btn::before{ /* charged edge — a light pulse orbiting the border */
+  content:"";position:absolute;inset:-1px;padding:1px;border-radius:inherit;
+  background:conic-gradient(from var(--ba,0deg),transparent 0 78%,var(--glow) 88%,#fff 92%,var(--glow) 96%,transparent 100%);
+  -webkit-mask:linear-gradient(#000 0 0) content-box,linear-gradient(#000 0 0);
+  -webkit-mask-composite:xor;mask-composite:exclude;
+  animation:charge 2.6s linear infinite;
+}
+@property --ba{syntax:"<angle>";initial-value:0deg;inherits:false}
+@keyframes charge{to{--ba:360deg}}
+.btn:hover{box-shadow:0 0 34px rgba(46,82,255,.45),inset 0 0 22px rgba(46,82,255,.18);border-color:var(--glow)}
+.btn small{display:block;font-size:.56rem;letter-spacing:.3em;color:var(--dim);margin-top:.3rem}
+
+/* ---------- HERO / ACCELERATION ---------- */
+.hero-track{height:340vh;position:relative}
+.hero-stage{
+  position:sticky;top:0;height:100vh;height:100svh;overflow:hidden;
+  background:radial-gradient(120% 90% at 50% 110%,#0D0F14 0%,var(--bg) 55%);
+}
+#streaks{position:absolute;inset:0;width:100%;height:100%;display:block}
+.car-stack{
+  position:absolute;left:50%;top:52%;width:min(120vh,94vw);max-width:1240px;aspect-ratio:1920/1072;
+  transform:translate(-50%,-50%) scale(calc(.96 + var(--v)*.08));
+  will-change:transform;
+}
+.car-stack img{position:absolute;inset:0;width:100%;height:100%;object-fit:contain;
+  -webkit-mask-image:linear-gradient(90deg,transparent 0,#000 9%,#000 91%,transparent 100%),
+    linear-gradient(180deg,transparent 0,#000 10%,#000 92%,transparent 100%);
+  -webkit-mask-composite:source-in;
+  mask-image:linear-gradient(90deg,transparent 0,#000 9%,#000 91%,transparent 100%),
+    linear-gradient(180deg,transparent 0,#000 10%,#000 92%,transparent 100%);
+  mask-composite:intersect}
+.car-lights{ /* lights-only: screen blend over black kills everything but the blade */
+  mix-blend-mode:screen;
+  filter:brightness(1.15) contrast(2.8) saturate(1.15);
+  opacity:var(--ig,0);
+}
+.car-full{opacity:var(--cf,0)}
+.hero-copy{
+  position:absolute;left:0;right:0;top:9vh;text-align:center;z-index:3;
+  opacity:calc(var(--hc,0)*(1 - var(--cm,0)*.82));
+  transform:translateY(calc((1 - var(--hc))*14px));
+  filter:blur(calc(var(--v)*var(--v)*(1 - var(--cm,0))*4px)); /* motion blur builds with speed, snaps off at calm */
+  will-change:filter;
+}
+.hero-copy .kick{font-size:.62rem;letter-spacing:.34em;color:var(--dim);text-transform:uppercase}
+.hero-copy h1{
+  font-size:clamp(2.5rem,8.4vw,6.4rem);color:#fff;margin:.5rem 0 .2rem;
+  text-shadow:0 0 42px rgba(46,82,255,calc(.15 + var(--v)*.45));
+}
+.hero-copy h1 em{font-style:italic;color:var(--glow)}
+.hero-sub{
+  position:absolute;left:0;right:0;bottom:11vh;text-align:center;z-index:3;
+  font-size:.68rem;letter-spacing:.26em;text-transform:uppercase;color:var(--dim);
+  opacity:var(--hc,0);
+}
+.hero-sub b{color:var(--silver);font-weight:400}
+.scroll-cue{
+  position:absolute;left:50%;bottom:4.2vh;transform:translateX(-50%);z-index:3;
+  font-size:.58rem;letter-spacing:.3em;text-transform:uppercase;color:var(--dim);
+  opacity:calc(var(--hc,0)*(1 - var(--v)*2));white-space:nowrap;
+}
+.scroll-cue::after{content:"";display:block;width:1px;height:2rem;margin:.5rem auto 0;
+  background:linear-gradient(var(--glow),transparent)}
+/* HUD */
+.hud{
+  position:absolute;right:clamp(1rem,4vw,3rem);bottom:clamp(1rem,5vh,3rem);z-index:4;
+  background:rgba(10,11,13,.66);border:1px solid rgba(110,140,255,.28);
+  padding:.95rem 1.25rem;min-width:172px;backdrop-filter:blur(6px);
+  transform:rotate(calc(var(--g,0)*1.6deg)) translateY(calc(var(--g,0)*-3px));
+  opacity:var(--hc,0);will-change:transform;
+}
+.hud .row{display:flex;justify-content:space-between;gap:1.2rem;align-items:baseline}
+.hud .kmh{font-family:"Anybody",sans-serif;font-variation-settings:"wdth" 130;font-weight:800;
+  font-size:2.5rem;line-height:1;color:#fff;font-variant-numeric:tabular-nums;
+  text-shadow:0 0 20px rgba(46,82,255,calc(var(--v)*.8))}
+.hud .unit{font-size:.58rem;letter-spacing:.2em;color:var(--dim)}
+.hud .sub{display:flex;justify-content:space-between;gap:.9rem;margin-top:.55rem;font-size:.58rem;
+  letter-spacing:.14em;color:var(--dim);white-space:nowrap}
+.hud .sub b{color:var(--glow);font-weight:400;font-variant-numeric:tabular-nums}
+.gbar{height:2px;background:rgba(213,217,224,.12);margin-top:.5rem;position:relative;overflow:hidden}
+.gbar i{position:absolute;inset:0;transform-origin:left;background:linear-gradient(90deg,var(--blue),var(--glow));
+  transform:scaleX(calc(var(--g,0)/2.2))}
+.calm{
+  position:absolute;left:50%;top:24%;transform:translateX(-50%);z-index:3;text-align:center;
+  opacity:var(--cm,0);transition:opacity .2s;white-space:nowrap;
+}
+.calm .t{font-family:"Anybody",sans-serif;font-variation-settings:"wdth" 140;font-weight:750;
+  text-transform:uppercase;font-size:clamp(1rem,2.6vw,1.5rem);color:var(--silver);letter-spacing:.06em}
+.calm .s{font-size:.6rem;letter-spacing:.34em;color:var(--dim);text-transform:uppercase;margin-top:.4rem}
+
+/* ---------- POWERTRAIN ---------- */
+.pt-track{height:380vh;position:relative}
+.pt-stage{position:sticky;top:0;height:100vh;height:100svh;overflow:hidden;display:flex;flex-direction:column}
+.pt-head{padding:calc(1.2rem + 3vh) 0 0}
+.pt-scene-wrap{flex:1;position:relative;display:flex;align-items:center;justify-content:center}
+.pt-scene{
+  width:min(620px,86vw);aspect-ratio:16/10;position:relative;
+  perspective:1200px;
+}
+.pt-3d{
+  position:absolute;inset:0;transform-style:preserve-3d;
+  transform:rotateX(58deg) rotateZ(-28deg) scale(.92);
+}
+.part{position:absolute;transform-style:preserve-3d;will-change:transform}
+.slab{border:1px solid rgba(110,140,255,.4);background:rgba(18,19,23,.9)}
+/* deck */
+.deck{left:6%;top:14%;width:88%;height:72%;
+  border:1px dashed rgba(213,217,224,.25);background:rgba(16,17,21,.55);
+  transform:translateZ(-14px)}
+.deck::after{content:"CHASSIS 001 — CFRP MONOCELL";position:absolute;bottom:4px;left:8px;
+  font-size:.5rem;letter-spacing:.2em;color:var(--dim)}
+/* battery modules split laterally */
+.mod{height:56%;top:22%;background:
+  repeating-linear-gradient(90deg,rgba(110,140,255,.10) 0 6px,transparent 6px 12px),
+  linear-gradient(180deg,#171922,#101218);
+  border:1px solid rgba(110,140,255,.5);box-shadow:0 0 18px rgba(46,82,255,calc(var(--e)*.35))}
+.m1{left:20%;width:13%;transform:translate3d(calc(var(--e)*-52px),calc(var(--e)*-30px),calc(var(--e)*10px))}
+.m2{left:35%;width:13%;transform:translate3d(calc(var(--e)*-18px),calc(var(--e)*-10px),calc(var(--e)*34px))}
+.m3{left:50%;width:13%;transform:translate3d(calc(var(--e)*18px),calc(var(--e)*10px),calc(var(--e)*58px))}
+.m4{left:65%;width:13%;transform:translate3d(calc(var(--e)*52px),calc(var(--e)*30px),calc(var(--e)*82px))}
+/* motors slide out along the axis */
+.motor{top:34%;height:32%;width:9%;border-radius:40%/50%;
+  background:radial-gradient(circle at 50% 40%,#2A2E3B,#12141A 70%);
+  border:1px solid rgba(213,217,224,.35)}
+.motor::after{content:"";position:absolute;inset:22% 38%;border-radius:50%;
+  border:1px solid var(--glow);box-shadow:0 0 12px rgba(46,82,255,calc(var(--e)*.8))}
+.mf{left:7%;transform:translate3d(calc(var(--e)*-84px),0,calc(var(--e)*26px))}
+.mr1{left:84%;top:22%;transform:translate3d(calc(var(--e)*84px),calc(var(--e)*-16px),calc(var(--e)*26px))}
+.mr2{left:84%;top:48%;transform:translate3d(calc(var(--e)*84px),calc(var(--e)*16px),calc(var(--e)*26px))}
+/* inverters lift */
+.inv{width:9%;height:14%;background:linear-gradient(180deg,#1B2030,#12141C);
+  border:1px solid rgba(110,140,255,.55)}
+.i1{left:14%;top:22%;transform:translate3d(0,0,calc(14px + var(--e)*96px))}
+.i2{left:77%;top:64%;transform:translate3d(0,0,calc(14px + var(--e)*118px))}
+/* leader labels (screen-space HTML) */
+.lbl{position:absolute;font-size:.58rem;letter-spacing:.16em;text-transform:uppercase;color:var(--silver);
+  opacity:calc((var(--e) - .55)*2.3);pointer-events:none;max-width:180px;line-height:1.5}
+.lbl b{display:block;color:#fff;font-weight:600}
+.lbl i{display:block;font-style:normal;color:var(--glow);font-variant-numeric:tabular-nums}
+.lbl::before{content:"";position:absolute;background:linear-gradient(90deg,var(--glow),rgba(110,140,255,.15));height:1px;width:3.6rem;
+  box-shadow:0 0 6px rgba(46,82,255,.6)}
+.lb-batt{left:2%;top:6%}.lb-batt::before{top:110%;left:0;transform:rotate(32deg);transform-origin:left}
+.lb-front{left:2%;bottom:12%}.lb-front::before{top:-30%;left:20%;transform:rotate(-38deg);transform-origin:left}
+.lb-rear{right:2%;top:4%;text-align:right}.lb-rear::before{top:115%;right:0;left:auto;transform:rotate(-30deg);transform-origin:right;background:linear-gradient(270deg,var(--glow),transparent)}
+.lb-inv{right:2%;bottom:10%;text-align:right}.lb-inv::before{top:-26%;right:10%;left:auto;transform:rotate(28deg);transform-origin:right;background:linear-gradient(270deg,var(--glow),transparent)}
+/* silhouette overlay when assembled */
+.silh{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;
+  opacity:calc(1 - var(--e)*2.4);pointer-events:none}
+.silh svg{width:74%;overflow:visible}
+.pt-foot{display:flex;justify-content:center;gap:2.6rem;padding:0 1rem calc(1.4rem + 2vh);flex-wrap:wrap}
+.pt-stat{text-align:center}
+.pt-stat .n{font-family:"Anybody",sans-serif;font-variation-settings:"wdth" 135;font-weight:820;
+  font-size:clamp(1.5rem,4.5vw,2.3rem);color:#fff;font-variant-numeric:tabular-nums;line-height:1}
+.pt-stat .n span{color:var(--glow)}
+.pt-stat .l{font-size:.56rem;letter-spacing:.26em;color:var(--dim);text-transform:uppercase;margin-top:.35rem}
+
+/* ---------- DESIGN ---------- */
+.design{padding:clamp(4rem,10vh,7rem) 0}
+.design-grid{display:grid;grid-template-columns:1fr;gap:2.2rem;margin-top:2.2rem}
+.photo-frame{position:relative;border:1px solid var(--line);overflow:hidden;background:#000}
+.photo-frame::after{content:"V-01 OMEGA — STUDIO 4, TURIN";position:absolute;left:1rem;bottom:.8rem;
+  font-size:.56rem;letter-spacing:.24em;color:rgba(213,217,224,.55)}
+.design-copy{display:grid;grid-template-columns:1fr;gap:1.6rem;max-width:920px}
+.design-copy h3{font-family:"Anybody",sans-serif;font-variation-settings:"wdth" 146;font-weight:830;
+  text-transform:uppercase;font-size:clamp(1.6rem,5vw,3rem);color:#fff;line-height:.95}
+.design-copy h3 em{font-style:italic;color:var(--glow)}
+.design-copy p{color:var(--dim);max-width:52ch}
+.design-copy p b{color:var(--silver);font-weight:400}
+
+/* ---------- SPECS ---------- */
+.specs{padding:clamp(3rem,8vh,6rem) 0 clamp(4rem,10vh,7rem)}
+.spec-grid{display:grid;grid-template-columns:repeat(4,1fr);border:1px solid var(--line);margin-top:1.6rem}
+.spec{padding:1.6rem 1.4rem;border-right:1px solid var(--line);border-bottom:1px solid var(--line);position:relative}
+.spec:nth-child(4n){border-right:0}
+.spec:nth-child(n+5){border-bottom:0}
+.spec .n{font-family:"Anybody",sans-serif;font-variation-settings:"wdth" 132;font-weight:820;
+  font-size:clamp(1.6rem,3.6vw,2.4rem);color:#fff;font-variant-numeric:tabular-nums;line-height:1}
+.spec .n small{font-size:.5em;color:var(--glow);font-weight:700}
+.spec .l{font-size:.56rem;letter-spacing:.22em;color:var(--dim);text-transform:uppercase;margin-top:.5rem}
+.spec::before{content:"";position:absolute;top:0;left:0;width:0;height:2px;background:var(--blue);
+  box-shadow:0 0 10px var(--blue);transition:width .9s cubic-bezier(.55,0,.2,1)}
+.lit .spec::before{width:34%}
+
+/* ---------- CTA + FOOTER ---------- */
+.cta{padding:clamp(4.5rem,12vh,8rem) 0;text-align:center}
+.cta h2{font-size:clamp(2.2rem,7vw,4.6rem);color:#fff;margin-bottom:.8rem}
+.cta h2 em{font-style:italic;color:var(--glow)}
+.cta p{color:var(--dim);font-size:.72rem;letter-spacing:.2em;text-transform:uppercase;margin-bottom:2.4rem}
+footer{border-top:1px solid var(--line);padding:3.2rem 0 2.6rem}
+.wordmark{display:flex;justify-content:center;margin-bottom:2.2rem}
+.wordmark svg{width:min(560px,86vw);overflow:visible}
+.wordmark path{
+  fill:none;stroke:var(--glow);stroke-width:2.4;stroke-linecap:round;stroke-linejoin:round;
+  stroke-dasharray:1;stroke-dashoffset:1;filter:drop-shadow(0 0 7px rgba(46,82,255,.9));
+}
+.lit .wordmark path{animation:drawWm 2.2s cubic-bezier(.4,0,.25,1) forwards}
+@keyframes drawWm{to{stroke-dashoffset:0}}
+.foot-row{display:flex;justify-content:space-between;flex-wrap:wrap;gap:.8rem;align-items:baseline}
+.foot-row .mono a{color:var(--glow);text-decoration:none}
+.foot-row .mono a:hover{text-decoration:underline}
+
+/* ---------- responsive ---------- */
+@media (max-width:820px){
+  .hero-copy h1{font-size:clamp(2.1rem,9.6vw,3.4rem);font-variation-settings:"wdth" 118}
+  .hero-copy .kick{padding:0 1rem}
+  .pt-3d{transform:rotateX(58deg) rotateZ(-28deg) scale(.74)}
+  .pt-scene{aspect-ratio:16/13}
+  .spec-grid{grid-template-columns:repeat(2,1fr)}
+  .spec:nth-child(4n){border-right:1px solid var(--line)}
+  .spec:nth-child(2n){border-right:0}
+  .spec:nth-child(n+5){border-bottom:1px solid var(--line)}
+  .spec:nth-child(n+7){border-bottom:0}
+  .car-stack{width:135vw;max-width:none;top:50%}
+  .hud{right:50%;transform:translateX(50%) rotate(calc(var(--g,0)*1.6deg));bottom:9vh;min-width:0;
+    display:flex;align-items:center;gap:1rem;padding:.7rem 1.1rem}
+  .hud .sub{margin-top:0;flex-direction:column;gap:.15rem;font-size:.52rem}
+  .gbar{width:64px}
+  .hud .kmh{font-size:1.9rem}
+  .lbl{max-width:120px;font-size:.52rem}
+  .pt-foot{gap:1.4rem}
+  .scroll-cue{bottom:2.4vh}
+  .hero-sub{bottom:19vh}
+}
+/* ---------- reduced motion ---------- */
+@media (prefers-reduced-motion:reduce){
+  .hero-track,.pt-track{height:auto}
+  .hero-stage,.pt-stage{position:relative;height:100svh}
+  #streaks{display:none}
+  .car-lights{opacity:0!important}
+  .car-full{opacity:1!important}
+  .hero-copy,.hero-sub,.hud{opacity:1!important;transform:none!important}
+  .scroll-cue{display:none}
+  .calm{opacity:0!important}
+  .pt-3d,.part{--e:0}
+  .lbl{opacity:1;position:static;max-width:none;text-align:left}
+  .lbl::before{display:none}
+  .pt-labels-rm{display:grid!important;grid-template-columns:repeat(2,minmax(0,1fr));gap:.8rem 2rem;padding:0 clamp(1.1rem,4vw,2.6rem) 1rem}
+  .lit .blade-rule::after,.btn::before{animation:none}
+  .lit .wordmark path{animation:none;stroke-dashoffset:0}
+  .spec::before{transition:none}
+}
+.pt-labels-rm{display:none}
+</style>
+</head>
+<body>
+<a class="back" href="/">&larr; 25</a>
+
+<!-- ======================= HERO / IGNITION + ACCELERATION ======================= -->
+<div class="hero-track" id="heroTrack">
+  <section class="hero-stage" id="heroStage" aria-label="VELOCE V-01 — ignition and launch">
+    <canvas id="streaks" aria-hidden="true"></canvas>
+    <div class="car-stack" id="carStack">
+      <img class="car-lights" src="assets/car.webp" width="1920" height="1072" alt="" aria-hidden="true" fetchpriority="high">
+      <img class="car-full" src="assets/car.webp" width="1920" height="1072" alt="The VELOCE V-01 Omega — a black carbon electric hypercar with a continuous blade of light across its nose, in a dark studio.">
+    </div>
+    <div class="hero-copy">
+      <p class="kick">Veloce Motorwerke &middot; V-01 Omega</p>
+      <h1 class="disp">Zero to <em>everything.</em></h1>
+    </div>
+    <div class="calm" id="calm" aria-hidden="true">
+      <p class="t">At 100, silence.</p>
+      <p class="s">launch complete &middot; 2.10 s</p>
+    </div>
+    <p class="hero-sub"><b>1,088 kW</b> &middot; <b>0&ndash;100 in 2.1 s</b> &middot; one blade of light</p>
+    <p class="scroll-cue">scroll = launch control</p>
+    <div class="hud" id="hud" aria-hidden="true">
+      <div class="row"><span class="kmh" id="kmh">0</span><span class="unit">km/h</span></div>
+      <div class="sub">
+        <span>T <b id="tEl">0.00 s</b></span>
+        <span>G <b id="gEl">0.0</b></span>
+      </div>
+      <div class="gbar"><i></i></div>
+    </div>
+  </section>
+</div>
+
+<!-- ======================= POWERTRAIN / EXPLODED ======================= -->
+<div class="pt-track" id="ptTrack">
+  <section class="pt-stage" id="ptStage" aria-label="Exploded view of the V-01 powertrain">
+    <div class="pt-head wrap">
+      <div class="sec-head"><span class="idx">01</span><h2 class="disp">The skateboard</h2></div>
+      <div class="blade-rule"></div>
+    </div>
+    <div class="pt-scene-wrap">
+      <div class="pt-scene" id="ptScene">
+        <div class="pt-3d">
+          <div class="part deck"></div>
+          <div class="part slab mod m1"></div>
+          <div class="part slab mod m2"></div>
+          <div class="part slab mod m3"></div>
+          <div class="part slab mod m4"></div>
+          <div class="part motor mf"></div>
+          <div class="part motor mr1"></div>
+          <div class="part motor mr2"></div>
+          <div class="part slab inv i1"></div>
+          <div class="part slab inv i2"></div>
+        </div>
+        <div class="silh" aria-hidden="true">
+          <svg viewBox="0 0 400 100" fill="none">
+            <path d="M14 78 h28 a16 16 0 0 1 30 0 h150 a18 18 0 0 1 34 0 h96 c14 0 26-4 30-14 l6-16 c2-6-2-10-10-11 l-92-10 c-30-16-64-24-104-24 -46 0-88 12-120 34 l-34 6 c-10 2-16 8-16 17 v10 c0 5 2 8 2 8"
+              stroke="rgba(213,217,224,.5)" stroke-width="1.6"/>
+            <path d="M60 44 c34-20 74-30 116-30 38 0 70 8 98 22" stroke="#6E8CFF" stroke-width="2.2" stroke-linecap="round" style="filter:drop-shadow(0 0 6px #2E52FF)"/>
+          </svg>
+        </div>
+        <p class="lbl lb-batt"><b>Battery</b>120 kWh &middot; 4 modules<i id="cKwh">0 kWh</i></p>
+        <p class="lbl lb-front"><b>Front motor</b>axial flux<i id="cFront">0 kW</i></p>
+        <p class="lbl lb-rear"><b>Rear motors</b>2&times; axial flux<i id="cRear">0 kW</i></p>
+        <p class="lbl lb-inv"><b>Inverters</b>900 V SiC<i id="cNm">0 Nm</i></p>
+      </div>
+    </div>
+    <div class="pt-labels-rm" aria-hidden="true">
+      <span class="mono">Battery — 120 kWh, 4 modules</span>
+      <span class="mono">Front motor — 300 kW axial flux</span>
+      <span class="mono">Rear motors — 2 × 394 kW</span>
+      <span class="mono">Inverters — 900 V SiC, 1,520 Nm</span>
+    </div>
+    <div class="pt-foot">
+      <div class="pt-stat"><p class="n" id="totKw">0<span> kW</span></p><p class="l">system output</p></div>
+      <div class="pt-stat"><p class="n" id="totNm">0<span> Nm</span></p><p class="l">instant torque</p></div>
+      <div class="pt-stat"><p class="n">3<span> motors</span></p><p class="l">torque-vectored</p></div>
+    </div>
+  </section>
+</div>
+
+<!-- ======================= DESIGN ======================= -->
+<section class="design carbon" id="design">
+  <div class="wrap">
+    <div class="sec-head"><span class="idx">02</span><h2 class="disp">Design</h2></div>
+    <div class="blade-rule"></div>
+    <div class="design-grid">
+      <div class="design-copy">
+        <h3>Sculpted by airflow. <em>Signed in light.</em></h3>
+        <p>No grille. No badge. One continuous blade runs the width of the nose &mdash; <b>the only line the darkness keeps</b>. Everything else is carbon, laid bare.</p>
+        <p>Drag coefficient <b>0.28</b>. Downforce <b>820 kg at 300 km/h</b>. The body is not styled; it is solved.</p>
+      </div>
+      <figure class="photo-frame">
+        <img src="assets/car.webp" width="1920" height="1072" loading="lazy" decoding="async"
+             alt="Three-quarter studio view of the V-01 Omega: exposed carbon weave, white light blade across the nose, electric blue underglow reflected on the black floor.">
+      </figure>
+    </div>
+  </div>
+</section>
+
+<!-- ======================= SPECS ======================= -->
+<section class="specs" id="specs">
+  <div class="wrap">
+    <div class="sec-head"><span class="idx">03</span><h2 class="disp">The numbers</h2></div>
+    <div class="blade-rule"></div>
+    <div class="spec-grid" id="specGrid">
+      <div class="spec"><p class="n"><span data-count="1088">0</span><small> kW</small></p><p class="l">peak power</p></div>
+      <div class="spec"><p class="n"><span data-count="1520">0</span><small> Nm</small></p><p class="l">torque</p></div>
+      <div class="spec"><p class="n"><span data-count="2.1" data-dec="1">0.0</span><small> s</small></p><p class="l">0&ndash;100 km/h</p></div>
+      <div class="spec"><p class="n"><span data-count="412">0</span><small> km/h</small></p><p class="l">v-max</p></div>
+      <div class="spec"><p class="n"><span data-count="640">0</span><small> km</small></p><p class="l">range, WLTP</p></div>
+      <div class="spec"><p class="n"><span data-count="18">0</span><small> min</small></p><p class="l">10&ndash;80 %</p></div>
+      <div class="spec"><p class="n"><span data-count="1420">0</span><small> kg</small></p><p class="l">dry weight</p></div>
+      <div class="spec"><p class="n"><span data-count="0.28" data-dec="2">0.00</span><small> Cd</small></p><p class="l">drag</p></div>
+    </div>
+  </div>
+</section>
+
+<!-- ======================= CTA ======================= -->
+<section class="cta" id="cta">
+  <div class="wrap">
+    <div class="blade-rule"></div>
+    <h2 class="disp" style="margin-top:3rem">Build <em>yours.</em></h2>
+    <p>99 units &middot; deliveries 2027</p>
+    <a class="btn" href="#cta">Enter the configurator<small>deposit &euro;50,000 &middot; refundable</small></a>
+  </div>
+</section>
+
+<footer id="foot">
+  <div class="wrap">
+    <div class="wordmark" aria-label="VELOCE">
+      <svg viewBox="0 0 640 90" role="img" aria-hidden="true">
+        <!-- V -->
+        <path pathLength="1" d="M10 10 L48 80 L86 10"/>
+        <!-- E -->
+        <path pathLength="1" d="M170 10 H112 V80 H170 M112 45 H158"/>
+        <!-- L -->
+        <path pathLength="1" d="M200 10 V80 H256"/>
+        <!-- O -->
+        <path pathLength="1" d="M300 10 H356 V80 H300 Z"/>
+        <!-- C -->
+        <path pathLength="1" d="M444 10 H388 V80 H444"/>
+        <!-- E -->
+        <path pathLength="1" d="M532 10 H474 V80 H532 M474 45 H520"/>
+        <!-- blade dash -->
+        <path pathLength="1" d="M560 45 H632" style="stroke:#fff;stroke-width:3.4"/>
+      </svg>
+    </div>
+    <div class="blade-rule" style="margin-bottom:2rem"></div>
+    <div class="foot-row">
+      <span class="mono">VELOCE &mdash; a fictional marque &middot; FABLE/25 &middot; site 52</span>
+      <span class="mono"><a href="/52-veloce/guide/">guide &amp; prompt &rarr;</a></span>
+    </div>
+  </div>
+</footer>
+
+<script>
+(function(){
+"use strict";
+var reduced = matchMedia("(prefers-reduced-motion: reduce)").matches;
+var docEl = document.documentElement;
+
+/* ---------- helpers ---------- */
+function clamp(x,a,b){return x<a?a:(x>b?b:x)}
+function map(x,a,b){return clamp((x-a)/(b-a),0,1)}
+function smooth(t){return t*t*(3-2*t)}
+
+/* ---------- count-up utility ---------- */
+function countTo(el,target,dec,dur){
+  var t0=null;
+  function step(ts){
+    if(!t0)t0=ts;
+    var p=clamp((ts-t0)/dur,0,1),v=target*(1-Math.pow(1-p,3));
+    el.textContent=v.toFixed(dec);
+    if(p<1)requestAnimationFrame(step);
+  }
+  requestAnimationFrame(step);
+}
+
+/* ---------- blade rules + specs + wordmark: ignite on enter ---------- */
+var litIO=new IntersectionObserver(function(es){
+  es.forEach(function(en){
+    if(en.isIntersecting){
+      en.target.classList.add("lit");
+      en.target.querySelectorAll("[data-count]").forEach(function(el){
+        var t=parseFloat(el.dataset.count),d=parseInt(el.dataset.dec||"0",10);
+        if(reduced)el.textContent=t.toFixed(d);else countTo(el,t,d,1100);
+      });
+      litIO.unobserve(en.target);
+    }
+  });
+},{threshold:.25});
+document.querySelectorAll(".pt-head,.design,.specs,.cta,footer").forEach(function(s){litIO.observe(s)});
+if(reduced)document.querySelectorAll(".pt-head,.design,.specs,.cta,footer").forEach(function(s){s.classList.add("lit")});
+
+/* ---------- HERO: ignition + acceleration ---------- */
+var heroTrack=document.getElementById("heroTrack"),
+    heroStage=document.getElementById("heroStage"),
+    kmhEl=document.getElementById("kmh"),tEl=document.getElementById("tEl"),gEl=document.getElementById("gEl"),
+    calm=document.getElementById("calm"),
+    canvas=document.getElementById("streaks"),ctx=canvas.getContext("2d");
+
+var W=0,H=0,DPR=1;
+function resize(){
+  DPR=Math.min(devicePixelRatio||1,2);
+  W=heroStage.clientWidth;H=heroStage.clientHeight;
+  canvas.width=W*DPR;canvas.height=H*DPR;
+  ctx.setTransform(DPR,0,0,DPR,0,0);
+}
+if(!reduced){resize();addEventListener("resize",resize)}
+
+/* streak field: perspective lines from a vanishing point */
+var N=110,streaks=[];
+function seed(i){
+  var a=Math.random()*Math.PI*2,r=.06+Math.random()*.94;
+  streaks[i]={a:a,r:r,sp:.4+Math.random()*.9,blue:Math.random()<.22,w:.6+Math.random()*1.4};
+}
+for(var i=0;i<N;i++)seed(i);
+
+var target={v:0,ig:0,cf:0,hc:0,g:0,cm:0},cur={v:0,ig:0,cf:0,hc:0,g:0,cm:0};
+var running=false,heroVisible=true,settled=0,rafId=null;
+
+function computeHero(){
+  var rect=heroTrack.getBoundingClientRect();
+  var total=rect.height-innerHeight;
+  var p=clamp(-rect.top/Math.max(total,1),0,1);
+  /* ignition: blade glows from load (cur eases from 0 = ignition-on-arrival), car fades up on scroll */
+  target.ig=.55+.45*smooth(map(p,0,.10));               /* blade glow on */
+  target.cf=smooth(map(p,.06,.22));                     /* full car up */
+  target.hc=.9+.1*smooth(map(p,0,.1));                  /* copy + HUD */
+  /* acceleration .24→.86 mapped to 0→100 km/h over a 2.1 s-equivalent */
+  var a=smooth(map(p,.24,.86));
+  target.v=a;
+  /* g-force: strongest early in the launch, zero at rest & at cruise */
+  var launching=map(p,.24,.86);
+  target.g=(p>=.86||p<.24)?0:2.2*Math.sin(Math.PI*Math.pow(launching,.75));
+  /* snap to calm */
+  target.cm=p>.9?1:0;
+}
+
+function frame(){
+  rafId=null;
+  var moving=false;
+  for(var k in target){
+    var d=target[k]-cur[k];
+    /* the snap: streak decay is fast when calming */
+    var ease=(k==="v"&&target.v<cur.v&&target.cm===1)?.22:.14;
+    if(Math.abs(d)>.0008){cur[k]+=d*ease;moving=true}else cur[k]=target[k];
+  }
+  var v=cur.v;
+  docEl.style.setProperty("--v",v.toFixed(4));
+  heroStage.style.setProperty("--ig",cur.ig.toFixed(3));
+  heroStage.style.setProperty("--cf",cur.cf.toFixed(3));
+  heroStage.style.setProperty("--hc",cur.hc.toFixed(3));
+  heroStage.style.setProperty("--g",cur.g.toFixed(3));
+  heroStage.style.setProperty("--cm",cur.cm.toFixed(3));
+  var kmh=Math.round(v*100);
+  kmhEl.textContent=kmh;
+  tEl.textContent=(v*2.1).toFixed(2)+" s";
+  gEl.textContent=cur.g.toFixed(1);
+
+  /* streak canvas — intensity dies at calm: the snap into silence */
+  var sv=v*(1-cur.cm);
+  ctx.clearRect(0,0,W,H);
+  if(sv>.015){
+    var vx=W*.5,vy=H*.42,maxR=Math.hypot(W,H)*.62;
+    for(var i=0;i<N;i++){
+      var s=streaks[i];
+      s.r+=s.sp*sv*.05;if(s.r>1)s.r-=1;
+      var r0=Math.pow(s.r,2.1)*maxR,len=sv*sv*(110+240*s.sp),r1=r0+len*Math.pow(s.r,1.4);
+      if(r0<Math.min(W,H)*.30)continue; /* keep a clean zone around the car */
+      var ca=Math.cos(s.a),sa=Math.sin(s.a);
+      var al=Math.min(sv*.95*Math.pow(s.r,1.4),.85);
+      ctx.strokeStyle=s.blue?"rgba(110,140,255,"+(al*1.25).toFixed(3)+")":"rgba(213,217,224,"+al.toFixed(3)+")";
+      ctx.lineWidth=s.w*(0.4+s.r);
+      ctx.beginPath();ctx.moveTo(vx+ca*r0,vy+sa*r0);ctx.lineTo(vx+ca*r1,vy+sa*r1);ctx.stroke();
+    }
+    /* ambient blue haze at speed */
+    var g=ctx.createRadialGradient(vx,H*.86,0,vx,H*.86,W*.5);
+    g.addColorStop(0,"rgba(46,82,255,"+(sv*.10).toFixed(3)+")");g.addColorStop(1,"rgba(46,82,255,0)");
+    ctx.fillStyle=g;ctx.fillRect(0,0,W,H);
+  }
+
+  settled=moving?0:settled+1;
+  if(heroVisible&&!document.hidden&&(settled<6)){rafId=requestAnimationFrame(frame)}
+  else running=false;
+}
+function kick(){
+  if(reduced)return;
+  computeHero();
+  if(!running&&heroVisible&&!document.hidden){running=true;settled=0;rafId=requestAnimationFrame(frame)}
+  settled=0;
+}
+
+/* ---------- POWERTRAIN scrub ---------- */
+var ptTrack=document.getElementById("ptTrack"),ptScene=document.getElementById("ptScene");
+var totKw=document.getElementById("totKw"),totNm=document.getElementById("totNm");
+var cKwh=document.getElementById("cKwh"),cFront=document.getElementById("cFront"),
+    cRear=document.getElementById("cRear"),cNm=document.getElementById("cNm");
+var ptSnapped=false,ptE=0;
+function computePT(){
+  var rect=ptTrack.getBoundingClientRect();
+  var total=rect.height-innerHeight;
+  var p=clamp(-rect.top/Math.max(total,1),0,1);
+  /* explode 0 → 1 (hold) → 0 : reassembles into the silhouette */
+  var e = p<.18?smooth(map(p,.04,.18))
+        : p<.62?1
+        : 1-smooth(map(p,.62,.86));
+  if(Math.abs(e-ptE)>.001){
+    ptE=e;
+    ptScene.style.setProperty("--e",e.toFixed(3));
+  }
+  /* counters snap in when fully exploded, reset when reassembled */
+  if(e>.85&&!ptSnapped){
+    ptSnapped=true;
+    if(reduced){cKwh.textContent="120 kWh";cFront.textContent="300 kW";cRear.textContent="788 kW";cNm.textContent="1520 Nm";
+      totKw.firstChild.textContent="1088";totNm.firstChild.textContent="1520";}
+    else{
+      countTo({set textContent(v){cKwh.textContent=v+" kWh"}},120,0,600);
+      countTo({set textContent(v){cFront.textContent=v+" kW"}},300,0,600);
+      countTo({set textContent(v){cRear.textContent=v+" kW"}},788,0,600);
+      countTo({set textContent(v){cNm.textContent=v+" Nm"}},1520,0,700);
+      countTo({set textContent(v){totKw.firstChild.textContent=v}},1088,0,800);
+      countTo({set textContent(v){totNm.firstChild.textContent=v}},1520,0,800);
+    }
+  }
+  if(e<.1)ptSnapped=false;
+}
+if(reduced){
+  /* assembled chassis, final numbers */
+  cKwh.textContent="120 kWh";cFront.textContent="300 kW";cRear.textContent="788 kW";cNm.textContent="1520 Nm";
+  totKw.firstChild.textContent="1088";totNm.firstChild.textContent="1520";
+  kmhEl.textContent="100";tEl.textContent="2.10 s";gEl.textContent="0.0";
+}
+
+/* ---------- scroll wiring ---------- */
+function onScroll(){
+  if(reduced)return;
+  kick();
+  computePT();
+}
+if(!reduced){
+  addEventListener("scroll",onScroll,{passive:true});
+  var heroIO=new IntersectionObserver(function(es){
+    heroVisible=es[0].isIntersecting;
+    if(heroVisible)kick();
+    else if(rafId){cancelAnimationFrame(rafId);rafId=null;running=false}
+  });
+  heroIO.observe(heroStage);
+  document.addEventListener("visibilitychange",function(){
+    if(document.hidden){if(rafId){cancelAnimationFrame(rafId);rafId=null;running=false}}
+    else kick();
+  });
+  onScroll();
+}
+})();
+</script>
+</body>
+</html>

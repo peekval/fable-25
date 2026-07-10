@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CASK No. 9 — Guide &amp; Prompt</title>
+<meta name="description" content="Technique breakdown and reproduction prompt for CASK No. 9: the whisky that ages as you scroll — liquid ramp, peat-smoke canvas, warehouse walk.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Besley:ital,wght@0,400;0,700;0,900;1,400;1,700&family=Saira+Stencil+One&display=swap" rel="stylesheet">
+<style>
+:root{
+  --dark:#1C1410;--deep:#120D0A;--amber-1:#E8A94E;--amber-2:#B5651D;
+  --oak:#8A5A32;--cream:#EFE5D2;--dim:#8F7E6C;--line:rgba(138,90,50,.4);
+}
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:"Besley",Georgia,serif;background:var(--dark);color:var(--cream);line-height:1.65;overflow-x:clip}
+::selection{background:var(--amber-2);color:var(--deep)}
+.pill{position:fixed;top:16px;left:16px;z-index:60;font-size:12px;letter-spacing:.1em;background:rgba(18,13,10,.8);color:var(--cream);text-decoration:none;padding:8px 15px;border-radius:999px;border:1px solid rgba(239,229,210,.22)}
+.pill:hover{border-color:var(--amber-1);color:var(--amber-1)}
+main{max-width:880px;margin:0 auto;padding:110px clamp(20px,5vw,48px) 80px}
+.kicker{font-family:"Saira Stencil One",serif;font-size:12px;letter-spacing:.26em;color:var(--amber-1);margin-bottom:14px;text-transform:uppercase}
+h1{font-weight:900;font-size:clamp(34px,7vw,62px);line-height:1;letter-spacing:-.01em}
+h1 em{font-style:italic;color:var(--amber-1);font-weight:700}
+.sub{margin-top:16px;font-size:17px;max-width:60ch;color:var(--dim)}
+h2{font-weight:900;font-size:clamp(19px,3vw,26px);margin:62px 0 14px;padding-top:22px;border-top:1px solid var(--line)}
+h2 .no{color:var(--amber-1);font-family:"Saira Stencil One",serif;font-weight:400;font-size:12px;letter-spacing:.24em;display:block;margin-bottom:6px}
+p{margin:12px 0;color:rgba(239,229,210,.82)}
+p b{color:var(--cream)}
+code{font-family:ui-monospace,Menlo,monospace;font-size:.85em;background:rgba(138,90,50,.25);padding:1px 6px;border-radius:3px;color:var(--amber-1)}
+ul{margin:12px 0 12px 20px}
+li{margin:7px 0;color:rgba(239,229,210,.82)}
+li b{color:var(--amber-1);font-weight:700}
+pre{background:var(--deep);color:var(--cream);padding:26px;overflow-x:auto;font-family:ui-monospace,Menlo,monospace;font-size:12.5px;line-height:1.7;white-space:pre-wrap;border-left:3px solid var(--amber-1);margin-top:18px}
+.asset-note{border:1px solid var(--line);background:rgba(18,13,10,.6);padding:18px 20px;margin:18px 0;font-size:14px}
+.asset-note b{font-family:"Saira Stencil One",serif;font-weight:400;font-size:11px;letter-spacing:.2em;color:var(--amber-1);display:block;margin-bottom:6px;text-transform:uppercase}
+footer{max-width:880px;margin:0 auto;padding:0 clamp(20px,5vw,48px) 60px;font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:var(--dim);display:flex;gap:24px;flex-wrap:wrap}
+footer a{color:var(--cream);text-decoration:none;border-bottom:1px solid var(--amber-2)}
+footer a:hover{color:var(--amber-1)}
+</style>
+</head>
+<body>
+<a class="pill" href="/55-cask/">&larr; CASK No. 9</a>
+<main>
+  <div class="kicker">FABLE/25 &middot; SITE 55 &middot; GUIDE &amp; PROMPT</div>
+  <h1>The whisky that ages<br>as you <em>scroll.</em></h1>
+  <p class="sub">How CASK No. 9 works: a scroll-driven aging system inside an SVG cask cutaway, a canvas of peat smoke, and a lateral walk through Warehouse No. 4 — all in one self-contained HTML file.</p>
+
+  <h2><span class="no">01 — The aging interpolation system</span>Twenty-five years in 540vh</h2>
+  <p>The years chapter is a <code>540vh</code> section with a sticky <code>100svh</code> stage. Scroll progress <code>p</code> maps linearly to <code>year = p &times; 25</code>, and one function, <code>setYear(y)</code>, drives everything:</p>
+  <ul>
+    <li><b>Colour ramp.</b> Seven keyframes — <code>[year, r, g, b, alpha]</code> — run from pale new-make (244,234,192 @ .30) through #E8A94E and #B5651D to deep mahogany (62,28,10 @ .97). The active pair is linearly interpolated and written to three SVG gradient stops: the top stop brightened &times;1.22, the bottom darkened &times;0.62, so the liquid always reads as lit from within.</li>
+    <li><b>The angels&rsquo; share.</b> Fill level is <code>1 &minus; 0.011&times;year</code> (about 2% by volume feel, ~72.5% at 25). The liquid lives in a <b>nested <code>&lt;svg&gt;</code></b> whose <code>y</code>/<code>height</code> are set per frame — a nested svg clips to its own viewport, giving a perfect rectangular liquid window inside the cavity <code>clipPath</code>, no recomputed paths. A meniscus group translates with the surface; an italic &ldquo;the angels&rsquo; share&rdquo; label fades in as the headspace opens.</li>
+    <li><b>Vintage notes.</b> Eight tasting notes carry <code>data-y</code> (vanilla at 5, dried fruit at 12, leather at 20&hellip;). Notes at or below the current year get <code>.lit</code>; the newest gets <code>.current</code> and an amber rule. On mobile only the current note shows, as a bottom ribbon.</li>
+    <li><b>Side effects.</b> ABV decays 63.5% &rarr; 54.8%; the ambient glow behind the cask reads its hue from CSS variables <code>--liq-r/g/b</code> set from the same ramp.</li>
+  </ul>
+  <p>The caustic shimmer is three blurred warm ellipses on <code>mix-blend-mode:screen</code> plus a radial &ldquo;backlit&rdquo; glint band, animated by CSS keyframes — zero JS cost, frozen automatically under reduced motion.</p>
+
+  <h2><span class="no">02 — Peat smoke</span>Wisps on canvas</h2>
+  <p>Two canvases (hero, warehouse) share one <code>Smoke</code> engine: ~30 soft radial-gradient blobs steered by a cheap pseudo-curl field (<code>sin/cos</code> sums over position and time) so they drift upward and coil rather than float straight. Fast scrolling feeds a <code>stir</code> impulse (decaying &times;0.94 per frame) into both drift speed and lift, so the smoke visibly swirls when you rush it. DPR is capped at 2; an <code>IntersectionObserver</code> plus <code>visibilitychange</code> stop each rAF loop the moment its canvas is off-screen or the tab hides.</p>
+
+  <h2><span class="no">03 — The warehouse walk</span>Lateral pan to your cask</h2>
+  <p>A <code>340vh</code> section with a sticky stage: the warehouse photo sits in a <code>172%</code>-wide wrapper translated by <code>-panMax &times; ease</code> (ease-out ^1.55 — the walk slows as you arrive). A stencil counter ticks <code>CASK 0001 &rarr; 0247</code> with the pan; past 80% it flips to <code>CASK N&ordm; 9 — yours, if you like</code>, the private-cask card slides in, and a one-shot class fires the wax-seal stamp: scale 2.6 &rarr; 0.92 &rarr; 1.05 &rarr; 1 with blur decay, rotated &minus;8&deg;, like a fist coming down on hot wax.</p>
+
+  <h2><span class="no">04 — Assets</span>Nano Banana 2 &rarr; ffmpeg WebP</h2>
+  <div class="asset-note">
+    <b>Pipeline</b>
+    Both photographs were generated with <b>Nano Banana 2 via the Higgsfield MCP</b>, palette-locked to the site (#1C1410 shadows, #E8A94E highlights), then encoded with <b>ffmpeg</b> to WebP at real render sizes: <code>warehouse.webp</code> 1920&times;1072 (~185&nbsp;KB, dunnage warehouse with one window shaft) and <code>dram.webp</code> 1400&times;1738 (~187&nbsp;KB, backlit crystal tumbler on wet slate). Both <code>loading="lazy"</code> with width/height attributes.
+  </div>
+  <p>The dram gets a <b>light-raise reveal</b>: it renders at <code>brightness(.28)</code> and transitions to full brightness over 1.5s when 45% visible — someone switching the lamp on behind the glass.</p>
+
+  <h2><span class="no">05 — Robustness</span>Reduced motion &amp; mobile</h2>
+  <p><code>prefers-reduced-motion</code> collapses both scroll sections to static single screens pinned at the <b>18-year state</b> (counter 18, liquid at its 18-year hue and level, notes to 18 lit, seal already stamped); both canvases are removed and the pan is neutralised. Mobile swaps the three-column stage for counter / cask / note-ribbon rows; every overflowing effect is clipped at section level, so <code>scrollWidth</code> stays &le; 390 at 390px.</p>
+
+  <h2><span class="no">06 — Prompt</span>Full reproduction prompt</h2>
+<pre id="prompt">Build a one-page fictional Highland single-malt showcase for CASK No. 9 ("Patience, bottled.") from Auchenmor Distillery — as a single self-contained HTML file (Google Fonts allowed, no JS libraries; local assets assets/warehouse.webp 1920×1072 and assets/dram.webp 1400×1738). English copy with scotch-dry wit ("The angels take two percent a year. They have excellent taste."). The warmest dark site imaginable: warehouse dark #1C1410 (deep #120D0A), aging ramp #E8A94E → #B5651D → #7A3E12, oak #8A5A32, cream #EFE5D2, dim #8F7E6C. Fonts: Besley (a Scotch-roman revival) for display and body, Saira Stencil One for cask stencils, counters and labels.
+
+The money shot: the whisky ages as you scroll. A 540vh chapter pins a 100svh stage holding an SVG cask cutaway — oak barrel with hoops clipped to the barrel path so they follow its curvature, charred cavity behind a clipPath. The liquid is a nested svg whose y/height move per frame (nested svg = free rectangular clipping): scroll progress maps to year 0→25 on a big stencil counter, the liquid colour interpolates through seven [year,r,g,b,alpha] keyframes from near-clear new-make to deep mahogany (top gradient stop ×1.22 brighter, bottom ×0.62 darker), and the fill drops 1.1%/year — the angels' share — with a translating meniscus, a dashed original-fill line and an italic "the angels' share" label fading into the headspace. Tasting notes carry data-y vintages (honey 3, vanilla 5, peat 8, dried fruit 12, oak spice 16, leather 20) and light up as their year arrives; ABV decays 63.5→54.8%; a radial glow behind the cask reads its hue from CSS vars set by the same ramp. Caustic shimmer: three blurred warm ellipses + a backlit glint band on mix-blend screen, CSS-animated.
+
+Peat smoke: two canvases (hero + warehouse) run ~30 soft radial-gradient wisps steered by a sin/cos pseudo-curl field, drifting up and coiling around the headline on load; fast scrolling feeds a decaying stir impulse that visibly swirls them. DPR capped at 2, rAF loops stopped by IntersectionObserver and visibilitychange.
+
+The warehouse walk: a 340vh sticky section pans a 172%-wide warehouse photo laterally (ease-out ^1.55) while a stencil counter ticks CASK 0001→0247; past 80% it flips to "CASK Nº 9 — yours, if you like", a private-cask ownership card slides in and a wax seal stamps down once (scale 2.6→0.92→1.05→1, blur decay, −8°).
+
+Then: The Dram — dram.webp revealed by a light-raise (brightness .28→1 on intersection) beside Nose/Palate/Finish tasting rows and specs; Provenance grid (ground, grain, wood, time); footer with "guide & prompt →". Fixed "← 25" pill to the hub.
+
+Generate both photos with Nano Banana 2 (via the Higgsfield MCP) — a dunnage warehouse with one shaft of window light, and a backlit crystal tumbler on wet slate — palette-locked, then ffmpeg to WebP (~185 KB each), lazy-loaded with real dimensions. prefers-reduced-motion: everything static at the 18-year state, no smoke, no pan, seal pre-stamped. Mobile: single-column stage with a current-note ribbon; scrollWidth ≤ 392 at 390px; zero console errors from file://.</pre>
+</main>
+<footer>
+  <span>FABLE/25 &middot; site 55</span>
+  <a href="/55-cask/">back to CASK No. 9 &rarr;</a>
+  <a href="/">gallery hub &rarr;</a>
+</footer>
+</body>
+</html>

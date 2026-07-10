@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>STRATOS — how this site was built</title>
+<meta name="description" content="How the STRATOS private-jet charter site was built: the living cabin window, the great-circle route ritual, the scroll descent — plus a full reproduction prompt.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Newsreader:ital,opsz,wght@0,6..72,200..600;1,6..72,200..500&family=Spline+Sans+Mono:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+:root{
+  --cream:#EDE6DA;--twilight:#1A2436;--deep:#101826;--champagne:#D3B98A;
+  --walnut:#6B4F38;--white:#F8F5EF;--dim:rgba(237,230,218,.62);--line:rgba(211,185,138,.22);
+}
+*{margin:0;padding:0;box-sizing:border-box}
+body{
+  font-family:"Newsreader",Georgia,serif;color:var(--cream);
+  background:linear-gradient(180deg,var(--deep) 0%,var(--twilight) 60%,#232f45 100%);
+  background-attachment:fixed;min-height:100vh;-webkit-font-smoothing:antialiased;
+  overflow-x:hidden;overflow-x:clip;
+}
+::selection{background:var(--champagne);color:var(--deep)}
+.wrap{max-width:780px;margin:0 auto;padding:6.5rem 1.4rem 5rem}
+.back{
+  position:fixed;top:1.1rem;left:1.2rem;z-index:9;
+  font-family:"Spline Sans Mono",monospace;font-size:.74rem;letter-spacing:.14em;
+  text-decoration:none;color:var(--cream);
+  background:rgba(16,24,38,.55);border:1px solid var(--line);border-radius:999px;
+  padding:.5rem .95rem;transition:background .3s,color .3s;backdrop-filter:blur(8px);
+}
+.back:hover{background:var(--champagne);color:var(--deep)}
+.kicker{font-family:"Spline Sans Mono",monospace;font-size:.68rem;letter-spacing:.34em;text-transform:uppercase;color:var(--champagne);margin-bottom:1.1rem}
+h1{font-weight:200;font-size:clamp(2.2rem,5.5vw,3.4rem);line-height:1.08;margin-bottom:2.2rem}
+h1 em{font-style:italic;color:var(--champagne);font-weight:200}
+h2{font-weight:300;font-style:italic;font-size:1.5rem;margin:3rem 0 1rem;color:var(--white)}
+p{font-weight:300;line-height:1.75;color:var(--dim);margin-bottom:1.05rem;font-size:1.05rem}
+code{font-family:"Spline Sans Mono",monospace;font-size:.85em;color:var(--champagne)}
+pre{
+  background:rgba(16,24,38,.6);border:1px solid var(--line);border-radius:16px;
+  padding:1.6rem 1.7rem;margin:1.4rem 0 1rem;white-space:pre-wrap;word-wrap:break-word;
+  font-family:"Newsreader",Georgia,serif;font-weight:300;font-size:.98rem;line-height:1.7;color:var(--cream);
+}
+.copy-btn{
+  margin-top:1rem;cursor:pointer;font-family:"Spline Sans Mono",monospace;font-size:.72rem;
+  letter-spacing:.2em;text-transform:uppercase;
+  background:var(--champagne);color:var(--deep);border:0;border-radius:999px;padding:.75rem 1.6rem;
+  transition:transform .3s,opacity .3s;
+}
+.copy-btn:hover{transform:translateY(-2px)}
+.copy-btn.done{opacity:.75}
+.links{display:flex;gap:1rem;flex-wrap:wrap;margin-top:3rem}
+.links a{
+  text-decoration:none;font-family:"Spline Sans Mono",monospace;font-size:.72rem;letter-spacing:.18em;
+  text-transform:uppercase;color:var(--cream);
+  border:1px solid var(--line);border-radius:999px;padding:.8rem 1.6rem;
+  transition:background .3s,color .3s,transform .3s;
+}
+.links a:hover{background:var(--champagne);color:var(--deep);transform:translateY(-2px)}
+</style>
+</head>
+<body>
+<a class="back" href="/53-stratos/">&#8592; STRATOS</a>
+<main class="wrap">
+  <p class="kicker">FABLE/25 &middot; site 53 &middot; build notes</p>
+  <h1>How the cabin window came <em>alive.</em></h1>
+
+  <h2>The window system</h2>
+  <p>The hero is a jet window built from real parts: a cream bezel (<code>border-radius:44%/34%</code>, inset highlights for moulded plastic), an inner pane with its own radius, a dust-seal ring, and a shade notch. The cloud loop (<code>window.mp4</code>, 188&nbsp;KB) is injected by JS as <code>autoplay muted loop playsinline</code> with a poster; an IntersectionObserver pauses it offscreen, a decode error swaps in the still, and <code>prefers-reduced-motion</code> never creates the video at all &mdash; it gets the poster image.</p>
+  <p>What makes it feel inhabited is one custom property, <code>--warm</code>. A rAF loop (throttled to 4&nbsp;Hz, gated on tab visibility and an IO on the hero) simulates a full day every 120 seconds: warmth peaks in gaussian bumps around sunrise and sunset, falls at night. That single number drives two <code>soft-light</code> tints on the glass (gold and slate blue), the ambient glow behind the hero, and a mono readout &mdash; local time, phase name, altitude and heading that jitter gently. The page breathes without a single keyframe.</p>
+
+  <h2>The route ritual</h2>
+  <p>The globe is a 2D canvas orthographic projection &mdash; no library. A dotted graticule is precomputed as unit vectors; each frame rotates them (longitude, then latitude), keeps the front hemisphere, and fades dots by depth. Routes are great circles via spherical interpolation (<code>slerp</code>) with a 4.5% altitude bulge. Selecting a route eases the view to the route&rsquo;s midpoint (the latitude sign matters &mdash; pass 2 found it inverted), draws the arc on with a travelling dot and a flight-time counter, and refills the &ldquo;your day, reclaimed&rdquo; bars: STRATOS door-to-door vs airline, hours saved in the headline. The idle rotation is a &plusmn;0.07&nbsp;rad sway, so a chosen route can never roll behind the horizon. DPR capped at 2, 45&nbsp;fps cap, paused offscreen; reduced motion draws one static frame with every arc complete.</p>
+
+  <h2>The descent</h2>
+  <p>The last chapter is a 340vh wrapper with a sticky 100vh stage. Scroll progress (smoothstepped) crossfades a dawn gradient over the twilight, holds two blurred cream cloudbanks until 18%, then slides them off opposite corners while a thin veil dissolves and a flight-level readout counts FL450 down to arrival. Past 62% the CTA card &ldquo;lands&rdquo; &mdash; a settle keyframe with a small overshoot, like wheels kissing the runway. Reduced motion gets the arrived state: bright, clouds gone, no sticky.</p>
+
+  <h2>The assets</h2>
+  <p>Both images and the loop were generated with <strong>Nano Banana 2</strong> and <strong>Kling 3.0 Turbo</strong> via the Higgsfield MCP, then finished with an ffmpeg pipeline. The wing-view still was prompted palette-exact (cabin cream, twilight blue, champagne sun on cloud tops), Kling animated it into a slow drift, and ffmpeg produced the deliverables: a 1280&times;720 h264 encode with a crossfaded head/tail so the ~5s clip self-loops seamlessly at 188&nbsp;KB, plus WebP still and poster. The cabin interior is a second Nano Banana 2 render (1920&times;1080 WebP), revealed by a champagne light-sweep gradient animation the first time it scrolls into view.</p>
+
+  <h2>Reproduction prompt</h2>
+  <pre id="prompt">Build a one-page site for STRATOS, a fictional private-jet charter ("Time regained."), as a single self-contained HTML file. Quiet luxury at 45,000 ft: cabin cream #EDE6DA, twilight blue #1A2436 (deep #101826), champagne #D3B98A, walnut #6B4F38, cloud white #F8F5EF, dim #93887A. Fonts: Newsreader (light, optical sizing, italic accents) for display and body, Spline Sans Mono for kickers and instrument readouts. The page's arc is a night flight: dark twilight hero, deep-blue routes, walnut-and-cream cabin, cream service section, and an arrival that ends in daylight white.
+
+Generate the assets first via the Higgsfield MCP: prompt Nano Banana 2 for a 16:9 view past a jet wing over an ocean of sunset cloud tops, champagne light on cream cloud, twilight blue sky above, palette-exact; feed it to Kling 3.0 Turbo image-to-video for an extreme-slow drift; finish with ffmpeg — crossfade the head and tail so the ~5s clip self-loops seamlessly, encode 1280x720 h264 CRF-high at under 200KB, and export a WebP still and poster. Prompt a second Nano Banana 2 render of the cabin: fourteen cream leather seats, walnut veneer, warm dusk light down the aisle, 1920x1080 WebP.
+
+Hero: a REAL cabin window — cream bezel (border-radius 44%/34%, moulded-plastic inset shadows, shade notch), inner pane with dust-seal ring, the cloud loop playing inside (JS-injected, autoplay muted loop playsinline, poster, IO pause offscreen, error fallback to the still; reduced-motion gets only the poster). Simulate a full day every 120s driving one --warm custom property: two soft-light glass tints (gold/slate), an ambient glow behind the hero, and a mono readout with local time, phase name (NIGHT CRUISE, GOLDEN HOUR...), and gently jittering altitude/heading.
+
+Routes: a 2D-canvas orthographic globe of dotted meridians (precomputed unit vectors, depth-faded, DPR cap 2, paused offscreen). Five signature routes (GVA-TEB, DXB-LHR, VNY-HND, TEB-NCE, SIN-ZRH) as slerped great-circle arcs with a slight altitude bulge. Selecting a route eases the view to the route midpoint, draws the arc with a travelling dot and a counting flight time, and animates a "your day, reclaimed" panel: door-to-door bars, STRATOS vs airline, hours saved. Idle rotation is a gentle sway so the route never rolls behind the horizon; reduced motion draws one static frame, all arcs complete.
+
+Cabin: the photo full-bleed, revealed once by a left-to-right champagne light-sweep gradient. Service: three terse rows (crew who remember, catering not cuisine theatre, one telephone number) and a large tel: number card. Arrival: a 340vh scroll descent — sticky stage, smoothstepped progress crossfades twilight to a dawn gradient with a champagne sun glow, parts two blurred cream cloudbanks toward opposite corners, dissolves a veil, counts FL450 down in a readout, then the CTA lands with a soft overshoot settle. Reduced motion: static bright arrival, no sticky, no descent.
+
+Fixed "← 25" pill to /, footer "guide & prompt →". Zero console errors from file://, no horizontal overflow at 390px, transforms/opacity only, all loops halt when hidden or offscreen.</pre>
+  <button class="copy-btn" id="copy">Copy prompt</button>
+
+  <div class="links">
+    <a href="/53-stratos/">&#8592; back to STRATOS</a>
+    <a href="/">FABLE/25 hub</a>
+  </div>
+</main>
+<script>
+document.getElementById("copy").addEventListener("click",function(){
+  var b=this;
+  navigator.clipboard.writeText(document.getElementById("prompt").textContent).then(function(){
+    b.textContent="Copied";b.classList.add("done");
+    setTimeout(function(){b.textContent="Copy prompt";b.classList.remove("done")},1800);
+  });
+});
+</script>
+</body>
+</html>

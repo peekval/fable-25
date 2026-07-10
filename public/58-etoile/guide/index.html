@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>L'ÉTOILE — how this site was built</title>
+<meta name="description" content="How the L'Étoile alpine sleeper-train site was built: the window journey system, the lamp choreography, the split-flap board — plus a reproduction prompt.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;500&family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;1,300;1,400&family=Jost:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+:root{
+  --night:#1A2233;--deep:#111826;--brass:#D9A554;--wood:#7A5A3A;
+  --linen:#F2EDE2;--rose:#C88A7E;--dim:#8B90A0;
+  --line:rgba(217,165,84,.28);--line-soft:rgba(139,144,160,.2);--card:rgba(17,24,38,.7);
+}
+*{margin:0;padding:0;box-sizing:border-box}
+body{
+  font-family:"Jost",system-ui,sans-serif;font-weight:300;color:var(--linen);
+  background:linear-gradient(180deg,#0b101d 0%,var(--deep) 30%,var(--night) 100%);
+  background-attachment:fixed;min-height:100vh;-webkit-font-smoothing:antialiased;line-height:1.7;
+}
+::selection{background:var(--brass);color:var(--deep)}
+.wrap{max-width:780px;margin:0 auto;padding:6.5rem 1.4rem 5rem}
+.back{
+  position:fixed;top:1.1rem;left:1.2rem;z-index:9;font-size:.82rem;letter-spacing:.1em;
+  text-decoration:none;color:var(--linen);background:rgba(11,16,29,.7);
+  border:1px solid var(--line);border-radius:999px;padding:.42rem .95rem;transition:all .3s;
+}
+.back:hover{background:var(--brass);color:var(--deep)}
+.kicker{font-size:.68rem;letter-spacing:.4em;text-transform:uppercase;color:var(--brass)}
+h1{font-family:"Cormorant Garamond",serif;font-weight:400;font-size:clamp(2.1rem,5.5vw,3.1rem);line-height:1.15;margin:.9rem 0 2rem}
+h1 em{font-style:italic;color:var(--rose)}
+h2{font-family:"Cormorant Garamond",serif;font-weight:400;font-size:1.55rem;margin:3rem 0 .9rem;color:var(--linen)}
+h2::before{content:"◆ ";color:var(--brass);font-size:.7em;vertical-align:.15em}
+p{color:#b9bdc9;margin-bottom:1.05rem}
+p b{font-weight:500;color:var(--linen)}
+code{font-family:ui-monospace,Menlo,Consolas,monospace;font-size:.86em;color:var(--brass);background:rgba(217,165,84,.09);padding:.08em .35em;border-radius:4px}
+ul{margin:0 0 1.05rem 1.2rem;color:#b9bdc9}
+li{margin-bottom:.45rem}
+.prompt-box{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:1.6rem 1.7rem;margin:1.3rem 0 .8rem}
+pre#prompt{white-space:pre-wrap;font-family:inherit;font-size:.95rem;line-height:1.7;color:var(--linen)}
+.copy-btn{
+  margin-top:1rem;cursor:pointer;font-family:inherit;font-size:.78rem;letter-spacing:.22em;text-transform:uppercase;
+  color:var(--deep);background:var(--brass);border:none;border-radius:3px;padding:.7rem 1.4rem;transition:background .3s;
+}
+.copy-btn:hover{background:#e8bb6d}
+footer{margin-top:4rem;padding-top:1.6rem;border-top:1px solid var(--line-soft);font-size:.85rem;color:var(--dim)}
+footer a{color:var(--brass);text-decoration:none}
+footer a:hover{text-decoration:underline}
+</style>
+</head>
+<body>
+<a class="back" href="/58-etoile/">← L'ÉTOILE</a>
+<div class="wrap">
+  <p class="kicker">FABLE/25 · Site 58 · Build notes</p>
+  <h1>How the night train <em>learned to travel</em></h1>
+
+  <p>L'Étoile is a single HTML file — no build step, no libraries. Everything below the two photographs is CSS gradients, inline-SVG data URIs, one small canvas and one requestAnimationFrame loop.</p>
+
+  <h2>The window journey system</h2>
+  <p>The heart of the site is <b>Die Fahrt</b>: a 520vh scroll section whose only child is a sticky 100svh stage holding a brass-framed train window. A single rAF loop converts scroll position into a journey progress <code>p</code> (0 = Zürlenz 21:04, 1 = St.&nbsp;Alvra 07:26), smoothed with a small lerp so the world glides rather than snaps.</p>
+  <ul>
+    <li><b>Sky</b> — three stacked gradients (dusk, night, dawn) crossfaded by opacity ramps of <code>p</code>; ~46 JS-scattered stars and the lamp reflection in the glass only appear while the "nightness" term is high.</li>
+    <li><b>Landscape</b> — four seamless <code>repeat-x</code> SVG strips (far peaks with snow caps, mid ridge with viaduct arches and warm village lights, forest, and a moonlit snowfield with near pines) travel at 900 / 2600 / 5200 / 11000&nbsp;px per journey. They move via <code>background-position-x</code> with a modulo of the tile width, so the elements never exceed the glass — that solved both a scrollWidth overflow and a software-rasterizer pathology in one move.</li>
+    <li><b>Moon</b> — rises on a sine arc computed from <code>p</code>, halo drawn as a gradient pseudo-element (box-shadow glows were far too expensive to rasterize).</li>
+    <li><b>Tunnels</b> — two progress ranges collapse the scene to near-black with a smoothstep pulse; skewed light streaks rush past, and their CSS animation is class-gated so it only runs mid-tunnel.</li>
+    <li><b>Route band</b> — the brass fill, locomotive dot and an interpolated <code>Bordzeit</code> clock all track <code>p</code>; stations light up as their threshold passes. Three chapter captions crossfade by range, each numbered in a deco frame that draws its linework via <code>stroke-dashoffset</code>.</li>
+    <li><b>Snow</b> — a small canvas, DPR capped at 2, ~64 flakes (34 on mobile), cleared and redrawn inside the same rAF loop.</li>
+  </ul>
+  <p>The loop is fully gated: an IntersectionObserver stops it when the journey leaves the viewport, <code>visibilitychange</code> pauses everything in hidden tabs, and <code>prefers-reduced-motion</code> replaces the whole system with a static mid-night scene, stacked chapters and a fixed route position.</p>
+
+  <h2>The lamp choreography</h2>
+  <p>The cabin photograph carries a <code>--lamp</code> custom property (0–1) set by a brass range slider (and eased toward night on hover). One variable drives the whole scene: a <code>brightness()/saturate()</code> filter on the photo, a darkness overlay, two warm glow radials matched to the sconce and reading lamp in the photograph, and a cool moonlight wash that takes over as the lamp dies. Meanwhile a <code>mix-blend-mode:screen</code> strip of silhouettes keeps sliding inside the photo's window region, so the landscape never stops moving — even inside the picture.</p>
+
+  <h2>The deco departure board</h2>
+  <p>Every character on the Fahrplan is a split-flap cell: a span with a top/bottom gradient and a hairline seam. When the board scrolls into view, one interval cycles random glyphs from a German charset and settles each cell left-to-right with a per-row, per-column stagger — the classic Solari clatter, no libraries. Reduced motion renders the board pre-settled.</p>
+
+  <h2>Assets</h2>
+  <p>Both photographs were generated with <b>Nano Banana 2 via the Higgsfield MCP</b> — the dusk viaduct crossing (1920×1072) and the marquetry cabin at night (1400×1738) — then converted with <b>ffmpeg</b> to quality-82 WebP (292&nbsp;KB and 160&nbsp;KB). They ship with real <code>width/height</code> attributes; the cabin loads lazily.</p>
+
+  <h2>Reproduction prompt</h2>
+  <div class="prompt-box">
+<pre id="prompt">Build a one-page site for L'ÉTOILE, a fictional luxury alpine sleeper train, as a single self-contained HTML file in German (Google Fonts; only local assets are assets/train.webp 1920×1072 and assets/cabin.webp 1400×1738). Palette: midnight blue #1A2233 on deep #111826, brass #D9A554, marquetry wood #7A5A3A, linen #F2EDE2, rose alpenglow #C88A7E, dim #8B90A0. Fonts: Cinzel for the deco wordmark and numerals, Cormorant Garamond for romantic headlines and italics, Jost (a Futura revival) for German labels, nav and the departure board.
+
+Generate the two photos with Nano Banana 2 via the Higgsfield MCP — (1) a dark-blue steam-hauled luxury train crossing a stone viaduct at dusk before snowy alpine peaks, windows glowing warm; (2) a marquetry sleeper cabin at night, brass sconce lit, crescent moon and snowy mountains in the window — then convert with ffmpeg to quality-82 WebP at those exact sizes. Serve them lazy (hero eager) with real width/height attributes.
+
+Hero: train photo full-bleed under midnight scrims, three blurred steam blobs drifting slowly across the foreground, Cinzel wordmark, tagline "Die Nacht gehört der Strecke.", two CTAs, fixed "← 25" pill to /.
+
+The centrepiece is Die Fahrt: a 520vh scroll section with a sticky 100svh stage holding a brass-framed train window. One rAF loop lerps scroll progress p (0→1 = Zürlenz 21:04 → St. Alvra 07:26) and choreographs: dusk/night/dawn sky gradients crossfading; ~46 twinkling stars; a moon that rises on a sine arc with a gradient halo; four seamless repeat-x SVG silhouette strips (far peaks with snow caps, mid ridge with viaduct arches and warm village lights, forest, moonlit snowfield with near pines) scrolled at 900/2600/5200/11000px per journey via background-position-x; a DPR-capped (≤2) canvas of drifting snow; lamp reflections and a glass sheen that only appear at night; and two tunnel blackouts — a near-opaque overlay with skewed rushing light streaks whose animation only runs mid-tunnel. Below the glass: a route band whose brass fill, locomotive dot and interpolated Bordzeit clock track p, four stations lighting up as they pass, and three chapter captions (Abfahrt bei Dämmerung / Tiefe Nacht / Ankunft im Alpenglühen) that crossfade by p-range, each with a roman numeral in a deco frame that draws its linework on entry via stroke-dashoffset.
+
+Die Kabine: the cabin photo in a brass frame with a --lamp custom property (0–1) driven by a brass range slider and hover — brightness/saturate filter on the photo plus darkness, warm double-glow, and cool moonlight overlays, while a screen-blended strip of moving silhouettes keeps travelling inside the photo's window region. Der Speisewagen: a linen menu card with double deco borders, corner ornaments and diamond dividers, five German courses with wine pairings. Fahrplan: a 1930s departure board where every character is a split-flap cell that cycles random glyphs and settles left-to-right, staggered per row, on entry. Reservierung: date/category/guest selects and a confirmation line on submit. Footer links to /58-etoile/guide/.
+
+Hard rules: transforms/opacity only; all animation gated by IntersectionObserver and visibilitychange; prefers-reduced-motion gets a static night scene, stacked chapters and a settled board; no horizontal overflow at 390px; zero console errors over file://.</pre>
+    <button class="copy-btn" id="copyBtn" type="button">Copy prompt</button>
+  </div>
+
+  <footer>
+    <p><a href="/58-etoile/">← back to L'ÉTOILE</a> &nbsp;·&nbsp; <a href="/">all 25 sites</a></p>
+  </footer>
+</div>
+<script>
+(function(){
+'use strict';
+var btn=document.getElementById('copyBtn');
+btn.addEventListener('click',function(){
+  var t=document.getElementById('prompt').textContent;
+  function done(ok){btn.textContent=ok?'Copied':'Select & copy manually';setTimeout(function(){btn.textContent='Copy prompt';},2200);}
+  if(navigator.clipboard&&navigator.clipboard.writeText){
+    navigator.clipboard.writeText(t).then(function(){done(true);},function(){done(false);});
+  }else{done(false);}
+});
+})();
+</script>
+</body>
+</html>

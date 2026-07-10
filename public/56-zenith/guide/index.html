@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ZENITH — how this site was built</title>
+<meta name="description" content="How the ZENITH suborbital flight site was built — the scroll-as-flight engine, the capsule-window reveal, the weightless UI — plus a full reproduction prompt.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Archivo:ital,wdth,wght@0,62..125,200..900&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --dawn:#DCE6F0; --strato:#7FA3CC; --space:#05070C; --white:#F4F6F8;
+  --gold:#E8B84A; --tele:#59D98C; --ink:#10151C;
+  --dim:rgba(244,246,248,.72); --line:rgba(244,246,248,.16); --card:rgba(244,246,248,.05);
+}
+*{margin:0;padding:0;box-sizing:border-box}
+body{
+  font-family:"Archivo",system-ui,sans-serif;color:var(--white);
+  background:linear-gradient(180deg,#05070C 0%,#0d1626 46%,#2c4568 82%,#7FA3CC 100%);
+  background-attachment:fixed;min-height:100vh;-webkit-font-smoothing:antialiased;
+}
+::selection{background:var(--gold);color:var(--ink)}
+.mono{font-family:"JetBrains Mono",monospace}
+.wrap{max-width:780px;margin:0 auto;padding:6.5rem clamp(1.2rem,5vw,2rem) 5rem}
+.back{
+  position:fixed;top:1rem;left:1.05rem;z-index:9;font-family:"JetBrains Mono",monospace;
+  font-size:.78rem;letter-spacing:.08em;text-decoration:none;color:var(--white);
+  border:1px solid var(--line);border-radius:999px;padding:.42rem .9rem;
+  background:rgba(5,7,12,.5);backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px);
+}
+.back:hover{border-color:var(--gold);color:var(--gold)}
+.kicker{font-family:"JetBrains Mono",monospace;font-size:.72rem;letter-spacing:.3em;color:var(--gold);margin-bottom:1.2rem}
+h1{font-variation-settings:'wdth' 118,'wght' 760;font-size:clamp(2rem,6.5vw,3.2rem);line-height:1.02;margin-bottom:1.1rem}
+.sub{color:var(--dim);font-size:1.05rem;line-height:1.65;max-width:36rem}
+h2{font-variation-settings:'wdth' 112,'wght' 700;font-size:1.35rem;margin:3.2rem 0 .9rem;
+  display:flex;align-items:center;gap:.8rem}
+h2 .n{font-family:"JetBrains Mono",monospace;font-size:.7rem;color:var(--tele);letter-spacing:.2em}
+p{color:var(--dim);line-height:1.7;margin-bottom:1rem;font-size:.98rem}
+code{font-family:"JetBrains Mono",monospace;font-size:.85em;background:var(--card);border:1px solid var(--line);border-radius:5px;padding:.1em .4em;color:var(--white)}
+ul{margin:0 0 1rem 1.2rem;color:var(--dim);line-height:1.7;font-size:.98rem}
+li{margin-bottom:.35rem}
+.pill{display:inline-block;font-family:"JetBrains Mono",monospace;font-size:.66rem;letter-spacing:.14em;
+  border:1px solid var(--line);border-radius:999px;padding:.28rem .7rem;margin:0 .4rem .5rem 0;color:var(--dim)}
+pre{
+  font-family:"JetBrains Mono",monospace;font-size:.8rem;line-height:1.65;color:#d8e4d9;
+  background:rgba(0,0,0,.42);border:1px solid var(--line);border-radius:12px;
+  padding:1.4rem 1.5rem;white-space:pre-wrap;word-break:break-word;margin-top:1rem;
+}
+footer{margin-top:4rem;padding-top:1.6rem;border-top:1px solid var(--line);
+  display:flex;justify-content:space-between;flex-wrap:wrap;gap:1rem;
+  font-family:"JetBrains Mono",monospace;font-size:.72rem;letter-spacing:.1em;color:var(--dim)}
+footer a{color:var(--white);text-decoration:none;border-bottom:1px solid var(--gold)}
+</style>
+</head>
+<body>
+<a class="back" href="/56-zenith/">←&nbsp;ZENITH</a>
+<div class="wrap">
+
+  <div class="kicker">FABLE/25 · BUILD GUIDE · 56</div>
+  <h1>Scrolling is the flight.</h1>
+  <p class="sub">ZENITH is a fictional civilian suborbital company, and the page is its whole
+  mission profile: dawn runway at the top, the black of space in the middle, the same desert
+  floor at the bottom. Eleven minutes, one scrollbar.</p>
+
+  <h2><span class="n">01</span>The ascent ramp system</h2>
+  <p>Everything on the page is driven by one number: <strong>altitude</strong>. Invisible
+  <code>&lt;span data-key&gt;</code> markers sit inside the copy at each mission phase, each
+  carrying <code>{t, alt, vel, g, glow}</code> — mission time, altitude, velocity, cabin load,
+  re-entry glow. On scroll, a single rAF-throttled sampler finds the two markers bracketing the
+  viewport anchor (55% down the screen) and linearly interpolates all five channels. That one
+  sampled state feeds:</p>
+  <ul>
+    <li>the fixed sky layer — a two-stop gradient interpolated through a 7-stop colour ramp,
+      dawn <code>#DCE6F0</code> → stratosphere <code>#7FA3CC</code> → space <code>#05070C</code>;</li>
+    <li>the HUD (ALT / MET / VEL / CABIN) and the left altitude rail, 0→100 km with the Kármán
+      line marked in telemetry green;</li>
+    <li>a star canvas (DPR capped at 2) whose global alpha is a smoothstep of altitude between
+      55 and 85 km — stars literally fade in as the air runs out;</li>
+    <li>a gold sun-disc/horizon wash that dies by 16 km and returns on landing;</li>
+    <li>an amber re-entry overlay keyed to the <code>glow</code> channel.</li>
+  </ul>
+  <p><strong>G-force typography:</strong> Archivo is a variable font with real
+  <code>wdth</code>/<code>wght</code> axes, so cabin load is typographic load — during boost the
+  ascent headlines compress from width 112 to ~79 and gain ~250 weight units at 3.6 g, and the
+  mission clock digits shudder (a 90 ms steps() jitter) only above 3.25 g, only during boost.</p>
+
+  <h2><span class="n">02</span>The capsule window</h2>
+  <p>At apogee the page stops narrating and shows you. A 300vh sticky stage holds the generated
+  capsule photo full-viewport behind a <code>clip-path: inset(… round 30% 42%)</code> mask — a
+  rounded capsule-window geometry that eases open from a small centered pane to the full screen
+  while the image settles from scale 1.16 to 1. A thin telemetry frame (corner brackets,
+  ALT 104.2 KM / VEL 0012 / CABIN 0.00 G) fades in over the last third, and a single caption
+  earns its capitals: THIS IS THE WHOLE POINT.</p>
+
+  <h2><span class="n">03</span>Weightless UI</h2>
+  <p>For the apogee chapter only, the interface goes off-structure: crew-note cards drift on
+  slow 8–12 s alternating keyframe loops (a few px of translate, ~1° of rotation, mismatched
+  negative delays so nothing syncs), gated by an IntersectionObserver so they only animate
+  in view. Descent re-grounds everything — the same cards' siblings in the return chapter sit
+  still, the sky ramp runs in reverse, and the re-entry glow gives one honest amber flare at
+  4.2 g. <code>prefers-reduced-motion</code> collapses the whole system to its calmest true
+  state: window fully open, no float, no shudder, no twinkle; the HUD still reads correctly.</p>
+
+  <h2><span class="n">04</span>The asset</h2>
+  <p><span class="pill">NANO BANANA 2</span><span class="pill">HIGGSFIELD MCP</span>
+  <span class="pill">FFMPEG → WEBP</span></p>
+  <p>One image carries the emotional peak: <code>assets/capsule.webp</code> (1920×1072,
+  ~158 KB). Generated with Nano Banana 2 via the Higgsfield MCP — a white civilian capsule
+  above the Earth's curve at apogee, crew warm-lit through the cabin glass, black star-flecked
+  space above, the thin blue atmosphere limb below — then converted and compressed to WebP
+  with ffmpeg. It loads lazily with real dimensions and is revealed only through the window
+  mask, so the page never pays for it until the flight does.</p>
+
+  <h2><span class="n">05</span>Reproduction prompt</h2>
+  <pre id="prompt">Build a one-page site for ZENITH, a fictional civilian suborbital spaceflight company, as a single self-contained HTML file (Google Fonts allowed; one local asset: assets/capsule.webp, 1920×1072). Tagline: "Eleven minutes above the world." Palette: dawn sky #DCE6F0 → stratosphere #7FA3CC → space black #05070C as an ascent colour ramp, plus capsule white #F4F6F8, sun gold #E8B84A, telemetry green #59D98C, ink #10151C. Fonts: Archivo variable (wdth 62–125, wght 200–900) for a confident aerospace grotesque, JetBrains Mono for telemetry.
+
+Make scrolling BE the flight. Place invisible span markers through the copy carrying {mission time, altitude, velocity, cabin g, re-entry glow}; on scroll, sample the two markers around a 55%-viewport anchor and interpolate all channels in one rAF update. Drive from that single state: a fixed sky gradient interpolated through a 7-stop ramp from dawn blue to space black; a fixed HUD top-right (ALT / MET clock from T−10:00 to T+11:04 / VEL / CABIN g); a left altitude rail 0–100 km with JS-generated ticks, a gold cursor, and the Kármán line marked in telemetry green; a DPR≤2 star canvas whose alpha smoothsteps in between 55 and 85 km, twinkling only while visible and the tab focused; a gold sun-disc horizon glow that fades by 16 km; an amber overlay keyed to the glow channel for re-entry.
+
+Sections as mission phases: PRE-FLIGHT (dawn, a quiet promise, a checklist card ending "YOUR HEART RATE — ELEVATED … that's correct"); ASCENT with IGNITION, MAX-Q and MECO copy blocks — during boost, headlines physically load up via Archivo's axes (width 112→~79, weight +250 at 3.6 g) and the clock digits shudder above 3.25 g; a KÁRMÁN LINE moment (a telemetry-green rule that draws itself at 100 km); APOGEE as a 300vh sticky stage where the capsule photo fills the viewport behind an expanding capsule-window clip-path (inset … round, easing from a small centred pane to full bleed, image scale 1.16→1) framed by thin corner brackets and HUD readouts, captioned "THIS IS THE WHOLE POINT."; a WEIGHTLESSNESS chapter titled "Unbuckle." where crew-note cards float freely (slow alternating drift/rotation loops, staggered negative delays, IntersectionObserver-gated); RETURN (re-entry interface with the amber glow and 4.2 g, drogues/mains, touchdown at T+11:04 back in dawn light); YOUR SEAT (three training days, $450,000 priced with dignity — "we'd rather be honest than popular" — refundable deposits, seat-briefing CTA).
+
+Generate the apogee photo with Nano Banana 2 via the Higgsfield MCP — a white civilian capsule above the curve of the Earth at ~100 km, crew visible and warm-lit through the cabin windows, star-flecked black above, thin blue atmospheric limb below, 16:9 — then compress to a ~160 KB WebP with ffmpeg; lazy-load it with real dimensions.
+
+Awe without bombast in every line of copy. prefers-reduced-motion gets the apogee state static (window open, no float/shudder/twinkle); pause the canvas when hidden; transforms/opacity only; no horizontal overflow at 390 px; fixed "← 25" pill to /, footer "guide &amp; prompt →" link.</pre>
+
+  <footer>
+    <span>ZENITH · FABLE/25 · SITE 56</span>
+    <a href="/">← all 25+ sites</a>
+  </footer>
+</div>
+</body>
+</html>

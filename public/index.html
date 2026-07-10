@@ -3,8 +3,8 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>FABLE / 25 — one model, forty-eight design languages</title>
-<meta name="description" content="48 fundamentally different websites, designed and built end-to-end by Fable. Every visual generated from code — shaders, 3D, canvas, SVG, CSS. Zero stock assets.">
+<title>FABLE / 25 — one model, fifty-eight design languages</title>
+<meta name="description" content="58 fundamentally different websites, designed and built end-to-end by Fable. Every visual generated from code — shaders, 3D, canvas, SVG, CSS. Zero stock assets.">
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='6' fill='%230B0B0E'/%3E%3Ctext x='16' y='22' font-size='14' font-family='monospace' fill='%23F5F3EE' text-anchor='middle'%3E25%3C/text%3E%3C/svg%3E">
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;700&family=Instrument+Serif:ital@0;1&display=swap" rel="stylesheet">
@@ -58,11 +58,11 @@ footer p b{color:var(--ink);font-weight:500}
 <body>
 <div class="wrap">
 <header>
-  <div class="kick">A design capability study — 48 sites, zero stock assets</div>
-  <h1>One model. <em>Forty-eight</em> design languages.</h1>
+  <div class="kick">A design capability study — 58 sites, zero stock assets</div>
+  <h1>One model. <em>Fifty-eight</em> design languages.</h1>
   <p class="sub">Every site below is a complete, living landing page in a fundamentally different visual dialect — <b>built from code</b>: WebGL shaders, real-time 3D, canvas simulations, generative SVG, kinetic type. Zero stock assets — where a site carries imagery, it is generated and palette-locked to its design system. Each passed documented design-review iterations before shipping. Every site carries its own <b>/guide</b> with a copy-paste reproduction prompt.</p>
   <div class="meta-row">
-    <span><b>48</b>websites</span>
+    <span><b>58</b>websites</span>
     <span><b>120</b>iteration passes</span>
     <span><b>0</b>stock images</span>
     <span><b>1</b>author — Fable</span>
@@ -125,13 +125,26 @@ const SITES=[
 ["45","45-torus","TORUS","Scrub a fusion ignition until Q crosses 1.0","plasma canvas",["#070A0F","#E24FBB","#FFB37A"]],
 ["46","46-strata","STRATA","Scrolling is the elevator — floorplans draw at every stop","elevator scroll",["#101823","#C7A867","#F2EEE6"]],
 ["47","47-alpenhof","ALPENHOF","Drag winter into summer — the whole page changes season","season divider theming",["#F6F2EA","#8A6845","#2E4237"]],
-["48","48-quartier","QUARTIER NORD","A masterplan builds itself in three phases","axonometric build-up",["#E5E3DE","#E85D2F","#2C5F8A"]]
+["48","48-quartier","QUARTIER NORD","A masterplan builds itself in three phases","axonometric build-up",["#E5E3DE","#E85D2F","#2C5F8A"]],
+["49","49-maree","MAREE","Sail from golden hour into night — the log writes itself","living canvas ocean",["#0E1B2A","#D8B77A","#091320"]],
+["50","50-aurum","AURUM","Banknote guilloché engraves itself, then the vault unlocks","hypotrochoid engraving",["#17151A","#C2A14D","#2E2B33"]],
+["51","51-nocturne","NOCTURNE","Stage lights find each concert — the page breathes music","light choreography",["#100A0D","#5C1E2E","#C9A25E"]],
+["52","52-veloce","VELOCE","Ignition, then 0-100 in one scroll — snap into silence","acceleration scroll",["#0A0B0D","#2E52FF","#121317"]],
+["53","53-stratos","STRATOS","A living cabin window at 45,000 ft — pick your great circle","route ritual globe",["#EDE6DA","#1A2436","#D3B98A"]],
+["54","54-kuro","KURO","Eight courses out of black — a tasting menu you scroll","paced course moments",["#141210","#F3EEE4","#C25A3A"]],
+["55","55-cask","CASK Nº 9","The whisky ages 0-25 years as you scroll — angels included","liquid interpolation",["#1C1410","#B5651D","#E8A94E"]],
+["56","56-zenith","ZENITH","Scroll to 100 km — stars out, UI goes weightless at apogee","altitude-driven page",["#DCE6F0","#05070C","#E8B84A"]],
+["57","57-facet","FACET","A procedural brilliant with real dispersion — light, cut live","webgl gem dispersion",["#0B0B0D","#DCDEE3","#131316"]],
+["58","58-etoile","L'ÉTOILE","A sleeper train's window from dusk to dawn — tunnels included","parallax night journey",["#1A2233","#D9A554","#111826"]]
 ];
 const grid=document.getElementById('grid');
 grid.innerHTML=SITES.map(([n,slug,name,tag,tech,cols],i)=>{
   const g=`linear-gradient(125deg, ${cols[0]} 0%, ${cols[1]} 55%, ${cols[2]||cols[0]} 100%)`;
-  const wave = i===0 ? `<div class="wavehead"><span>Wave I</span><em>the twenty-five dialects</em></div>` : (i===25 ? `<div class="wavehead"><span>Wave II</span><em>the escalation — heavier 3D</em></div>` : ``);
-  return wave+`<a class="card" href="/${slug}/"><div class="tile"><div class="sw" style="--g:${g}"></div><span class="num">${n} / 40</span></div><div class="body"><div class="name">${name}<span class="arr">→</span></div><div class="tag">${tag}</div><div class="tech">${tech}</div></div></a>`;
+  const wave = i===0 ? `<div class="wavehead"><span>Wave I</span><em>the twenty-five dialects</em></div>`
+    : (i===25 ? `<div class="wavehead"><span>Wave II</span><em>the escalation — heavier 3D</em></div>`
+    : (i===40 ? `<div class="wavehead"><span>Wave III</span><em>tech &amp; real estate — futuristic clean</em></div>`
+    : (i===48 ? `<div class="wavehead"><span>Signature Collection</span><em>ten flagship builds — every technique at full depth</em></div>` : ``)));
+  return wave+`<a class="card" href="/${slug}/"><div class="tile"><div class="sw" style="--g:${g}"></div><span class="num">${n} / 58</span></div><div class="body"><div class="name">${name}<span class="arr">→</span></div><div class="tag">${tag}</div><div class="tech">${tech}</div></div></a>`;
 }).join('');
 const io=new IntersectionObserver(es=>es.forEach((e,)=>{if(e.isIntersecting){e.target.classList.add('in');io.unobserve(e.target)}}),{threshold:.08});
 document.querySelectorAll('.card').forEach((c,i)=>{c.style.transitionDelay=(i%4*60)+'ms';io.observe(c)});

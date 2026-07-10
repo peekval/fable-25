@@ -1,0 +1,1150 @@
+<!DOCTYPE html>
+<!--
+  MAREE — Yachts built for the long horizon
+  FABLE/25 · site 49 · flagship tier
+
+  CHANGELOG
+  PASS 1 — canvas gerstner-ish ocean hero (sine-sum rows, sun glitter, spray,
+           pointer ripples, DPR cap 2, IO + visibility pause), voyage sticky
+           day->night scroll w/ chart course-plot + self-typing ship's log,
+           under-sail video loop (IO-paused, reduced-motion poster), naval
+           architecture linework -> plank-over photo reveal, yard counters,
+           commission CTA, full prefers-reduced-motion static golden hour.
+  PASS 2 — mobile voyage layout fixed (min-width:0 on grid children, compact
+           chart/log, top-aligned so kicker isn't clipped), sun moved out of
+           the fading gold layer so it survives dusk, DEP label clear of the
+           coastline, no-wrap instrument caption, duplicate drawing caption
+           removed, specular sun path painted on the hero sea, stronger
+           glitter, counters keep their ",000" suffix while counting.
+  PASS 3 — voyage kicker no longer hidden on mobile (p:not(.kicker)), DEP
+           waypoint label moved clear of both coastline and course, log
+           entries shortened to fit 390px without ellipsis, voyage sun made
+           larger/softer so it reads as a setting sun rather than a smudge.
+  PASS 4 — voyage sun rebuilt as a pure wide radial glow (no hard disc edge),
+           sun lowered toward the sea line, chart/log cards darkened for
+           legibility over the golden sky, arch footnote wraps cleanly at 390.
+  PASS 5 — hero specular sun path redrawn as an elliptical radial (no hard
+           rectangle edges), kicker holds one line on small screens.
+-->
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>MAREE — Yachts built for the long horizon</title>
+<meta name="description" content="MAREE builds sailing yachts for owners who measure distance in oceans. Naval architecture, teak and quiet — since 1962.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;1,300;1,400&family=IBM+Plex+Mono:wght@300;400&family=Crimson+Pro:ital,wght@0,300;0,400;1,300&display=swap" rel="stylesheet">
+<style>
+:root{
+  --sea:#0E1B2A;
+  --deep:#091320;
+  --gold:#D8B77A;
+  --foam:#F4F1EA;
+  --teak:#A97B4F;
+  --dim:#6E7E90;
+  --line:rgba(216,183,122,.24);
+  --hair:rgba(244,241,234,.14);
+}
+*{margin:0;padding:0;box-sizing:border-box}
+html{scroll-behavior:smooth}
+html,body{overflow-x:clip}
+body{
+  background:var(--deep);
+  color:var(--foam);
+  font-family:"Crimson Pro",Georgia,serif;
+  font-weight:300;
+  -webkit-font-smoothing:antialiased;
+  text-rendering:optimizeLegibility;
+}
+::selection{background:var(--gold);color:var(--deep)}
+h1,h2,h3,.disp{font-family:"Cormorant Garamond",Georgia,serif;font-weight:300}
+.mono{font-family:"IBM Plex Mono",monospace;font-weight:300}
+a{color:inherit}
+img,video{max-width:100%;display:block}
+
+/* ---------- grain ---------- */
+body::after{
+  content:"";position:fixed;inset:0;z-index:60;pointer-events:none;opacity:.05;
+  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='140' height='140'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='140' height='140' filter='url(%23n)' opacity='.6'/%3E%3C/svg%3E");
+}
+
+/* ---------- fixed chrome ---------- */
+.back{
+  position:fixed;top:1.1rem;left:1.15rem;z-index:90;
+  font-family:"IBM Plex Mono",monospace;font-size:.78rem;letter-spacing:.1em;
+  text-decoration:none;color:var(--foam);
+  background:rgba(9,19,32,.55);border:1px solid var(--hair);border-radius:999px;
+  padding:.45rem 1rem;backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);
+  transition:background .35s,color .35s,border-color .35s;
+}
+.back:hover{background:var(--foam);color:var(--deep);border-color:var(--foam)}
+.wordmark{
+  position:fixed;top:1.28rem;left:50%;transform:translateX(-50%);z-index:90;
+  font-family:"IBM Plex Mono",monospace;font-size:.72rem;letter-spacing:.55em;text-indent:.55em;
+  color:var(--gold);opacity:0;transition:opacity .6s;pointer-events:none;
+}
+.wordmark.on{opacity:.95}
+.commission-pill{
+  position:fixed;top:1.1rem;right:1.15rem;z-index:90;
+  font-family:"IBM Plex Mono",monospace;font-size:.78rem;letter-spacing:.1em;
+  text-decoration:none;color:var(--gold);
+  background:rgba(9,19,32,.55);border:1px solid var(--line);border-radius:999px;
+  padding:.45rem 1rem;backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);
+  transition:background .35s,color .35s;
+}
+.commission-pill:hover{background:var(--gold);color:var(--deep)}
+@media (max-width:640px){
+  .commission-pill{display:none}
+  p.kicker{font-size:.62rem;letter-spacing:.24em;gap:.7rem}
+  p.kicker::before{width:1.4rem}
+}
+
+/* ---------- shared layout ---------- */
+.wrap{max-width:1120px;margin:0 auto;padding:0 clamp(1.2rem,4vw,3rem)}
+.kicker{
+  font-family:"IBM Plex Mono",monospace;font-size:.72rem;font-weight:400;
+  letter-spacing:.42em;text-transform:uppercase;color:var(--gold);
+  display:flex;align-items:center;gap:1rem;
+}
+.kicker::before{content:"";width:2.6rem;height:1px;background:var(--line);flex:none}
+.sect-head{margin-bottom:clamp(2.2rem,5vw,3.6rem)}
+.sect-head h2{
+  font-size:clamp(2.1rem,5.2vw,3.9rem);line-height:1.06;margin-top:1.1rem;
+  letter-spacing:.01em;
+}
+.sect-head h2 em{font-style:italic;color:var(--gold)}
+p.lede{font-size:clamp(1.05rem,1.6vw,1.28rem);line-height:1.7;color:#c9cfd6;max-width:38rem}
+p.lede + p.lede{margin-top:1rem}
+
+/* reveal on scroll */
+.rv{opacity:0;transform:translateY(26px);transition:opacity 1s cubic-bezier(.22,.6,.2,1),transform 1s cubic-bezier(.22,.6,.2,1)}
+.rv.in{opacity:1;transform:none}
+.rv.d1{transition-delay:.12s}.rv.d2{transition-delay:.24s}.rv.d3{transition-delay:.36s}
+
+/* ---------- HERO ---------- */
+.hero{position:relative;height:100svh;min-height:600px;overflow:clip;background:var(--deep)}
+#ocean{position:absolute;inset:0;width:100%;height:100%;display:block}
+.hero-veil{position:absolute;inset:0;pointer-events:none;
+  background:linear-gradient(180deg,rgba(9,19,32,.42) 0%,rgba(9,19,32,0) 30%,rgba(9,19,32,0) 62%,rgba(9,19,32,.72) 100%)}
+.hero-inner{
+  position:relative;z-index:2;height:100%;display:flex;flex-direction:column;
+  justify-content:flex-end;align-items:flex-start;
+  padding:0 clamp(1.2rem,5vw,4.5rem) clamp(4.4rem,9vh,6.5rem);
+}
+.hero .kicker{margin-bottom:1.4rem}
+.hero h1{
+  font-size:clamp(3.4rem,11.5vw,9.5rem);line-height:.92;letter-spacing:.14em;
+  color:var(--foam);font-weight:300;
+  text-shadow:0 2px 60px rgba(9,19,32,.6);
+}
+.hero h1 .thin{color:var(--gold);font-style:italic;letter-spacing:.02em}
+.hero-sub{
+  margin-top:1.5rem;display:flex;align-items:baseline;gap:1.6rem;flex-wrap:wrap;
+}
+.hero-sub p{font-size:clamp(1.05rem,1.8vw,1.4rem);font-style:italic;color:#d8dde3;max-width:30rem;line-height:1.5}
+.hero-coords{font-family:"IBM Plex Mono",monospace;font-size:.72rem;letter-spacing:.18em;color:var(--dim)}
+.scroll-cue{
+  position:absolute;right:clamp(1.2rem,4vw,3rem);bottom:2.2rem;z-index:2;
+  font-family:"IBM Plex Mono",monospace;font-size:.68rem;letter-spacing:.34em;text-transform:uppercase;
+  color:var(--dim);writing-mode:vertical-rl;display:flex;align-items:center;gap:.9rem;
+}
+.scroll-cue::after{content:"";width:1px;height:3.4rem;background:linear-gradient(180deg,var(--gold),transparent);
+  animation:cueDrop 2.6s ease-in-out infinite}
+@keyframes cueDrop{0%{transform:scaleY(0);transform-origin:top}45%{transform:scaleY(1);transform-origin:top}55%{transform:scaleY(1);transform-origin:bottom}100%{transform:scaleY(0);transform-origin:bottom}}
+.hero-fallback{position:absolute;inset:0;display:none}
+.hero-fallback img{width:100%;height:100%;object-fit:cover}
+
+/* ---------- ticker band ---------- */
+.band{
+  border-top:1px solid var(--hair);border-bottom:1px solid var(--hair);
+  background:var(--sea);overflow:hidden;position:relative;z-index:2;
+}
+.band-track{display:flex;gap:0;width:max-content;animation:bandslide 46s linear infinite}
+.band-track span{
+  font-family:"IBM Plex Mono",monospace;font-size:.72rem;letter-spacing:.34em;text-transform:uppercase;
+  color:var(--dim);padding:1rem 2.6rem;white-space:nowrap;border-right:1px solid var(--hair);
+}
+.band-track span b{color:var(--gold);font-weight:400}
+@keyframes bandslide{to{transform:translateX(-50%)}}
+
+/* ---------- VOYAGE (day -> night sticky) ---------- */
+.voyage{position:relative;height:420svh;background:var(--deep)}
+.voyage-stage{position:sticky;top:0;height:100svh;min-height:560px;overflow:clip}
+.sky{position:absolute;inset:0}
+.sky-night{position:absolute;inset:0;background:
+  radial-gradient(120% 90% at 50% 108%,#12233a 0%,#0b1626 46%,#050b14 100%)}
+.sky-dusk{position:absolute;inset:0;opacity:0;background:
+  linear-gradient(180deg,#16233b 0%,#3b3a56 42%,#8a5a52 72%,#b97c55 100%)}
+.sky-gold{position:absolute;inset:0;background:
+  linear-gradient(180deg,#334560 0%,#7c6a68 38%,#d8a468 66%,#f0c07c 88%,#f7d494 100%)}
+.sun{
+  position:absolute;left:50%;top:62%;width:52vmin;height:52vmin;border-radius:50%;
+  transform:translate(-50%,-50%);
+  background:radial-gradient(circle,#fff6e0 0%,rgba(250,225,170,.9) 7%,rgba(245,207,139,.4) 16%,rgba(240,192,124,.14) 32%,rgba(240,192,124,0) 62%);
+}
+.voy-sea{
+  position:absolute;left:0;right:0;bottom:0;height:30%;
+  background:linear-gradient(180deg,rgba(14,27,42,.35) 0%,var(--deep) 70%);
+}
+#stars{position:absolute;inset:0;opacity:0;pointer-events:none}
+.star{position:absolute;border-radius:50%;background:var(--foam)}
+.voy-grid{
+  position:relative;z-index:3;height:100%;display:grid;
+  grid-template-columns:minmax(0,1.15fr) minmax(0,.85fr);
+  gap:clamp(1.4rem,3vw,3rem);align-items:center;
+  max-width:1180px;margin:0 auto;padding:clamp(4.2rem,8vh,6rem) clamp(1.2rem,4vw,3rem);
+}
+.voy-grid>*{min-width:0}
+.voy-copy .kicker{margin-bottom:1.2rem}
+.voy-copy h2{font-size:clamp(2rem,4.6vw,3.6rem);line-height:1.05}
+.voy-copy h2 em{font-style:italic;color:var(--gold)}
+.voy-copy p{margin-top:1.2rem;max-width:30rem;font-size:clamp(1rem,1.4vw,1.15rem);line-height:1.7;color:#ccd2d9}
+
+/* chart */
+.chart{
+  position:relative;background:rgba(9,19,32,.66);
+  border:1px solid var(--line);border-radius:14px;
+  backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px);
+  padding:1rem;box-shadow:0 30px 80px rgba(0,0,0,.45);
+}
+.chart svg{width:100%;height:auto;display:block}
+.chart-cap{
+  display:flex;justify-content:space-between;gap:.4rem 1rem;margin-top:.7rem;flex-wrap:wrap;
+  font-family:"IBM Plex Mono",monospace;font-size:.64rem;letter-spacing:.16em;color:var(--dim);
+}
+.chart-cap span{white-space:nowrap}
+.chart-cap b{color:var(--gold);font-weight:400}
+
+/* ship's log */
+.log{
+  margin-top:1.1rem;background:rgba(9,19,32,.66);border:1px solid var(--hair);border-radius:14px;
+  padding:1rem 1.15rem;backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px);
+}
+.log-title{
+  font-family:"IBM Plex Mono",monospace;font-size:.62rem;letter-spacing:.34em;text-transform:uppercase;
+  color:var(--gold);margin-bottom:.65rem;display:flex;justify-content:space-between;
+}
+.log-title span:last-child{color:var(--dim);letter-spacing:.14em}
+.log-line{
+  font-family:"IBM Plex Mono",monospace;font-size:.74rem;line-height:1.9;color:#b7c1cc;
+  min-height:1.4em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
+}
+.log-line .t{color:var(--gold)}
+.log-line .caret{display:inline-block;width:.55em;height:1em;vertical-align:-.15em;background:var(--gold);
+  animation:caretblink 1s steps(1) infinite}
+@keyframes caretblink{50%{opacity:0}}
+
+@media (max-width:880px){
+  .voyage{height:380svh}
+  .voy-grid{grid-template-columns:1fr;align-content:start;align-items:start;gap:1rem;padding-top:4.4rem;padding-bottom:1.6rem}
+  .voy-copy p:not(.kicker){display:none}
+  .voy-copy .kicker{margin-bottom:.8rem}
+  .voy-copy h2{font-size:clamp(1.6rem,7vw,2.2rem)}
+  .chart{padding:.7rem}
+  .chart-cap{font-size:.56rem;letter-spacing:.1em}
+  .log{margin-top:.8rem;padding:.8rem .85rem}
+  .log-line{font-size:.62rem;line-height:1.85}
+}
+
+/* ---------- UNDER SAIL ---------- */
+.undersail{position:relative;height:112svh;min-height:640px;overflow:clip;background:var(--deep)}
+.undersail .media,.undersail video,.undersail img.poster{
+  position:absolute;inset:0;width:100%;height:100%;object-fit:cover;
+}
+.undersail::before{content:"";position:absolute;inset:0;z-index:2;pointer-events:none;
+  background:linear-gradient(180deg,var(--deep) 0%,rgba(9,19,32,0) 22%,rgba(9,19,32,0) 66%,var(--deep) 100%)}
+.undersail::after{content:"";position:absolute;inset:0;z-index:2;pointer-events:none;
+  background:radial-gradient(120% 90% at 50% 50%,rgba(9,19,32,0) 55%,rgba(9,19,32,.55) 100%)}
+.us-inner{
+  position:relative;z-index:3;height:100%;display:flex;flex-direction:column;
+  justify-content:flex-end;padding:0 clamp(1.2rem,5vw,4.5rem) clamp(4rem,9vh,6rem);
+}
+.us-inner .kicker{margin-bottom:1rem}
+.us-inner h2{font-size:clamp(2rem,5vw,3.8rem);line-height:1.04;max-width:16em}
+.us-inner h2 em{font-style:italic;color:var(--gold)}
+.us-meta{
+  margin-top:1.4rem;display:flex;gap:2.4rem;flex-wrap:wrap;
+  font-family:"IBM Plex Mono",monospace;font-size:.68rem;letter-spacing:.22em;color:var(--dim);
+}
+.us-meta b{color:var(--foam);font-weight:400}
+
+/* ---------- NAVAL ARCHITECTURE ---------- */
+.arch{position:relative;height:300svh;background:var(--sea)}
+.arch-stage{position:sticky;top:0;height:100svh;min-height:600px;overflow:clip;display:flex;flex-direction:column;justify-content:center}
+.arch-head{max-width:1180px;margin:0 auto;width:100%;padding:0 clamp(1.2rem,4vw,3rem)}
+.arch-head .kicker{margin-bottom:.9rem}
+.arch-head h2{font-size:clamp(1.9rem,4.4vw,3.4rem);line-height:1.05;max-width:17em}
+.arch-head h2 em{font-style:italic;color:var(--gold)}
+.arch-fig{
+  position:relative;max-width:1180px;width:100%;margin:clamp(1.4rem,3.5vh,2.6rem) auto 0;
+  padding:0 clamp(1.2rem,4vw,3rem);
+}
+.arch-frame{
+  position:relative;border:1px solid var(--line);border-radius:14px;overflow:hidden;
+  background:linear-gradient(180deg,#0b1727,#091320);
+  box-shadow:0 40px 100px rgba(0,0,0,.5);
+  aspect-ratio:16/8.4;
+}
+@media (max-width:720px){.arch-frame{aspect-ratio:16/11}}
+.arch-frame svg{position:absolute;inset:0;width:100%;height:100%}
+.arch-frame svg *{vector-effect:non-scaling-stroke}
+.blueprint-grid line{stroke:rgba(110,126,144,.12);stroke-width:1}
+.hull-line{fill:none;stroke:var(--gold);stroke-width:1.1;opacity:.9}
+.hull-line.dim{stroke:rgba(216,183,122,.5);stroke-width:.8}
+.hull-line.foam{stroke:rgba(244,241,234,.55);stroke-width:.8}
+.arch-label{font-family:"IBM Plex Mono",monospace;font-size:9.5px;fill:var(--dim);letter-spacing:.18em}
+.arch-label.g{fill:var(--gold)}
+/* planks */
+.planks{position:absolute;inset:0}
+.plank{
+  position:absolute;left:0;width:100%;overflow:hidden;
+  transform:translateX(-101%);opacity:0;
+}
+.plank>div{
+  position:absolute;left:0;top:0;width:100%;
+  background-image:url("assets/yacht.webp");background-size:cover;background-position:center 38%;
+}
+.arch-frame .frame-cap{
+  position:absolute;left:1rem;bottom:.8rem;z-index:5;
+  font-family:"IBM Plex Mono",monospace;font-size:.62rem;letter-spacing:.24em;color:var(--dim);
+  text-transform:uppercase;transition:color .6s;
+}
+.arch-frame.built .frame-cap{color:var(--foam);text-shadow:0 1px 8px rgba(9,19,32,.8)}
+.arch-note{
+  max-width:1180px;margin:1rem auto 0;padding:0 clamp(1.2rem,4vw,3rem);
+  display:flex;justify-content:space-between;gap:1.4rem;flex-wrap:wrap;
+  font-family:"IBM Plex Mono",monospace;font-size:.66rem;letter-spacing:.2em;color:var(--dim);
+}
+.arch-note b{color:var(--gold);font-weight:400}
+@media (max-width:720px){
+  .arch-note{font-size:.56rem;letter-spacing:.12em}
+  .arch-note-r{max-width:22ch;text-align:right;line-height:1.7}
+}
+
+/* ---------- YARD ---------- */
+.yard{position:relative;background:var(--deep);padding:clamp(6rem,13vh,9.5rem) 0 clamp(5rem,10vh,7.5rem);border-top:1px solid var(--hair)}
+.yard-grid{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:clamp(2rem,5vw,5rem);align-items:start}
+.yard-copy p{font-size:clamp(1rem,1.45vw,1.18rem);line-height:1.75;color:#c9cfd6;margin-top:1.1rem;max-width:34rem}
+.yard-copy p b{color:var(--foam);font-weight:400}
+.yard-quote{
+  margin-top:2.2rem;padding-left:1.4rem;border-left:1px solid var(--gold);
+  font-family:"Cormorant Garamond",serif;font-style:italic;font-size:clamp(1.25rem,2vw,1.6rem);
+  line-height:1.45;color:var(--foam);max-width:26rem;
+}
+.yard-quote small{
+  display:block;margin-top:.9rem;font-family:"IBM Plex Mono",monospace;font-style:normal;
+  font-size:.64rem;letter-spacing:.26em;text-transform:uppercase;color:var(--dim);
+}
+.counters{display:grid;grid-template-columns:1fr 1fr;gap:1px;background:var(--hair);border:1px solid var(--hair);border-radius:14px;overflow:hidden}
+.counter{background:var(--sea);padding:clamp(1.4rem,2.6vw,2.2rem) clamp(1.2rem,2vw,1.8rem)}
+.counter .num{
+  font-family:"Cormorant Garamond",serif;font-weight:300;color:var(--gold);
+  font-size:clamp(2.4rem,4.6vw,3.8rem);line-height:1;font-variant-numeric:tabular-nums;
+}
+.counter .num sup{font-size:.45em;color:var(--dim)}
+.counter .lbl{
+  margin-top:.7rem;font-family:"IBM Plex Mono",monospace;font-size:.64rem;
+  letter-spacing:.24em;text-transform:uppercase;color:var(--dim);line-height:1.7;
+}
+@media (max-width:880px){.yard-grid{grid-template-columns:1fr}}
+
+/* ---------- COMMISSION ---------- */
+.commission{
+  position:relative;background:var(--sea);border-top:1px solid var(--hair);
+  padding:clamp(6rem,14vh,10rem) 0;text-align:center;overflow:clip;
+}
+.commission::before{
+  content:"";position:absolute;left:50%;top:0;transform:translateX(-50%);
+  width:1px;height:clamp(3rem,7vh,5rem);background:linear-gradient(180deg,var(--gold),transparent);
+}
+.commission .kicker{justify-content:center}
+.commission .kicker::after{content:"";width:2.6rem;height:1px;background:var(--line);flex:none}
+.commission h2{
+  font-size:clamp(2.4rem,6.5vw,5.2rem);line-height:1.04;margin:1.4rem auto 1.4rem;max-width:13em;
+}
+.commission h2 em{font-style:italic;color:var(--gold)}
+.commission p{max-width:34rem;margin:0 auto;color:#c9cfd6;font-size:clamp(1rem,1.5vw,1.2rem);line-height:1.7}
+.cta-row{margin-top:2.6rem;display:flex;justify-content:center;gap:1rem;flex-wrap:wrap}
+.btn{
+  display:inline-block;text-decoration:none;border-radius:999px;
+  font-family:"IBM Plex Mono",monospace;font-size:.8rem;letter-spacing:.16em;
+  padding:.95rem 2.1rem;transition:transform .35s,background .35s,color .35s,border-color .35s;
+}
+.btn-gold{background:var(--gold);color:var(--deep);border:1px solid var(--gold)}
+.btn-gold:hover{transform:translateY(-2px);background:var(--foam);border-color:var(--foam)}
+.btn-ghost{border:1px solid var(--hair);color:var(--foam)}
+.btn-ghost:hover{transform:translateY(-2px);border-color:var(--gold);color:var(--gold)}
+.commission .fine{
+  margin-top:2.4rem;font-family:"IBM Plex Mono",monospace;font-size:.64rem;
+  letter-spacing:.26em;color:var(--dim);
+}
+
+/* ---------- footer ---------- */
+footer{
+  border-top:1px solid var(--hair);background:var(--deep);
+  padding:2.2rem 0 2.6rem;
+}
+.foot-row{
+  display:flex;justify-content:space-between;align-items:center;gap:1.2rem;flex-wrap:wrap;
+  font-family:"IBM Plex Mono",monospace;font-size:.7rem;letter-spacing:.18em;color:var(--dim);
+}
+.foot-row a{text-decoration:none;transition:color .3s}
+.foot-row a:hover{color:var(--gold)}
+.foot-mark{font-family:"Cormorant Garamond",serif;font-size:1.05rem;letter-spacing:.5em;text-indent:.5em;color:var(--foam)}
+
+/* ---------- reduced motion ---------- */
+@media (prefers-reduced-motion:reduce){
+  html{scroll-behavior:auto}
+  *,*::before,*::after{animation:none!important;transition:none!important}
+  .rv{opacity:1;transform:none}
+  #ocean,.scroll-cue{display:none}
+  .hero-fallback{display:block}
+  .voyage{height:auto}
+  .voyage-stage{position:static;height:auto;min-height:0;padding:clamp(5rem,10vh,7rem) 0}
+  .sky-night,.sky-dusk,#stars{display:none}
+  .voy-grid{height:auto}
+  .arch{height:auto}
+  .arch-stage{position:static;height:auto;min-height:0;padding:clamp(5rem,10vh,7rem) 0}
+  .plank{transform:none;opacity:1}
+}
+</style>
+</head>
+<body>
+
+<a class="back" href="/">←&nbsp;25</a>
+<div class="wordmark" id="wordmark" aria-hidden="true">MAREE</div>
+<a class="commission-pill" href="#commission">COMMISSION</a>
+
+<!-- ================= HERO ================= -->
+<header class="hero" id="hero">
+  <canvas id="ocean" aria-hidden="true"></canvas>
+  <div class="hero-fallback" aria-hidden="true"><img src="assets/yacht.webp" alt="" width="1920" height="1080"></div>
+  <div class="hero-veil" aria-hidden="true"></div>
+  <div class="hero-inner">
+    <p class="kicker rv in">Sailing yachts · est. 1962</p>
+    <h1>MAREE</h1>
+    <div class="hero-sub">
+      <p>Yachts built for the <em>long horizon</em> — hulls laid down for owners who measure distance in oceans, not seasons.</p>
+      <span class="hero-coords mono">43°16′N&nbsp;·&nbsp;05°22′E&nbsp;—&nbsp;LA&nbsp;CIOTAT</span>
+    </div>
+  </div>
+  <span class="scroll-cue" aria-hidden="true">set sail</span>
+</header>
+
+<!-- ticker -->
+<div class="band" aria-hidden="true">
+  <div class="band-track" id="bandTrack">
+    <span>Displacement <b>48.5 t</b></span><span>LOA <b>28.65 m</b></span><span>Sail area <b>512 m²</b></span>
+    <span>Draft <b>3.9 m</b></span><span>Ballast <b>Lead, 14.2 t</b></span><span>Hull <b>Cold-moulded composite</b></span>
+    <span>Range under power <b>1,900 nm</b></span><span>Crew <b>4 + owner’s party of 8</b></span>
+  </div>
+</div>
+
+<!-- ================= VOYAGE ================= -->
+<section class="voyage" id="voyage" aria-label="The voyage — golden hour into night">
+  <div class="voyage-stage">
+    <div class="sky" aria-hidden="true">
+      <div class="sky-night"></div>
+      <div class="sky-dusk" id="skyDusk"></div>
+      <div class="sky-gold" id="skyGold"></div>
+      <div class="sun" id="sun"></div>
+      <div id="stars"></div>
+      <div class="voy-sea"></div>
+    </div>
+    <div class="voy-grid">
+      <div class="voy-copy">
+        <p class="kicker">The voyage</p>
+        <h2>Leave at golden hour.<br><em>Arrive by starlight.</em></h2>
+        <p>A MAREE is trimmed once and left alone. The watch changes, the light goes,
+           the log fills itself line by line — and the boat simply keeps her heading,
+           sea after sea, until morning finds you somewhere better.</p>
+      </div>
+      <div>
+        <div class="chart" role="img" aria-label="Nautical chart with the night's course plotted from Marseille toward Calvi">
+          <svg viewBox="0 0 520 330" xmlns="http://www.w3.org/2000/svg">
+            <defs>
+              <clipPath id="chartClip"><rect x="0" y="0" width="520" height="330" rx="8"/></clipPath>
+            </defs>
+            <g clip-path="url(#chartClip)">
+              <rect width="520" height="330" fill="rgba(14,27,42,.35)"/>
+              <!-- graticule -->
+              <g stroke="rgba(110,126,144,.22)" stroke-width="1">
+                <line x1="0" y1="66" x2="520" y2="66"/><line x1="0" y1="132" x2="520" y2="132"/>
+                <line x1="0" y1="198" x2="520" y2="198"/><line x1="0" y1="264" x2="520" y2="264"/>
+                <line x1="86" y1="0" x2="86" y2="330"/><line x1="172" y1="0" x2="172" y2="330"/>
+                <line x1="258" y1="0" x2="258" y2="330"/><line x1="344" y1="0" x2="344" y2="330"/>
+                <line x1="430" y1="0" x2="430" y2="330"/>
+              </g>
+              <!-- lat/long labels -->
+              <g class="arch-label" font-size="8.5">
+                <text x="6" y="62">43°10′N</text><text x="6" y="128">42°50′N</text>
+                <text x="6" y="194">42°30′N</text><text x="6" y="260">42°10′N</text>
+                <text x="80" y="322">5°30′E</text><text x="166" y="322">6°10′E</text>
+                <text x="252" y="322">6°50′E</text><text x="338" y="322">7°30′E</text>
+                <text x="424" y="322">8°10′E</text>
+              </g>
+              <!-- coastline hints -->
+              <path d="M0 38 C 60 30 96 52 138 44 C 170 38 196 54 214 46" fill="none" stroke="rgba(244,241,234,.28)" stroke-width="1.2"/>
+              <path d="M470 250 C 486 262 492 286 480 306 C 472 320 478 330 478 330" fill="none" stroke="rgba(244,241,234,.28)" stroke-width="1.2"/>
+              <!-- depth marks -->
+              <g class="arch-label" fill="rgba(110,126,144,.6)" font-size="8">
+                <text x="150" y="150">2410</text><text x="300" y="110">2690</text><text x="240" y="230">2740</text><text x="392" y="180">255O</text>
+              </g>
+              <!-- compass rose -->
+              <g transform="translate(452,64)" stroke="rgba(216,183,122,.55)" fill="none" stroke-width="1">
+                <circle r="22"/><circle r="3"/>
+                <path d="M0 -22 L4 0 L0 22 L-4 0 Z" fill="rgba(216,183,122,.35)"/>
+                <line x1="-22" y1="0" x2="22" y2="0"/>
+              </g>
+              <text class="arch-label g" x="446" y="100" font-size="8">N</text>
+              <!-- course -->
+              <path id="course" d="M56 52 C 120 96 180 118 236 158 C 292 198 340 216 396 244 C 424 258 444 268 462 282"
+                    fill="none" stroke="#D8B77A" stroke-width="1.8" stroke-linecap="round" stroke-dasharray="620" stroke-dashoffset="620"/>
+              <!-- waypoints -->
+              <g id="wps">
+                <g opacity="0"><circle cx="56" cy="52" r="3.4" fill="none" stroke="#D8B77A" stroke-width="1.4"/><text class="arch-label g" x="70" y="26">DEP · MARSEILLE 17:55</text></g>
+                <g opacity="0"><circle cx="236" cy="158" r="3.4" fill="none" stroke="#D8B77A" stroke-width="1.4"/><text class="arch-label g" x="246" y="154">WPT 2 · 21:14</text></g>
+                <g opacity="0"><circle cx="396" cy="244" r="3.4" fill="none" stroke="#D8B77A" stroke-width="1.4"/><text class="arch-label g" x="336" y="238">WPT 3 · 02:47</text></g>
+                <g opacity="0"><circle cx="462" cy="282" r="3.4" fill="#D8B77A"/><text class="arch-label g" x="380" y="300">ARR · CALVI 06:31</text></g>
+              </g>
+              <!-- vessel dot -->
+              <circle id="vessel" cx="56" cy="52" r="4.5" fill="#F4F1EA" opacity="0"/>
+            </g>
+            <rect x=".5" y=".5" width="519" height="329" rx="8" fill="none" stroke="rgba(216,183,122,.3)"/>
+          </svg>
+          <div class="chart-cap mono">
+            <span>PASSAGE&nbsp;N°&nbsp;312&nbsp;—&nbsp;GULF&nbsp;OF&nbsp;LION&nbsp;→&nbsp;CORSICA</span>
+            <span>HDG&nbsp;<b id="hdgOut">128°</b>&nbsp;·&nbsp;SOG&nbsp;<b id="sogOut">9.6&nbsp;kn</b></span>
+          </div>
+        </div>
+        <div class="log" aria-label="Ship's log, writing itself as the night passes">
+          <div class="log-title"><span>Ship’s log — M/Y&nbsp;Alcyone</span><span id="logClock">17:55</span></div>
+          <div class="log-line" data-text="17:55 — cast off Vieux-Port. Wind SW 11 kn." data-at="0.02"></div>
+          <div class="log-line" data-text="18:40 — wind 14 kn, heading 214°. She settles." data-at="0.18"></div>
+          <div class="log-line" data-text="20:26 — sun down. Genoa eased two inches." data-at="0.38"></div>
+          <div class="log-line" data-text="23:58 — stars horizon to horizon. Log 54 nm." data-at="0.60"></div>
+          <div class="log-line" data-text="02:47 — WPT 3 abeam. Phosphorescence astern." data-at="0.78"></div>
+          <div class="log-line" data-text="06:31 — Calvi light. No one wants to go in." data-at="0.92"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ================= UNDER SAIL ================= -->
+<section class="undersail" id="undersail">
+  <div class="media" id="usMedia">
+    <img class="poster" src="assets/bow-poster.webp" alt="The bow of a MAREE yacht cutting through a long ocean swell at dusk" width="960" height="540">
+  </div>
+  <div class="us-inner">
+    <p class="kicker rv">Under sail</p>
+    <h2 class="rv d1">Fifty tonnes, moving on <em>wind alone.</em></h2>
+    <div class="us-meta rv d2">
+      <span>TRUE&nbsp;WIND&nbsp;<b>16&nbsp;KN</b></span>
+      <span>BOAT&nbsp;SPEED&nbsp;<b>11.2&nbsp;KN</b></span>
+      <span>HEEL&nbsp;<b>12°</b></span>
+      <span>SOUND&nbsp;<b>THE&nbsp;BOW&nbsp;WAVE</b></span>
+    </div>
+  </div>
+</section>
+
+<!-- ================= NAVAL ARCHITECTURE ================= -->
+<section class="arch" id="arch" aria-label="Naval architecture — hull lines drawing, then the finished yacht">
+  <div class="arch-stage">
+    <div class="arch-head">
+      <p class="kicker">Naval architecture</p>
+      <h2>Every hull begins as <em>a set of lines</em> — and ends as a place you live.</h2>
+    </div>
+    <div class="arch-fig">
+      <div class="arch-frame" id="archFrame">
+        <svg viewBox="0 0 1120 588" preserveAspectRatio="xMidYMid slice" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+          <!-- blueprint grid -->
+          <g class="blueprint-grid" id="bpGrid"></g>
+          <!-- PROFILE (sheer plan), left 2/3 -->
+          <g id="profileG">
+            <!-- sheer line -->
+            <path class="hull-line draw" d="M60 300 C 200 268 420 252 610 258 C 660 260 700 266 716 272"/>
+            <!-- stem + keel + rudder profile -->
+            <path class="hull-line draw" d="M60 300 C 70 336 92 372 132 394 C 240 448 420 462 540 452 C 610 446 668 420 700 380 C 712 362 716 340 716 272"/>
+            <!-- keel fin -->
+            <path class="hull-line draw" d="M340 458 L 330 540 C 352 548 386 548 404 540 L 396 460"/>
+            <!-- rudder -->
+            <path class="hull-line draw" d="M640 436 L 622 520 C 636 526 652 524 660 518 L 668 426"/>
+            <!-- waterlines -->
+            <path class="hull-line foam draw" d="M60 336 C 220 322 460 314 700 330"/>
+            <path class="hull-line dim draw" d="M84 366 C 240 352 460 346 686 362"/>
+            <path class="hull-line dim draw" d="M120 396 C 270 384 460 380 662 394"/>
+            <path class="hull-line dim draw" d="M170 424 C 300 414 470 410 622 420"/>
+            <!-- deck detail -->
+            <path class="hull-line dim draw" d="M300 262 C 400 254 520 252 600 258"/>
+            <!-- mast hint -->
+            <path class="hull-line dim draw" d="M380 256 L 380 60"/>
+            <path class="hull-line dim draw" d="M380 60 L 172 292"/>
+            <path class="hull-line dim draw" d="M380 60 L 640 262"/>
+          </g>
+          <!-- BODY PLAN (sections), right panel -->
+          <g id="bodyG" transform="translate(870,330)">
+            <line x1="0" y1="-210" x2="0" y2="216" class="hull-line dim draw"/>
+            <path class="hull-line draw" d="M-160 -64 C -150 20 -104 96 0 110 C 104 96 150 20 160 -64"/>
+            <path class="hull-line draw" d="M-138 -58 C -128 12 -90 80 0 94 C 90 80 128 12 138 -58"/>
+            <path class="hull-line dim draw" d="M-112 -52 C -102 6 -72 62 0 76 C 72 62 102 6 112 -52"/>
+            <path class="hull-line dim draw" d="M-84 -46 C -76 0 -52 44 0 58 C 52 44 76 0 84 -46"/>
+            <path class="hull-line dim draw" d="M-54 -40 C -48 -6 -32 28 0 40 C 32 28 48 -6 54 -40"/>
+            <path class="hull-line foam draw" d="M-166 -10 L 166 -10"/>
+            <path class="hull-line draw" d="M-14 110 L -18 196 C -6 202 8 202 18 196 L 14 110"/>
+          </g>
+          <!-- labels -->
+          <g id="lblG">
+            <text class="arch-label g" x="60" y="222">PROFILE &amp; WATERLINES — MAREE 94</text>
+            <text class="arch-label" x="60" y="240">SCALE 1:75 · LWL 26.40 M</text>
+            <text class="arch-label g" x="784" y="96">BODY PLAN</text>
+            <text class="arch-label" x="784" y="114">STATIONS 0–10</text>
+            <text class="arch-label" x="60" y="352">DWL</text>
+          </g>
+        </svg>
+        <div class="planks" id="planks" aria-hidden="true"></div>
+        <div class="frame-cap mono" id="frameCap">DRAWING N° 94-003 — LINES PLAN</div>
+      </div>
+      <div class="arch-note mono">
+        <span><b id="archPct">000%</b>&nbsp;FAIRED</span>
+        <span class="arch-note-r">COLD-MOULDED COMPOSITE · TEAK OVER FOAM CORE</span>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ================= YARD ================= -->
+<section class="yard" id="yard">
+  <div class="wrap">
+    <div class="sect-head rv">
+      <p class="kicker">The yard</p>
+      <h2>Sixty-two years of <em>doing it slowly.</em></h2>
+    </div>
+    <div class="yard-grid">
+      <div class="yard-copy rv d1">
+        <p>MAREE has occupied the same slipway at La Ciotat since 1962. Three hulls
+           at a time, never more. The joinery shop still smells of <b>oiled teak</b> and
+           the loft floor still carries the scribed lines of every yacht we have ever drawn.</p>
+        <p>A hull spends <b>fourteen months</b> in the shed before it feels water. Planking
+           is vacuum-laminated by hand; each deck is a single lay of quarter-sawn teak,
+           matched from one log. We weigh everything twice — <b>weight is the enemy of grace</b>,
+           and grace is the whole point.</p>
+        <div class="yard-quote">
+          “A yacht should be quieter than the weather she’s in.
+          <small>— H. Maree, founder’s notebook, 1964</small>
+        </div>
+      </div>
+      <div class="counters rv d2" id="counters">
+        <div class="counter"><div class="num"><span data-count="62">0</span></div><div class="lbl">Years on the same slipway</div></div>
+        <div class="counter"><div class="num"><span data-count="131">0</span></div><div class="lbl">Hulls launched since 1962</div></div>
+        <div class="counter"><div class="num"><span data-count="40" data-suffix=",000">0</span></div><div class="lbl">Build hours in every yacht</div></div>
+        <div class="counter"><div class="num"><span data-count="3">0</span></div><div class="lbl">Yachts in build — never more</div></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ================= COMMISSION ================= -->
+<section class="commission" id="commission">
+  <div class="wrap">
+    <p class="kicker rv">Commission</p>
+    <h2 class="rv d1">The sea is not going anywhere.<br><em>Neither are we.</em></h2>
+    <p class="rv d2">A commission begins with a conversation and a berth reserved on the 2029 slipway.
+       From first lines to sea trials: forty months, one owner at a time, and a boat
+       your grandchildren will argue over.</p>
+    <div class="cta-row rv d3">
+      <a class="btn btn-gold" href="#commission">BEGIN A COMMISSION</a>
+      <a class="btn btn-ghost" href="#voyage">SAIL THE NIGHT AGAIN ↑</a>
+    </div>
+    <p class="fine rv d3">NEXT KEEL LAID — SPRING 2027 · LA CIOTAT, FRANCE</p>
+  </div>
+</section>
+
+<footer>
+  <div class="wrap foot-row">
+    <span class="foot-mark">MAREE</span>
+    <span>43°16′N · 05°22′E — SINCE 1962</span>
+    <span>FABLE/25 · N°49 · <a href="/49-maree/guide/">guide &amp; prompt →</a></span>
+  </div>
+</footer>
+
+<script>
+(function(){
+"use strict";
+var PRM = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+var clamp = function(v,a,b){ return v<a?a:(v>b?b:v); };
+var lerp = function(a,b,t){ return a+(b-a)*t; };
+var smooth = function(a,b,x){ x = clamp((x-a)/(b-a),0,1); return x*x*(3-2*x); };
+
+/* duplicate ticker for seamless loop */
+var band = document.getElementById("bandTrack");
+band.innerHTML += band.innerHTML;
+
+/* ---------- reveal on scroll ---------- */
+var rvs = document.querySelectorAll(".rv");
+if(!PRM && "IntersectionObserver" in window){
+  var rvIO = new IntersectionObserver(function(es){
+    es.forEach(function(e){ if(e.isIntersecting){ e.target.classList.add("in"); rvIO.unobserve(e.target); } });
+  },{threshold:.18});
+  rvs.forEach(function(el){ rvIO.observe(el); });
+}else{
+  rvs.forEach(function(el){ el.classList.add("in"); });
+}
+
+/* ---------- wordmark appears after hero ---------- */
+var wordmark = document.getElementById("wordmark");
+var hero = document.getElementById("hero");
+
+/* =========================================================
+   HERO OCEAN — sine-sum wave rows, sun glitter, spray, ripples
+   ========================================================= */
+var canvas = document.getElementById("ocean");
+if(!PRM && canvas && canvas.getContext){
+  var ctx = canvas.getContext("2d");
+  var W=0,H=0,DPR=1,horizon=0,sunX=0;
+  var rows=[], ROWS=0, mobile=false;
+  var ripples=[]; var spray=[];
+  var running=true, visible=true, raf=0, t0=performance.now();
+
+  function sizeOcean(){
+    DPR = Math.min(window.devicePixelRatio||1, 2);
+    W = hero.clientWidth; H = hero.clientHeight;
+    canvas.width = Math.round(W*DPR); canvas.height = Math.round(H*DPR);
+    canvas.style.width = W+"px"; canvas.style.height = H+"px";
+    ctx.setTransform(DPR,0,0,DPR,0,0);
+    mobile = W < 720;
+    horizon = H*0.42;
+    sunX = W*0.62;
+    ROWS = mobile ? 30 : 44;
+    rows = [];
+    for(var i=0;i<ROWS;i++){
+      var f = i/(ROWS-1);                    // 0 at horizon, 1 at viewer
+      rows.push({
+        f:f,
+        y: horizon + Math.pow(f,1.7)*(H-horizon)*1.04,
+        amp: lerp(1.2, mobile?26:34, Math.pow(f,1.5)),
+        sp:  lerp(0.35, 1.0, f),
+        ph:  Math.random()*Math.PI*2
+      });
+    }
+  }
+  sizeOcean();
+  window.addEventListener("resize", sizeOcean);
+
+  /* pointer ripples */
+  var px=-1e4, py=-1e4;
+  hero.addEventListener("pointermove", function(e){
+    var r = canvas.getBoundingClientRect();
+    var x = e.clientX-r.left, y = e.clientY-r.top;
+    if(Math.abs(x-px)>26 || Math.abs(y-py)>26){
+      px=x; py=y;
+      if(y > horizon*0.9 && ripples.length<10) ripples.push({x:x,y:y,t:performance.now()});
+    }
+  },{passive:true});
+
+  function waveY(x, row, t){
+    var k = 0.9 + row.f*0.5;
+    var v = Math.sin(x*0.0062*k + t*0.8*row.sp + row.ph)*0.55
+          + Math.sin(x*0.0125*k - t*1.05*row.sp + row.ph*1.7)*0.28
+          + Math.sin(x*0.028*k  + t*1.7*row.sp)*0.12
+          + Math.sin(x*0.0031  + t*0.45)*0.35;
+    return v; /* roughly -1.3..1.3 */
+  }
+
+  function drawOcean(now){
+    var t = (now-t0)/1000;
+    ctx.clearRect(0,0,W,H);
+
+    /* sky */
+    var sky = ctx.createLinearGradient(0,0,0,horizon*1.15);
+    sky.addColorStop(0,"#1d2c44");
+    sky.addColorStop(.45,"#4c4a5e");
+    sky.addColorStop(.75,"#a97650");
+    sky.addColorStop(1,"#e8b978");
+    ctx.fillStyle = sky; ctx.fillRect(0,0,W,horizon+2);
+
+    /* sun disc + halo */
+    var sunY = horizon - H*0.055;
+    var halo = ctx.createRadialGradient(sunX,sunY,0,sunX,sunY,H*0.3);
+    halo.addColorStop(0,"rgba(255,229,176,.9)");
+    halo.addColorStop(.18,"rgba(240,190,120,.5)");
+    halo.addColorStop(1,"rgba(240,190,120,0)");
+    ctx.fillStyle = halo;
+    ctx.fillRect(sunX-H*0.32,sunY-H*0.32,H*0.64,H*0.64);
+    ctx.beginPath(); ctx.arc(sunX,sunY,H*0.028,0,7);
+    ctx.fillStyle="rgba(255,240,205,.95)"; ctx.fill();
+
+    /* sea base */
+    var sea = ctx.createLinearGradient(0,horizon,0,H);
+    sea.addColorStop(0,"#3d4459");
+    sea.addColorStop(.28,"#1c2a3e");
+    sea.addColorStop(1,"#091320");
+    ctx.fillStyle = sea; ctx.fillRect(0,horizon,W,H-horizon);
+
+    /* specular sun path on the water — elliptical radial so it fades on all sides */
+    var colH = (H-horizon)*0.85, colW = W*0.13;
+    ctx.save();
+    ctx.translate(sunX,horizon);
+    ctx.scale(colW/colH,1);
+    var col = ctx.createRadialGradient(0,0,0,0,0,colH);
+    col.addColorStop(0,"rgba(240,192,124,.22)");
+    col.addColorStop(.55,"rgba(240,192,124,.09)");
+    col.addColorStop(1,"rgba(240,192,124,0)");
+    ctx.fillStyle = col;
+    ctx.fillRect(-colH,0,colH*2,colH);
+    ctx.restore();
+
+    /* rows */
+    var step = mobile?9:7;
+    var nowMs = now;
+    for(var i=0;i<ROWS;i++){
+      var row = rows[i];
+      var glintW = lerp(W*0.045, W*0.16, row.f);   // glitter path widens toward viewer
+      ctx.beginPath();
+      var first = true;
+      for(var x=-10;x<=W+10;x+=step){
+        var v = waveY(x,row,t);
+        var y = row.y + v*row.amp;
+        /* pointer ripples */
+        for(var r=0;r<ripples.length;r++){
+          var rp = ripples[r];
+          var age = (nowMs-rp.t)/1000;
+          var dx = x-rp.x, dy = row.y-rp.y;
+          var d = Math.sqrt(dx*dx+dy*dy);
+          y += Math.sin(d*0.055 - age*7)*10*Math.exp(-d*0.012)*Math.exp(-age*1.4)*row.f;
+        }
+        if(first){ ctx.moveTo(x,y); first=false; } else ctx.lineTo(x,y);
+      }
+      var base = lerp(.16,.5,row.f);
+      ctx.strokeStyle = "rgba(150,170,196,"+(base*.5).toFixed(3)+")";
+      ctx.lineWidth = lerp(.7,1.5,row.f);
+      ctx.stroke();
+
+      /* gold glitter along sun path: re-stroke short bright segments near sunX */
+      ctx.lineWidth = lerp(.9,2.1,row.f);
+      for(var gx=sunX-glintW; gx<sunX+glintW; gx+=step*2){
+        var vv = waveY(gx,row,t);
+        if(vv>0.32){
+          var yy = row.y + vv*row.amp;
+          var prox = 1-Math.abs(gx-sunX)/glintW;
+          var a = prox*lerp(.35,.95,row.f)*(0.45+0.55*Math.sin(gx*13.7+t*3+row.ph*9));
+          if(a>0.06){
+            ctx.strokeStyle = "rgba(240,203,138,"+a.toFixed(3)+")";
+            ctx.beginPath();
+            ctx.moveTo(gx-step, row.y + waveY(gx-step,row,t)*row.amp);
+            ctx.lineTo(gx+step, yy);
+            ctx.stroke();
+          }
+        }
+      }
+
+      /* spray at crests of near rows */
+      if(row.f>0.72 && spray.length< (mobile?36:80) && Math.random()<0.16){
+        var sx = Math.random()*W;
+        var sv = waveY(sx,row,t);
+        if(sv>0.85){
+          spray.push({x:sx, y:row.y+sv*row.amp-2, vx:(Math.random()-.5)*22, vy:-(28+Math.random()*44)*row.f, l:0.9+Math.random()*.6, a:0});
+        }
+      }
+    }
+
+    /* ripples cleanup */
+    for(var r2=ripples.length-1;r2>=0;r2--) if(nowMs-ripples[r2].t>2600) ripples.splice(r2,1);
+
+    /* spray particles */
+    var dt = 1/60;
+    for(var s=spray.length-1;s>=0;s--){
+      var p = spray[s];
+      p.a += dt; p.x += p.vx*dt; p.y += p.vy*dt; p.vy += 90*dt;
+      var rem = 1 - p.a/p.l;
+      if(rem<=0){ spray.splice(s,1); continue; }
+      ctx.fillStyle = "rgba(244,241,234,"+(0.55*rem).toFixed(3)+")";
+      ctx.fillRect(p.x, p.y, 1.6, 1.6);
+    }
+  }
+
+  function loop(now){
+    if(running && visible) drawOcean(now);
+    raf = requestAnimationFrame(loop);
+  }
+  raf = requestAnimationFrame(loop);
+
+  /* pause offscreen + tab hidden */
+  if("IntersectionObserver" in window){
+    new IntersectionObserver(function(es){ running = es[0].isIntersecting; },{threshold:.02}).observe(hero);
+  }
+  document.addEventListener("visibilitychange", function(){ visible = !document.hidden; });
+}
+
+/* =========================================================
+   VOYAGE — golden hour -> night sticky scroll
+   ========================================================= */
+var voyage = document.getElementById("voyage");
+var skyGold = document.getElementById("skyGold");
+var skyDusk = document.getElementById("skyDusk");
+var sun = document.getElementById("sun");
+var starsBox = document.getElementById("stars");
+var course = document.getElementById("course");
+var vessel = document.getElementById("vessel");
+var wps = document.getElementById("wps") ? document.getElementById("wps").children : [];
+var hdgOut = document.getElementById("hdgOut");
+var sogOut = document.getElementById("sogOut");
+var logClock = document.getElementById("logClock");
+var logLines = Array.prototype.slice.call(document.querySelectorAll(".log-line"));
+var courseLen = course ? course.getTotalLength() : 620;
+if(course) { course.setAttribute("stroke-dasharray", courseLen); course.setAttribute("stroke-dashoffset", courseLen); }
+
+/* stars */
+(function(){
+  if(!starsBox) return;
+  var n = 110, frag = document.createDocumentFragment();
+  for(var i=0;i<n;i++){
+    var d = document.createElement("div");
+    d.className = "star";
+    var s = Math.random()<.16 ? 2.4 : 1.4;
+    d.style.width = d.style.height = s+"px";
+    d.style.left = (Math.random()*100)+"%";
+    d.style.top = (Math.random()*72)+"%";
+    d.style.opacity = (.3+Math.random()*.7).toFixed(2);
+    frag.appendChild(d);
+  }
+  starsBox.appendChild(frag);
+})();
+
+/* typing state per line */
+var typing = logLines.map(function(el){
+  return { el:el, text:el.getAttribute("data-text"), at:parseFloat(el.getAttribute("data-at")), n:0, started:false, done:false };
+});
+function renderLog(line){
+  var shown = line.text.slice(0, line.n);
+  var m = shown.match(/^(\d\d:\d\d)([\s\S]*)$/);
+  var html = m ? '<span class="t">'+m[1]+'</span>'+m[2].replace(/</g,"&lt;") : shown.replace(/</g,"&lt;");
+  if(!line.done) html += '<span class="caret"></span>';
+  line.el.innerHTML = html;
+}
+if(PRM){
+  typing.forEach(function(l){ l.n = l.text.length; l.done = true; renderLog(l); });
+  if(course) course.setAttribute("stroke-dashoffset", 0);
+  for(var w=0;w<wps.length;w++) wps[w].setAttribute("opacity",1);
+  if(starsBox) starsBox.style.opacity = 0;
+}
+
+var voyP = 0, typeTimer = null;
+function tickTyping(){
+  var busy = false;
+  typing.forEach(function(l){
+    if(l.started && !l.done){
+      l.n = Math.min(l.text.length, l.n + 2);
+      if(l.n >= l.text.length){ l.done = true; }
+      renderLog(l); busy = true;
+    }
+  });
+  if(!busy){ clearInterval(typeTimer); typeTimer = null; }
+}
+
+function padClock(p){
+  /* 17:55 -> 06:31 across the night: 12.6 h */
+  var mins = 17*60+55 + p*(12*60+36);
+  mins = mins % (24*60);
+  var h = Math.floor(mins/60), m = Math.floor(mins%60);
+  return (h<10?"0":"")+h+":"+(m<10?"0":"")+m;
+}
+
+function updateVoyage(){
+  if(PRM || !voyage) return;
+  var rect = voyage.getBoundingClientRect();
+  var total = rect.height - window.innerHeight;
+  var p = clamp(-rect.top/Math.max(total,1), 0, 1);
+  voyP = p;
+
+  /* sky layers */
+  skyGold.style.opacity = 1 - smooth(0.05,0.45,p);
+  skyDusk.style.opacity = smooth(0.05,0.4,p)*(1 - smooth(0.45,0.8,p));
+  starsBox.style.opacity = smooth(0.5,0.85,p);
+  /* sun sets */
+  var sd = smooth(0,0.5,p);
+  sun.style.transform = "translate(-50%,-50%) translateY("+(sd*26)+"vh)";
+  sun.style.opacity = 1 - smooth(0.3,0.52,p);
+
+  /* course draws */
+  var cp = smooth(0.06,0.9,p);
+  course.setAttribute("stroke-dashoffset", (courseLen*(1-cp)).toFixed(1));
+  var pt = course.getPointAtLength(courseLen*cp);
+  vessel.setAttribute("cx",pt.x); vessel.setAttribute("cy",pt.y);
+  vessel.setAttribute("opacity", cp>0.01 && cp<0.995 ? 1 : 0);
+  var wpAt = [0.02,0.42,0.78,0.97];
+  for(var i=0;i<wps.length;i++) wps[i].setAttribute("opacity", cp>=wpAt[i]?1:0);
+
+  /* instruments */
+  hdgOut.textContent = Math.round(lerp(128, 214, smooth(0.1,0.6,p)))+"°";
+  sogOut.textContent = (9.1 + Math.sin(p*9)*0.9).toFixed(1)+" kn";
+  logClock.textContent = padClock(p);
+
+  /* log typing triggers */
+  var need = false;
+  typing.forEach(function(l){
+    if(!l.started && p >= l.at){ l.started = true; need = true; renderLog(l); }
+  });
+  if((need || typing.some(function(l){return l.started&&!l.done;})) && !typeTimer){
+    typeTimer = setInterval(tickTyping, 34);
+  }
+}
+
+/* =========================================================
+   UNDER SAIL — video loop, IO-paused, reduced-motion poster
+   ========================================================= */
+(function(){
+  var box = document.getElementById("usMedia");
+  if(PRM || !box) return;
+  var v = document.createElement("video");
+  v.muted = true; v.loop = true; v.playsInline = true;
+  v.setAttribute("muted",""); v.setAttribute("playsinline","");
+  v.autoplay = true; v.preload = "metadata";
+  v.poster = "assets/bow-poster.webp";
+  v.width = 960; v.height = 540;
+  var src = document.createElement("source");
+  src.src = "assets/bow.mp4"; src.type = "video/mp4";
+  v.appendChild(src);
+  box.appendChild(v);
+  var tryPlay = function(){ var pr = v.play(); if(pr && pr.catch) pr.catch(function(){}); };
+  if("IntersectionObserver" in window){
+    new IntersectionObserver(function(es){
+      if(es[0].isIntersecting) tryPlay(); else v.pause();
+    },{threshold:.08}).observe(box);
+  }else tryPlay();
+  document.addEventListener("visibilitychange", function(){
+    if(document.hidden) v.pause(); else tryPlay();
+  });
+})();
+
+/* =========================================================
+   NAVAL ARCHITECTURE — linework draw, then plank-over
+   ========================================================= */
+var arch = document.getElementById("arch");
+var archFrame = document.getElementById("archFrame");
+var archPct = document.getElementById("archPct");
+var frameCap = document.getElementById("frameCap");
+var draws = Array.prototype.slice.call(document.querySelectorAll(".hull-line.draw"));
+var drawLens = draws.map(function(p){
+  var L = 10;
+  try{ L = p.getTotalLength(); }catch(e){}
+  p.style.strokeDasharray = L;
+  if(!PRM) p.style.strokeDashoffset = L;
+  return L;
+});
+
+/* blueprint grid lines */
+(function(){
+  var g = document.getElementById("bpGrid");
+  if(!g) return;
+  var ns = "http://www.w3.org/2000/svg", s = "";
+  for(var x=0;x<=1120;x+=56) s += '<line x1="'+x+'" y1="0" x2="'+x+'" y2="588"/>';
+  for(var y=0;y<=588;y+=56) s += '<line x1="0" y1="'+y+'" x2="1120" y2="'+y+'"/>';
+  g.innerHTML = s;
+})();
+
+/* planks */
+var PLANKS = 9;
+(function(){
+  var holder = document.getElementById("planks");
+  if(!holder) return;
+  var frag = document.createDocumentFragment();
+  for(var i=0;i<PLANKS;i++){
+    var strip = document.createElement("div");
+    strip.className = "plank";
+    strip.style.top = (i*100/PLANKS)+"%";
+    strip.style.height = (100/PLANKS + 0.15)+"%";
+    var img = document.createElement("div");
+    img.style.height = (PLANKS*100)+"%";
+    img.style.top = (-i*100)+"%";
+    strip.appendChild(img);
+    frag.appendChild(strip);
+  }
+  holder.appendChild(frag);
+})();
+var planks = Array.prototype.slice.call(document.querySelectorAll(".plank"));
+
+function updateArch(){
+  if(PRM || !arch) return;
+  var rect = arch.getBoundingClientRect();
+  var total = rect.height - window.innerHeight;
+  var p = clamp(-rect.top/Math.max(total,1), 0, 1);
+
+  /* phase 1: 0-0.55 draw lines */
+  var d = smooth(0.0,0.55,p);
+  draws.forEach(function(path,i){
+    var stagger = i/(draws.length*1.6);
+    var lp = clamp((d-stagger)/(1-stagger),0,1);
+    path.style.strokeDashoffset = (drawLens[i]*(1-lp)).toFixed(1);
+  });
+  archPct.textContent = (d<1 ? ("00"+Math.round(d*100)).slice(-3) : "100")+"%";
+
+  /* phase 2: 0.6-0.95 planks slide over */
+  var k = smooth(0.58,0.95,p);
+  planks.forEach(function(pl,i){
+    var order = (i%2===0)? i/2 : PLANKS - (i+1)/2;   // alternate from both edges
+    var st = order/PLANKS*0.7;
+    var lp = clamp((k-st)/(1-st),0,1);
+    var e = 1-Math.pow(1-lp,3);
+    pl.style.transform = "translateX("+((1-e)*(i%2? 101 : -101))+"%)";
+    pl.style.opacity = lp>0? 1 : 0;
+  });
+  if(k>0.9){ archFrame.classList.add("built"); frameCap.textContent = "MAREE 94 — HULL N° 131, SEA TRIALS, GOLDEN HOUR"; }
+  else { archFrame.classList.remove("built"); frameCap.textContent = "DRAWING N° 94-003 — LINES PLAN"; }
+}
+if(PRM){
+  draws.forEach(function(p){ p.style.strokeDashoffset = 0; });
+  if(archPct) archPct.textContent = "100%";
+  if(frameCap) frameCap.textContent = "MAREE 94 — HULL N° 131, SEA TRIALS, GOLDEN HOUR";
+  if(archFrame) archFrame.classList.add("built");
+}
+
+/* =========================================================
+   COUNTERS
+   ========================================================= */
+(function(){
+  var box = document.getElementById("counters");
+  if(!box) return;
+  var nums = Array.prototype.slice.call(box.querySelectorAll("[data-count]"));
+  function final(el){ el.textContent = el.getAttribute("data-count") + (el.getAttribute("data-suffix")||""); }
+  if(PRM || !("IntersectionObserver" in window)){ nums.forEach(final); return; }
+  var done = false;
+  new IntersectionObserver(function(es,io){
+    if(!es[0].isIntersecting || done) return;
+    done = true; io.disconnect();
+    var t0 = performance.now(), dur = 1900;
+    (function step(now){
+      var p = clamp((now-t0)/dur,0,1);
+      var e = 1-Math.pow(1-p,4);
+      nums.forEach(function(el){
+        var target = parseInt(el.getAttribute("data-count"),10);
+        el.textContent = Math.round(target*e) + (el.getAttribute("data-suffix")||"");
+      });
+      if(p<1) requestAnimationFrame(step); else nums.forEach(final);
+    })(t0);
+  },{threshold:.4}).observe(box);
+})();
+
+/* =========================================================
+   scroll driver
+   ========================================================= */
+var ticking = false;
+function onScroll(){
+  if(ticking) return;
+  ticking = true;
+  requestAnimationFrame(function(){
+    ticking = false;
+    var past = hero.getBoundingClientRect().bottom < 80;
+    wordmark.classList.toggle("on", past);
+    updateVoyage();
+    updateArch();
+  });
+}
+window.addEventListener("scroll", onScroll, {passive:true});
+window.addEventListener("resize", onScroll);
+onScroll();
+})();
+</script>
+</body>
+</html>

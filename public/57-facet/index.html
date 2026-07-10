@@ -1,0 +1,913 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>FACET — Light, cut to measure</title>
+<meta name="description" content="FACET, a high-jewelry house. One stone, fifty-seven decisions. Light, cut to measure.">
+<!--
+  CHANGELOG
+  PASS 1 (gem believability & choreography): procedural round brilliant (112 tris:
+  8 table / 24 crown / 32 girdle / 48 pavilion), flat facets via duplicated verts +
+  per-face normals; env = 3 vertical softbox strips over a near-black studio gradient
+  so facets flash discretely as the stone turns; dispersion = per-channel refract
+  (eta .435/.418/.400) + per-channel env rotation; fire = facet-hashed spectral hue
+  gated by env-luminance edges; fresnel-weighted reflection on top.
+  PASS 2 (judged against headless WebGL renders): stone read matte-gray at one pointer angle and
+  disco-rainbow at the other. Env strips sharpened (pow 90/140/260) and pushed to 3.2x intensity over
+  a 0.002 base so facets flash on/off instead of shading; fire re-gated with smoothstep(0.10,0.55)
+  on the env-luminance edge and clamped away from already-bright facets; added a faked pavilion
+  bounce (env re-sampled through a reflected refraction, y-flipped) to light the table from below;
+  pose raised to a 30-degree three-quarter view, scale 1.18 -> 0.98.
+  PASS 3: caustics repainted — opaque vignette left a visible canvas box on the hero gradient, now a
+  destination-out alpha fade; scratchy whisker curves replaced by ellipse-squashed arc segments in a
+  soft radial light pool that tracks the pointer; added ?live query hook so the SwiftShader
+  auto-degrade (static render below 14fps) can be bypassed for pointer-angle verification.
+  PASS 4: broad dim fill strip added opposite the key light so no rotation angle leaves the crown
+  unlit; per-channel env rotation shift halved (0.09 -> 0.05) to stop whole girdle facets splitting
+  into pure navy while widening the true eta separation (0.440/0.418/0.396); caustic line alpha +60%.
+  PASS 5: extreme pointer positions could blow the crown out to orange-white — pavilion-bounce
+  channel shift 0.12 -> 0.06, bounce weight 0.55 -> 0.45, tone-map ceiling 1.5 -> 1.42.
+-->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Italiana&family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;1,300;1,400&family=IBM+Plex+Mono:wght@300;400&display=swap" rel="stylesheet">
+<style>
+:root{
+  --black:#0B0B0D;
+  --panel:#131316;
+  --plat:#DCDEE3;
+  --white:#F7F5F0;
+  --dim:#85858D;
+  --line:rgba(220,222,227,.14);
+  --line-soft:rgba(220,222,227,.08);
+}
+*{margin:0;padding:0;box-sizing:border-box}
+html{scroll-behavior:smooth}
+@media (prefers-reduced-motion:reduce){html{scroll-behavior:auto}}
+body{
+  background:var(--black);
+  color:var(--plat);
+  font-family:"Cormorant Garamond",Georgia,serif;
+  font-weight:400;
+  font-size:19px;
+  line-height:1.7;
+  -webkit-font-smoothing:antialiased;
+  overflow-x:hidden;
+}
+::selection{background:var(--plat);color:var(--black)}
+h1,h2,h3,.display{font-family:"Italiana",serif;font-weight:400}
+.mono{font-family:"IBM Plex Mono",monospace;font-weight:300}
+a{color:inherit}
+img{max-width:100%;height:auto;display:block}
+
+/* ---------- fixed chrome ---------- */
+.back{
+  position:fixed;top:1.1rem;left:1.2rem;z-index:60;
+  font-family:"IBM Plex Mono",monospace;font-size:.78rem;letter-spacing:.12em;
+  text-decoration:none;color:var(--plat);
+  background:rgba(11,11,13,.66);border:1px solid var(--line);border-radius:999px;
+  padding:.45rem 1rem;backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);
+  transition:background .35s,color .35s;
+}
+.back:hover{background:var(--plat);color:var(--black)}
+
+/* ---------- hero ---------- */
+.hero{
+  position:relative;min-height:100vh;min-height:100svh;
+  display:flex;flex-direction:column;align-items:center;justify-content:center;
+  overflow:hidden;
+  background:radial-gradient(120% 90% at 50% 38%, #141419 0%, var(--black) 62%);
+  padding:5.5rem 1.2rem 3.5rem;
+}
+.stage{
+  position:relative;
+  width:min(74vmin,520px);height:min(74vmin,520px);
+  margin:0 auto;
+}
+#gem{position:absolute;inset:0;width:100%;height:100%;display:block}
+#caustics{
+  position:absolute;left:50%;bottom:-9%;
+  width:130%;height:44%;transform:translateX(-50%);
+  pointer-events:none;opacity:.9;
+}
+/* CSS gem fallback (no WebGL) */
+.cssgem{
+  position:absolute;inset:12%;display:none;
+  clip-path:polygon(50% 100%, 6% 38%, 18% 22%, 38% 12%, 62% 12%, 82% 22%, 94% 38%);
+  background:
+    conic-gradient(from 210deg at 50% 34%,
+      #17171b 0deg,#3a3b42 24deg,#0e0e11 60deg,#c9cbd2 82deg,#26262c 108deg,
+      #0d0d10 150deg,#8f9199 178deg,#141417 210deg,#dcdee3 244deg,#1b1b20 268deg,
+      #0e0e11 300deg,#4a4b52 330deg,#17171b 360deg);
+}
+.cssgem::after{
+  content:"";position:absolute;inset:0;
+  background:linear-gradient(160deg,rgba(247,245,240,.28) 0%,transparent 34%,transparent 68%,rgba(180,120,255,.10) 82%,rgba(120,220,255,.10) 100%);
+  mix-blend-mode:screen;
+}
+.no-webgl .cssgem{display:block}
+.no-webgl #gem,.no-webgl #caustics{display:none}
+
+.hero-mark{
+  position:relative;z-index:2;text-align:center;margin-top:2.6rem;
+}
+.hero h1{
+  font-size:clamp(3rem,11vw,6.4rem);
+  letter-spacing:clamp(.30em,4.2vw,.58em);
+  text-indent:clamp(.30em,4.2vw,.58em); /* recenter tracked caps */
+  color:var(--white);line-height:1.05;
+}
+.hero .tag{
+  margin-top:1.1rem;
+  font-size:1.22rem;font-style:italic;color:var(--dim);letter-spacing:.06em;
+}
+.hero .est{
+  margin-top:2.1rem;font-family:"IBM Plex Mono",monospace;
+  font-size:.68rem;letter-spacing:.44em;text-indent:.44em;color:var(--dim);text-transform:uppercase;
+}
+.scroll-cue{
+  position:absolute;bottom:1.6rem;left:50%;transform:translateX(-50%);
+  font-family:"IBM Plex Mono",monospace;font-size:.66rem;letter-spacing:.34em;text-indent:.34em;
+  color:var(--dim);text-transform:uppercase;
+}
+@media (prefers-reduced-motion:no-preference){
+  .scroll-cue{animation:cue 3.4s ease-in-out infinite}
+  @keyframes cue{0%,100%{opacity:.35}50%{opacity:.85}}
+}
+
+/* ---------- shared section shell ---------- */
+.sec{padding:7.5rem 1.4rem;position:relative}
+.inner{max-width:1060px;margin:0 auto}
+.kicker{
+  font-family:"IBM Plex Mono",monospace;font-size:.68rem;letter-spacing:.42em;
+  text-transform:uppercase;color:var(--dim);margin-bottom:1.3rem;
+}
+.kicker::before{content:"";display:inline-block;width:2.2rem;height:1px;background:var(--line);vertical-align:middle;margin-right:1rem}
+.sec h2{
+  font-size:clamp(1.9rem,4.6vw,3.1rem);letter-spacing:.16em;
+  color:var(--white);margin-bottom:1.4rem;
+}
+.lede{max-width:34em;color:var(--dim);font-size:1.12rem}
+.lede em{color:var(--plat)}
+
+/* ---------- atelier scroll ---------- */
+#cut{padding:0}
+.cut-track{position:relative;height:520vh}
+.cut-sticky{
+  position:sticky;top:0;height:100vh;height:100svh;overflow:hidden;
+  display:flex;flex-direction:column;align-items:center;justify-content:center;
+  background:
+    radial-gradient(90% 70% at 50% 45%, #131318 0%, var(--black) 70%);
+}
+.cut-head{text-align:center;padding:0 1.2rem}
+.cut-head .kicker{margin-bottom:.6rem}
+.cut-head .kicker::before{display:none}
+.cut-stagecap{
+  font-family:"Italiana",serif;font-size:clamp(1.3rem,3.4vw,1.9rem);
+  letter-spacing:.3em;text-indent:.3em;color:var(--white);min-height:2.4rem;
+  transition:opacity .4s;
+}
+.cutplan-wrap{position:relative;width:min(64vmin,430px);margin:1.2rem auto .6rem}
+#cutplan{width:100%;height:auto;display:block;overflow:visible}
+.cut-counter{
+  font-family:"IBM Plex Mono",monospace;font-size:.8rem;letter-spacing:.3em;
+  color:var(--dim);text-align:center;min-height:1.4rem;
+}
+.cut-counter b{color:var(--white);font-weight:400}
+.cut-note{
+  margin-top:1rem;max-width:26em;text-align:center;font-style:italic;
+  color:var(--dim);font-size:1.02rem;line-height:1.6;padding:0 1.2rem;min-height:3.4em;
+  transition:opacity .4s;
+}
+.cut-progress{
+  position:absolute;left:50%;bottom:1.4rem;transform:translateX(-50%);
+  width:min(260px,60vw);height:1px;background:var(--line-soft);
+}
+.cut-progress i{position:absolute;left:0;top:0;bottom:0;width:0;background:var(--plat);display:block}
+
+/* ---------- vitrine / photo ---------- */
+#flesh{background:var(--black)}
+.vitrine{
+  max-width:640px;margin:3.4rem auto 0;
+  background:var(--panel);
+  border:1px solid var(--line);
+  padding:clamp(1.1rem,3.4vw,2.2rem);
+  position:relative;
+}
+.vitrine::before{ /* platinum inner keyline */
+  content:"";position:absolute;inset:.55rem;border:1px solid var(--line-soft);pointer-events:none;
+}
+.plate{position:relative;overflow:hidden;background:#0a0a0c}
+.plate img{
+  width:100%;filter:brightness(.12) saturate(.75);
+  transition:filter 2.2s cubic-bezier(.22,.6,.24,1);
+}
+.plate::after{ /* spotlight raise */
+  content:"";position:absolute;inset:-30%;
+  background:radial-gradient(58% 46% at 50% 8%, rgba(247,245,240,.16), transparent 70%);
+  opacity:0;transform:translateY(-18%);
+  transition:opacity 2.2s ease,transform 2.6s cubic-bezier(.22,.6,.24,1);
+  pointer-events:none;
+}
+.vitrine.lit .plate img{filter:brightness(1) saturate(1)}
+.vitrine.lit .plate::after{opacity:1;transform:translateY(0)}
+@media (prefers-reduced-motion:reduce){
+  .plate img{filter:none !important;transition:none}
+  .plate::after{display:none}
+}
+.engraving{
+  margin-top:1.5rem;text-align:center;
+  font-variant:small-caps;letter-spacing:.34em;text-indent:.34em;
+  font-size:.92rem;color:var(--dim);
+}
+.engraving b{color:var(--plat);font-weight:400}
+.engraving .rule{display:block;width:3rem;height:1px;background:var(--line);margin:.9rem auto 0}
+
+/* ---------- pieces ---------- */
+#pieces{background:linear-gradient(180deg,var(--black),#0d0d10 30%,var(--black))}
+.cards{display:grid;grid-template-columns:repeat(3,1fr);gap:1.2rem;margin-top:3.4rem}
+.card{
+  border:1px solid var(--line);
+  background:linear-gradient(180deg,rgba(19,19,22,.9),rgba(11,11,13,.6));
+  padding:2.4rem 1.8rem 2.1rem;text-align:center;position:relative;
+  transition:border-color .5s,transform .5s;
+}
+.card:hover{border-color:rgba(220,222,227,.34);transform:translateY(-4px)}
+.card svg{width:76px;height:76px;margin:0 auto 1.6rem;display:block}
+.card svg *{fill:none;stroke:var(--plat);stroke-width:1;vector-effect:non-scaling-stroke}
+.card h3{font-size:1.28rem;letter-spacing:.3em;text-indent:.3em;color:var(--white);margin-bottom:.7rem}
+.card p{font-size:.98rem;color:var(--dim);font-style:italic;line-height:1.6}
+.card .price{
+  margin-top:1.5rem;font-family:"IBM Plex Mono",monospace;font-style:normal;
+  font-size:.66rem;letter-spacing:.3em;text-transform:uppercase;color:var(--dim);
+}
+.card::after{ /* spectral hairline, only on hover — light dispersing on the edge */
+  content:"";position:absolute;left:10%;right:10%;bottom:-1px;height:1px;
+  background:linear-gradient(90deg,transparent,#ff5a5a,#ffc65a,#7dff8a,#5ab8ff,#b45aff,transparent);
+  opacity:0;transition:opacity .6s;
+}
+.card:hover::after{opacity:.55}
+
+/* ---------- viewing ---------- */
+#viewing{text-align:center;padding-bottom:8.5rem}
+#viewing .lede{margin:0 auto}
+.cta{
+  display:inline-block;margin-top:2.8rem;
+  font-family:"IBM Plex Mono",monospace;font-size:.74rem;letter-spacing:.34em;text-indent:.34em;
+  text-transform:uppercase;text-decoration:none;color:var(--white);
+  border:1px solid rgba(220,222,227,.3);padding:1.15rem 2.6rem;
+  position:relative;overflow:hidden;transition:color .5s,border-color .5s;
+}
+.cta::before{
+  content:"";position:absolute;inset:0;background:var(--plat);
+  transform:translateY(101%);transition:transform .5s cubic-bezier(.6,0,.2,1);z-index:-1;
+}
+.cta:hover{color:var(--black);border-color:var(--plat)}
+.cta:hover::before{transform:translateY(0)}
+.cta{z-index:0}
+
+/* ---------- footer ---------- */
+footer{
+  border-top:1px solid var(--line-soft);
+  padding:2.6rem 1.4rem 3rem;
+}
+.foot{
+  max-width:1060px;margin:0 auto;display:flex;flex-wrap:wrap;gap:1.2rem;
+  align-items:baseline;justify-content:space-between;
+}
+.foot .wordmark{font-family:"Italiana",serif;font-size:1.1rem;letter-spacing:.5em;color:var(--dim)}
+.foot a{
+  font-family:"IBM Plex Mono",monospace;font-size:.72rem;letter-spacing:.2em;
+  color:var(--dim);text-decoration:none;border-bottom:1px solid var(--line);padding-bottom:.15rem;
+  transition:color .35s,border-color .35s;
+}
+.foot a:hover{color:var(--white);border-color:var(--plat)}
+.foot .fict{font-size:.86rem;font-style:italic;color:#5b5b63}
+
+/* ---------- reveal on scroll ---------- */
+.rv{opacity:0;transform:translateY(22px);transition:opacity 1s ease,transform 1s cubic-bezier(.22,.6,.24,1)}
+.rv.in{opacity:1;transform:none}
+@media (prefers-reduced-motion:reduce){
+  .rv{opacity:1;transform:none;transition:none}
+  .card,.cta,.cta::before,.back{transition:none}
+}
+
+@media (max-width:820px){
+  .cards{grid-template-columns:1fr;max-width:420px;margin-left:auto;margin-right:auto}
+  .sec{padding:5.5rem 1.3rem}
+  body{font-size:18px}
+}
+</style>
+</head>
+<body>
+
+<a class="back" href="/">←&nbsp;25</a>
+
+<!-- ================= HERO ================= -->
+<header class="hero" id="top">
+  <div class="stage" id="stage" aria-label="A rotating brilliant-cut diamond, rendered in light">
+    <canvas id="caustics" aria-hidden="true"></canvas>
+    <canvas id="gem"></canvas>
+    <div class="cssgem" aria-hidden="true"></div>
+  </div>
+  <div class="hero-mark">
+    <h1>FACET</h1>
+    <p class="tag">Light, cut to measure.</p>
+    <p class="est">Haute joaillerie · est. MCMXXVII</p>
+  </div>
+  <p class="scroll-cue" aria-hidden="true">the cut ↓</p>
+</header>
+
+<!-- ================= THE CUT ================= -->
+<section id="cut" aria-label="The cut — from rough stone to 57 facets">
+  <div class="cut-track" id="cutTrack">
+    <div class="cut-sticky">
+      <div class="cut-head">
+        <p class="kicker">The cut</p>
+        <p class="cut-stagecap" id="stageCap">I&nbsp;·&nbsp;The rough</p>
+      </div>
+      <div class="cutplan-wrap">
+        <svg id="cutplan" viewBox="-175 -175 350 350" role="img" aria-label="Cut plan of a round brilliant, 57 facets"></svg>
+      </div>
+      <p class="cut-counter mono" id="cutCounter">rough — untouched</p>
+      <p class="cut-note" id="cutNote">A stone arrives as weather: opaque, reluctant. We look at it for weeks before anyone is allowed to touch it.</p>
+      <div class="cut-progress" aria-hidden="true"><i id="cutBar"></i></div>
+    </div>
+  </div>
+</section>
+
+<!-- ================= IN THE FLESH ================= -->
+<section class="sec" id="flesh">
+  <div class="inner">
+    <p class="kicker rv">In the flesh</p>
+    <h2 class="rv">No render survives the vitrine.</h2>
+    <p class="lede rv">Under one raised lamp, on black velvet, the stone is asked the only question that matters: <em>what do you do with almost no light at all?</em></p>
+    <figure class="vitrine rv" id="vitrine">
+      <div class="plate">
+        <img src="assets/diamond.webp" alt="Macro photograph of a round brilliant diamond on black velvet, a thin spectral fire along its crown facets" width="1400" height="1738" loading="lazy" decoding="async">
+      </div>
+      <figcaption class="engraving">
+        <b>facet nº 1</b> · 2.04 ct · round brilliant · colour d · vvs1
+        <span class="rule"></span>
+      </figcaption>
+    </figure>
+  </div>
+</section>
+
+<!-- ================= PIECES ================= -->
+<section class="sec" id="pieces">
+  <div class="inner">
+    <p class="kicker rv">The pieces</p>
+    <h2 class="rv">Three settings. One argument.</h2>
+    <p class="lede rv">Metal exists here to lose gracefully. Every mounting is drawn so the eye arrives at the stone and stays.</p>
+    <div class="cards">
+      <article class="card rv">
+        <svg viewBox="0 0 80 80" aria-hidden="true">
+          <circle cx="40" cy="47" r="22"/>
+          <path d="M31 26 L40 14 L49 26 L45 32 L35 32 Z"/>
+          <path d="M35 32 L40 14 M45 32 L40 14 M31 26 L49 26"/>
+        </svg>
+        <h3>SOLITAIRE Nº 1</h3>
+        <p>A single stone, four claws, and the good sense to say nothing further.</p>
+        <p class="price">price on application</p>
+      </article>
+      <article class="card rv">
+        <svg viewBox="0 0 80 80" aria-hidden="true">
+          <path d="M14 22 Q40 46 66 22"/>
+          <path d="M20 27 l4 5 l-4 5 l-4 -5 Z M30 34 l4 5 l-4 5 l-4 -5 Z M40 37 l4 5 l-4 5 l-4 -5 Z M50 34 l4 5 l-4 5 l-4 -5 Z M60 27 l4 5 l-4 5 l-4 -5 Z"/>
+        </svg>
+        <h3>RIVIÈRE</h3>
+        <p>Thirty-one graduated brilliants; a river that has decided against banks.</p>
+        <p class="price">price on application</p>
+      </article>
+      <article class="card rv">
+        <svg viewBox="0 0 80 80" aria-hidden="true">
+          <path d="M40 18 L47 33 L62 36 L51 47 L54 62 L40 54 L26 62 L29 47 L18 36 L33 33 Z"/>
+          <circle cx="40" cy="40" r="5"/>
+        </svg>
+        <h3>ÉTOILE STUD</h3>
+        <p>Worn at the ear, where it is seen mostly by other people. That is the point.</p>
+        <p class="price">price on application</p>
+      </article>
+    </div>
+  </div>
+</section>
+
+<!-- ================= PRIVATE VIEWING ================= -->
+<section class="sec" id="viewing">
+  <div class="inner">
+    <p class="kicker rv" style="justify-content:center">Private viewing</p>
+    <h2 class="rv">The salon keeps no hours.</h2>
+    <p class="lede rv">It keeps appointments. One client, one stone, one hour of honest lamplight — Place Vendôme, first floor, the door without a name.</p>
+    <a class="cta rv" href="#viewing" onclick="return false">request an appointment</a>
+  </div>
+</section>
+
+<footer>
+  <div class="foot">
+    <span class="wordmark">FACET</span>
+    <span class="fict">A fictional house, cut for FABLE/25.</span>
+    <a href="/57-facet/guide/">guide &amp; prompt →</a>
+  </div>
+</footer>
+
+<script>
+(function(){
+"use strict";
+var RM = window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+var clamp = function(v,a,b){ return v<a?a:v>b?b:v; };
+
+/* =====================================================
+   1 · THE STONE — raw WebGL round brilliant
+   ===================================================== */
+var canvas = document.getElementById("gem");
+var gl = null;
+try{
+  gl = canvas.getContext("webgl",{alpha:true,antialias:true,premultipliedAlpha:true}) ||
+       canvas.getContext("experimental-webgl",{alpha:true,antialias:true});
+}catch(e){ gl = null; }
+
+if(!gl){
+  document.body.classList.add("no-webgl");
+}else{
+  initGem(gl);
+}
+
+function initGem(gl){
+  /* ---- procedural round brilliant geometry ---- */
+  var pos=[], nrm=[];
+  var CENTER=[0,-0.18,0];
+  function tri(a,b,c){
+    var ux=b[0]-a[0],uy=b[1]-a[1],uz=b[2]-a[2];
+    var vx=c[0]-a[0],vy=c[1]-a[1],vz=c[2]-a[2];
+    var nx=uy*vz-uz*vy, ny=uz*vx-ux*vz, nz=ux*vy-uy*vx;
+    var l=Math.sqrt(nx*nx+ny*ny+nz*nz)||1; nx/=l;ny/=l;nz/=l;
+    var cx=(a[0]+b[0]+c[0])/3-CENTER[0], cy=(a[1]+b[1]+c[1])/3-CENTER[1], cz=(a[2]+b[2]+c[2])/3-CENTER[2];
+    if(nx*cx+ny*cy+nz*cz<0){ var t=b;b=c;c=t; nx=-nx;ny=-ny;nz=-nz; }
+    var pts=[a,b,c];
+    for(var i=0;i<3;i++){ pos.push(pts[i][0],pts[i][1],pts[i][2]); nrm.push(nx,ny,nz); }
+  }
+  function ring(n,r,y,off){
+    var out=[];
+    for(var i=0;i<n;i++){ var a=off+i*Math.PI*2/n; out.push([r*Math.cos(a),y,r*Math.sin(a)]); }
+    return out;
+  }
+  var N=16, step=Math.PI*2/N;
+  var T = ring(8, 0.53, 0.40, 0);         // table octagon
+  var G = ring(N, 1.00, 0.075, 0);        // girdle top
+  var Gb= ring(N, 1.00,-0.045, 0);        // girdle bottom
+  var M = ring(N, 0.56,-0.52, step/2);    // pavilion break ring (rotated half step)
+  var TIP=[0,-1.04,0], TC=[0,0.40,0];
+  var i,j;
+  for(i=0;i<8;i++) tri(TC, T[i], T[(i+1)%8]);                       // table (8)
+  for(i=0;i<8;i++){                                                 // crown (24)
+    tri(T[i], G[2*i], G[(2*i+1)%N]);
+    tri(T[i], G[(2*i+1)%N], T[(i+1)%8]);
+    tri(T[(i+1)%8], G[(2*i+1)%N], G[(2*i+2)%N]);
+  }
+  for(j=0;j<N;j++){                                                 // girdle (32)
+    tri(G[j], G[(j+1)%N], Gb[j]);
+    tri(G[(j+1)%N], Gb[(j+1)%N], Gb[j]);
+  }
+  for(j=0;j<N;j++){                                                 // upper pavilion (32)
+    tri(Gb[j], Gb[(j+1)%N], M[j]);
+    tri(Gb[(j+1)%N], M[(j+1)%N], M[j]);
+  }
+  for(j=0;j<N;j++) tri(M[j], M[(j+1)%N], TIP);                      // mains to culet (16)
+  // 112 triangles total
+
+  var VS =
+  "attribute vec3 aP;attribute vec3 aN;" +
+  "uniform float uCY,uSY,uCX,uSX,uAsp;" +
+  "varying vec3 vN;varying vec3 vP;" +
+  "void main(){" +
+    "vec3 p=aP;vec3 n=aN;" +
+    "p=vec3(p.x*uCY+p.z*uSY,p.y,-p.x*uSY+p.z*uCY);" +
+    "n=vec3(n.x*uCY+n.z*uSY,n.y,-n.x*uSY+n.z*uCY);" +
+    "p=vec3(p.x,p.y*uCX-p.z*uSX,p.y*uSX+p.z*uCX);" +
+    "n=vec3(n.x,n.y*uCX-n.z*uSX,n.y*uSX+n.z*uCX);" +
+    "p*=0.98; p.y+=0.10; p.z-=3.3;" +
+    "vN=n;vP=p;" +
+    "float f=2.75;" + // ~ fov 40deg
+    "gl_Position=vec4(p.x*f/uAsp,p.y*f,(p.z*1.02+0.2),-p.z);" +
+  "}";
+
+  var FS =
+  "precision highp float;" +
+  "varying vec3 vN;varying vec3 vP;" +
+  "uniform float uEnv,uFire;" +
+  "vec3 spectral(float t){t=fract(t);" +
+    "return clamp(vec3(abs(t*6.0-3.0)-1.0,2.0-abs(t*6.0-2.0),2.0-abs(t*6.0-4.0)),0.0,1.0);}" +
+  "vec3 env(vec3 d,float ch){" +
+    "float a=atan(d.z,d.x)+uEnv+ch;" +
+    "float y=d.y;" +
+    // velvet studio: near-black base, faint platinum ceiling
+    "vec3 col=mix(vec3(0.002,0.002,0.003),vec3(0.030,0.031,0.036),smoothstep(-0.6,1.0,y));" +
+    // hard key softbox + two fill strips + narrow blade — sharp so facets flash on/off
+    "float b1=pow(max(0.0,cos(a)),90.0)*smoothstep(1.05,0.30,abs(y-0.40));" +
+    "float b2=pow(max(0.0,cos(a-2.30)),140.0)*smoothstep(0.9,0.10,abs(y-0.05));" +
+    "float b3=pow(max(0.0,cos(a+1.85)),40.0)*smoothstep(0.95,0.35,abs(y+0.42));" +
+    "float b4=pow(max(0.0,cos(a-4.05)),260.0)*smoothstep(0.8,0.15,abs(y-0.62));" +
+    "float top=smoothstep(0.80,0.995,y);" +
+    "float fill=pow(max(0.0,cos(a-3.55)),5.0)*smoothstep(1.2,0.2,abs(y));" + // broad dim fill so the stone is never unlit
+    "col+=vec3(3.2,3.25,3.4)*b1+vec3(1.9,1.94,2.1)*b2+vec3(0.62,0.62,0.70)*b3+vec3(2.6,2.6,2.8)*b4;" +
+    "col+=vec3(0.85,0.86,0.95)*top+vec3(0.30,0.30,0.34)*fill;" +
+    "return col;}" +
+  "void main(){" +
+    "vec3 Nv=normalize(vN);" +
+    "vec3 V=normalize(-vP);" +
+    "float ndv=max(dot(Nv,V),0.0);" +
+    "float fres=pow(1.0-ndv,3.0);" +
+    "vec3 R=reflect(-V,Nv);" +
+    "vec3 refl=env(R,0.0);" +
+    "vec3 tR=refract(-V,Nv,0.440);" +
+    "vec3 tG=refract(-V,Nv,0.418);" +
+    "vec3 tB=refract(-V,Nv,0.396);" +
+    "vec3 body;" +
+    "body.r=env(tR,0.05).r;" +
+    "body.g=env(tG,0.0).g;" +
+    "body.b=env(tB,-0.05).b;" +
+    // faked second bounce off the pavilion — brings light up through the table
+    "vec3 B=reflect(tG,normalize(vec3(-Nv.x,0.6,-Nv.z)));" +
+    "vec3 bounce; bounce.r=env(vec3(B.x,-B.y,B.z),0.06).r; bounce.g=env(vec3(B.x,-B.y,B.z),0.0).g; bounce.b=env(vec3(B.x,-B.y,B.z),-0.06).b;" +
+    "body+=bounce*0.45;" +
+    "body+=vec3(0.016,0.016,0.019);" +
+    // fire: sparse spectral flashes, only where the refracted ray skims a light edge
+    "float l0=dot(env(tG,0.0),vec3(0.333));" +
+    "float l1=dot(env(tG,0.10),vec3(0.333));" +
+    "float edge=abs(l1-l0);" +
+    "float fireAmt=smoothstep(0.10,0.55,edge)*(1.0-smoothstep(1.2,2.4,l0))*uFire;" +
+    "float fid=fract(sin(dot(Nv,vec3(12.9898,78.233,45.164)))*43758.5453);" +
+    "vec3 flame=mix(vec3(1.0),spectral(fid+uEnv*0.35),0.85);" +
+    "vec3 c=body*(1.0-fres*0.75)+refl*(fres*1.3+0.14);" +
+    "c+=flame*fireAmt*(0.22+fres*0.8);" +
+    "c=c*1.15;" +
+    "c=c/(c+0.72)*1.42;" +
+    "c=pow(c,vec3(0.90));" +
+    "gl_FragColor=vec4(c,1.0);" +
+  "}";
+
+  function sh(type,src){
+    var s=gl.createShader(type); gl.shaderSource(s,src); gl.compileShader(s);
+    return s;
+  }
+  var prog=gl.createProgram();
+  gl.attachShader(prog,sh(gl.VERTEX_SHADER,VS));
+  gl.attachShader(prog,sh(gl.FRAGMENT_SHADER,FS));
+  gl.linkProgram(prog);
+  if(!gl.getProgramParameter(prog,gl.LINK_STATUS)){
+    document.body.classList.add("no-webgl"); return;
+  }
+  gl.useProgram(prog);
+
+  function buf(data,loc,size){
+    var b=gl.createBuffer();
+    gl.bindBuffer(gl.ARRAY_BUFFER,b);
+    gl.bufferData(gl.ARRAY_BUFFER,new Float32Array(data),gl.STATIC_DRAW);
+    gl.enableVertexAttribArray(loc);
+    gl.vertexAttribPointer(loc,size,gl.FLOAT,false,0,0);
+  }
+  buf(pos,gl.getAttribLocation(prog,"aP"),3);
+  buf(nrm,gl.getAttribLocation(prog,"aN"),3);
+  var vcount=pos.length/3;
+
+  var U={};
+  ["uCY","uSY","uCX","uSX","uAsp","uEnv","uFire"].forEach(function(n){ U[n]=gl.getUniformLocation(prog,n); });
+
+  gl.enable(gl.DEPTH_TEST);
+  gl.enable(gl.CULL_FACE);
+  gl.cullFace(gl.BACK);
+  gl.clearColor(0,0,0,0);
+
+  var DPR = Math.min(window.devicePixelRatio||1, 1.5);
+  function size(){
+    var r=canvas.getBoundingClientRect();
+    var w=Math.max(2,Math.round(r.width*DPR)), h=Math.max(2,Math.round(r.height*DPR));
+    if(canvas.width!==w||canvas.height!==h){ canvas.width=w; canvas.height=h; }
+    gl.viewport(0,0,w,h);
+    gl.uniform1f(U.uAsp, w/h);
+  }
+  size();
+
+  /* pointer → damped env-rotation & tilt */
+  var ptrX=0, ptrY=0, smX=0, smY=0;
+  window.addEventListener("pointermove",function(e){
+    ptrX=(e.clientX/window.innerWidth-0.5)*2;
+    ptrY=(e.clientY/window.innerHeight-0.5)*2;
+  },{passive:true});
+
+  var yaw=0.6, running=true, visible=true, hidden=false;
+  var lastT=performance.now();
+  var frames=0, fpsT0=performance.now(), degraded=false;
+  var FORCE_LIVE=/[?&]live/.test(location.search); // test hook: skip auto-degrade
+
+  function draw(now){
+    var dt=Math.min(0.05,(now-lastT)/1000); lastT=now;
+    yaw+=dt*0.10;                              // slow rotation
+    smX+=(ptrX-smX)*0.045; smY+=(ptrY-smY)*0.045;
+    var tilt=0.52+smY*0.12;
+    gl.uniform1f(U.uCY,Math.cos(yaw)); gl.uniform1f(U.uSY,Math.sin(yaw));
+    gl.uniform1f(U.uCX,Math.cos(tilt)); gl.uniform1f(U.uSX,Math.sin(tilt));
+    gl.uniform1f(U.uEnv, yaw*0.7 + smX*0.9);
+    gl.uniform1f(U.uFire, 0.85 + smX*smX*0.5);
+    gl.clear(gl.COLOR_BUFFER_BIT|gl.DEPTH_BUFFER_BIT);
+    gl.drawArrays(gl.TRIANGLES,0,vcount);
+    causticsFrame(yaw, smX);
+  }
+  function loop(now){
+    if(!running) return;
+    if(visible && !hidden){
+      draw(now);
+      frames++;
+      if(!degraded && !FORCE_LIVE && now-fpsT0>3200){
+        var fps=frames/((now-fpsT0)/1000);
+        if(fps<14){ degraded=true; running=false; return; } // beautiful static render stays
+        frames=0; fpsT0=now;
+      }
+    }
+    requestAnimationFrame(loop);
+  }
+
+  if(RM){
+    // static stone: one considered angle, no loop, no caustics
+    gl.uniform1f(U.uCY,Math.cos(0.72)); gl.uniform1f(U.uSY,Math.sin(0.72));
+    gl.uniform1f(U.uCX,Math.cos(0.52)); gl.uniform1f(U.uSX,Math.sin(0.52));
+    gl.uniform1f(U.uEnv,0.9); gl.uniform1f(U.uFire,0.9);
+    gl.clear(gl.COLOR_BUFFER_BIT|gl.DEPTH_BUFFER_BIT);
+    gl.drawArrays(gl.TRIANGLES,0,vcount);
+  }else{
+    if("IntersectionObserver" in window){
+      new IntersectionObserver(function(en){ visible=en[0].isIntersecting; },{threshold:0.02})
+        .observe(canvas);
+    }
+    document.addEventListener("visibilitychange",function(){ hidden=document.hidden; });
+    window.addEventListener("resize",function(){ size(); },{passive:true});
+    requestAnimationFrame(loop);
+  }
+
+  /* =====================================================
+     2 · CAUSTICS — light through the stone, onto velvet
+     ===================================================== */
+  var cc=document.getElementById("caustics");
+  var ctx=cc.getContext("2d");
+  var cw=0,ch=0, cSkip=0;
+  function csize(){
+    var r=cc.getBoundingClientRect();
+    cw=Math.max(2,Math.round(r.width*DPR)); ch=Math.max(2,Math.round(r.height*DPR));
+    if(cc.width!==cw||cc.height!==ch){ cc.width=cw; cc.height=ch; }
+  }
+  csize();
+  window.addEventListener("resize",csize,{passive:true});
+
+  function causticsFrame(rot, px){
+    if(RM) return;
+    if((cSkip=(cSkip+1)%2)!==0) return;   // ~30fps
+    csize();
+    ctx.clearRect(0,0,cw,ch);
+    var cx=cw/2+px*cw*0.04, cy=ch*0.34;
+    var rx=cw*0.40, ry=ch*0.42;
+    ctx.globalCompositeOperation="lighter";
+    // soft pool of thrown light under the culet
+    var pool=ctx.createRadialGradient(cx,cy,0,cx,cy,rx*0.55);
+    pool.addColorStop(0,"rgba(247,245,240,0.085)");
+    pool.addColorStop(0.5,"rgba(220,222,227,0.03)");
+    pool.addColorStop(1,"rgba(220,222,227,0)");
+    ctx.save();
+    ctx.translate(cx,cy); ctx.scale(1,ry/rx); ctx.translate(-cx,-cy);
+    ctx.fillStyle=pool;
+    ctx.fillRect(0,0,cw,ch*2);
+    // thin refracted arcs, ellipse-squashed like light on a floor
+    var K=26;
+    for(var k=0;k<K;k++){
+      var ph=rot*1.35 + k*(Math.PI*2/K);
+      var wob=Math.sin(rot*0.9+k*2.7);
+      var rr=rx*(0.14+0.72*Math.abs(Math.sin(k*0.83+rot*0.55)));
+      var a0=ph+wob*0.3+px*0.5;
+      var span=0.5+0.9*Math.abs(Math.sin(k*1.9+rot*0.7));
+      var bright=0.5+0.5*Math.sin(k*1.3+rot*2.0);
+      if(k%6===0){ // rare spectral thread — where light disperses
+        var hue=(rot*40+k*47)%360;
+        ctx.strokeStyle="hsla("+hue+",88%,66%,"+(0.13+0.15*bright)+")";
+      }else{
+        ctx.strokeStyle="rgba(247,245,240,"+(0.08+0.17*bright)+")";
+      }
+      ctx.lineWidth=Math.max(0.7,1.1*DPR*(0.45+0.55*bright));
+      ctx.beginPath();
+      ctx.arc(cx+Math.cos(k*2.1)*rx*0.10, cy+Math.sin(k*3.3)*rx*0.08, rr, a0, a0+span);
+      ctx.stroke();
+    }
+    ctx.restore();
+    // fade the whole layer's alpha toward the edges — no visible canvas box
+    ctx.globalCompositeOperation="destination-out";
+    var g=ctx.createRadialGradient(cx,cy,0,cx,cy,Math.max(rx,ry)*1.15);
+    g.addColorStop(0,"rgba(0,0,0,0)");
+    g.addColorStop(0.62,"rgba(0,0,0,0)");
+    g.addColorStop(1,"rgba(0,0,0,1)");
+    ctx.fillStyle=g;
+    ctx.fillRect(0,0,cw,ch);
+    ctx.globalCompositeOperation="source-over";
+  }
+}
+
+/* =====================================================
+   3 · THE ATELIER SCROLL — rough → cleave → 57 facets → polish
+   ===================================================== */
+var svg=document.getElementById("cutplan");
+var NS="http://www.w3.org/2000/svg";
+function el(name,attrs,parent){
+  var e=document.createElementNS(NS,name);
+  for(var k in attrs) e.setAttribute(k,attrs[k]);
+  (parent||svg).appendChild(e);
+  return e;
+}
+var P=function(pts){ return pts.map(function(p){return p[0].toFixed(1)+","+p[1].toFixed(1);}).join(" "); };
+var pol=function(n,r,off){
+  var out=[];
+  for(var i=0;i<n;i++){ var a=off+i*Math.PI*2/n; out.push([r*Math.cos(a),r*Math.sin(a)]); }
+  return out;
+};
+
+// stage groups
+var gRough=el("g",{}), gCleave=el("g",{}), gFacet=el("g",{}), gGirdle=el("g",{}), gPolish=el("g",{});
+
+// I. the rough — irregular octahedral blob
+var roughPts=[[8,-152],[96,-98],[142,-6],[118,86],[54,148],[-52,150],[-128,80],[-150,-24],[-92,-118]];
+el("polygon",{points:P(roughPts),fill:"none",stroke:"#85858D","stroke-width":"1.1",opacity:"0.9"},gRough);
+el("polyline",{points:P([[-92,-118],[10,-40],[118,86]]),fill:"none",stroke:"#85858D","stroke-width":"0.6",opacity:"0.5"},gRough);
+el("polyline",{points:P([[96,-98],[10,-40],[-128,80]]),fill:"none",stroke:"#85858D","stroke-width":"0.6",opacity:"0.5"},gRough);
+
+// II. cleave lines
+var cleaves=[
+  [[-160,-52],[160,-88]],
+  [[-150,42],[152,10]],
+  [[-60,-160],[36,158]],
+  [[70,-152],[-14,160]],
+  [[-160,118],[160,96]]
+];
+var cleaveEls=cleaves.map(function(l){
+  var e=el("line",{x1:l[0][0],y1:l[0][1],x2:l[1][0],y2:l[1][1],
+    stroke:"#DCDEE3","stroke-width":"0.8","stroke-dasharray":"460","stroke-dashoffset":"460",opacity:"0.85"},gCleave);
+  return e;
+});
+
+// III. the 57 facets — face-up cut plan, generated
+var R=150, T8=pol(8,R*0.52,0), S8=pol(8,R*0.80,Math.PI/8), G16=pol(16,R,0);
+var facetEls=[];
+function facet(points,cls){
+  var e=el("polygon",{points:P(points),fill:"rgba(220,222,227,0.035)",
+    stroke:"#DCDEE3","stroke-width":"0.9",opacity:"0"},gFacet);
+  facetEls.push(e);
+  return e;
+}
+// 1 table
+facet(T8);
+// 8 stars
+for(var i=0;i<8;i++) facet([T8[i],S8[i],T8[(i+1)%8]]);
+// 8 kites (bezels) — kite i sits around the angle of T8[i]
+for(i=0;i<8;i++) facet([T8[i],S8[(i+7)%8],G16[2*i],S8[i]]);
+// 16 upper girdle
+for(i=0;i<8;i++){
+  facet([S8[i],G16[2*i],G16[(2*i+1)%16]]);
+  facet([S8[i],G16[(2*i+1)%16],G16[(2*i+2)%16]]);
+}
+// pavilion, seen through: 8 mains (dashed) + 16 lower girdle (dashed)
+var M16=pol(16,R*0.55,Math.PI/16);
+for(i=0;i<8;i++){
+  var e=el("polyline",{points:P([[0,0],M16[2*i],G16[(2*i+1)%16]]),fill:"none",
+    stroke:"#85858D","stroke-width":"0.7","stroke-dasharray":"3 4",opacity:"0"},gFacet);
+  facetEls.push(e);
+}
+for(i=0;i<16;i++){
+  var e2=el("polyline",{points:P([M16[i],G16[(i+1)%16],M16[(i+1)%16]]),fill:"none",
+    stroke:"#85858D","stroke-width":"0.6","stroke-dasharray":"2 4",opacity:"0"},gFacet);
+  facetEls.push(e2);
+}
+// girdle circle
+var girdleEl=el("circle",{cx:0,cy:0,r:R,fill:"none",stroke:"#DCDEE3","stroke-width":"1",opacity:"0"},gGirdle);
+
+// IV. polish sweep — a light band clipped to the girdle
+var defs=el("defs",{});
+var lg=el("linearGradient",{id:"sweep",x1:"0",y1:"0",x2:"1",y2:"0"},defs);
+el("stop",{offset:"0","stop-color":"#F7F5F0","stop-opacity":"0"},lg);
+el("stop",{offset:"0.42","stop-color":"#F7F5F0","stop-opacity":"0.16"},lg);
+el("stop",{offset:"0.5","stop-color":"#F7F5F0","stop-opacity":"0.5"},lg);
+el("stop",{offset:"0.55","stop-color":"#B7E3FF","stop-opacity":"0.22"},lg);
+el("stop",{offset:"0.6","stop-color":"#FFC9E3","stop-opacity":"0.12"},lg);
+el("stop",{offset:"1","stop-color":"#F7F5F0","stop-opacity":"0"},lg);
+var clip=el("clipPath",{id:"gclip"},defs);
+el("circle",{cx:0,cy:0,r:R},clip);
+var sweep=el("rect",{x:"-70",y:"-175",width:"140",height:"350",fill:"url(#sweep)",
+  "clip-path":"url(#gclip)",opacity:"0",transform:"translate(-260,0) rotate(18)"},gPolish);
+// V. finished — faint spectral edge arcs (fire, only where light disperses)
+var fireArcs=[];
+for(i=0;i<5;i++){
+  var a0=(i*1.9+0.4), a1=a0+0.55;
+  var x0=Math.cos(a0)*R, y0=Math.sin(a0)*R, x1=Math.cos(a1)*R, y1=Math.sin(a1)*R;
+  var hue=[0,48,130,205,285][i];
+  fireArcs.push(el("path",{d:"M"+x0.toFixed(1)+" "+y0.toFixed(1)+" A"+R+" "+R+" 0 0 1 "+x1.toFixed(1)+" "+y1.toFixed(1),
+    fill:"none",stroke:"hsl("+hue+",85%,70%)","stroke-width":"1.4",opacity:"0"},gPolish));
+}
+
+var stageCap=document.getElementById("stageCap");
+var counter=document.getElementById("cutCounter");
+var note=document.getElementById("cutNote");
+var bar=document.getElementById("cutBar");
+var track=document.getElementById("cutTrack");
+
+var CAPS=[
+  ["I · The rough","rough — untouched","A stone arrives as weather: opaque, reluctant. We look at it for weeks before anyone is allowed to touch it."],
+  ["II · The cleave","marking the grain","Five lines in India ink. Each one is a promise about where the crystal will agree to break."],
+  ["III · Faceting","facet 00 ⁄ 57","Fifty-seven windows, ground one at a time. Every angle is a negotiation with the speed of light."],
+  ["IV · The polish","57 ⁄ 57 — polishing","A wheel of olive oil and diamond dust. The stone teaches itself to be smooth."],
+  ["V · The stone","57 facets · 2.04 ct","What is left is mostly gone. That is the trade: weight for fire."]
+];
+var lastStage=-1, lastCount=-1;
+
+function setStage(s){
+  if(s===lastStage) return; lastStage=s;
+  stageCap.textContent=CAPS[s][0];
+  note.textContent=CAPS[s][2];
+}
+function scrub(p){
+  bar.style.width=(p*100).toFixed(2)+"%";
+  // I rough 0–.14 | II cleave .14–.32 | III facets .32–.74 | IV polish .74–.9 | V .9–1
+  var rOp = p<0.14 ? 1 : clamp(1-(p-0.14)/0.12,0,1)*0.9+0.1*clamp(1-(p-0.14)/0.3,0,1);
+  gRough.setAttribute("opacity",String(p<0.32?Math.max(0.06,rOp):0.0));
+  // cleaves
+  for(var i=0;i<cleaveEls.length;i++){
+    var cp=clamp((p-0.14-(i*0.028))/0.10,0,1);
+    cleaveEls[i].setAttribute("stroke-dashoffset",String(460*(1-cp)));
+    cleaveEls[i].setAttribute("opacity",String(p<0.36?0.85:clamp(1-(p-0.36)/0.08,0,1)*0.85));
+  }
+  // facets
+  var fp=clamp((p-0.34)/0.40,0,1);
+  var count=Math.round(fp*57);
+  if(count!==lastCount){
+    lastCount=count;
+    if(p>=0.34&&p<0.74) counter.innerHTML="facet <b>"+(count<10?"0"+count:count)+"</b> ⁄ 57";
+  }
+  for(i=0;i<facetEls.length;i++){
+    var on=i<count;
+    facetEls[i].setAttribute("opacity",on?(i<33?"1":"0.75"):"0");
+  }
+  girdleEl.setAttribute("opacity",String(clamp((p-0.34)/0.06,0,1)));
+  // polish sweep
+  var pp=clamp((p-0.76)/0.13,0,1);
+  sweep.setAttribute("opacity",pp>0&&pp<1?"1":"0");
+  sweep.setAttribute("transform","translate("+(-260+520*pp).toFixed(1)+",0) rotate(18)");
+  // finished fire
+  var vp=clamp((p-0.90)/0.08,0,1);
+  for(i=0;i<fireArcs.length;i++) fireArcs[i].setAttribute("opacity",String(vp*0.75));
+  gFacet.setAttribute("opacity",String(1));
+  if(vp>0){
+    for(i=0;i<33;i++) facetEls[i].setAttribute("fill","rgba(220,222,227,"+(0.035+vp*0.05)+")");
+  }
+  // stage + labels
+  var s = p<0.14?0 : p<0.32?1 : p<0.74?2 : p<0.90?3 : 4;
+  setStage(s);
+  if(s===0) counter.textContent=CAPS[0][1];
+  if(s===1) counter.textContent=CAPS[1][1];
+  if(s===3) counter.textContent=CAPS[3][1];
+  if(s===4) counter.textContent=CAPS[4][1];
+}
+
+var ticking=false;
+function onScroll(){
+  if(ticking) return; ticking=true;
+  requestAnimationFrame(function(){
+    ticking=false;
+    var r=track.getBoundingClientRect();
+    var vh=window.innerHeight;
+    var p=clamp(-r.top/(r.height-vh),0,1);
+    scrub(p);
+  });
+}
+window.addEventListener("scroll",onScroll,{passive:true});
+window.addEventListener("resize",onScroll,{passive:true});
+scrub(0);
+
+/* =====================================================
+   4 · REVEALS + VITRINE SPOTLIGHT
+   ===================================================== */
+var vitrine=document.getElementById("vitrine");
+if("IntersectionObserver" in window){
+  var io=new IntersectionObserver(function(entries){
+    entries.forEach(function(en){
+      if(en.isIntersecting){ en.target.classList.add("in"); io.unobserve(en.target); }
+    });
+  },{threshold:0.18,rootMargin:"0px 0px -6% 0px"});
+  document.querySelectorAll(".rv").forEach(function(n){ io.observe(n); });
+  var vio=new IntersectionObserver(function(en){
+    if(en[0].isIntersecting){ vitrine.classList.add("lit"); vio.disconnect(); }
+  },{threshold:0.45});
+  vio.observe(vitrine);
+}else{
+  document.querySelectorAll(".rv").forEach(function(n){ n.classList.add("in"); });
+  vitrine.classList.add("lit");
+}
+if(RM){ vitrine.classList.add("lit"); }
+})();
+</script>
+</body>
+</html>
