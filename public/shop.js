@@ -10,6 +10,7 @@
   var num=+m[1], slug=m[1]+"-"+m[2], isGuide=/\/guide\//.test(location.pathname);
 
   function tier(n){
+    if(n>=70) return {name:"Wave VI",price:690,label:"CHF 690"};
     if(n>=65) return {name:"Big Five",price:null,label:"Showcase — Kollektion auf Anfrage"};
     if(n>=59) return {name:"Swiss Template",price:690,label:"CHF 690"};
     if(n>=49) return {name:"Signature",price:980,label:"CHF 980"};

@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>DOMUS — Seehaus Meridian — Guide</title>
+<meta name="description" content="Techniques behind DOMUS — Seehaus Meridian: the scroll-scrubbed 80-frame walkthrough, room-caption ranges, asset pipeline — plus a copy-paste reproduction prompt.">
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{background:#F7F4EF;color:#24221E;font-family:Georgia,serif;line-height:1.7;-webkit-font-smoothing:antialiased}
+.wrap{max-width:760px;margin:0 auto;padding:110px 24px 90px}
+a.back{position:fixed;top:16px;left:16px;font-family:ui-monospace,monospace;font-size:13px;color:#24221E;text-decoration:none;border:1px solid rgba(36,34,30,.3);padding:7px 14px;border-radius:999px;background:rgba(247,244,239,.85)}
+a.back:hover{border-color:#A9825A;color:#A9825A}
+.kick{font-family:ui-monospace,monospace;font-size:11px;letter-spacing:.34em;text-transform:uppercase;color:#A9825A;margin-bottom:18px}
+h1{font-size:clamp(30px,5.5vw,46px);font-weight:400;line-height:1.15;margin-bottom:14px}
+.lede{color:rgba(36,34,30,.66);margin-bottom:54px;font-style:italic}
+section{margin-bottom:38px}
+h2{font-size:19px;font-weight:400;margin-bottom:10px;color:#A9825A}
+h2 span{font-family:ui-monospace,monospace;font-size:12px;letter-spacing:.2em;opacity:.7;margin-right:10px}
+section p{color:rgba(36,34,30,.82);font-size:16px}
+table{width:100%;border-collapse:collapse;margin-top:12px;font-size:14px}
+th,td{text-align:left;padding:8px 10px 8px 0;border-bottom:1px solid rgba(36,34,30,.14)}
+th{font-family:ui-monospace,monospace;font-size:11px;letter-spacing:.18em;text-transform:uppercase;color:#8D8A84;font-weight:400}
+td b{font-family:ui-monospace,monospace;font-weight:400;font-size:13px;color:#6E93A8}
+.pbox{margin-top:60px;border:1px solid rgba(36,34,30,.22);border-radius:10px;overflow:hidden;background:#fff}
+.ph{display:flex;justify-content:space-between;align-items:center;padding:12px 16px;border-bottom:1px solid rgba(36,34,30,.14);font-family:ui-monospace,monospace;font-size:11px;letter-spacing:.24em;text-transform:uppercase;color:#A9825A}
+.ph button{font-family:inherit;font-size:11px;letter-spacing:.14em;color:#F7F4EF;background:#A9825A;border:0;border-radius:999px;padding:6px 14px;cursor:pointer}
+pre{white-space:pre-wrap;padding:20px;font-family:ui-monospace,monospace;font-size:13px;line-height:1.75;color:rgba(36,34,30,.86)}
+</style></head><body>
+<a class="back" href="/71-domus/">&larr; DOMUS</a>
+<div class="wrap">
+<p class="kick">FABLE/25 &middot; making-of</p>
+<h1>DOMUS — Seehaus Meridian</h1>
+<p class="lede">A house you can scroll. How the 80-frame walkthrough works — and the prompt that rebuilds the whole site.</p>
+
+<section><h2><span>01</span> The frame scrub</h2><p>The Rundgang is a 560vh wrapper with a sticky 100svh stage. A full-viewport canvas scrubs 80 WebP frames (1024&times;576) of one continuous steadicam take: scroll progress inside the wrapper maps to a target frame, and a damped playhead (lerp 0.28 per rAF tick) chases it — fast enough to feel direct, damped enough to feel like walking, not seeking. 2% dead zones at both ends hold frame 1 and frame 80 still while the stage docks and undocks. Drawing is hybrid-fit: full cover on landscape, width-filling with a gentle ~1.45&times; side-crop on portrait phones, so mobile never gets a letterbox sliver.</p></section>
+
+<section><h2><span>02</span> Loading without a stutter</h2><p>Nothing loads until an IntersectionObserver (600px rootMargin) sees the section coming. Frames are then requested in an interleaved order — every 8th frame first, then every 4th, 2nd, 1st — so a visitor who scrolls straight into the middle finds a nearby frame already decoded; draw() falls back to the nearest loaded neighbour. A quiet umber veil ("Rundgang wird geladen") sits over the stage until frame 1 decodes, then fades.</p></section>
+
+<section><h2><span>03</span> Room captions, pinned to frames</h2><p>Captions are bound to frame ranges verified by eye against the extracted stills, then re-checked in headless screenshots at four scroll depths. Each caption carries the room, the m&sup2;, and one line of copy (de-CH, kein Eszett).</p>
+<table>
+<tr><th>Frames</th><th>Room</th><th>Line</th></tr>
+<tr><td><b>001–015</b></td><td>Entr&eacute;e</td><td>Eiche unter den F&uuml;ssen, Kunst an der Wand</td></tr>
+<tr><td><b>016–034</b></td><td>Wohnraum</td><td>Sichtbeton, sechs Meter Luft</td></tr>
+<tr><td><b>035–045</b></td><td>Treppe</td><td>Eiche, freitragend, kein sichtbarer Tr&auml;ger</td></tr>
+<tr><td><b>046–064</b></td><td>K&uuml;che</td><td>eine Insel aus Naturstein, f&uuml;nf Meter</td></tr>
+<tr><td><b>065–080</b></td><td>Terrasse</td><td>die T&uuml;ren geben den See frei</td></tr>
+</table></section>
+
+<section><h2><span>04</span> The floorplan progress line</h2><p>Progress through the house is drawn as a minimal floorplan polyline — the actual path: entr&eacute;e &rarr; wohnraum &rarr; treppe &rarr; k&uuml;che &rarr; terrasse — revealed via stroke-dashoffset, with a dot positioned by getPointAtLength and room ticks that turn oak as you pass them. Under 560px it yields to a slim oak progress bar along the top of the stage.</p></section>
+
+<section><h2><span>05</span> Accessibility &amp; fallbacks</h2><p>prefers-reduced-motion removes the scrub entirely and serves five static stills (frames 8, 28, 42, 56, 75) stacked with the same captions; the hero CTA retargets to them. The whole page runs from file:// with zero console errors, no horizontal overflow at 390px, DPR capped at 2.</p></section>
+
+<section><h2><span>06</span> Asset pipeline</h2><p>The walkthrough is one generated take: <b>Kling 3.0 Turbo</b>, a 10-second steadicam walkthrough prompt via the <b>Higgsfield MCP</b>, exploded with <b>ffmpeg fps=8</b> into 80 WebP frames at 1024&times;576. The hero facade (1920&times;1080, golden hour, infinity pool) is a single <b>Nano Banana 2</b> image. Everything else — map sketch, floorplan line, form — is hand-written SVG/CSS.</p></section>
+
+<div class="pbox"><div class="ph"><span>Reproduction prompt</span><button onclick="navigator.clipboard&&navigator.clipboard.writeText(document.getElementById('prompt').textContent)">Copy</button></div>
+<pre id="prompt">Build a single-file premium real-estate site for one property: "DOMUS — Seehaus Meridian". German copy throughout, gehobenes Register, de-CH conventions (no Eszett, apostrophe thousands: 1'480 m²). Palette: warm white #F7F4EF, oak #A9825A, concrete #8D8A84, lake blue #6E93A8, ink #24221E, plus a deep umber #1B1915 stage. Typography: Fraunces (high optical size, weight ~340) for display, Instrument Sans for everything else — Swiss editorial: hairline rules, generous negative space, uppercase letterspaced micro-labels.
+
+Hero: a generated golden-hour facade photo full-bleed (lakefront modern house with infinity pool, Nano Banana 2), bottom-anchored title "Seehaus Meridian" with italic accent, subline "Ein Haus, das man scrollen kann.", a hairline-ruled facts strip (7.5 Zimmer · 340 m² Wohnfläche · 28 m Seeanstoss) and a pill CTA "Rundgang starten" that smooth-scrolls into the walkthrough.
+
+The centerpiece — Der Rundgang: generate a 10s continuous steadicam walkthrough with Kling 3.0 Turbo (entrance hall → double-height living room with concrete fireplace → sculptural oak staircase → designer kitchen with stone island → terrace doors opening to a lake at golden hour), extract 80 WebP frames with ffmpeg fps=8 at 1024×576. Scrub them on a full-viewport canvas inside a 560vh section with a sticky 100svh stage: scroll progress maps to a target frame, a damped playhead (lerp ~0.28 per rAF) chases it, 2% dead zones hold the first/last frame while the stage docks. Lazy-load via IntersectionObserver (600px rootMargin) in interleaved order (every 8th frame first, then 4th, 2nd, 1st) with nearest-loaded-frame fallback, and a quiet loading veil until frame 1 decodes. Draw cover on landscape but cap portrait zoom at ~1.45× contain so phones get a width-filling band, never a sliver. Overlay: a frame counter chip ("Bild 034/080"), and room captions pinned to verified frame ranges (Entrée 1–15, Wohnraum 16–34, Treppe 35–45, Küche 46–64, Terrasse 65–80), each with room name in display serif, m² and one elegant line ("Wohnen · 84 m² — Sichtbeton, sechs Meter Luft."). Progress indicator: a minimal SVG floorplan polyline of the actual path with a moving dot (getPointAtLength), room ticks, and the current room label; under 560px swap it for a slim top progress bar. prefers-reduced-motion: remove the scrub, show five chosen stills stacked with the same captions.
+
+After the walk: an Eckdaten grid (Grundstück 1'480 m², Baujahr 2024 Erstbezug, Minergie-A, Seeanstoss, Pool, Garage), a Lage section with a hand-drawn minimal SVG map sketch (lake edge, parcel, roads, north arrow, "Skizze, nicht massstabsgetreu"), then a dark section: Preis "Auf Anfrage." with an underline-styled Besichtigung form mock (JS-only confirmation). Requirements: zero console errors from file://, no horizontal overflow at 390px, DPR cap 2, excellent mobile captions bottom.</pre></div>
+</div><script src="../../shop.js" defer></script>
+</body></html>

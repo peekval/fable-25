@@ -3,8 +3,8 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>FABLE / 25 — one model, sixty-nine design languages</title>
-<meta name="description" content="69 fundamentally different websites, designed and built end-to-end by Fable. Every visual generated from code — shaders, 3D, canvas, SVG, CSS. Zero stock assets.">
+<title>FABLE / 25 — one model, seventy-three templates</title>
+<meta name="description" content="73 fundamentally different websites, designed and built end-to-end by Fable. Every visual generated from code — shaders, 3D, canvas, SVG, CSS. Zero stock assets.">
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='6' fill='%230B0B0E'/%3E%3Ctext x='16' y='22' font-size='14' font-family='monospace' fill='%23F5F3EE' text-anchor='middle'%3E25%3C/text%3E%3C/svg%3E">
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;700&family=Instrument+Serif:ital@0;1&display=swap" rel="stylesheet">
@@ -81,11 +81,11 @@ footer p b{color:var(--ink);font-weight:500}
 <body>
 <div class="wrap">
 <header>
-  <div class="kick">Premium website templates — 69 builds, engineered not assembled</div>
+  <div class="kick">Premium website templates — 73 builds, engineered not assembled</div>
   <h1>Templates, die man <em>nicht vergisst.</em></h1>
-  <p class="sub">69 produktionsreife Website-Templates — jedes eine eigene Designsprache mit einer Signatur-Technik: WebGL, Canvas-Simulationen, Scroll-Choreografie, generative Grafik. <b>Eine Datei, kein Build-Step, kommerzielle Lizenz.</b> Jedes Template kommt mit Technik-Guide und dem vollständigen Reproduktions-Prompt.</p>
+  <p class="sub">73 produktionsreife Website-Templates — jedes eine eigene Designsprache mit einer Signatur-Technik: WebGL, Canvas-Simulationen, Scroll-Choreografie, generative Grafik. <b>Eine Datei, kein Build-Step, kommerzielle Lizenz.</b> Jedes Template kommt mit Technik-Guide und dem vollständigen Reproduktions-Prompt.</p>
   <div class="meta-row">
-    <span><b>69</b>Templates</span>
+    <span><b>73</b>Templates</span>
     <span><b>3</b>Preisstufen</span>
     <span><b>1</b>Datei pro Template</span>
     <span><b>CHF 490</b>ab</span>
@@ -184,7 +184,11 @@ const SITES=[
 ["66","66-aeon","AEON","One valley, 4.6 billion years — one uncut scroll through deep time","era-morphing canvas",["#101418","#7FA8C9","#4CAF6E"],"bigfive"],
 ["67","67-oracle","ORACLE","The page that watches back — it noticed you hesitating","behavior engine",["#0B0C09","#C9CFA0","#3A3D2E"],"bigfive"],
 ["68","68-maestro","MAESTRO","Conduct a synthesized orchestra with your scroll","web audio orchestra",["#0D0B07","#C9A25E","#5C4A28"],"bigfive"],
-["69","69-singular","SINGULAR","Fall into a black hole — your clock freezes at the horizon","gravitational lensing",["#05060A","#FFB37A","#2E52FF"],"bigfive"]
+["69","69-singular","SINGULAR","Fall into a black hole — your clock freezes at the horizon","gravitational lensing",["#05060A","#FFB37A","#2E52FF"],"bigfive"],
+["70","70-servo","SERVO","Consumer-Humanoid — der Roboter, der ein Ei halten kann","futuristic product launch",["#F4F6F8","#5EEAD4","#8A8F96"],"tech"],
+["71","71-domus","DOMUS","Scroll = Hausrundgang — 80 Frames Steadicam durchs Seehaus","video frame scrubbing",["#F7F4EF","#A9825A","#6E93A8"],"estate"],
+["72","72-klar","KLAR","Marketing ohne Lärm — ein Punkt wird zum roten Faden","radical reduction",["#FAF8F4","#FF5A48","#171614"],"studio"],
+["73","73-mira","MIRA","Creator-Brand mit Media-Kit — warm, ehrlich, buchbar","personal brand system",["#FAF5EE","#D97D5A","#B5542F"],"studio"]
 ];
 const CATS=[
   ["all","All"],
@@ -199,7 +203,7 @@ const CATS=[
   ["swiss","Swiss Templates"],
   ["bigfive","The Big Five"]
 ];
-const WAVES={0:["Wave I","the twenty-five dialects"],25:["Wave II","the escalation — heavier 3D"],40:["Wave III","tech &amp; real estate — futuristic clean"],48:["Signature Collection","ten flagship builds — every technique at full depth"],58:["Wave V","Templates Schweiz — ready for real SMEs"],64:["The Big Five","five experiences beyond reason"]};
+const WAVES={0:["Wave I","the twenty-five dialects"],25:["Wave II","the escalation — heavier 3D"],40:["Wave III","tech &amp; real estate — futuristic clean"],48:["Signature Collection","ten flagship builds — every technique at full depth"],58:["Wave V","Templates Schweiz — ready for real SMEs"],64:["The Big Five","five experiences beyond reason"],69:["Wave VI","commissioned — walkthrough, robotics, agency, creator"]};
 const grid=document.getElementById('grid');
 const bar=document.getElementById('filters');
 bar.innerHTML=CATS.map(([k,label])=>`<button class="chip${k==='all'?' on':''}" data-cat="${k}">${label}</button>`).join('');
@@ -209,8 +213,8 @@ function render(filter){
   grid.innerHTML=rows.map(([[n,slug,name,tag,tech,cols],i])=>{
     const g=`linear-gradient(125deg, ${cols[0]} 0%, ${cols[1]} 55%, ${cols[2]||cols[0]} 100%)`;
     const wave=(filter==='all'&&WAVES[i])?`<div class="wavehead"><span>${WAVES[i][0]}</span><em>${WAVES[i][1]}</em></div>`:``;
-    const nr=+n; const price=nr>=65?"Kollektion":nr>=59?"CHF 690":nr>=49?"CHF 980":"CHF 490";
-    return wave+`<a class="card" href="/${slug}/"><div class="tile"><div class="sw" style="--g:${g}"></div><span class="num">${n} / 69</span><span class="price">${price}</span></div><div class="body"><div class="name">${name}<span class="arr">Preview →</span></div><div class="tag">${tag}</div><div class="tech">${tech}</div></div></a>`;
+    const nr=+n; const price=nr>=70?"CHF 690":nr>=65?"Kollektion":nr>=59?"CHF 690":nr>=49?"CHF 980":"CHF 490";
+    return wave+`<a class="card" href="/${slug}/"><div class="tile"><div class="sw" style="--g:${g}"></div><span class="num">${n} / 73</span><span class="price">${price}</span></div><div class="body"><div class="name">${name}<span class="arr">Preview →</span></div><div class="tag">${tag}</div><div class="tech">${tech}</div></div></a>`;
   }).join('')||`<p class="empty">Nothing here yet.</p>`;
   if(io)io.disconnect();
   io=new IntersectionObserver(es=>es.forEach(e=>{if(e.isIntersecting){e.target.classList.add('in');io.unobserve(e.target)}}),{threshold:.08});

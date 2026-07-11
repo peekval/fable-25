@@ -1,0 +1,534 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>MIRA — Alltag, ehrlich schön.</title>
+<meta name="description" content="MIRA — Lifestyle-Creatorin. Kochen ohne Rezept, 5-Minuten-Ordnung, ehrliche Empfehlungen. Media-Kit für Marken, die echten Alltag mögen.">
+<!--
+  CHANGELOG
+  PASS 1 — Full build: warm cream hero with organic-radius portrait, self-drawing
+           squiggle signature motif (single SVG symbol reused 5×), count-up
+           follower strip (480k / 1,2M / 96k), three tilt-on-hover format cards,
+           rust media-kit panel with animated Zielgruppen-Balken, full-bleed
+           kitchen behind-the-scenes, five fictional brand rows + testimonial,
+           newsletter mock with demo confirmation. One easing (--e), reveals
+           .55s/70ms stagger, reduced-motion = everything static & squiggles drawn.
+  PASS 2 — Fixes from first verify run: squiggle <use> refs replaced by inline
+           paths (CSS selectors don't reach use-shadow content, so strokes never
+           applied), path length measured from the first inline path, and
+           overflow-x:clip added to html (rotated portrait frame pushed
+           scrollWidth to 393 @390). Both viewports re-verified green.
+  PASS 3 — Design iteration after screenshot review: handwritten "PS" note under
+           the hero CTAs, terracotta platform dots on the follower-strip labels,
+           card hover shadow warmed, copy tightened (du-Form throughout).
+           Tilt guarded to fine pointers + no-reduced-motion, portrait
+           fetchpriority high, focus-visible states, zero console errors via
+           file://, scrollWidth 390 ≤ 392 at 390px.
+-->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400;12..96,600;12..96,700;12..96,800&family=Karla:ital,wght@0,400;0,500;0,700;1,400&family=Caveat:wght@600&display=swap" rel="stylesheet">
+<style>
+:root{
+  --cream:#FAF5EE; --cream-2:#F3EADD;
+  --terra:#D97D5A; --rust:#B5542F; --rust-deep:#8F3E1F;
+  --ink:#3A322C; --ink-soft:#6E6156;
+  --e:cubic-bezier(.25,.8,.3,1);
+  --disp:"Bricolage Grotesque",system-ui,sans-serif;
+  --text:"Karla",system-ui,sans-serif;
+  --hand:"Caveat",cursive;
+  --r-lg:32px; --r-md:22px;
+}
+*{margin:0;padding:0;box-sizing:border-box}
+html{scroll-behavior:smooth;overflow-x:clip}
+body{
+  font-family:var(--text);background:var(--cream);color:var(--ink);
+  line-height:1.6;overflow-x:clip;
+  -webkit-font-smoothing:antialiased;
+}
+::selection{background:var(--terra);color:var(--cream)}
+img{display:block;max-width:100%;height:auto}
+a{color:inherit}
+a:focus-visible,button:focus-visible,input:focus-visible{outline:3px solid var(--terra);outline-offset:3px;border-radius:6px}
+
+/* ---- fixed pill ---- */
+.pill{
+  position:fixed;top:16px;left:16px;z-index:60;
+  font-family:var(--disp);font-weight:700;font-size:13px;letter-spacing:.06em;
+  color:var(--ink);background:rgba(250,245,238,.85);
+  border:1.5px solid rgba(58,50,44,.25);border-radius:999px;
+  padding:8px 16px;text-decoration:none;
+  backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px);
+  transition:border-color .25s var(--e),color .25s var(--e);
+}
+.pill:hover{border-color:var(--rust);color:var(--rust)}
+
+/* ---- shared ---- */
+.wrap{max-width:1160px;margin:0 auto;padding:0 clamp(20px,5vw,52px)}
+section{padding:clamp(56px,9vw,110px) 0}
+.kicker{
+  font-family:var(--disp);font-weight:700;font-size:12px;letter-spacing:.24em;
+  text-transform:uppercase;color:var(--rust);display:flex;align-items:center;gap:12px;
+}
+.kicker::before{content:"";width:30px;height:2.5px;border-radius:2px;background:var(--terra);flex:none}
+h2{
+  font-family:var(--disp);font-weight:800;font-size:clamp(30px,5vw,52px);
+  line-height:1.06;letter-spacing:-.015em;margin:14px 0 12px;
+}
+.lead{font-size:clamp(16px,1.6vw,18.5px);color:var(--ink-soft);max-width:58ch}
+
+/* squiggle motif */
+.squig{display:block;overflow:visible}
+.squig path{
+  fill:none;stroke:var(--terra);stroke-width:7;stroke-linecap:round;
+  stroke-dasharray:var(--len,300);stroke-dashoffset:var(--len,300);
+}
+.drawn .squig path,.squig.drawn path{transition:stroke-dashoffset .8s var(--e) .15s;stroke-dashoffset:0}
+.squig.rust path{stroke:var(--rust)}
+.squig.cream path{stroke:var(--cream)}
+
+/* reveal */
+.rv{opacity:0;transform:translateY(22px);transition:opacity .55s var(--e),transform .55s var(--e)}
+.rv.in{opacity:1;transform:none}
+.rv.d1{transition-delay:.07s}.rv.d2{transition-delay:.14s}.rv.d3{transition-delay:.21s}
+
+/* ================= HERO ================= */
+.hero{padding-top:clamp(84px,11vw,130px)}
+.hero-grid{display:grid;grid-template-columns:1.05fr .95fr;gap:clamp(32px,5vw,72px);align-items:center}
+.hero h1{
+  font-family:var(--disp);font-weight:800;
+  font-size:clamp(42px,7vw,84px);line-height:1.0;letter-spacing:-.02em;margin:18px 0 6px;
+}
+.hero h1 .uwrap{display:inline-block;position:relative}
+.hero h1 .uwrap .squig{position:absolute;left:-2%;bottom:-.18em;width:104%;height:.32em}
+.hero .lead{margin:18px 0 28px}
+.hand{font-family:var(--hand);font-size:clamp(20px,2.2vw,26px);color:var(--rust);letter-spacing:.01em}
+.cta-row{display:flex;gap:14px;flex-wrap:wrap}
+.btn{
+  font-family:var(--disp);font-weight:700;font-size:15px;letter-spacing:.02em;
+  text-decoration:none;border-radius:999px;padding:14px 26px;display:inline-block;
+  transition:transform .3s var(--e),background .3s var(--e),color .3s var(--e),border-color .3s var(--e);
+  border:2px solid transparent;cursor:pointer;
+}
+.btn-solid{background:var(--rust);color:var(--cream)}
+.btn-solid:hover{background:var(--rust-deep);transform:translateY(-2px)}
+.btn-line{border-color:rgba(58,50,44,.3);color:var(--ink);background:transparent}
+.btn-line:hover{border-color:var(--rust);color:var(--rust);transform:translateY(-2px)}
+
+.portrait-wrap{position:relative;justify-self:center;width:min(100%,460px)}
+.portrait-wrap::before{
+  content:"";position:absolute;inset:0;border-radius:44% 56% 52% 48% / 42% 44% 56% 58%;
+  border:2.5px solid var(--terra);transform:rotate(4deg) scale(1.035);
+}
+.portrait{
+  width:100%;border-radius:44% 56% 52% 48% / 42% 44% 56% 58%;
+  object-fit:cover;aspect-ratio:3/4;background:var(--terra);
+}
+.badge{
+  position:absolute;right:-10px;bottom:26px;width:118px;height:118px;
+  background:var(--cream);border:2px solid var(--terra);border-radius:50%;
+  display:grid;place-items:center;text-align:center;transform:rotate(-8deg);
+  font-family:var(--hand);font-size:19px;line-height:1.15;color:var(--rust);
+  box-shadow:0 10px 30px rgba(58,50,44,.12);padding:10px;
+}
+
+/* follower strip */
+.strip{
+  margin-top:clamp(44px,6vw,72px);
+  display:grid;grid-template-columns:repeat(3,1fr);gap:14px;
+}
+.stat{
+  background:var(--cream-2);border-radius:var(--r-md);
+  padding:22px 24px;display:flex;flex-direction:column;gap:2px;
+  border:1.5px solid rgba(58,50,44,.08);
+}
+.stat .num{
+  font-family:var(--disp);font-weight:800;font-size:clamp(30px,3.6vw,44px);
+  letter-spacing:-.02em;color:var(--ink);font-variant-numeric:tabular-nums;
+}
+.stat .num em{font-style:normal;color:var(--rust)}
+.stat .lbl{font-size:13px;letter-spacing:.14em;text-transform:uppercase;color:var(--ink-soft);font-weight:700;display:flex;align-items:center;gap:8px}
+.stat .lbl::before{content:"";width:8px;height:8px;border-radius:50%;background:var(--terra);flex:none}
+
+/* ================= FORMATE ================= */
+.cards{display:grid;grid-template-columns:repeat(3,1fr);gap:clamp(16px,2.4vw,26px);margin-top:clamp(28px,4vw,44px)}
+.card{
+  --tint:var(--cream-2);
+  background:var(--tint);border-radius:var(--r-lg);padding:30px 28px 32px;
+  border:1.5px solid rgba(58,50,44,.08);
+  transform-style:preserve-3d;will-change:transform;
+  transition:transform .3s var(--e),box-shadow .3s var(--e);
+  position:relative;
+}
+.card:hover{box-shadow:0 22px 44px -18px rgba(143,62,31,.35)}
+.card .chip{
+  width:56px;height:56px;border-radius:18px;display:grid;place-items:center;
+  background:var(--cream);border:2px solid var(--terra);margin-bottom:18px;
+  font-family:var(--disp);font-weight:800;font-size:20px;color:var(--rust);
+  transform:translateZ(28px) rotate(-4deg);
+}
+.card h3{font-family:var(--disp);font-weight:800;font-size:clamp(21px,2vw,25px);line-height:1.15;letter-spacing:-.01em;transform:translateZ(20px)}
+.card .squig{width:92px;height:14px;margin:10px 0 12px}
+.card p{color:var(--ink-soft);font-size:15.5px;transform:translateZ(12px)}
+.card .tag{
+  margin-top:16px;display:inline-block;font-size:12px;font-weight:700;
+  letter-spacing:.12em;text-transform:uppercase;color:var(--rust);
+  background:var(--cream);border-radius:999px;padding:6px 13px;border:1px solid rgba(181,84,47,.3);
+}
+.card:nth-child(2){--tint:#F6E7DC}
+.card:nth-child(3){--tint:#F0EBDF}
+
+/* ================= MEDIA KIT ================= */
+.mk{background:var(--rust);border-radius:clamp(28px,4vw,44px);color:var(--cream);
+  padding:clamp(36px,5vw,64px);position:relative;overflow:hidden}
+.mk::after{
+  content:"";position:absolute;right:-90px;top:-90px;width:300px;height:300px;border-radius:50%;
+  background:rgba(250,245,238,.09);pointer-events:none;
+}
+.mk .kicker{color:var(--cream)}
+.mk .kicker::before{background:var(--cream)}
+.mk h2{color:var(--cream)}
+.mk .lead{color:rgba(250,245,238,.82)}
+.mk-grid{display:grid;grid-template-columns:1fr 1fr;gap:clamp(28px,4vw,56px);margin-top:clamp(26px,3vw,40px);align-items:start}
+.mk-nums{display:grid;grid-template-columns:1fr 1fr;gap:18px}
+.mk-num{background:rgba(250,245,238,.1);border-radius:var(--r-md);padding:20px 22px;border:1px solid rgba(250,245,238,.18)}
+.mk-num .v{font-family:var(--disp);font-weight:800;font-size:clamp(26px,3vw,38px);letter-spacing:-.02em;font-variant-numeric:tabular-nums}
+.mk-num .k{font-size:12.5px;letter-spacing:.13em;text-transform:uppercase;color:rgba(250,245,238,.72);font-weight:700;margin-top:2px}
+.mk h4{font-family:var(--disp);font-weight:700;font-size:14px;letter-spacing:.18em;text-transform:uppercase;margin-bottom:16px;color:rgba(250,245,238,.85)}
+.bar-row{display:grid;grid-template-columns:64px 1fr 44px;align-items:center;gap:12px;margin:10px 0;font-size:14.5px}
+.bar-row .bl{font-weight:700}
+.bar-row .bv{text-align:right;font-variant-numeric:tabular-nums;color:rgba(250,245,238,.85)}
+.bar{height:14px;border-radius:999px;background:rgba(250,245,238,.16);overflow:hidden}
+.bar i{
+  display:block;height:100%;border-radius:999px;background:var(--cream);
+  width:0;transition:width .9s var(--e);
+}
+.in .bar i{width:var(--w)}
+.mk-cta{margin-top:clamp(26px,3vw,38px);display:flex;align-items:center;gap:20px;flex-wrap:wrap}
+.mk .btn-solid{background:var(--cream);color:var(--rust-deep)}
+.mk .btn-solid:hover{background:#fff;transform:translateY(-2px)}
+.mk-note{font-family:var(--hand);font-size:21px;color:rgba(250,245,238,.9)}
+
+/* ================= KITCHEN ================= */
+.kitchen{padding:0}
+.kitchen-fig{position:relative;margin:0}
+.kitchen-fig img{width:100%;height:clamp(380px,62vh,640px);object-fit:cover}
+.kitchen-cap{
+  position:absolute;left:clamp(20px,5vw,64px);bottom:clamp(20px,4vw,44px);
+  max-width:min(420px,calc(100% - 40px));
+  background:var(--cream);border-radius:var(--r-md);padding:20px 24px;
+  box-shadow:0 18px 40px -12px rgba(58,50,44,.35);
+}
+.kitchen-cap .hand{display:block;margin-bottom:4px}
+.kitchen-cap p{font-size:15px;color:var(--ink-soft)}
+
+/* ================= KOOPERATIONEN ================= */
+.brands{margin-top:clamp(26px,3vw,40px);border-top:1.5px solid rgba(58,50,44,.14)}
+.brand{
+  display:flex;align-items:baseline;justify-content:space-between;gap:16px;
+  padding:20px 14px;border-bottom:1.5px solid rgba(58,50,44,.14);
+  transition:background .3s var(--e),padding-left .3s var(--e);border-radius:8px;
+}
+.brand:hover{background:var(--cream-2);padding-left:22px}
+.brand .bname{font-family:var(--disp);font-weight:800;font-size:clamp(20px,2.6vw,30px);letter-spacing:-.01em}
+.brand .bwhat{font-size:14px;color:var(--ink-soft);text-align:right;flex:none}
+blockquote{
+  margin-top:clamp(36px,5vw,56px);max-width:760px;position:relative;padding-left:clamp(20px,3vw,34px);
+}
+blockquote::before{content:"";position:absolute;left:0;top:6px;bottom:6px;width:4px;border-radius:4px;background:var(--terra)}
+blockquote p{font-family:var(--disp);font-weight:600;font-size:clamp(19px,2.4vw,26px);line-height:1.35;letter-spacing:-.01em}
+blockquote cite{display:block;margin-top:14px;font-style:normal;font-size:14px;color:var(--ink-soft)}
+blockquote cite b{color:var(--rust)}
+
+/* ================= KONTAKT ================= */
+.contact{background:var(--cream-2)}
+.contact-inner{max-width:640px;margin:0 auto;text-align:center}
+.contact .kicker{justify-content:center}
+.contact .kicker::after{content:"";width:30px;height:2.5px;border-radius:2px;background:var(--terra);flex:none}
+.contact .squig{width:150px;height:18px;margin:16px auto 0}
+.nl{display:flex;gap:10px;margin:30px auto 0;max-width:480px}
+.nl input{
+  flex:1;min-width:0;font-family:var(--text);font-size:15.5px;color:var(--ink);
+  background:var(--cream);border:2px solid rgba(58,50,44,.18);border-radius:999px;
+  padding:13px 20px;transition:border-color .3s var(--e);
+}
+.nl input::placeholder{color:var(--ink-soft)}
+.nl input:focus{border-color:var(--terra);outline:none}
+.nl-ok{margin-top:14px;font-family:var(--hand);font-size:22px;color:var(--rust);opacity:0;transform:translateY(6px);transition:opacity .45s var(--e),transform .45s var(--e)}
+.nl-ok.show{opacity:1;transform:none}
+.contact .mail{margin-top:26px;font-size:15px;color:var(--ink-soft)}
+.contact .mail a{color:var(--rust);font-weight:700;text-decoration:none;border-bottom:1.5px solid rgba(181,84,47,.4)}
+.contact .mail a:hover{border-bottom-color:var(--rust)}
+
+/* ================= FOOTER ================= */
+footer{padding:34px 0 44px}
+.foot{
+  display:flex;justify-content:space-between;gap:16px;flex-wrap:wrap;
+  font-size:12.5px;letter-spacing:.1em;text-transform:uppercase;color:var(--ink-soft);font-weight:700;
+}
+.foot a{color:var(--ink);text-decoration:none;border-bottom:1.5px solid var(--terra)}
+.foot a:hover{color:var(--rust)}
+
+/* ================= RESPONSIVE ================= */
+@media (max-width:900px){
+  .hero-grid{grid-template-columns:1fr;gap:36px}
+  .portrait-wrap{width:min(100%,400px);order:-1}
+  .cards{grid-template-columns:1fr}
+  .mk-grid{grid-template-columns:1fr}
+}
+@media (max-width:560px){
+  .strip{grid-template-columns:1fr;gap:10px}
+  .stat{flex-direction:row;align-items:baseline;justify-content:space-between;padding:16px 20px}
+  .mk-nums{grid-template-columns:1fr 1fr;gap:12px}
+  .badge{width:96px;height:96px;font-size:16px;right:0;bottom:14px}
+  .nl{flex-direction:column}
+  .nl .btn{width:100%}
+  .brand{flex-direction:column;gap:2px;align-items:flex-start}
+  .brand .bwhat{text-align:left}
+}
+/* ================= REDUCED MOTION ================= */
+@media (prefers-reduced-motion:reduce){
+  html{scroll-behavior:auto}
+  *,*::before,*::after{transition:none!important;animation:none!important}
+  .rv{opacity:1;transform:none}
+  .squig path{stroke-dashoffset:0!important}
+  .bar i{width:var(--w)}
+}
+</style>
+</head>
+<body>
+
+<a class="pill" href="/">&larr; 25</a>
+
+<!-- ================= HERO ================= -->
+<header class="hero">
+  <div class="wrap">
+    <div class="hero-grid">
+      <div>
+        <p class="kicker rv">Mira &middot; Lifestyle &amp; Alltag</p>
+        <h1 class="rv d1">Alltag,<br><span class="uwrap">ehrlich<svg class="squig" viewBox="0 0 296 32" aria-hidden="true"><path d="M4 22 C 40 6, 66 30, 102 14 S 168 24, 200 10 S 262 26, 292 12"/></svg></span> sch&ouml;n.</h1>
+        <p class="lead rv d2">Hey, ich bin Mira. Ich zeige dir meinen Alltag so, wie er wirklich ist &mdash; mit Mehl auf der Arbeitsplatte, halben Pl&auml;nen und Dingen, die ich ehrlich empfehlen kann. Kein Filter-Theater. Versprochen.</p>
+        <div class="cta-row rv d3">
+          <a class="btn btn-solid" href="#mediakit">F&uuml;r Marken: Media-Kit</a>
+          <a class="btn btn-line" href="#formate">Meine Formate</a>
+        </div>
+        <p class="hand rv d3" style="margin-top:22px">PS: Runterscrollen lohnt sich &darr;</p>
+      </div>
+      <div class="portrait-wrap rv d1">
+        <img class="portrait" src="assets/portrait.webp" alt="Mira, Lifestyle-Creatorin, Portr&auml;t vor terrakottafarbener Wand" width="1400" height="1867" fetchpriority="high">
+        <div class="badge" aria-hidden="true">seit 2021<br>online<br>&hearts;</div>
+      </div>
+    </div>
+
+    <div class="strip" id="strip">
+      <div class="stat rv"><span class="num"><span class="cnt" data-to="480" data-suf="k">0k</span></span><span class="lbl">Instagram &middot; Follower</span></div>
+      <div class="stat rv d1"><span class="num"><span class="cnt" data-to="1.2" data-dec="1" data-suf="M">0,0M</span></span><span class="lbl">TikTok &middot; Follower</span></div>
+      <div class="stat rv d2"><span class="num"><span class="cnt" data-to="96" data-suf="k">0k</span></span><span class="lbl">YouTube &middot; Abos</span></div>
+    </div>
+  </div>
+</header>
+
+<!-- ================= FORMATE ================= -->
+<section id="formate">
+  <div class="wrap">
+    <p class="kicker rv">Formate</p>
+    <h2 class="rv d1">Drei Dinge, die ich<br>richtig gern mache.</h2>
+    <p class="lead rv d2">Jedes Format hat seinen festen Platz in der Woche &mdash; und seine eigene kleine Community.</p>
+
+    <div class="cards">
+      <article class="card tilt rv">
+        <div class="chip" aria-hidden="true">01</div>
+        <h3>Kochen ohne Rezept</h3>
+        <svg class="squig" viewBox="0 0 296 32" aria-hidden="true"><path d="M4 22 C 40 6, 66 30, 102 14 S 168 24, 200 10 S 262 26, 292 12"/></svg>
+        <p>Was der K&uuml;hlschrank hergibt, wird gut. Ich koche drauflos, du kochst mit &mdash; und am Ende schmeckt&rsquo;s trotzdem. Meistens.</p>
+        <span class="tag">Dienstags &middot; Reels</span>
+      </article>
+      <article class="card tilt rv d1">
+        <div class="chip" aria-hidden="true">02</div>
+        <h3>5-Minuten-Ordnung</h3>
+        <svg class="squig" viewBox="0 0 296 32" aria-hidden="true"><path d="M4 22 C 40 6, 66 30, 102 14 S 168 24, 200 10 S 262 26, 292 12"/></svg>
+        <p>Eine Schublade, ein Timer, f&uuml;nf Minuten. Kein Vorher-Nachher-Kitsch, sondern kleine Systeme, die auch n&auml;chste Woche noch halten.</p>
+        <span class="tag">Donnerstags &middot; TikTok</span>
+      </article>
+      <article class="card tilt rv d2">
+        <div class="chip" aria-hidden="true">03</div>
+        <h3>Ehrliche Empfehlungen</h3>
+        <svg class="squig" viewBox="0 0 296 32" aria-hidden="true"><path d="M4 22 C 40 6, 66 30, 102 14 S 168 24, 200 10 S 262 26, 292 12"/></svg>
+        <p>Ich teste vier Wochen lang, bevor ich etwas empfehle. Und wenn etwas nichts taugt, sage ich dir auch das. Deshalb funktioniert&rsquo;s.</p>
+        <span class="tag">Sonntags &middot; YouTube</span>
+      </article>
+    </div>
+  </div>
+</section>
+
+<!-- ================= MEDIA KIT ================= -->
+<section id="mediakit" style="padding-top:0">
+  <div class="wrap">
+    <div class="mk rv">
+      <p class="kicker">F&uuml;r Marken</p>
+      <h2>Zahlen, die man dir<br>gern zeigt.</h2>
+      <p class="lead">Meine Community ist klein genug, um zuzuh&ouml;ren &mdash; und gro&szlig; genug, um etwas zu bewegen. Alle Zahlen: 30-Tage-Schnitt, Stand Juli 2026.</p>
+
+      <div class="mk-grid">
+        <div class="mk-nums">
+          <div class="mk-num"><div class="v"><span class="cnt" data-to="8.4" data-dec="1" data-suf="&nbsp;Mio.">0,0&nbsp;Mio.</span></div><div class="k">Reichweite / Monat</div></div>
+          <div class="mk-num"><div class="v"><span class="cnt" data-to="7.2" data-dec="1" data-suf="&nbsp;%">0,0&nbsp;%</span></div><div class="k">Engagement-Rate</div></div>
+          <div class="mk-num"><div class="v"><span class="cnt" data-to="72" data-suf="&nbsp;%">0&nbsp;%</span></div><div class="k">Weiblich / 28&nbsp;% m&auml;nnlich</div></div>
+          <div class="mk-num"><div class="v">DE&middot;AT&middot;CH</div><div class="k">86&nbsp;% DACH-Raum</div></div>
+        </div>
+        <div>
+          <h4>Zielgruppe nach Alter</h4>
+          <div class="bar-row"><span class="bl">18&ndash;24</span><span class="bar"><i style="--w:71%"></i></span><span class="bv">29&nbsp;%</span></div>
+          <div class="bar-row"><span class="bl">25&ndash;34</span><span class="bar"><i style="--w:100%"></i></span><span class="bv">41&nbsp;%</span></div>
+          <div class="bar-row"><span class="bl">35&ndash;44</span><span class="bar"><i style="--w:51%"></i></span><span class="bv">21&nbsp;%</span></div>
+          <div class="bar-row"><span class="bl">45+</span><span class="bar"><i style="--w:22%"></i></span><span class="bv">9&nbsp;%</span></div>
+        </div>
+      </div>
+
+      <div class="mk-cta">
+        <a class="btn btn-solid" href="#kontakt">Media-Kit anfragen</a>
+        <span class="mk-note">Antwort meist innerhalb von 48 Stunden &#8600;</span>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ================= KITCHEN ================= -->
+<section class="kitchen">
+  <figure class="kitchen-fig">
+    <img src="assets/kitchen.webp" alt="Mira beim Filmen an der K&uuml;chenzeile, Stativ und Ringlicht neben der Arbeitsplatte" width="1600" height="1067" loading="lazy">
+    <figcaption class="kitchen-cap rv">
+      <span class="hand">Behind the scenes &#8599;</span>
+      <p>Mein &bdquo;Studio&ldquo;: eine ganz normale K&uuml;che, ein Stativ und Nachmittagslicht. Hier entstehen rund 80&nbsp;% aller Videos &mdash; zwischen zwei Tassen Kaffee.</p>
+    </figcaption>
+  </figure>
+</section>
+
+<!-- ================= KOOPERATIONEN ================= -->
+<section id="koops">
+  <div class="wrap">
+    <p class="kicker rv">Kooperationen</p>
+    <h2 class="rv d1">Marken, mit denen es<br>einfach gepasst hat.</h2>
+
+    <div class="brands rv d2">
+      <div class="brand"><span class="bname">HAFERGL&Uuml;CK</span><span class="bwhat">Fr&uuml;hst&uuml;cks-Serie &middot; 12 Reels</span></div>
+      <div class="brand"><span class="bname">Studio Lehm</span><span class="bwhat">Keramik-Kollab &middot; Limited Drop</span></div>
+      <div class="brand"><span class="bname">NORDWIND K&Uuml;CHE</span><span class="bwhat">Jahres-Partnerschaft</span></div>
+      <div class="brand"><span class="bname">blattwerk.</span><span class="bwhat">Pflanzen-Challenge &middot; TikTok</span></div>
+      <div class="brand"><span class="bname">Kiesel &amp; Co</span><span class="bwhat">Ordnungs-Boxen &middot; Co-Design</span></div>
+    </div>
+
+    <blockquote class="rv">
+      <p>&bdquo;Mira hat unsere Marke nicht beworben, sie hat sie in ihren Alltag eingeladen. Die Kampagne hat unsere Erwartungen um das Dreifache &uuml;bertroffen &mdash; und f&uuml;hlte sich trotzdem nie nach Werbung an.&ldquo;</p>
+      <cite><b>Lena Hartwig</b> &middot; Brand Lead, NORDWIND K&Uuml;CHE</cite>
+    </blockquote>
+  </div>
+</section>
+
+<!-- ================= KONTAKT ================= -->
+<section class="contact" id="kontakt">
+  <div class="wrap">
+    <div class="contact-inner">
+      <p class="kicker rv">Kontakt</p>
+      <h2 class="rv d1">Schreib mir. Ich lese<br>wirklich alles selbst.</h2>
+      <svg class="squig rv d1" viewBox="0 0 296 32" aria-hidden="true"><path d="M4 22 C 40 6, 66 30, 102 14 S 168 24, 200 10 S 262 26, 292 12"/></svg>
+      <p class="lead rv d2" style="margin:18px auto 0">Einmal im Monat: mein ehrlicher Newsletter mit Rezept-Skizzen, Ordnungs-Ideen und allem, was diesen Monat wirklich funktioniert hat.</p>
+      <form class="nl rv d3" id="nlform" novalidate>
+        <input type="email" name="email" placeholder="deine@mail.de" aria-label="E-Mail-Adresse" required>
+        <button class="btn btn-solid" type="submit">Anmelden</button>
+      </form>
+      <p class="nl-ok" id="nlok" role="status">Fast geschafft &mdash; schau in dein Postfach! (Demo, keine Sorge.)</p>
+      <p class="mail rv d3">F&uuml;r Anfragen &amp; Media-Kit: <a href="mailto:hallo@mira-alltag.de">hallo@mira-alltag.de</a></p>
+    </div>
+  </div>
+</section>
+
+<footer>
+  <div class="wrap foot">
+    <span>MIRA &middot; Alltag, ehrlich sch&ouml;n. &middot; Fiktives Projekt</span>
+    <span>FABLE/25 &middot; site 73 &middot; <a href="/73-mira/guide/">guide &amp; prompt &rarr;</a></span>
+  </div>
+</footer>
+
+<script>
+(function(){
+"use strict";
+var reduced = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+/* squiggle path length -> CSS var (all squiggles share the same d) */
+var squigs = document.querySelectorAll(".squig");
+try{
+  var ref = document.querySelector(".squig path");
+  var len = Math.ceil(ref.getTotalLength()) + 2;
+  for(var i=0;i<squigs.length;i++) squigs[i].style.setProperty("--len", len);
+}catch(e){ /* keep fallback 300 */ }
+
+/* counter (de-DE decimal comma) */
+function runCounter(el){
+  var to = parseFloat(el.getAttribute("data-to"));
+  var dec = parseInt(el.getAttribute("data-dec")||"0",10);
+  var suf = el.getAttribute("data-suf")||"";
+  var fmt = function(v){ return v.toFixed(dec).replace(".", ",") + suf.replace(/&nbsp;/g," "); };
+  if(reduced){ el.textContent = fmt(to); return; }
+  var t0 = null, dur = 950;
+  function step(t){
+    if(t0===null) t0=t;
+    var p = Math.min((t-t0)/dur, 1);
+    var e = 1 - Math.pow(1-p, 3); /* cubic-out, matches --e feel */
+    el.textContent = fmt(to*e);
+    if(p<1) requestAnimationFrame(step);
+  }
+  requestAnimationFrame(step);
+}
+
+/* reveal + draw + counters via one IntersectionObserver */
+var seenCnt = new WeakSet();
+function activate(el){
+  el.classList.add("in","drawn");
+  var cs = el.querySelectorAll(".cnt");
+  for(var i=0;i<cs.length;i++){ if(!seenCnt.has(cs[i])){ seenCnt.add(cs[i]); runCounter(cs[i]); } }
+  if(el.classList.contains("cnt") && !seenCnt.has(el)){ seenCnt.add(el); runCounter(el); }
+}
+var targets = document.querySelectorAll(".rv,.squig");
+if(reduced || !("IntersectionObserver" in window)){
+  targets.forEach(function(el){ activate(el); });
+}else{
+  var io = new IntersectionObserver(function(entries){
+    entries.forEach(function(en){
+      if(en.isIntersecting){ activate(en.target); io.unobserve(en.target); }
+    });
+  },{threshold:.18,rootMargin:"0px 0px -6% 0px"});
+  targets.forEach(function(el){ io.observe(el); });
+}
+
+/* tilt-on-hover: fine pointers only, no reduced motion */
+if(!reduced && window.matchMedia("(pointer: fine)").matches){
+  var cards = document.querySelectorAll(".tilt");
+  cards.forEach(function(card){
+    card.addEventListener("pointermove", function(ev){
+      var r = card.getBoundingClientRect();
+      var x = (ev.clientX - r.left)/r.width - .5;
+      var y = (ev.clientY - r.top)/r.height - .5;
+      card.style.transform = "perspective(700px) rotateX(" + (-y*7).toFixed(2) + "deg) rotateY(" + (x*8).toFixed(2) + "deg) translateY(-4px)";
+    });
+    card.addEventListener("pointerleave", function(){
+      card.style.transform = "";
+    });
+  });
+}
+
+/* newsletter mock */
+var form = document.getElementById("nlform");
+form.addEventListener("submit", function(ev){
+  ev.preventDefault();
+  var input = form.querySelector("input");
+  if(!input.value || input.value.indexOf("@") < 1){ input.focus(); return; }
+  document.getElementById("nlok").classList.add("show");
+  input.value = "";
+});
+})();
+</script>
+<script src="../shop.js" defer></script>
+</body>
+</html>

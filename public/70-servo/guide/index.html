@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>SERVO — Help, at home. — Guide</title>
+<meta name="description" content="Techniques behind SERVO — the status-line design system, the bloom reveal, the egg focus-in — plus a copy-paste reproduction prompt.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Sora:wght@300;400;500;600&family=Instrument+Sans:wght@400;500&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{background:#FCFCFD;color:#16181C;font-family:"Instrument Sans",system-ui,sans-serif;line-height:1.7;-webkit-font-smoothing:antialiased}
+.wrap{max-width:760px;margin:0 auto;padding:110px 22px 110px}
+a.back{position:fixed;top:16px;left:16px;font-family:"JetBrains Mono",monospace;font-size:12px;color:#8A8F96;text-decoration:none;border:1px solid rgba(22,24,28,.12);padding:7px 14px;border-radius:999px;background:rgba(252,252,253,.85);backdrop-filter:blur(8px);z-index:10}
+a.back:hover{border-color:#2BB8A3;color:#16181C}
+.kick{font-family:"JetBrains Mono",monospace;font-size:11px;letter-spacing:.32em;text-transform:uppercase;color:#2BB8A3;margin-bottom:18px}
+h1{font-family:"Sora",sans-serif;font-size:clamp(28px,5.5vw,44px);font-weight:300;line-height:1.15;letter-spacing:-.015em;margin-bottom:14px}
+h1 b{font-weight:500}
+.lede{color:#8A8F96;margin-bottom:26px}
+.rule{height:1px;background:rgba(22,24,28,.1);position:relative;overflow:hidden;margin-bottom:48px}
+.rule::after{content:"";position:absolute;inset:0;background:linear-gradient(90deg,transparent,#5EEAD4 40%,#fff 50%,#5EEAD4 60%,transparent);transform:translateX(-101%);animation:sweep 1.6s .4s cubic-bezier(.6,0,.2,1) forwards}
+@keyframes sweep{to{transform:translateX(101%)}}
+@media(prefers-reduced-motion:reduce){.rule::after{display:none}}
+section{margin-bottom:36px}
+h2{font-family:"Sora",sans-serif;font-size:18px;font-weight:500;margin-bottom:8px}
+h2 span{font-family:"JetBrains Mono",monospace;font-size:11px;letter-spacing:.2em;color:#2BB8A3;margin-right:10px}
+section p{color:#5D6269;font-size:15.5px}
+code{font-family:"JetBrains Mono",monospace;font-size:.88em;background:#F4F5F7;padding:1px 6px;border-radius:5px}
+.credits{margin-top:54px;border:1px solid rgba(22,24,28,.1);border-radius:14px;padding:20px 22px;font-family:"JetBrains Mono",monospace;font-size:12px;line-height:1.9;color:#8A8F96}
+.credits b{color:#16181C;font-weight:500}
+.pbox{margin-top:26px;border:1px solid rgba(22,24,28,.12);border-radius:14px;overflow:hidden;background:#fff}
+.ph{display:flex;justify-content:space-between;align-items:center;padding:12px 16px;border-bottom:1px solid rgba(22,24,28,.1);font-family:"JetBrains Mono",monospace;font-size:11px;letter-spacing:.22em;text-transform:uppercase;color:#2BB8A3}
+.ph button{font-family:inherit;font-size:11px;letter-spacing:.12em;color:#16181C;background:#5EEAD4;border:0;border-radius:999px;padding:6px 16px;cursor:pointer}
+.ph button:hover{background:#4ad9c2}
+pre{white-space:pre-wrap;padding:20px;font-family:"JetBrains Mono",monospace;font-size:12.5px;line-height:1.8;color:#3c4046;word-break:break-word}
+</style></head><body>
+<a class="back" href="/70-servo/">&#8592; SERVO</a>
+<div class="wrap">
+<p class="kick">FABLE/25 &middot; making-of</p>
+<h1>SERVO — <b>Help, at home.</b></h1>
+<p class="lede">A fictional consumer humanoid-robot launch page: seamless white studio world, one cyan accent, and a single design motif carried through everything — the status line.</p>
+<div class="rule"></div>
+
+<section><h2><span>01</span> The status line as design system</h2><p>The robot's visor shows two thin cyan light bars — so the whole page speaks that language. Every section rule is a 1px line with a <code>::after</code> gradient (transparent &rarr; cyan &rarr; white &rarr; cyan &rarr; transparent) that sweeps across exactly once when the rule enters the viewport (IntersectionObserver adds <code>.lit</code>, a 1.4s transform animation runs <code>forwards</code>). The hero adds a vertical drop-line whose pulse falls from the wordmark toward the unit.</p></section>
+
+<section><h2><span>02</span> The bloom reveal</h2><p>The hero photo is staged like a keynote: copy left, the unit full-height right. On load the image sits under a radial white overlay (the &ldquo;bloom&rdquo;) while easing from <code>blur(14px)/scale(1.05)</code> to sharp — a stage light coming up rather than an image fading in. The photo's own studio grey is melted into the page with three edge gradients so there is no visible rectangle, only a robot standing in white.</p></section>
+
+<section><h2><span>03</span> The trust moment</h2><p>The egg-in-hand photo carries the emotional argument, so it gets the slowest reveal on the page: a focus-in from <code>blur(22px)</code> at 30% visibility, 1.7&ndash;2.2s curves, paired with force-control copy (0.6 N grip, 2,000 force samples per second, zero cracked in 1.2M grips). Blur, not opacity — it reads as a camera finding focus on the shell speckle.</p></section>
+
+<section><h2><span>04</span> Drawn icons, counted specs</h2><p>Capability icons are hand-written inline SVGs with <code>pathLength="100"</code>; ink strokes draw first, then one cyan detail per icon, staggered per card. The specs strip counts up in tabular JetBrains Mono with a cubic ease-out and snaps to exact final values. <code>prefers-reduced-motion</code> pre-applies every final state — nothing moves, everything shows.</p></section>
+
+<section><h2><span>05</span> Voice</h2><p>Warm-precise: numbers everywhere, but each one wearing something human — &ldquo;measured, not promised&rdquo;, &ldquo;one skeptical cat present&rdquo;, &ldquo;the egg was breakfast&rdquo;. The safety section drops the jokes entirely; calm and serious is its own register.</p></section>
+
+<div class="credits">
+<b>Assets</b> — 2 images, generated for this site:<br>
+unit.webp (1920&times;1072) &middot; hand.webp (1400&times;1738)<br>
+<b>Nano Banana 2</b> via <b>Higgsfield MCP</b>, 2K renders, converted with <b>ffmpeg</b> to WebP.<br>
+Fonts: Sora / Instrument Sans / JetBrains Mono (Google Fonts).
+</div>
+
+<div class="pbox"><div class="ph"><span>Reproduction prompt</span><button onclick="navigator.clipboard&&navigator.clipboard.writeText(document.getElementById('prompt').textContent)">Copy</button></div>
+<pre id="prompt">Build a single-file product-launch site for SERVO, a fictional consumer humanoid-robot company. Tagline: "Help, at home." Aesthetic: futuristic-clean LIGHT — a seamless white studio world (#FCFCFD paper, #F4F5F7 studio grey), ink #16181C, warm grey #8A8F96, and exactly one accent: cyan #5EEAD4 (deep variant #2BB8A3 on white). Fonts: Sora (light geometric display, weight 300 with 500 emphasis spans), Instrument Sans (text), JetBrains Mono (labels, specs). The design system is the "status line": every section rule is a 1px line whose ::after gradient (transparent-cyan-white-cyan-transparent) sweeps across once when it enters the viewport, echoing the robot's visor light — fire it via IntersectionObserver adding a class, never on a loop.
+
+Hero: stage a 1920x1072 photo of a white humanoid in a white studio like a keynote — copy vertically centered left (mono kicker "SERVO 01 · HOME UNIT", huge light headline "Help, at home.", one warm sentence), the unit full-height right via object-fit cover; melt the photo's studio grey into the page with edge gradients so no rectangle shows. Reveal it with a light-bloom: a radial white overlay fades out while the image eases from blur(14px)/scale(1.05) to sharp over ~2s. Add a fixed mono meta line at the bottom: "UNIT 01 / STANDING BY · 178 CM · 58 KG · ● STATUS: CALM" with the dot gently blinking. On mobile, stack: copy, then the unit at ~190% width cropped by the viewport.
+
+Then: (1) "What it does" — six capability cards (laundry, dishes, plants, fetching, nightly tidying, gentle checking) in a 1px-gap grid; each card gets a hand-drawn inline SVG line icon with pathLength=100 whose ink strokes draw in on entry, plus one cyan detail stroke drawing after, staggered per card; end each card with a mono tag like "0 FICUS CASUALTIES". (2) THE trust moment: a full-bleed portrait photo of the robot's hand holding an egg, revealed by a slow focus-in (blur 22px to sharp, ~1.7s) beside force-control copy — 0.6 N egg grip, 2,000 force samples/s, zero cracked in 1.2M grips — with the caption "FIG. 02 — GRIP TEST, UNSTAGED. THE EGG WAS BREAKFAST." (3) A dark ink specs strip with mono count-up counters: 9 h battery, 15 kg payload, 31 dB, 1.4 m/s, footnoted "measured, not promised". (4) A calm, serious safety/privacy section: on-device processing, a physical camera shutter, hardware force limits, a mechanical off switch, annual public audits. (5) A mock reserve form ($149 refundable) that swaps to "Reserved ✓ — you're #4,182 in line" on submit.
+
+Voice: warm-precise English. prefers-reduced-motion pre-applies all final states. Images lazy with real dimensions (hero eager). No horizontal overflow at 390px; zero console errors from file://.</pre></div>
+</div>
+<script src="../../shop.js" defer></script>
+</body></html>

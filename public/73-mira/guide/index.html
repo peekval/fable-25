@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>MIRA — Guide &amp; Prompt</title>
+<meta name="description" content="System-Breakdown und Repro-Prompt für MIRA: Creator-Brand-Seite mit selbstzeichnendem Squiggle-Motiv, Count-up-Strip und Media-Kit-Panel.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,800&family=Karla:ital,wght@0,400;0,700;1,400&family=Caveat:wght@600&display=swap" rel="stylesheet">
+<style>
+:root{
+  --cream:#FAF5EE;--cream-2:#F3EADD;--terra:#D97D5A;--rust:#B5542F;
+  --ink:#3A322C;--soft:#6E6156;--line:rgba(58,50,44,.16);
+}
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:"Karla",system-ui,sans-serif;background:var(--cream);color:var(--ink);line-height:1.65;overflow-x:clip}
+::selection{background:var(--terra);color:var(--cream)}
+.pill{position:fixed;top:16px;left:16px;z-index:60;font-family:"Bricolage Grotesque",sans-serif;font-weight:600;font-size:13px;background:rgba(250,245,238,.85);color:var(--ink);text-decoration:none;padding:8px 16px;border-radius:999px;border:1.5px solid rgba(58,50,44,.25);backdrop-filter:blur(6px)}
+.pill:hover{border-color:var(--rust);color:var(--rust)}
+main{max-width:880px;margin:0 auto;padding:110px clamp(20px,5vw,48px) 80px}
+.kicker{font-family:"Bricolage Grotesque",sans-serif;font-weight:600;font-size:12px;letter-spacing:.24em;color:var(--rust);margin-bottom:14px;text-transform:uppercase}
+h1{font-family:"Bricolage Grotesque",sans-serif;font-weight:800;font-size:clamp(34px,7vw,60px);line-height:1.02;letter-spacing:-.02em}
+h1 em{font-style:normal;color:var(--rust)}
+.sub{margin-top:16px;font-size:17px;max-width:60ch;color:var(--soft)}
+h2{font-family:"Bricolage Grotesque",sans-serif;font-weight:800;font-size:clamp(19px,3vw,26px);margin:60px 0 12px;padding-top:22px;border-top:1.5px solid var(--line);letter-spacing:-.01em}
+h2 .no{color:var(--rust);font-size:12px;letter-spacing:.24em;display:block;margin-bottom:6px;font-weight:600;text-transform:uppercase}
+p{margin:12px 0;color:#514840}
+p b{color:var(--ink)}
+code{font-family:ui-monospace,Menlo,monospace;font-size:.85em;background:var(--cream-2);padding:1px 6px;border-radius:5px;color:var(--rust)}
+ul{margin:12px 0 12px 20px}
+li{margin:7px 0;color:#514840}
+li b{color:var(--rust)}
+pre{background:#2E2824;color:var(--cream);padding:26px;overflow-x:auto;font-family:ui-monospace,Menlo,monospace;font-size:12.5px;line-height:1.7;white-space:pre-wrap;border-radius:16px;border-left:4px solid var(--terra);margin-top:18px}
+.asset-note{border:1.5px solid var(--line);background:var(--cream-2);border-radius:14px;padding:18px 20px;margin:18px 0;font-size:14px}
+.asset-note b{font-size:11px;letter-spacing:.2em;color:var(--rust);display:block;margin-bottom:6px;text-transform:uppercase;font-family:"Bricolage Grotesque",sans-serif;font-weight:600}
+footer{max-width:880px;margin:0 auto;padding:0 clamp(20px,5vw,48px) 60px;font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:var(--soft);display:flex;gap:24px;flex-wrap:wrap;font-weight:700}
+footer a{color:var(--ink);text-decoration:none;border-bottom:1.5px solid var(--terra)}
+footer a:hover{color:var(--rust)}
+</style>
+</head>
+<body>
+<a class="pill" href="/73-mira/">&larr; MIRA</a>
+<main>
+  <div class="kicker">FABLE/25 &middot; SITE 73 &middot; GUIDE &amp; PROMPT</div>
+  <h1>Eine Creator-Brand,<br>mit <em>Squiggle</em> signiert.</h1>
+  <p class="sub">Wie MIRA funktioniert: ein warmes Cream-Terracotta-System, ein selbstzeichnendes Unterschrift-Motiv, Count-up-Kennzahlen und ein Media-Kit-Panel, das Marken direkt anspricht — alles in einer einzigen HTML-Datei.</p>
+
+  <h2><span class="no">01 — Das Farb- &amp; Typo-System</span>Creator-warm statt Corporate</h2>
+  <p>Vier Farben tragen alles: Cream <code>#FAF5EE</code> als Grund, Terracotta <code>#D97D5A</code> f&uuml;r Akzente und das Squiggle, Rust <code>#B5542F</code> f&uuml;r CTAs und das Media-Kit-Panel, weiches Braun <code>#3A322C</code> als Tinte statt Schwarz. Drei Schriften mit klaren Rollen:</p>
+  <ul>
+    <li><b>Bricolage Grotesque</b> (800) — expressives Display f&uuml;r Headlines, Zahlen, Buttons; die optische Gr&ouml;&szlig;enachse macht sie bei 84px charmant rund.</li>
+    <li><b>Karla</b> — warmer, gut lesbarer Flie&szlig;text.</li>
+    <li><b>Caveat</b> — Handschrift nur f&uuml;r Mini-Notizen (&bdquo;PS: Runterscrollen lohnt sich&ldquo;, Badge, Foto-Caption), nie f&uuml;r Inhalte.</li>
+  </ul>
+  <p>Gro&szlig;z&uuml;gige Radien &uuml;berall (22&ndash;44px, Pills 999px); das Portr&auml;t sitzt in einem organischen Blob (<code>border-radius:44% 56% 52% 48% / 42% 44% 56% 58%</code>) mit einem um 4&deg; rotierten Rahmen-Echo dahinter.</p>
+
+  <h2><span class="no">02 — Das Squiggle-Motiv</span>Eine Unterschrift, f&uuml;nfmal</h2>
+  <p>Ein einziger SVG-Pfad (drei weiche S-Kurven, <code>stroke-width:7</code>, runde Kappen) taucht f&uuml;nfmal auf: unter &bdquo;ehrlich&ldquo; im Hero, in jeder Formatkarte, im Kontaktblock. Er zeichnet sich selbst per klassischem Dash-Trick: JS misst einmal <code>getTotalLength()</code> und schreibt es als <code>--len</code> in <code>stroke-dasharray/-offset</code>; sobald der IntersectionObserver das Element sieht, f&auml;hrt eine <code>.8s</code>-Transition den Offset auf 0.</p>
+  <p><b>Stolperfalle aus dem Build:</b> die erste Version referenzierte den Pfad per <code>&lt;use&gt;</code> — aber CSS-Selektoren erreichen den Use-Shadow-Content nicht, die Strokes griffen nie. L&ouml;sung: die Pfade inline duplizieren (5 &times; eine Zeile). Bei <code>prefers-reduced-motion</code> steht der Offset per <code>!important</code> auf 0 — die Squiggles sind fertig gezeichnet, nichts animiert.</p>
+
+  <h2><span class="no">03 — Bewegung</span>Ein Easing, kurze Wege</h2>
+  <p>Alles l&auml;uft &uuml;ber <code>cubic-bezier(.25,.8,.3,1)</code>: Reveals (<code>.55s</code>, 70ms-Stagger), Balken (<code>.9s</code> auf <code>width</code>), Buttons. Die Count-up-Zahlen (480k / 1,2M / 96k, plus Media-Kit) nutzen dieselbe Kurve als cubic-out in rAF und formatieren mit Dezimal-Komma. Ein einziger IntersectionObserver triggert Reveals, Squiggles, Counter und Balken. Der Karten-Tilt (&plusmn;7&deg;/&plusmn;8&deg; per <code>pointermove</code>, Kinder auf <code>translateZ</code>-Ebenen) ist auf <code>pointer:fine</code> und Nicht-reduced-motion begrenzt.</p>
+
+  <h2><span class="no">04 — Media-Kit-Panel</span>Marken sind die Kund:innen</h2>
+  <p>Das Rust-Panel dreht die Perspektive: Reichweite/Engagement als Count-ups, Zielgruppe als vier Mini-Balken (breitester Wert = 100%, Rest relativ skaliert — so bleibt die Hierarchie lesbar), CTA &bdquo;Media-Kit anfragen&ldquo; als Cream-Button auf Rust. Kooperationen sind reine Text-Logos in einer Zeilenliste mit Hover-Fill; das Testimonial h&auml;ngt an einem Terracotta-Balken.</p>
+
+  <h2><span class="no">05 — Assets</span>Herkunft &amp; Aufbereitung</h2>
+  <div class="asset-note">
+    <b>Asset-Credits</b>
+    Beide Fotos wurden mit <b>Soul 2.0</b> &uuml;ber das Higgsfield&nbsp;MCP generiert (fiktive Person, editorial gepromptet gegen Terracotta bzw. K&uuml;chenlicht) und mit <b>ffmpeg</b> zu WebP konvertiert: <code>portrait.webp</code> 1400&times;1867 (~124&nbsp;KB, eager + fetchpriority high), <code>kitchen.webp</code> 1600&times;1067 (~88&nbsp;KB, lazy). Beide mit echten <code>width/height</code>-Attributen gegen Layout-Shift.
+  </div>
+
+  <h2><span class="no">06 — Repro-Prompt</span>Zum Nachbauen</h2>
+  <pre id="prompt">Build a one-page personal-brand site for a fictional German lifestyle creator: MIRA — "Alltag, ehrlich schön." One self-contained HTML file (Google Fonts allowed, no JS libraries; local assets assets/portrait.webp 1400×1867 editorial portrait against terracotta, assets/kitchen.webp 1600×1067 filming at a kitchen counter). All copy in warm German du-Form — honest, unpolished charm ("Kein Filter-Theater. Versprochen.").
+
+Palette: cream #FAF5EE background (#F3EADD tint), terracotta #D97D5A, rust #B5542F (deep #8F3E1F), soft brown ink #3A322C — never pure black. Generous rounded shapes: 22–44px radii, pill buttons, the portrait in an organic blob border-radius (44% 56% 52% 48% / 42% 44% 56% 58%) with a 4°-rotated terracotta outline echo and a hand-written circular sticker badge ("seit 2021 online ♥"). Fonts: Bricolage Grotesque 800 for display/numbers/buttons, Karla for text, Caveat only for tiny handwritten notes.
+
+Signature motif: one hand-drawn SVG squiggle (three soft S-curves, stroke 7, round caps) repeated five times — under "ehrlich" in the hero headline, in each format card, in the contact block. It draws itself via stroke-dasharray/offset: JS measures getTotalLength() once, writes it as a CSS var, and an IntersectionObserver flips a class that transitions the offset to 0 in .8s. Inline the path five times — CSS selectors cannot style &lt;use&gt; shadow content. Under prefers-reduced-motion the squiggles sit fully drawn (offset 0 !important) and everything else is static.
+
+Sections: (1) Hero — headline "Alltag, ehrlich schön.", du-Form intro, two pill CTAs plus a Caveat "PS: Runterscrollen lohnt sich ↓", portrait right (eager, fetchpriority high); below, a 3-up follower strip with count-up counters: Instagram 480k, TikTok 1,2M, YouTube 96k (German decimal comma, cubic-out rAF). (2) Formate — three playful cards (Kochen ohne Rezept / 5-Minuten-Ordnung / Ehrliche Empfehlungen) with numbered chips, per-card cream tints, a squiggle divider, weekday tags, and pointermove tilt (±7°/8°, children on translateZ; fine pointers only). (3) Media-Kit — a big rust rounded panel addressing brands: count-up stats (8,4 Mio. Reichweite, 7,2 % Engagement, 72 % weiblich, DACH), Zielgruppe as four mini bars (widest = 100%, width animates on view), CTA "Media-Kit anfragen". (4) Behind the scenes — kitchen.webp full-bleed (lazy, real dims) with a cream caption card sitting on the photo. (5) Kooperationen — five fictional text-logo rows (HAFERGLÜCK, Studio Lehm, NORDWIND KÜCHE, blattwerk., Kiesel &amp; Co) with hover fill, plus one testimonial blockquote. (6) Kontakt — centered newsletter mock whose submit shows a handwritten demo confirmation, plus a mailto line.
+
+Motion: exactly one easing, cubic-bezier(.25,.8,.3,1), quick reveals (.55s, 70ms stagger), the squiggle draw as the only flourish. Fixed "← 25" pill to the hub, footer "guide &amp; prompt →". html/body overflow-x clip; scrollWidth ≤ 392 at 390px; zero console errors from file://.</pre>
+</main>
+<footer>
+  <span>MIRA &middot; fiktives Projekt</span>
+  <span><a href="/73-mira/">zur&uuml;ck zur Seite</a></span>
+  <span><a href="/">FABLE/25 hub</a></span>
+</footer>
+<script src="../../shop.js" defer></script>
+</body>
+</html>

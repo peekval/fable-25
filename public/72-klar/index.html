@@ -1,0 +1,512 @@
+<!DOCTYPE html>
+<html lang="de-CH">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>KLAR — Marketing ohne Lärm</title>
+<meta name="description" content="KLAR ist eine Zürcher Agentur für Marketing ohne Lärm. Wir machen aus Botschaften Ansagen.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Archivo:ital,wdth,wght@0,62..125,100..900;1,62..125,100..900&display=swap" rel="stylesheet">
+<style>
+:root{
+  --paper:#FAF8F4;
+  --ink:#171614;
+  --coral:#FF5A48;
+  --hair:rgba(23,22,20,.14);
+  --dim:rgba(23,22,20,.56);
+  --ease:cubic-bezier(.3,.7,0,1);   /* the ONE easing */
+  --rail:clamp(20px,6vw,84px);      /* coral-thread x position */
+}
+*{margin:0;padding:0;box-sizing:border-box}
+html{scroll-behavior:smooth}
+@media (prefers-reduced-motion:reduce){html{scroll-behavior:auto}}
+body{
+  font-family:"Archivo",system-ui,sans-serif;
+  font-variation-settings:"wdth" 100;
+  background:var(--paper);
+  color:var(--ink);
+  overflow-x:clip;
+  -webkit-font-smoothing:antialiased;
+  text-rendering:optimizeLegibility;
+}
+::selection{background:var(--coral);color:var(--paper)}
+a{color:inherit}
+img{display:block;max-width:100%}
+
+/* ---------- back pill ---------- */
+.pill{
+  position:fixed;top:1.1rem;left:1.1rem;z-index:60;
+  font-size:.8rem;font-weight:500;letter-spacing:.1em;text-decoration:none;
+  color:var(--ink);background:var(--paper);
+  border:1px solid var(--hair);border-radius:999px;
+  padding:.4rem .9rem;
+  transition:background .35s var(--ease),color .35s var(--ease),border-color .35s var(--ease);
+}
+.pill:hover{background:var(--ink);color:var(--paper);border-color:var(--ink)}
+
+/* ---------- coral thread ---------- */
+#thread{
+  position:fixed;top:0;bottom:0;left:var(--rail);width:1px;z-index:40;
+  background:rgba(23,22,20,.08);
+  pointer-events:none;
+}
+#dot{
+  position:fixed;top:0;left:0;z-index:41;
+  width:11px;height:11px;border-radius:50%;
+  background:var(--coral);
+  pointer-events:none;
+  will-change:transform;
+  opacity:0;
+}
+#dot.live{opacity:1}
+/* the dot's birthplace: the full stop of the wordmark */
+.dot-origin{
+  display:inline-block;width:.13em;height:.13em;border-radius:50%;
+  background:transparent;vertical-align:baseline;
+  margin-left:.06em;
+}
+@media (prefers-reduced-motion:reduce){
+  #dot{display:none}
+  .dot-origin{background:var(--coral)}
+}
+
+/* ---------- layout ---------- */
+.pad{padding-left:calc(var(--rail) + clamp(24px,4vw,64px));padding-right:clamp(20px,6vw,96px)}
+section{position:relative}
+.kicker{
+  font-size:.72rem;font-weight:600;letter-spacing:.34em;text-transform:uppercase;
+  color:var(--dim);
+}
+.kicker b{color:var(--coral);font-weight:600}
+
+/* reveal — one move, one easing */
+.rv{opacity:0;transform:translateY(14px);transition:opacity .5s var(--ease),transform .5s var(--ease)}
+.rv.on{opacity:1;transform:none}
+@media (prefers-reduced-motion:reduce){.rv{opacity:1;transform:none;transition:none}}
+
+/* ---------- hero ---------- */
+#hero{min-height:100vh;min-height:100svh;display:flex;flex-direction:column;justify-content:center}
+.wordmark{
+  font-variation-settings:"wdth" 125;
+  font-weight:800;
+  font-size:clamp(4.6rem,17vw,15.5rem);
+  line-height:.92;
+  letter-spacing:-.035em;
+  text-transform:uppercase;
+}
+#hero p{
+  margin-top:clamp(1.6rem,4vh,3rem);
+  font-size:clamp(1.15rem,2.2vw,1.7rem);
+  font-weight:400;line-height:1.4;
+  max-width:26ch;
+}
+#hero .kicker{margin-bottom:clamp(1.4rem,4vh,3rem)}
+.hero-foot{
+  position:absolute;bottom:2rem;right:clamp(20px,6vw,96px);
+  font-size:.72rem;letter-spacing:.28em;text-transform:uppercase;color:var(--dim);
+}
+
+/* ---------- arbeiten ---------- */
+#arbeiten{padding-top:clamp(4rem,10vh,8rem)}
+.sec-head{display:flex;justify-content:space-between;align-items:baseline;padding-bottom:1.2rem}
+.sec-head .num{font-size:.72rem;letter-spacing:.28em;color:var(--dim)}
+
+.case-figure{
+  position:relative;height:clamp(320px,68vh,720px);overflow:hidden;
+}
+.case-figure img{
+  position:absolute;left:0;top:-10%;width:100%;height:120%;
+  object-fit:cover;
+  will-change:transform;
+}
+.case-figure figcaption{
+  position:absolute;left:calc(var(--rail) + clamp(24px,4vw,64px));bottom:1.4rem;
+  font-size:.72rem;letter-spacing:.28em;text-transform:uppercase;
+  color:var(--paper);
+  text-shadow:0 1px 14px rgba(0,0,0,.55);
+}
+@media (prefers-reduced-motion:reduce){.case-figure img{top:0;height:100%}}
+
+.case-row{
+  display:grid;
+  grid-template-columns:3.2rem 1.1fr 1.4fr auto;
+  gap:clamp(.8rem,2.5vw,2.5rem);
+  align-items:baseline;
+  border-top:1px solid var(--hair);
+  padding-top:clamp(1.3rem,3vh,2.2rem);
+  padding-bottom:clamp(1.3rem,3vh,2.2rem);
+  transition:background .35s var(--ease),color .35s var(--ease);
+  cursor:default;
+}
+.case-row:last-of-type{border-bottom:1px solid var(--hair)}
+.case-row .idx{font-size:.78rem;font-weight:500;color:var(--dim);letter-spacing:.1em}
+.case-row .client{
+  font-variation-settings:"wdth" 118;
+  font-weight:700;font-size:clamp(1.5rem,4vw,3rem);letter-spacing:-.02em;line-height:1.05;
+  text-transform:uppercase;
+}
+.case-row .task{font-size:clamp(.9rem,1.4vw,1.05rem);line-height:1.5;color:var(--dim);max-width:38ch;transition:color .35s var(--ease)}
+.case-row .result{text-align:right}
+.case-row .result .n{
+  white-space:nowrap;
+  font-variation-settings:"wdth" 112;
+  font-weight:800;font-size:clamp(2rem,5vw,4rem);letter-spacing:-.03em;
+  color:var(--coral);
+  font-variant-numeric:tabular-nums;
+  transition:color .35s var(--ease);
+}
+.case-row .result .l{display:block;font-size:.72rem;letter-spacing:.22em;text-transform:uppercase;color:var(--dim);margin-top:.2rem;transition:color .35s var(--ease)}
+@media (hover:hover){
+  .case-row:hover{background:var(--coral);color:var(--paper)}
+  .case-row:hover .task,.case-row:hover .idx,.case-row:hover .result .l{color:rgba(250,248,244,.82)}
+  .case-row:hover .result .n{color:var(--paper)}
+}
+@media (max-width:760px){
+  .case-row{grid-template-columns:2rem 1fr;row-gap:.8rem}
+  .case-row .client{grid-column:2}
+  .case-row .task{grid-column:2;grid-row:2;max-width:none}
+  .case-row .result{grid-column:2;grid-row:3;text-align:left}
+}
+
+/* ---------- ansatz ---------- */
+#ansatz{height:340vh}
+#ansatz .sticky{
+  position:sticky;top:0;height:100vh;height:100svh;
+  display:flex;flex-direction:column;justify-content:center;
+  overflow:hidden;
+}
+.prinzip{
+  position:absolute;left:calc(var(--rail) + clamp(24px,4vw,64px));right:clamp(20px,6vw,96px);
+  top:50%;transform:translateY(calc(-50% + 14px));
+  opacity:0;
+  transition:opacity .5s var(--ease),transform .5s var(--ease);
+  pointer-events:none;
+}
+.prinzip.active{opacity:1;transform:translateY(-50%)}
+.prinzip .kicker{margin-bottom:1.4rem}
+.prinzip h3{
+  font-variation-settings:"wdth" 116;
+  font-weight:800;
+  font-size:clamp(2.4rem,7.2vw,6.4rem);
+  line-height:1.02;letter-spacing:-.03em;
+  max-width:14ch;
+  text-transform:uppercase;
+}
+.prinzip h3 em{font-style:normal;color:var(--coral)}
+.ansatz-count{
+  position:absolute;bottom:2rem;right:clamp(20px,6vw,96px);
+  font-size:.72rem;letter-spacing:.28em;color:var(--dim);
+  font-variant-numeric:tabular-nums;
+}
+@media (prefers-reduced-motion:reduce){
+  #ansatz{height:auto;padding:clamp(4rem,10vh,8rem) 0}
+  #ansatz .sticky{position:static;height:auto;display:block;overflow:visible}
+  .prinzip{position:static;transform:none;opacity:1;padding:2.5rem clamp(20px,6vw,96px) 2.5rem calc(var(--rail) + clamp(24px,4vw,64px))}
+  .ansatz-count{display:none}
+}
+
+/* ---------- studio ---------- */
+#studio{padding-top:clamp(4rem,10vh,8rem)}
+.studio-grid{
+  display:grid;grid-template-columns:1.25fr .9fr;gap:clamp(1.5rem,4vw,4rem);
+  align-items:end;padding-top:1.2rem;padding-bottom:clamp(4rem,10vh,7rem);
+}
+.studio-grid img{width:100%;height:auto}
+.studio-copy p{
+  font-size:clamp(1.05rem,1.7vw,1.35rem);line-height:1.55;max-width:34ch;
+}
+.studio-copy p + p{margin-top:1rem;color:var(--dim);font-size:clamp(.95rem,1.4vw,1.05rem)}
+.team{display:flex;gap:.7rem;margin-top:2rem;flex-wrap:wrap}
+.mono{
+  width:3.1rem;height:3.1rem;border-radius:50%;
+  border:1px solid var(--hair);
+  display:grid;place-items:center;
+  font-size:.8rem;font-weight:600;letter-spacing:.08em;
+  transition:background .35s var(--ease),color .35s var(--ease),border-color .35s var(--ease);
+}
+.mono:hover{background:var(--coral);color:var(--paper);border-color:var(--coral)}
+.team-note{margin-top:.9rem;font-size:.72rem;letter-spacing:.22em;text-transform:uppercase;color:var(--dim)}
+@media (max-width:760px){.studio-grid{grid-template-columns:1fr}}
+
+/* ---------- kontakt ---------- */
+#kontakt{padding-top:clamp(3rem,8vh,6rem);padding-bottom:1.5rem}
+#kontakt .kicker{margin-bottom:1.6rem}
+.mail{
+  display:inline-block;
+  font-variation-settings:"wdth" 116;
+  font-weight:800;
+  font-size:clamp(1.9rem,7.4vw,6.6rem);
+  letter-spacing:-.03em;line-height:1.05;
+  text-decoration:none;
+  border-bottom:.06em solid transparent;
+  transition:color .35s var(--ease),border-color .35s var(--ease);
+  word-break:break-word;
+}
+.mail:hover{color:var(--coral);border-color:var(--coral)}
+footer{
+  margin-top:clamp(3.5rem,9vh,7rem);
+  border-top:1px solid var(--hair);
+  padding-top:1.3rem;padding-bottom:1.6rem;
+  display:flex;justify-content:space-between;gap:1rem;flex-wrap:wrap;
+  font-size:.78rem;color:var(--dim);
+}
+footer a{text-decoration:none;transition:color .35s var(--ease)}
+footer a:hover{color:var(--coral)}
+</style>
+</head>
+<body>
+
+<a class="pill" href="/">&larr; 25</a>
+
+<div id="thread" aria-hidden="true"></div>
+<div id="dot" aria-hidden="true"></div>
+
+<!-- ============ 1 · HERO ============ -->
+<section id="hero" class="pad">
+  <p class="kicker rv">Marketing ohne L&auml;rm <b>·</b> Z&uuml;rich</p>
+  <h1 class="wordmark" aria-label="KLAR">KLAR<span class="dot-origin" id="dot-origin" aria-hidden="true"></span></h1>
+  <p class="rv">Wir machen aus Botschaften Ansagen.</p>
+  <div class="hero-foot" aria-hidden="true">Scrollen — der Punkt kommt mit</div>
+</section>
+
+<!-- ============ 2 · ARBEITEN ============ -->
+<section id="arbeiten" aria-labelledby="arbeiten-h">
+  <div class="pad sec-head">
+    <h2 id="arbeiten-h" class="kicker rv">Arbeiten <b>·</b> Vier Auftritte, vier Zahlen</h2>
+    <span class="num rv">01 — 04</span>
+  </div>
+
+  <figure class="case-figure">
+    <img id="parallax" src="assets/billboard.webp" alt="Nächtliches Plakat einer korallenroten Alpina-Kampagne über einer leeren Strasse" width="1920" height="1080" loading="lazy" decoding="async">
+    <figcaption>Alpina Privatbank · Out-of-Home, Nacht eins</figcaption>
+  </figure>
+
+  <div class="pad">
+    <article class="case-row rv">
+      <span class="idx">01</span>
+      <h3 class="client">Alpina Privatbank</h3>
+      <p class="task">Rebranding und Plakatkampagne. Ein Satz pro Wand, keine Bildwelt, keine Fussnoten.</p>
+      <div class="result">
+        <span class="n" data-count="212" data-prefix="+" data-suffix="%">+0%</span>
+        <span class="l">Markenerinnerung</span>
+      </div>
+    </article>
+    <article class="case-row rv">
+      <span class="idx">02</span>
+      <h3 class="client">Stadtwerk Turicum</h3>
+      <p class="task">Dachkampagne für Strom, Wasser und Wärme. Drei Produkte, eine Stimme, null Fachjargon.</p>
+      <div class="result">
+        <span class="n" data-count="38" data-prefix="&minus;" data-suffix="%">&minus;0%</span>
+        <span class="l">Streuverlust</span>
+      </div>
+    </article>
+    <article class="case-row rv">
+      <span class="idx">03</span>
+      <h3 class="client">Café Meret</h3>
+      <p class="task">Lancierung in drei Quartieren. Budget klein, Botschaft kleiner: «Kaffee. Fertig.»</p>
+      <div class="result">
+        <span class="n" data-count="4.6" data-decimals="1" data-suffix="&times;">0.0&times;</span>
+        <span class="l">Umsatz im ersten Jahr</span>
+      </div>
+    </article>
+    <article class="case-row rv">
+      <span class="idx">04</span>
+      <h3 class="client">Weingut Silberrain</h3>
+      <p class="task">Direktvertrieb statt Zwischenhandel. Die ganze Kampagne bestand aus neun Wörtern.</p>
+      <div class="result">
+        <span class="n" data-count="9" data-suffix="">0</span>
+        <span class="l">Wörter, ausverkaufter Jahrgang</span>
+      </div>
+    </article>
+  </div>
+</section>
+
+<!-- ============ 3 · ANSATZ ============ -->
+<section id="ansatz" aria-label="Ansatz — drei Prinzipien">
+  <div class="sticky">
+    <div class="prinzip" data-p="0">
+      <p class="kicker">Ansatz <b>·</b> Prinzip eins</p>
+      <h3>Weglassen ist eine <em>Entscheidung.</em></h3>
+    </div>
+    <div class="prinzip" data-p="1">
+      <p class="kicker">Ansatz <b>·</b> Prinzip zwei</p>
+      <h3>Eine Botschaft. <em>Nicht zwei.</em></h3>
+    </div>
+    <div class="prinzip" data-p="2">
+      <p class="kicker">Ansatz <b>·</b> Prinzip drei</p>
+      <h3>Laut ist einfach. <em>Klar ist Arbeit.</em></h3>
+    </div>
+    <span class="ansatz-count" id="ansatz-count" aria-hidden="true">1 / 3</span>
+  </div>
+</section>
+
+<!-- ============ 4 · STUDIO ============ -->
+<section id="studio" aria-labelledby="studio-h">
+  <div class="pad sec-head">
+    <h2 id="studio-h" class="kicker rv">Studio <b>·</b> Langstrasse 214, Zürich</h2>
+    <span class="num rv">Seit 2019</span>
+  </div>
+  <div class="pad studio-grid">
+    <img src="assets/studio.webp" alt="Helles Agenturstudio mit aufgepinnten Plakat-Entwürfen an einer Wand" width="1920" height="1080" loading="lazy" decoding="async" class="rv">
+    <div class="studio-copy rv">
+      <p>Sieben Leute, ein Raum, eine Wand voller Entwürfe — und ein Papierkorb, der wichtiger ist als jeder Beamer.</p>
+      <p>Wir nehmen pro Jahr acht Mandate an. Nicht mehr. Wer alles macht, macht nichts richtig — und wir sind hier, um eine Sache richtig zu machen.</p>
+      <div class="team" aria-label="Team">
+        <span class="mono" title="Mara Brunner — Strategie">MB</span>
+        <span class="mono" title="Jonas Keller — Design">JK</span>
+        <span class="mono" title="Ada Steiner — Text">AS</span>
+        <span class="mono" title="Levin Roth — Media">LR</span>
+        <span class="mono" title="Nora Vogel — Beratung">NV</span>
+        <span class="mono" title="Tim Odermatt — Produktion">TO</span>
+        <span class="mono" title="Selin Aksoy — Research">SA</span>
+      </div>
+      <p class="team-note">Keine Portraits. Monogramme genügen.</p>
+    </div>
+  </div>
+</section>
+
+<!-- ============ 5 · KONTAKT ============ -->
+<section id="kontakt" class="pad" aria-labelledby="kontakt-h">
+  <h2 id="kontakt-h" class="kicker rv">Kontakt <b>·</b> Ein Satz genügt auch hier</h2>
+  <a class="mail rv" href="mailto:hallo@klar.studio">hallo@klar.studio</a>
+  <footer>
+    <span>&copy; 2026 KLAR — Marketing ohne L&auml;rm, Z&uuml;rich</span>
+    <a href="/72-klar/guide/">guide &amp; prompt &rarr;</a>
+  </footer>
+</section>
+
+<script>
+(function(){
+'use strict';
+var reduced = matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+/* ---------- reveals (IO, once) ---------- */
+var io = new IntersectionObserver(function(es){
+  es.forEach(function(e){ if(e.isIntersecting){ e.target.classList.add('on'); io.unobserve(e.target); } });
+},{threshold:.25});
+document.querySelectorAll('.rv').forEach(function(el){ io.observe(el); });
+
+/* ---------- counters (IO, once, one easing) ---------- */
+function fmt(v,d){ return d ? v.toFixed(d) : String(Math.round(v)); }
+function runCount(el){
+  var target = parseFloat(el.dataset.count),
+      dec    = parseInt(el.dataset.decimals||'0',10),
+      pre    = el.dataset.prefix||'', suf = el.dataset.suffix||'';
+  if(reduced){ el.textContent = pre + fmt(target,dec) + suf; return; }
+  var t0 = performance.now(), D = 900;
+  (function step(now){
+    var t = Math.min((now - t0)/D, 1),
+        e = 1 - Math.pow(1 - t, 3);           /* same shape as --ease */
+    el.textContent = pre + fmt(target*e,dec) + suf;
+    if(t < 1) requestAnimationFrame(step);
+  })(t0);
+}
+var cio = new IntersectionObserver(function(es){
+  es.forEach(function(e){ if(e.isIntersecting){ runCount(e.target); cio.unobserve(e.target); } });
+},{threshold:.4});
+document.querySelectorAll('[data-count]').forEach(function(el){
+  // decode any HTML entities used in data attributes once
+  cio.observe(el);
+});
+
+/* ---------- ansatz: one principle at a time ---------- */
+var ansatz = document.getElementById('ansatz'),
+    prinzips = ansatz.querySelectorAll('.prinzip'),
+    aCount = document.getElementById('ansatz-count'),
+    aIdx = -1;
+function setPrinzip(i){
+  if(i === aIdx) return;
+  aIdx = i;
+  prinzips.forEach(function(p,j){ p.classList.toggle('active', j===i); });
+  aCount.textContent = (i+1) + ' / 3';
+}
+
+/* ---------- scroll thread + parallax (single rAF) ---------- */
+var dot = document.getElementById('dot'),
+    origin = document.getElementById('dot-origin'),
+    plx = document.getElementById('parallax'),
+    fig = plx.parentElement,
+    dx = 0, dy = 0, started = false;
+
+function railX(){ return document.getElementById('thread').getBoundingClientRect().left + .5; }
+
+function frame(){
+  var vh = innerHeight,
+      max = document.documentElement.scrollHeight - vh,
+      p = max > 0 ? Math.min(scrollY / max, 1) : 0;
+
+  if(!reduced){
+    /* dot: born as the wordmark's full stop, then rides the rail */
+    var o = origin.getBoundingClientRect(),
+        m = Math.min(Math.max(scrollY / (vh * .45), 0), 1);
+    m = m*m*(3-2*m); /* smoothstep — same in/out feel as --ease */
+    var tx = o.left + o.width/2  + (railX() - (o.left + o.width/2)) * m,
+        ty = o.top  + o.height/2 + ((96 + p*(vh-192)) - (o.top + o.height/2)) * m;
+    if(!started){ dx = tx; dy = ty; started = true; dot.classList.add('live'); }
+    dx += (tx - dx) * .16;
+    dy += (ty - dy) * .16;
+    dot.style.transform = 'translate(' + (dx - 5.5) + 'px,' + (dy - 5.5) + 'px)';
+
+    /* parallax: billboard drifts inside its clipped frame */
+    var r = fig.getBoundingClientRect();
+    if(r.bottom > 0 && r.top < vh){
+      var c = (r.top + r.height/2 - vh/2) / vh;      /* -~1 … +~1 */
+      plx.style.transform = 'translateY(' + (c * 7) + '%)';
+    }
+  }
+
+  /* ansatz index from section progress */
+  var ar = ansatz.getBoundingClientRect(),
+      span = ar.height - vh;
+  if(span > 0){
+    var ap = Math.min(Math.max(-ar.top / span, 0), 0.999);
+    setPrinzip(Math.floor(ap * 3));
+  }
+
+  requestAnimationFrame(frame);
+}
+if(reduced){
+  setPrinzip(0);
+  /* reduced motion: no rAF loop at all — static page, all principles visible via CSS */
+  prinzips.forEach(function(p){ p.classList.add('active'); });
+  aCount.textContent = '3 / 3';
+}else{
+  requestAnimationFrame(frame);
+}
+})();
+</script>
+
+<!-- PASS 1 (reduction & thread):
+     1. First draft gave the dot its own bezier flight path with overshoot — cut. One smoothstep blend from
+        wordmark full stop to rail, one .16 lerp. The site's thesis is discipline; the dot obeys it.
+     2. Hero originally had a nav, three links and a claim + subclaim — deleted everything except kicker,
+        wordmark, one sentence. The full stop of KLAR is the dot's birthplace (span#dot-origin), so the
+        signature literally detaches from the brand name on scroll.
+     3. Case rows used cards with shadows — flattened to hairline-separated full-width rows; hover is a
+        single background/color swap to coral (.35s, the one easing), no lift, no scale.
+     4. Counters shared the cubic ease-out (1-(1-t)^3) so numbers and reveals decelerate identically. -->
+<!-- PASS 2 (motion audit & mobile):
+     1. Ansatz principles crossfaded with overlap (two visible mid-swap) — rebuilt as opacity+14px slide where
+        only .active is opaque; 340vh runway gives each principle a full held beat, counter bottom-right.
+     2. Parallax was translateY in px (jumped on resize) — switched to % of image height inside a clipped
+        figure with 120% height, ±7% travel, driven from the same single rAF as the dot (no second loop).
+     3. @390px the 4-col case grid overflowed (nowrap on the whole .result block pushed labels off-canvas,
+        scrollWidth 575) — nowrap now only on the number, rows stack Klient/Aufgabe/Ergebnis in one column,
+        mail line gets word-break; verified scrollWidth 390 exactly at 390px viewport.
+     4. Hover-invert gated behind (hover:hover) so touch devices never stick a coral row.
+     5. Reduced motion: rAF loop never starts, dot hidden and the wordmark's full stop rendered coral in
+        place, parallax image statically fitted, all three principles shown stacked, counters print finals.
+     6. Dot starts opacity 0 and only .live after first positioned frame — no top-left flash on load. -->
+<!-- PASS 3 (visual audit via screenshots):
+     1. Hero kicker "KLAR · ZÜRICH — MARKETING OHNE LÄRM" wrapped to three tracked-out uppercase lines and
+        read as noise above the wordmark — shortened to one line, "Marketing ohne Lärm · Zürich", with the
+        interpunct in coral so the hero stays at exactly three elements: kicker, KLAR + dot, one sentence.
+     2. Billboard figcaption sat on wet-street highlights — added a single soft text-shadow instead of a
+        scrim gradient (no new surfaces, keeps the photograph untouched).
+     3. Confirmed at 1280/390: dot rides the rail within 0.5px, counters land on +212% / −38% / 4.6× / 9,
+        exactly one Prinzip opaque at 10/50/90% of the sticky runway, scrollWidth 390 @390, zero console
+        or page errors on file://, reduced-motion fully static. -->
+<script src="../shop.js" defer></script>
+</body>
+</html>

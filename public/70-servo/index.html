@@ -1,0 +1,653 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SERVO — Help, at home.</title>
+<meta name="description" content="SERVO 01 is a consumer humanoid robot for the home: laundry, dishes, plants, fetching. Gentle enough for an egg. Quiet enough to forget.">
+<!--
+  CHANGELOG
+  PASS 1 (structure & system): seamless white studio world built from one design system — the
+  cyan "status line": a 1px rule that carries a travelling light-pulse (CSS gradient sweep,
+  fired once per section via IntersectionObserver adding .lit). The hero stages unit.webp like
+  a launch keynote: image loads eager under a radial "bloom" overlay that irises open while the
+  photo eases from blur(14px)/104% to sharp — same choreography as a stage light coming up.
+  Capability cards use hand-drawn inline SVG line icons whose strokes draw themselves in
+  (stroke-dashoffset, pathLength=100) when the grid enters view. The egg moment is a full-bleed
+  figure with a slow focus-in (blur 22px -> 0 over 1.6s) gated by IO at 30% visibility. Specs
+  strip counts up in mono via rAF easing. All entry motion is class-driven so
+  prefers-reduced-motion simply pre-applies the final state and never animates.
+  PASS 2 (judged against screenshots @1280+390): the stacked hero failed the launch brief —
+  at 1280x800 only the robot's crown reached the fold. Restaged desktop as a two-column
+  keynote: copy vertically centered left, the unit full-height right (object-fit cover,
+  object-position 46% 100%) so the visor's cyan bars are on screen at load; the photo's studio
+  grey is melted into the page with three edge gradients on .stage::after, and the bloom now
+  irises from the visor region (55% 55%). Mobile keeps the stacked flow (headline, then the
+  unit at 190% width, feet running off-page) — it read better cropped tight than contained.
+  PASS 3 (screenshot nits + verification): the drop-line's falling cyan pulse landed across
+  the robot's shin at 390 and read as a glitch — drop-line hidden under 860px, kept on desktop
+  where it traces the column seam. Fleet playwright at file:// on 1280x800 + 390x844: zero page
+  errors, zero console errors, scrollWidth worst 390 (excess 0) sampled at 11 scroll depths;
+  egg focus-in captured mid-reveal and settled; counters land exact (9 / 15 / 31 / 1.4);
+  reserve mock completes. Reduced-motion run: nothing animates, hero static and fully visible,
+  bloom removed, counters pre-set.
+-->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Sora:wght@300;400;500;600&family=Instrument+Sans:ital,wght@0,400;0,500;1,400&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root{
+  --paper:#FCFCFD;
+  --studio:#F4F5F7;
+  --ink:#16181C;
+  --grey:#8A8F96;
+  --cyan:#5EEAD4;
+  --cyan-deep:#2BB8A3;
+  --line:rgba(22,24,28,.10);
+  --disp:"Sora",system-ui,sans-serif;
+  --text:"Instrument Sans",system-ui,sans-serif;
+  --mono:"JetBrains Mono",ui-monospace,monospace;
+}
+*{margin:0;padding:0;box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{
+  font-family:var(--text);
+  background:var(--paper);
+  color:var(--ink);
+  line-height:1.6;
+  -webkit-font-smoothing:antialiased;
+  overflow-x:hidden;
+}
+img{max-width:100%;display:block}
+a{color:inherit}
+::selection{background:var(--cyan);color:var(--ink)}
+
+/* ---------- status line system ---------- */
+.rule{
+  position:relative;height:1px;background:var(--line);overflow:hidden;
+}
+.rule::after{
+  content:"";position:absolute;inset:0;
+  background:linear-gradient(90deg,transparent,var(--cyan) 35%,#fff 50%,var(--cyan) 65%,transparent);
+  transform:translateX(-101%);
+}
+.rule.lit::after{animation:sweep 1.4s cubic-bezier(.6,0,.2,1) forwards}
+@keyframes sweep{to{transform:translateX(101%)}}
+
+/* ---------- header ---------- */
+header{
+  position:fixed;top:0;left:0;right:0;z-index:50;
+  display:flex;align-items:center;justify-content:space-between;
+  padding:14px clamp(16px,4vw,44px);
+  background:rgba(252,252,253,.82);backdrop-filter:blur(10px);
+  border-bottom:1px solid var(--line);
+}
+.pill{
+  font-family:var(--mono);font-size:12px;letter-spacing:.08em;text-decoration:none;
+  border:1px solid var(--line);border-radius:999px;padding:7px 14px;color:var(--grey);
+  transition:border-color .25s,color .25s;white-space:nowrap;
+}
+.pill:hover{border-color:var(--cyan-deep);color:var(--ink)}
+.wordmark{
+  font-family:var(--disp);font-weight:600;font-size:15px;letter-spacing:.42em;
+  text-indent:.42em; /* optical centering */
+  display:flex;align-items:center;gap:10px;
+}
+.wordmark i{
+  width:16px;height:3px;border-radius:2px;background:var(--cyan);display:inline-block;
+  box-shadow:0 0 8px rgba(94,234,212,.9);
+}
+.nav-cta{
+  font-family:var(--mono);font-size:12px;letter-spacing:.08em;text-decoration:none;
+  background:var(--ink);color:#fff;border-radius:999px;padding:8px 16px;white-space:nowrap;
+  transition:background .25s;
+}
+.nav-cta:hover{background:#000}
+@media(max-width:560px){.wordmark span{display:none}.wordmark{letter-spacing:0;text-indent:0}}
+
+/* ---------- hero ---------- */
+.hero{
+  position:relative;min-height:100svh;
+  display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.08fr);
+  align-items:center;
+  background:
+    radial-gradient(120% 90% at 50% 8%,#fff 0%,var(--paper) 55%,var(--studio) 100%);
+  overflow:hidden;
+}
+.hero-copy{
+  position:relative;z-index:3;
+  padding:120px clamp(16px,3vw,48px) 90px clamp(20px,5vw,72px);
+}
+.kicker{
+  font-family:var(--mono);font-size:12px;letter-spacing:.3em;text-transform:uppercase;
+  color:var(--grey);display:flex;align-items:center;gap:14px;margin-bottom:22px;
+}
+.kicker::before{content:"";width:34px;height:1px;background:var(--cyan-deep);flex:none}
+h1{
+  font-family:var(--disp);font-weight:300;
+  font-size:clamp(42px,7.4vw,96px);line-height:1.04;letter-spacing:-.02em;
+  max-width:11ch;
+}
+h1 b{font-weight:500}
+.hero-sub{
+  margin-top:26px;max-width:44ch;color:var(--grey);
+  font-size:clamp(15px,1.4vw,18px);
+}
+.hero-sub strong{color:var(--ink);font-weight:500}
+/* vertical status line dropping from copy toward the unit */
+.drop-line{
+  position:absolute;z-index:2;top:0;bottom:0;left:50%;width:1px;
+  background:linear-gradient(180deg,transparent 0%,rgba(22,24,28,.08) 18%,rgba(22,24,28,.08) 72%,transparent);
+  pointer-events:none;
+}
+.drop-line::after{
+  content:"";position:absolute;left:-1px;width:3px;height:64px;border-radius:3px;
+  background:linear-gradient(180deg,transparent,var(--cyan),transparent);
+  top:-64px;opacity:0;
+}
+.hero.on .drop-line::after{animation:fall 2.6s .9s cubic-bezier(.5,0,.4,1) forwards}
+@keyframes fall{0%{top:-64px;opacity:0}12%{opacity:1}88%{opacity:1}100%{top:100%;opacity:0}}
+.stage{
+  position:relative;z-index:1;line-height:0;
+  height:calc(100svh - 56px);margin-top:56px;overflow:hidden;
+}
+.stage img{
+  position:absolute;inset:0;width:100%;height:100%;
+  object-fit:cover;object-position:46% 100%;
+  transform:scale(1.05);transform-origin:50% 80%;
+  filter:blur(14px);opacity:0;
+  transition:filter 2s cubic-bezier(.3,0,.2,1) .35s,opacity 1.4s ease .25s,transform 2.6s cubic-bezier(.3,0,.2,1) .35s;
+}
+.hero.on .stage img{filter:blur(0);opacity:1;transform:scale(1)}
+/* melt the photo's studio grey into the page */
+.stage::after{
+  content:"";position:absolute;inset:0;z-index:1;pointer-events:none;
+  background:
+    linear-gradient(90deg,var(--paper),rgba(252,252,253,0) 26%),
+    linear-gradient(180deg,var(--paper),rgba(252,252,253,0) 24%),
+    linear-gradient(270deg,var(--paper),rgba(252,252,253,0) 14%);
+}
+/* bloom overlay — a stage light irising open */
+.bloom{
+  position:absolute;inset:0;z-index:2;pointer-events:none;
+  background:radial-gradient(circle at 55% 55%,transparent 0%,var(--paper) 34%,var(--paper) 100%);
+  transition:opacity 2.2s ease .3s;opacity:1;
+}
+.hero.on .bloom{opacity:0}
+.hero-meta{
+  position:absolute;z-index:3;bottom:22px;left:0;right:0;
+  display:flex;justify-content:space-between;align-items:flex-end;
+  padding:0 clamp(20px,5vw,72px);
+  font-family:var(--mono);font-size:11px;letter-spacing:.18em;color:var(--grey);
+}
+.hero-meta .blink{color:var(--cyan-deep)}
+.blink{animation:blink 2.6s ease-in-out infinite}
+@keyframes blink{0%,100%{opacity:1}50%{opacity:.35}}
+@media(max-width:860px){
+  .hero{min-height:94svh;grid-template-columns:1fr;grid-template-rows:1fr auto;align-items:end}
+  .hero-copy{padding:104px 20px 0}
+  .stage{height:auto;margin-top:0;overflow:visible}
+  .stage img{
+    position:relative;inset:auto;width:190%;max-width:none;height:auto;object-fit:fill;
+    left:50%;transform:translateX(-50%) scale(1.05);
+  }
+  .hero.on .stage img{transform:translateX(-50%) scale(1)}
+  .stage::after{display:none}
+  .drop-line{display:none}
+  .hero-meta span:nth-child(2){display:none}
+}
+
+/* ---------- sections base ---------- */
+section{position:relative}
+.wrap{max-width:1200px;margin:0 auto;padding:clamp(72px,10vw,130px) clamp(20px,5vw,72px)}
+.sec-head{display:flex;align-items:baseline;justify-content:space-between;gap:20px;margin-bottom:14px;flex-wrap:wrap}
+.sec-head h2{
+  font-family:var(--disp);font-weight:400;letter-spacing:-.01em;
+  font-size:clamp(26px,3.4vw,40px);
+}
+.sec-head .idx{font-family:var(--mono);font-size:12px;letter-spacing:.24em;color:var(--grey)}
+.sec-lede{color:var(--grey);max-width:52ch;margin-top:20px}
+
+/* ---------- capability cards ---------- */
+.cards{
+  margin-top:44px;display:grid;gap:1px;background:var(--line);
+  border:1px solid var(--line);border-radius:18px;overflow:hidden;
+  grid-template-columns:repeat(3,1fr);
+}
+.card{
+  background:var(--paper);padding:30px 26px 28px;
+  transition:background .35s;
+  opacity:0;transform:translateY(14px);
+}
+.cards.lit .card{animation:rise .8s cubic-bezier(.2,.6,.2,1) forwards;animation-delay:calc(var(--i)*.09s)}
+@keyframes rise{to{opacity:1;transform:none}}
+.card:hover{background:#fff}
+.card svg{width:54px;height:54px;margin-bottom:20px}
+.card svg .s{
+  fill:none;stroke:var(--ink);stroke-width:1.5;stroke-linecap:round;stroke-linejoin:round;
+  stroke-dasharray:100;stroke-dashoffset:100;
+}
+.card svg .c{
+  fill:none;stroke:var(--cyan-deep);stroke-width:1.5;stroke-linecap:round;
+  stroke-dasharray:100;stroke-dashoffset:100;
+}
+.cards.lit .card svg .s{animation:draw 1.5s cubic-bezier(.4,0,.3,1) forwards;animation-delay:calc(.2s + var(--i)*.09s)}
+.cards.lit .card svg .c{animation:draw 1.2s cubic-bezier(.4,0,.3,1) forwards;animation-delay:calc(.9s + var(--i)*.09s)}
+@keyframes draw{to{stroke-dashoffset:0}}
+.card h3{font-family:var(--disp);font-weight:500;font-size:17px;margin-bottom:8px}
+.card p{font-size:14.5px;color:var(--grey)}
+.card .tag{
+  display:inline-block;margin-top:14px;font-family:var(--mono);font-size:10.5px;
+  letter-spacing:.14em;color:var(--cyan-deep);
+}
+@media(max-width:980px){.cards{grid-template-columns:repeat(2,1fr)}}
+@media(max-width:620px){.cards{grid-template-columns:1fr}.card{padding:26px 22px}}
+
+/* ---------- egg / trust moment ---------- */
+.egg{
+  background:var(--studio);
+}
+.egg-grid{
+  max-width:1400px;margin:0 auto;
+  display:grid;grid-template-columns:minmax(0,1.15fr) minmax(0,.85fr);
+  align-items:center;gap:0;
+}
+.egg-fig{position:relative;overflow:hidden;line-height:0}
+.egg-fig img{
+  width:100%;height:min(115vh,1000px);object-fit:cover;object-position:50% 42%;
+  filter:blur(22px);transform:scale(1.06);opacity:.75;
+  transition:filter 1.7s cubic-bezier(.3,0,.2,1),transform 2.2s cubic-bezier(.3,0,.2,1),opacity 1.2s ease;
+}
+.egg.lit .egg-fig img{filter:blur(0);transform:scale(1);opacity:1}
+.egg-fig figcaption{
+  position:absolute;left:22px;bottom:18px;line-height:1.5;
+  font-family:var(--mono);font-size:11px;letter-spacing:.16em;color:var(--grey);
+  background:rgba(252,252,253,.8);backdrop-filter:blur(6px);
+  padding:8px 12px;border-radius:8px;
+}
+.egg-copy{padding:clamp(48px,6vw,96px)}
+.egg-copy .kicker{margin-bottom:18px}
+.egg-copy h2{
+  font-family:var(--disp);font-weight:300;font-size:clamp(30px,3.8vw,52px);
+  line-height:1.12;letter-spacing:-.015em;margin-bottom:24px;max-width:14ch;
+}
+.egg-copy h2 b{font-weight:500}
+.egg-copy p{color:var(--grey);max-width:42ch;margin-bottom:18px}
+.egg-copy p strong{color:var(--ink);font-weight:500}
+.egg-stat{
+  display:flex;gap:36px;margin-top:34px;padding-top:26px;border-top:1px solid var(--line);
+}
+.egg-stat div{font-family:var(--mono)}
+.egg-stat .v{font-size:22px;color:var(--ink)}
+.egg-stat .v em{font-style:normal;font-size:12px;color:var(--cyan-deep);margin-left:2px}
+.egg-stat .k{font-size:10.5px;letter-spacing:.18em;text-transform:uppercase;color:var(--grey);margin-top:4px}
+@media(max-width:880px){
+  .egg-grid{grid-template-columns:1fr}
+  .egg-fig img{height:min(78vh,620px);object-position:50% 38%}
+  .egg-copy{padding:44px 20px 64px}
+}
+
+/* ---------- specs strip ---------- */
+.specs{background:var(--ink);color:#F5F6F8}
+.specs .rule{background:rgba(255,255,255,.14)}
+.specs .wrap{padding-top:clamp(56px,7vw,90px);padding-bottom:clamp(56px,7vw,90px)}
+.spec-row{
+  display:grid;grid-template-columns:repeat(4,1fr);gap:34px;margin-top:44px;
+}
+.spec{font-family:var(--mono)}
+.spec .num{
+  font-size:clamp(38px,5vw,64px);font-weight:500;letter-spacing:-.02em;line-height:1;
+  font-variant-numeric:tabular-nums;
+}
+.spec .num sup{font-size:.38em;color:var(--cyan);margin-left:4px;letter-spacing:.06em}
+.spec .lbl{margin-top:12px;font-size:11px;letter-spacing:.2em;text-transform:uppercase;color:rgba(245,246,248,.55)}
+.specs .foot{
+  margin-top:48px;font-family:var(--mono);font-size:11px;letter-spacing:.14em;
+  color:rgba(245,246,248,.4);
+}
+.specs .sec-head .idx{color:rgba(245,246,248,.45)}
+.specs h2{color:#fff}
+@media(max-width:760px){.spec-row{grid-template-columns:repeat(2,1fr);gap:38px 20px}}
+
+/* ---------- safety ---------- */
+.safety .sec-lede{max-width:56ch}
+.safe-grid{
+  margin-top:48px;display:grid;grid-template-columns:repeat(2,1fr);gap:0 clamp(36px,5vw,80px);
+}
+.safe{
+  padding:26px 0;border-top:1px solid var(--line);
+  display:grid;grid-template-columns:auto 1fr;gap:18px;align-items:start;
+}
+.safe .dot{
+  width:8px;height:8px;border-radius:50%;background:var(--cyan);margin-top:8px;
+  box-shadow:0 0 0 4px rgba(94,234,212,.18);
+}
+.safe h3{font-family:var(--disp);font-weight:500;font-size:16px;margin-bottom:6px}
+.safe p{font-size:14.5px;color:var(--grey)}
+@media(max-width:760px){.safe-grid{grid-template-columns:1fr}}
+
+/* ---------- reserve ---------- */
+.reserve{background:linear-gradient(180deg,var(--paper),var(--studio))}
+.reserve .wrap{text-align:center}
+.reserve h2{
+  font-family:var(--disp);font-weight:300;font-size:clamp(32px,5vw,60px);
+  letter-spacing:-.02em;line-height:1.1;
+}
+.reserve h2 b{font-weight:500}
+.reserve .sub{color:var(--grey);margin:20px auto 0;max-width:46ch}
+.res-form{
+  margin:40px auto 0;display:flex;gap:10px;max-width:460px;
+}
+.res-form input{
+  flex:1;min-width:0;font-family:var(--mono);font-size:13px;color:var(--ink);
+  background:#fff;border:1px solid var(--line);border-radius:999px;padding:14px 20px;outline:none;
+  transition:border-color .25s,box-shadow .25s;
+}
+.res-form input:focus{border-color:var(--cyan-deep);box-shadow:0 0 0 4px rgba(94,234,212,.22)}
+.res-form button{
+  font-family:var(--mono);font-size:13px;letter-spacing:.06em;cursor:pointer;
+  background:var(--ink);color:#fff;border:0;border-radius:999px;padding:14px 26px;
+  transition:background .25s;white-space:nowrap;
+}
+.res-form button:hover{background:#000}
+.res-form button.done{background:var(--cyan-deep)}
+.res-note{margin-top:16px;font-family:var(--mono);font-size:11px;letter-spacing:.14em;color:var(--grey)}
+@media(max-width:520px){.res-form{flex-direction:column}.res-form button{padding:14px}}
+
+/* ---------- footer ---------- */
+footer{
+  border-top:1px solid var(--line);
+  padding:34px clamp(20px,5vw,72px);
+  display:flex;flex-wrap:wrap;gap:14px 28px;align-items:center;justify-content:space-between;
+  font-family:var(--mono);font-size:11.5px;letter-spacing:.12em;color:var(--grey);
+}
+footer a{color:var(--ink);text-decoration:none;border-bottom:1px solid var(--cyan);padding-bottom:1px}
+footer a:hover{color:var(--cyan-deep)}
+
+/* ---------- reduced motion ---------- */
+@media(prefers-reduced-motion:reduce){
+  html{scroll-behavior:auto}
+  *,*::before,*::after{animation:none!important;transition:none!important}
+  .stage img{filter:none;opacity:1;transform:scale(1)}
+  @media(max-width:860px){.stage img{transform:translateX(-50%)}}
+  .bloom{display:none}
+  .card{opacity:1;transform:none}
+  .card svg .s,.card svg .c{stroke-dashoffset:0}
+  .egg-fig img{filter:none;transform:none;opacity:1}
+  .rule::after{display:none}
+}
+</style>
+</head>
+<body>
+
+<header>
+  <a class="pill" href="/">&#8592; 25</a>
+  <div class="wordmark"><i></i><span>SERVO</span></div>
+  <a class="nav-cta" href="#reserve">Reserve</a>
+</header>
+
+<!-- HERO -->
+<section class="hero" id="hero">
+  <div class="drop-line" aria-hidden="true"></div>
+  <div class="hero-copy">
+    <p class="kicker">Servo 01 &middot; Home unit</p>
+    <h1>Help, <b>at home.</b></h1>
+    <p class="hero-sub">A humanoid that folds your laundry, empties the sink, and waters the ficus — then stands quietly in the corner, <strong>waiting to be useful.</strong></p>
+  </div>
+  <div class="stage">
+    <div class="bloom" aria-hidden="true"></div>
+    <img src="assets/unit.webp" alt="SERVO 01 humanoid robot standing in a seamless white studio, its visor showing two cyan light bars" width="1920" height="1072" fetchpriority="high">
+  </div>
+  <div class="hero-meta">
+    <span>UNIT 01 / STANDING BY</span>
+    <span>178&nbsp;CM &middot; 58&nbsp;KG</span>
+    <span class="blink">&#9679; STATUS: CALM</span>
+  </div>
+</section>
+
+<div class="rule" data-rule></div>
+
+<!-- CAPABILITIES -->
+<section class="wrap" id="does">
+  <div class="sec-head">
+    <h2>What it does</h2>
+    <span class="idx">01 / CAPABILITY</span>
+  </div>
+  <div class="rule" data-rule></div>
+  <p class="sec-lede">Servo learns your home in the first week — where the mugs live, which plant sulks, what &ldquo;the good scissors&rdquo; means. Then it just&hellip; does the thing.</p>
+
+  <div class="cards" data-cards>
+    <div class="card" style="--i:0">
+      <svg viewBox="0 0 48 48" aria-hidden="true">
+        <path class="s" pathLength="100" d="M10 16h28l-3 24H13L10 16Z"/>
+        <path class="s" pathLength="100" d="M18 16v-3a6 6 0 0 1 12 0v3"/>
+        <path class="c" pathLength="100" d="M17 26c4 3 10 3 14 0"/>
+      </svg>
+      <h3>Laundry, folded</h3>
+      <p>From drum to drawer. Servo sorts by fabric, folds to your preferred method, and pairs every last sock.</p>
+      <span class="tag">AVG 34 MIN / LOAD</span>
+    </div>
+    <div class="card" style="--i:1">
+      <svg viewBox="0 0 48 48" aria-hidden="true">
+        <circle class="s" pathLength="100" cx="24" cy="24" r="13"/>
+        <circle class="s" pathLength="100" cx="24" cy="24" r="6.5"/>
+        <path class="c" pathLength="100" d="M38 33c3 1.5 4 3.5 4 5"/>
+      </svg>
+      <h3>Dishes, done</h3>
+      <p>Loads the machine like someone who cares. Hand-washes the pan you actually love. Knows which shelf.</p>
+      <span class="tag">RACK-TETRIS RATED A+</span>
+    </div>
+    <div class="card" style="--i:2">
+      <svg viewBox="0 0 48 48" aria-hidden="true">
+        <path class="s" pathLength="100" d="M16 40h16l-2-10H18l-2 10Z"/>
+        <path class="s" pathLength="100" d="M24 30V18m0 0c0-6-4-9-9-9 0 6 4 9 9 9Zm0 0c0-6 4-9 9-9 0 6-4 9-9 9Z"/>
+        <path class="c" pathLength="100" d="M36 12c2-2 4-2.6 6-2.6"/>
+      </svg>
+      <h3>Plants, watered</h3>
+      <p>Reads soil moisture through grip pressure on the pot. Waters on the plant&rsquo;s schedule, not a timer&rsquo;s.</p>
+      <span class="tag">0 FICUS CASUALTIES</span>
+    </div>
+    <div class="card" style="--i:3">
+      <svg viewBox="0 0 48 48" aria-hidden="true">
+        <path class="s" pathLength="100" d="M8 34l10-20 8 14 6-8 8 14H8Z"/>
+        <circle class="c" pathLength="100" cx="34" cy="12" r="3"/>
+      </svg>
+      <h3>Fetching, anything</h3>
+      <p>&ldquo;Servo, my glasses.&rdquo; It remembers where you set things down — even the places you wouldn&rsquo;t admit to.</p>
+      <span class="tag">RECALL 40+ OBJECTS</span>
+    </div>
+    <div class="card" style="--i:4">
+      <svg viewBox="0 0 48 48" aria-hidden="true">
+        <rect class="s" pathLength="100" x="9" y="20" width="30" height="18" rx="2"/>
+        <path class="s" pathLength="100" d="M9 27h30M20 20v18"/>
+        <path class="c" pathLength="100" d="M14 14l5-5 5 5"/>
+      </svg>
+      <h3>Tidying, nightly</h3>
+      <p>A quiet 20-minute pass after you sleep: toys to bins, shoes to racks, cushions to whatever angle you like.</p>
+      <span class="tag">RUNS AT 31 dB</span>
+    </div>
+    <div class="card" style="--i:5">
+      <svg viewBox="0 0 48 48" aria-hidden="true">
+        <path class="s" pathLength="100" d="M24 8c7 4 12 4 14 4 0 14-4 22-14 28C14 34 10 26 10 12c2 0 7 0 14-4Z"/>
+        <path class="c" pathLength="100" d="M18 24l4.5 4.5L31 20"/>
+      </svg>
+      <h3>Checking, gently</h3>
+      <p>Stove off, door locked, tap closed. One soft chime if something needs you — never an alarm at 3&nbsp;a.m. for nothing.</p>
+      <span class="tag">OPT-IN, ALWAYS</span>
+    </div>
+  </div>
+</section>
+
+<!-- EGG / TRUST -->
+<section class="egg" id="trust" data-egg>
+  <div class="egg-grid">
+    <figure class="egg-fig">
+      <img src="assets/hand.webp" alt="Close-up of SERVO's articulated hand holding a brown egg between two fingertips, a cyan light glowing in the wrist" width="1400" height="1738" loading="lazy">
+      <figcaption>FIG. 02 &mdash; GRIP TEST, UNSTAGED. THE EGG WAS BREAKFAST.</figcaption>
+    </figure>
+    <div class="egg-copy">
+      <p class="kicker">02 &middot; Force control</p>
+      <h2>Strong enough to carry you. <b>Gentle enough for this.</b></h2>
+      <p>Every fingertip senses force at <strong>2,000 measurements per second</strong>. When Servo picks up an egg, it grips with 0.6 newtons — about the weight of a letter resting on your palm.</p>
+      <p>The same hand lifts a full laundry basket, steadies a wobbling toddler-built block tower, and hands you a glass of water without a ripple. Not because it is careful in general, but because it is <strong>exactly as careful as each thing requires.</strong></p>
+      <div class="egg-stat">
+        <div><div class="v">0.6<em>N</em></div><div class="k">Egg grip</div></div>
+        <div><div class="v">2,000<em>/s</em></div><div class="k">Force samples</div></div>
+        <div><div class="v">0<em>cracked</em></div><div class="k">In 1.2M test grips</div></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- SPECS -->
+<section class="specs" id="specs" data-specs>
+  <div class="wrap">
+    <div class="sec-head">
+      <h2>The numbers</h2>
+      <span class="idx">03 / SPEC</span>
+    </div>
+    <div class="rule" data-rule></div>
+    <div class="spec-row">
+      <div class="spec"><div class="num"><span data-count="9" data-dec="0">0</span><sup>H</sup></div><div class="lbl">Battery, active use</div></div>
+      <div class="spec"><div class="num"><span data-count="15" data-dec="0">0</span><sup>KG</sup></div><div class="lbl">Payload, sustained</div></div>
+      <div class="spec"><div class="num"><span data-count="31" data-dec="0">0</span><sup>dB</sup></div><div class="lbl">Noise, night mode</div></div>
+      <div class="spec"><div class="num"><span data-count="1.4" data-dec="1">0.0</span><sup>M/S</sup></div><div class="lbl">Walking pace, indoor</div></div>
+    </div>
+    <p class="foot">MEASURED, NOT PROMISED &mdash; INDEPENDENT LAB CONDITIONS, 21&deg;C, HARDWOOD FLOOR, ONE SKEPTICAL CAT PRESENT.</p>
+  </div>
+</section>
+
+<!-- SAFETY -->
+<section class="safety wrap" id="safety">
+  <div class="sec-head">
+    <h2>Safety &amp; privacy</h2>
+    <span class="idx">04 / TRUST</span>
+  </div>
+  <div class="rule" data-rule></div>
+  <p class="sec-lede">A robot in your home is a serious idea. We built Servo as if it were moving into ours — because during development, it did.</p>
+  <div class="safe-grid">
+    <div class="safe"><span class="dot"></span><div>
+      <h3>Everything on-device</h3>
+      <p>Vision, speech, and maps of your home are processed and stored on the unit. Nothing leaves the house unless you export it yourself.</p>
+    </div></div>
+    <div class="safe"><span class="dot"></span><div>
+      <h3>A physical shutter</h3>
+      <p>Slide the visor cover closed and the cameras are blocked by matter, not software. The cyan line dims to show it.</p>
+    </div></div>
+    <div class="safe"><span class="dot"></span><div>
+      <h3>Force limits in hardware</h3>
+      <p>Joint torque is capped by physical clutches that no firmware update can raise. Around people and pets, speed drops automatically.</p>
+    </div></div>
+    <div class="safe"><span class="dot"></span><div>
+      <h3>A real off switch</h3>
+      <p>The shoulder button cuts motor power instantly and mechanically. It works during updates, crashes, and arguments about whose turn it is to cook.</p>
+    </div></div>
+    <div class="safe"><span class="dot"></span><div>
+      <h3>Audited, annually</h3>
+      <p>Independent security researchers get full hardware access every year. Findings are published, unedited, at servo.example/audits.</p>
+    </div></div>
+    <div class="safe"><span class="dot"></span><div>
+      <h3>Guests come first</h3>
+      <p>When someone new is detected, Servo introduces itself, explains its shutter, and asks before resuming any task in the room.</p>
+    </div></div>
+  </div>
+</section>
+
+<!-- RESERVE -->
+<section class="reserve" id="reserve">
+  <div class="rule" data-rule></div>
+  <div class="wrap">
+    <p class="kicker" style="justify-content:center">05 &middot; Reserve</p>
+    <h2>Your place in line, <b>held gently.</b></h2>
+    <p class="sub">Servo 01 ships in limited batches. A reservation is $149, fully refundable, and transfers to your final order.</p>
+    <form class="res-form" id="resform" novalidate>
+      <input type="email" id="resmail" placeholder="you@home.example" aria-label="Email address" autocomplete="email">
+      <button type="submit" id="resbtn">Reserve &mdash; $149</button>
+    </form>
+    <p class="res-note" id="resnote">REFUNDABLE &middot; NO CARD CHARGED TODAY &middot; EST. DELIVERY Q3 2027</p>
+  </div>
+</section>
+
+<footer>
+  <span>SERVO &mdash; a fictional company for FABLE/25</span>
+  <span>UNIT 01 &middot; STATUS: CALM</span>
+  <a href="/70-servo/guide/">guide &amp; prompt &#8594;</a>
+</footer>
+
+<script>
+(function(){
+  "use strict";
+  var RM = matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+  /* hero bloom reveal */
+  var hero = document.getElementById("hero");
+  if (RM) { hero.classList.add("on"); }
+  else { requestAnimationFrame(function(){ requestAnimationFrame(function(){ hero.classList.add("on"); }); }); }
+
+  /* status-line pulses + section reveals */
+  var targets = [].slice.call(document.querySelectorAll("[data-rule],[data-cards],[data-egg]"));
+  if (RM || !("IntersectionObserver" in window)) {
+    targets.forEach(function(el){ el.classList.add("lit"); });
+  } else {
+    var io = new IntersectionObserver(function(entries){
+      entries.forEach(function(en){
+        if (en.isIntersecting) { en.target.classList.add("lit"); io.unobserve(en.target); }
+      });
+    }, { threshold: 0.25, rootMargin: "0px 0px -8% 0px" });
+    targets.forEach(function(el){ io.observe(el); });
+  }
+
+  /* spec counters */
+  var counters = [].slice.call(document.querySelectorAll("[data-count]"));
+  function setFinal(el){
+    var v = parseFloat(el.getAttribute("data-count"));
+    el.textContent = v.toFixed(+el.getAttribute("data-dec"));
+  }
+  if (RM || !("IntersectionObserver" in window)) {
+    counters.forEach(setFinal);
+  } else {
+    var cio = new IntersectionObserver(function(entries){
+      entries.forEach(function(en){
+        if (!en.isIntersecting) return;
+        cio.unobserve(en.target);
+        var el = en.target,
+            v = parseFloat(el.getAttribute("data-count")),
+            d = +el.getAttribute("data-dec"),
+            t0 = null;
+        function tick(t){
+          if (!t0) t0 = t;
+          var p = Math.min((t - t0) / 1400, 1),
+              e = 1 - Math.pow(1 - p, 3);
+          el.textContent = (v * e).toFixed(d);
+          if (p < 1) requestAnimationFrame(tick); else setFinal(el);
+        }
+        requestAnimationFrame(tick);
+      });
+    }, { threshold: 0.5 });
+    counters.forEach(function(el){ cio.observe(el); });
+  }
+
+  /* mock reserve */
+  var form = document.getElementById("resform"),
+      btn  = document.getElementById("resbtn"),
+      mail = document.getElementById("resmail"),
+      note = document.getElementById("resnote");
+  form.addEventListener("submit", function(ev){
+    ev.preventDefault();
+    var ok = /.+@.+\..+/.test(mail.value);
+    if (!ok) {
+      note.textContent = "THAT E-MAIL LOOKS UNFINISHED — SERVO WOULD HAND IT BACK.";
+      mail.focus();
+      return;
+    }
+    btn.textContent = "Reserved ✓";
+    btn.classList.add("done");
+    btn.disabled = true;
+    mail.disabled = true;
+    note.textContent = "YOU'RE #4,182 IN LINE. WE'LL WRITE BEFORE ANYTHING SHIPS OR CHARGES. (THIS IS A FICTIONAL DEMO.)";
+  });
+})();
+</script>
+<script src="../shop.js" defer></script>
+</body>
+</html>

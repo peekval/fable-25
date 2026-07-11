@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html lang="de-CH">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>KLAR — wie diese Seite entstand</title>
+<meta name="description" content="Wie die KLAR-Site gebaut wurde: Reduktionssystem, roter Faden, Motion-Disziplin — plus Repro-Prompt.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Archivo:ital,wdth,wght@0,62..125,100..900;1,62..125,100..900&display=swap" rel="stylesheet">
+<style>
+:root{
+  --paper:#FAF8F4;--ink:#171614;--coral:#FF5A48;
+  --hair:rgba(23,22,20,.14);--dim:rgba(23,22,20,.58);
+  --ease:cubic-bezier(.3,.7,0,1);
+}
+*{margin:0;padding:0;box-sizing:border-box}
+body{
+  font-family:"Archivo",system-ui,sans-serif;background:var(--paper);color:var(--ink);
+  overflow-x:clip;-webkit-font-smoothing:antialiased;
+}
+::selection{background:var(--coral);color:var(--paper)}
+.pill{
+  position:fixed;top:1.1rem;left:1.1rem;z-index:9;
+  font-size:.8rem;font-weight:500;letter-spacing:.1em;text-decoration:none;color:var(--ink);
+  background:var(--paper);border:1px solid var(--hair);border-radius:999px;padding:.4rem .9rem;
+  transition:background .35s var(--ease),color .35s var(--ease),border-color .35s var(--ease);
+}
+.pill:hover{background:var(--ink);color:var(--paper);border-color:var(--ink)}
+.wrap{max-width:760px;margin:0 auto;padding:6.5rem 1.3rem 4rem}
+.kicker{font-size:.72rem;font-weight:600;letter-spacing:.34em;text-transform:uppercase;color:var(--dim);margin-bottom:1.1rem}
+.kicker b{color:var(--coral)}
+h1{
+  font-variation-settings:"wdth" 120;font-weight:800;text-transform:uppercase;
+  font-size:clamp(2.2rem,7vw,4rem);letter-spacing:-.03em;line-height:1;margin-bottom:2.2rem;
+}
+h1 span{color:var(--coral)}
+h2{
+  font-variation-settings:"wdth" 114;font-weight:700;text-transform:uppercase;
+  font-size:1.2rem;letter-spacing:.02em;margin:3rem 0 .9rem;
+  border-top:1px solid var(--hair);padding-top:1.6rem;
+}
+p{line-height:1.75;color:var(--dim);margin-bottom:1rem;font-size:.98rem}
+p strong{color:var(--ink);font-weight:600}
+code{font-family:ui-monospace,"SF Mono",Menlo,monospace;font-size:.86em;background:rgba(23,22,20,.06);padding:.1em .35em;border-radius:4px}
+ul{margin:0 0 1rem 1.1rem}
+li{line-height:1.7;color:var(--dim);margin-bottom:.4rem;font-size:.98rem}
+li::marker{color:var(--coral)}
+pre{
+  border:1px solid var(--hair);border-radius:12px;background:#fff;
+  padding:1.4rem 1.5rem;margin:1.2rem 0 .8rem;
+  white-space:pre-wrap;word-break:break-word;
+  font-family:ui-monospace,"SF Mono",Menlo,monospace;font-size:.82rem;line-height:1.7;color:var(--ink);
+}
+.copy{
+  cursor:pointer;font-family:inherit;font-size:.85rem;font-weight:600;letter-spacing:.06em;
+  color:var(--paper);background:var(--ink);border:1px solid var(--ink);border-radius:999px;
+  padding:.55rem 1.2rem;
+  transition:background .35s var(--ease),border-color .35s var(--ease);
+}
+.copy:hover{background:var(--coral);border-color:var(--coral)}
+footer{margin-top:4rem;border-top:1px solid var(--hair);padding-top:1.2rem;display:flex;justify-content:space-between;gap:1rem;flex-wrap:wrap;font-size:.8rem;color:var(--dim)}
+footer a{color:inherit;text-decoration:none;transition:color .35s var(--ease)}
+footer a:hover{color:var(--coral)}
+</style>
+</head>
+<body>
+<a class="pill" href="../">&larr; KLAR</a>
+<main class="wrap">
+  <p class="kicker">FABLE/25 <b>·</b> Site 72 <b>·</b> Guide &amp; Prompt</p>
+  <h1>Wie KLAR entstand<span>.</span></h1>
+
+  <h2>Das System der Reduktion</h2>
+  <p>Die Site muss beweisen, was die fiktive Agentur verkauft: <strong>Marketing ohne Lärm</strong>. Also wurde alles auf je genau eine Instanz reduziert — <strong>ein</strong> Papierton (<code>#FAF8F4</code>), <strong>eine</strong> Tinte (<code>#171614</code>), <strong>ein</strong> Akzent (<code>#FF5A48</code>), <strong>eine</strong> Schrift (Archivo variabel, die Breitenachse ersetzt eine Zweitschrift: wdth 116–125 für Display, 100 für Lauftext), <strong>eine</strong> Reveal-Bewegung (14px hoch, einmalig), <strong>ein</strong> Easing für sämtliche Übergänge: <code>cubic-bezier(.3,.7,0,1)</code>, Dauern 0.35–0.5s. Keine Schatten, keine Karten, keine Verläufe — nur Haarlinien bei 14% Tinte und Weissraum als Aussage.</p>
+
+  <h2>Der rote Faden</h2>
+  <p>Die Signatur der Seite: Der korallenrote Punkt ist beim Laden der <strong>Schlusspunkt des Wortmarken-Satzes KLAR</strong> (ein <code>span</code> in der Headline). Beim Scrollen löst er sich per Smoothstep-Blend von der Marke und reitet auf einer fixen 1px-Schiene am linken Rand nach unten — seine y-Position ist der Scroll-Fortschritt der ganzen Seite. Ein einziger <code>requestAnimationFrame</code>-Loop treibt Punkt (0.16-Lerp), Plakat-Parallaxe (±7% <code>translateY</code> in einem geclippten Rahmen mit 120% Bildhöhe) und den Ansatz-Index gemeinsam an. Bei <code>prefers-reduced-motion</code> startet der Loop gar nicht: Der Schlusspunkt wird an Ort koralle eingefärbt, die Parallaxe steht, alle drei Prinzipien stehen gestapelt, Zähler zeigen sofort die Endwerte.</p>
+
+  <h2>Arbeiten, Ansatz, Studio</h2>
+  <ul>
+    <li><strong>Arbeiten:</strong> vier volle Zeilen mit Haarlinien statt Karten; die Ergebnis-Zahl zählt beim ersten Sichtkontakt mit demselben kubischen Ease-out hoch; Hover invertiert die Zeile flächig zu Koralle — hinter <code>(hover:hover)</code>, damit Touch nichts kleben lässt.</li>
+    <li><strong>Ansatz:</strong> 340vh Sticky-Strecke, drei riesige Prinzipien, immer genau eines sichtbar (Opacity + 14px, kein Overlap), Zähler «1 / 3» unten rechts.</li>
+    <li><strong>Studio:</strong> Foto plus Statement; statt Portraits sieben Monogramm-Kreise. Kontakt ist eine einzige riesige Mail-Zeile.</li>
+  </ul>
+
+  <h2>Assets &amp; Credits</h2>
+  <p>Beide Fotografien (1920×1080) wurden mit <strong>Nano Banana 2 via Higgsfield MCP</strong> generiert und mit <strong>ffmpeg zu WebP</strong> konvertiert: <code>billboard.webp</code> — ein nächtliches Plakat mit korallenroter Kampagne über leerer Strasse (verankert Case 01 vollflächig mit Parallaxe) — und <code>studio.webp</code> — die Studiowand mit aufgepinnten Entwürfen. Beide laden lazy mit echten Dimensionen; sie sind die einzigen Bilder der Seite.</p>
+
+  <h2>Repro-Prompt</h2>
+  <pre id="prompt">Build a single-file HTML site for KLAR, a fictional Swiss marketing agency in Zürich whose positioning is "Marketing ohne Lärm" — all copy in de-CH German (no ß: gross, heisst). It must read as the cleanest site imaginable: off-white #FAF8F4 paper, near-black ink #171614, exactly one accent coral #FF5A48, hairline rules at 14% ink, whitespace treated as a statement. Typography: Google's Archivo variable font only, exploiting the width axis — wordmark and display lines at wdth 116–125, weight 800, −0.03em tracking; body at normal width; micro-labels uppercase at 0.72rem with 0.28–0.34em letterspacing. Motion discipline is the thesis: declare ONE easing, cubic-bezier(.3,.7,0,1), use it for every transition, keep durations 0.35–0.5s, and allow exactly one reveal move (14px rise plus fade, fired once via IntersectionObserver). Signature: a coral dot that is literally the full stop of the huge KLAR wordmark; on scroll it detaches (smoothstep blend, 0.16 lerp inside a single requestAnimationFrame loop) and rides a fixed 1px hairline rail at the left margin, its y-position mapping total scroll progress — the agency's belief in reduction made kinetic. Sections: (1) near-empty 100svh hero — kicker, wordmark with the dot, one sentence: "Wir machen aus Botschaften Ansagen." (2) Arbeiten: four fictional cases as full-width hairline-separated rows (Klient huge and uppercase, one-line Aufgabe, right-aligned coral result number counting up on first view with the same cubic ease-out: +212% Markenerinnerung, −38% Streuverlust, 4.6× Umsatz, 9 Wörter); hovering a row inverts it flat to coral, gated behind (hover:hover); above the rows a full-bleed night billboard photo sits in a clipped figure with 120% image height and ±7% translateY parallax. (3) Ansatz: a 340vh sticky section showing three principles one at a time, set giant — "Weglassen ist eine Entscheidung." / "Eine Botschaft. Nicht zwei." / "Laut ist einfach. Klar ist Arbeit." — only the active one opaque, no overlap, with a 1/3 counter. (4) Studio: studio photo beside a short team statement and seven monogram circles instead of portraits. (5) Kontakt: one giant mailto line, hallo@klar.studio, then a hairline footer. Under prefers-reduced-motion never start the rAF loop: hide the travelling dot and paint the wordmark's full stop coral in place, show all principles stacked, print final numbers immediately. All images lazy with real width/height; no horizontal overflow at 390px. Generated assets: two 1920×1080 photographs from Nano Banana 2 (Higgsfield MCP) — a night billboard carrying a coral campaign above an empty street, and a bright studio wall of pinned campaign mockups — converted to WebP with ffmpeg.</pre>
+  <button class="copy" id="copy">Prompt kopieren</button>
+
+  <footer>
+    <span>&copy; 2026 KLAR — FABLE/25, Site 72</span>
+    <a href="/">&larr; zur Galerie</a>
+  </footer>
+</main>
+<script>
+document.getElementById('copy').addEventListener('click',function(){
+  var b=this;
+  navigator.clipboard.writeText(document.getElementById('prompt').textContent).then(function(){
+    b.textContent='Kopiert.';setTimeout(function(){b.textContent='Prompt kopieren'},1600);
+  }).catch(function(){b.textContent='Manuell markieren'});
+});
+</script>
+<script src="../../shop.js" defer></script>
+</body>
+</html>

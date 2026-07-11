@@ -1,0 +1,664 @@
+<!DOCTYPE html>
+<html lang="de-CH">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>DOMUS — Seehaus Meridian</title>
+<meta name="description" content="DOMUS — Seehaus Meridian. 7.5 Zimmer, 340 m², eigener Seeanstoss. Ein Haus, das man scrollen kann: der Rundgang läuft über 80 Filmbilder, gesteuert von Ihrem Scrollrad.">
+<!--
+  CHANGELOG
+  PASS 1 (structure & the walk): single file, warm-white Swiss editorial layout. Hero = generated
+  facade full-bleed with a scrim, Fraunces display + Instrument Sans. Der Rundgang: 560vh wrapper,
+  sticky 100vh stage, full-viewport canvas scrubbing 80 WebP frames (1024x576). Playhead damped
+  with lerp 0.28 (borrowed from 69-singular PROBE VII), IntersectionObserver 600px rootMargin
+  starts the load, frames requested in interleaved order (every 8th first) so scrubbing mid-way
+  finds a neighbour early; draw() falls back to the nearest loaded frame. Frames drawn "contain"
+  on a deep-umber stage (cinema letterbox, exact on portrait phones). Room captions pinned to
+  frame ranges verified by eye against extracted frames: Eingang 1-15, Wohnraum 16-36, Treppe
+  37-47, Kueche 48-64, Terrasse 65-80. Progress = a minimal floorplan polyline (the actual path:
+  entree -> wohnraum -> treppe -> kueche -> terrasse) with a moving dot via getPointAtLength.
+  Loading veil until frame 1 decodes. Reduced motion: scrub removed, five static stills
+  (w008/w028/w042/w056/w075) stacked with the same captions. After the walk: Eckdaten grid,
+  Lage as a hand-sketched SVG map, Preis auf Anfrage + Besichtigung form mock (JS-only confirm).
+  de-CH copy, kein Eszett. DPR cap 2. shop.js deferred.
+  PASS 2 (playwright @1280+390, 4 scrub depths screenshotted): captions verified against the
+  footage — 12% -> Bild 009 over the hallway (Entree), 38% -> Bild 031 over the double-height
+  fireplace (Wohnraum), 55% -> Bild 045 (Treppe), 88% -> Bild 072 lake doors (Terrasse). One
+  lie found: at f045 the stone island already reads clearly while the stair is half out of
+  frame right — Treppe range tightened 37-47 -> 35-45, Kueche starts f46. One overflow found:
+  the Besichtigung form grid blew scrollWidth to 460 @390 (inputs' intrinsic min-width beat
+  the 1fr tracks) — fixed with min-width:0 + width:100% on fields and controls.
+  PASS 3 (portrait framing & collisions): pure contain-fit on a 390x844 phone reduced the walk
+  to a 219px band lost mid-screen — draw scale is now hybrid: min(cover, 1.45x contain),
+  clamped to at least contain, so desktop renders edge-to-edge (cover) while portrait fills the
+  width with a gentle side-crop instead of a letterbox sliver; the frame band sits at 42%
+  height so the caption never overlaps footage on phones. "<- 25" pill collided with the
+  DER RUNDGANG label — stage-head gets pill clearance; pill fades to 45% inside the walk.
+  Floorplan hidden <560px in favour of a slim oak progress bar along the stage top. 2% scroll
+  dead zones hold frame 1/80 while the stage docks/undocks; rAF skips drawing offscreen.
+  PASS 4 (final truth pass): full re-verify — zero console errors @1280+390 (file://),
+  scrollWidth worst 390 <= 392 across 12 depths, veil clears on frame 1, reduced-motion page
+  hides the scrub and shows the five stills, form mock confirms, guide passes the same gates.
+  Kitchen island copy checked against f046-f064 ("fuenf Meter" against the ceiling-spot rhythm,
+  not seven); Terrasse caption phrased "die Tueren geben den See frei" so it is already true
+  at f065 while still indoors. Eingang m2 written 16 (the corridor is narrow).
+-->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,300..600;1,9..144,300..600&family=Instrument+Sans:ital,wght@0,400..600;1,400..600&display=swap" rel="stylesheet">
+<style>
+:root{
+  --paper:#F7F4EF;
+  --oak:#A9825A;
+  --concrete:#8D8A84;
+  --lake:#6E93A8;
+  --ink:#24221E;
+  --umber:#1B1915;
+  --line:rgba(36,34,30,.16);
+  --line-soft:rgba(36,34,30,.09);
+  --serif:"Fraunces",Georgia,serif;
+  --sans:"Instrument Sans",-apple-system,"Helvetica Neue",Arial,sans-serif;
+}
+*{margin:0;padding:0;box-sizing:border-box}
+html{background:var(--paper);scroll-behavior:smooth}
+@media (prefers-reduced-motion: reduce){html{scroll-behavior:auto}}
+body{
+  background:var(--paper);color:var(--ink);
+  font-family:var(--sans);font-size:16.5px;line-height:1.65;
+  overflow-x:hidden;-webkit-font-smoothing:antialiased;
+}
+::selection{background:var(--oak);color:var(--paper)}
+a{color:inherit}
+img{max-width:100%;display:block}
+
+.mono{font-family:var(--sans);font-size:11px;letter-spacing:.3em;text-transform:uppercase;font-weight:500}
+
+/* ---------- back pill ---------- */
+.pill{
+  position:fixed;top:18px;left:18px;z-index:60;
+  font-size:12.5px;letter-spacing:.08em;text-decoration:none;font-weight:500;
+  padding:8px 15px;border-radius:999px;
+  color:var(--paper);background:rgba(27,25,21,.5);
+  border:1px solid rgba(247,244,239,.3);
+  backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);
+  transition:opacity .4s ease, background .25s ease;
+}
+.pill:hover{background:rgba(27,25,21,.78)}
+body.in-walk .pill{opacity:.45}
+body.in-walk .pill:hover{opacity:1}
+
+/* ---------- hero ---------- */
+.hero{position:relative;min-height:100svh;display:flex;flex-direction:column;justify-content:flex-end;color:var(--paper);isolation:isolate}
+.hero-img{position:absolute;inset:0;z-index:-2}
+.hero-img img{width:100%;height:100%;object-fit:cover}
+.hero::after{
+  content:"";position:absolute;inset:0;z-index:-1;
+  background:linear-gradient(to top, rgba(20,17,13,.78) 0%, rgba(20,17,13,.28) 34%, rgba(20,17,13,.05) 60%, rgba(20,17,13,.22) 100%);
+}
+.hero-top{position:absolute;top:0;left:0;right:0;display:flex;justify-content:center;padding:26px 20px}
+.hero-top .mono{color:rgba(247,244,239,.85)}
+.hero-inner{width:100%;max-width:1180px;margin:0 auto;padding:0 28px 34px}
+.hero h1{
+  font-family:var(--serif);font-weight:340;font-variation-settings:"opsz" 144;
+  font-size:clamp(52px,9.4vw,132px);line-height:.98;letter-spacing:-.015em;
+}
+.hero h1 em{font-style:italic;font-weight:320}
+.hero .sub{
+  font-family:var(--serif);font-style:italic;font-weight:340;
+  font-size:clamp(19px,2.6vw,28px);margin-top:14px;color:rgba(247,244,239,.92);
+}
+.facts{
+  display:flex;flex-wrap:wrap;align-items:center;gap:12px 0;
+  margin-top:30px;padding-top:20px;border-top:1px solid rgba(247,244,239,.38);
+  justify-content:space-between;
+}
+.facts-list{display:flex;flex-wrap:wrap;gap:8px 34px}
+.facts-list span{font-size:14px;letter-spacing:.12em;text-transform:uppercase;font-weight:500;color:rgba(247,244,239,.94)}
+.facts-list span b{font-family:var(--serif);font-weight:400;font-size:19px;letter-spacing:0;text-transform:none;margin-right:7px}
+.cta{
+  display:inline-flex;align-items:center;gap:12px;text-decoration:none;
+  font-size:13px;letter-spacing:.22em;text-transform:uppercase;font-weight:600;
+  color:var(--umber);background:var(--paper);border-radius:999px;padding:15px 26px;
+  transition:background .25s ease,color .25s ease;
+}
+.cta:hover{background:var(--oak);color:var(--paper)}
+.cta svg{transition:transform .3s ease}
+.cta:hover svg{transform:translateY(3px)}
+
+/* ---------- intro ---------- */
+.intro{max-width:1180px;margin:0 auto;padding:110px 28px 96px}
+.intro .mono{color:var(--oak);margin-bottom:26px}
+.intro p{
+  font-family:var(--serif);font-weight:340;font-variation-settings:"opsz" 60;
+  font-size:clamp(24px,3.4vw,40px);line-height:1.32;max-width:21em;letter-spacing:-.005em;
+}
+.intro p em{font-style:italic;color:var(--oak)}
+.intro .aside{font-family:var(--sans);font-size:15px;color:var(--concrete);max-width:34em;margin-top:30px;line-height:1.75}
+
+/* ---------- der rundgang (scrub) ---------- */
+#rundgang{position:relative;height:560vh;background:var(--umber)}
+.stage{
+  position:sticky;top:0;height:100vh;height:100svh;overflow:hidden;
+  background:var(--umber);
+}
+#walkCv{position:absolute;inset:0;width:100%;height:100%;display:block}
+.stage .veil{
+  position:absolute;inset:0;display:flex;align-items:center;justify-content:center;
+  background:var(--umber);color:rgba(247,244,239,.6);z-index:5;
+  transition:opacity .7s ease;font-size:12px;letter-spacing:.34em;text-transform:uppercase;
+}
+.stage .veil.off{opacity:0;pointer-events:none}
+.veil .dotty{display:inline-block;width:5px;height:5px;border-radius:50%;background:var(--oak);margin-left:12px;animation:pulse 1.1s ease-in-out infinite}
+@keyframes pulse{0%,100%{opacity:.25;transform:scale(.8)}50%{opacity:1;transform:scale(1.15)}}
+
+.stage-head{
+  position:absolute;top:0;left:0;right:0;z-index:4;
+  display:flex;justify-content:space-between;align-items:center;
+  padding:22px 26px 22px 84px;pointer-events:none;
+  background:linear-gradient(to bottom, rgba(27,25,21,.55), rgba(27,25,21,0));
+}
+.stage-head .mono{color:rgba(247,244,239,.8)}
+#frameChip{
+  font-size:11px;letter-spacing:.26em;color:rgba(247,244,239,.8);
+  border:1px solid rgba(247,244,239,.28);border-radius:999px;padding:6px 13px;
+  font-weight:500;text-transform:uppercase;background:rgba(27,25,21,.3);
+}
+
+/* caption band */
+.cap-band{
+  position:absolute;left:0;right:0;bottom:0;z-index:4;pointer-events:none;
+  padding:120px 26px 30px;
+  background:linear-gradient(to top, rgba(20,17,13,.82), rgba(20,17,13,.42) 55%, rgba(20,17,13,0));
+  color:var(--paper);
+}
+.cap-band .inner{max-width:1180px;margin:0 auto;display:flex;align-items:flex-end;justify-content:space-between;gap:24px}
+.caps{position:relative;flex:1;min-height:108px}
+.cap{
+  position:absolute;left:0;bottom:0;opacity:0;transform:translateY(10px);
+  transition:opacity .45s ease, transform .45s ease;max-width:34em;
+}
+.cap.on{opacity:1;transform:none}
+.cap .r-name{
+  font-family:var(--serif);font-weight:350;font-variation-settings:"opsz" 144;
+  font-size:clamp(34px,5vw,58px);line-height:1.02;letter-spacing:-.01em;
+}
+.cap .r-meta{margin-top:9px;font-size:14.5px;color:rgba(247,244,239,.86);letter-spacing:.015em}
+.cap .r-meta b{color:var(--paper);font-weight:600}
+
+/* floorplan progress */
+.plan{flex:0 0 auto;text-align:right}
+.plan svg{display:block;overflow:visible}
+.plan .path-bg{fill:none;stroke:rgba(247,244,239,.28);stroke-width:1.5}
+.plan .path-fg{fill:none;stroke:var(--oak);stroke-width:1.5}
+.plan .tick{fill:rgba(247,244,239,.4)}
+.plan .tick.done{fill:var(--oak)}
+.plan .pdot{fill:var(--paper);stroke:var(--oak);stroke-width:2}
+.plan .plabel{margin-top:8px;font-size:10.5px;letter-spacing:.3em;text-transform:uppercase;color:rgba(247,244,239,.7);font-weight:500}
+
+/* slim top progress (phones) */
+.bar{position:absolute;top:0;left:0;right:0;height:2px;z-index:6;background:rgba(247,244,239,.14);display:none}
+.bar i{display:block;height:100%;width:0;background:var(--oak)}
+
+/* reduced-motion stills */
+.rm-walk{display:none;background:var(--umber);color:var(--paper);padding:70px 0 40px}
+.rm-walk .rm-head{max-width:1180px;margin:0 auto 40px;padding:0 28px}
+.rm-walk .rm-head .mono{color:var(--oak)}
+.rm-walk figure{max-width:1180px;margin:0 auto 64px;padding:0 28px}
+.rm-walk img{width:100%;height:auto;border-radius:4px}
+.rm-walk figcaption{margin-top:16px}
+.rm-walk .r-name{font-family:var(--serif);font-weight:350;font-size:clamp(26px,4vw,40px);line-height:1.05}
+.rm-walk .r-meta{margin-top:6px;font-size:14.5px;color:rgba(247,244,239,.78)}
+
+@media (prefers-reduced-motion: reduce){
+  #rundgang{display:none}
+  .rm-walk{display:block}
+}
+
+/* ---------- eckdaten ---------- */
+.eckdaten{max-width:1180px;margin:0 auto;padding:110px 28px 40px}
+.sec-head{display:flex;align-items:baseline;justify-content:space-between;gap:20px;border-bottom:1px solid var(--line);padding-bottom:18px;margin-bottom:0}
+.sec-head h2{font-family:var(--serif);font-weight:350;font-size:clamp(30px,4.4vw,52px);letter-spacing:-.01em}
+.sec-head .mono{color:var(--oak)}
+.grid{display:grid;grid-template-columns:repeat(4,1fr)}
+.cell{border-bottom:1px solid var(--line-soft);padding:26px 18px 26px 0}
+.cell .k{font-size:11px;letter-spacing:.24em;text-transform:uppercase;color:var(--concrete);font-weight:500}
+.cell .v{font-family:var(--serif);font-weight:380;font-size:clamp(21px,2.4vw,28px);margin-top:8px;line-height:1.2}
+.cell .v small{font-family:var(--sans);font-size:13px;color:var(--concrete);display:block;margin-top:4px;font-weight:400}
+@media (max-width:900px){.grid{grid-template-columns:repeat(2,1fr)}}
+@media (max-width:430px){.grid{grid-template-columns:1fr}}
+
+/* ---------- lage ---------- */
+.lage{max-width:1180px;margin:0 auto;padding:90px 28px}
+.lage-cols{display:grid;grid-template-columns:1fr 1.1fr;gap:56px;margin-top:44px;align-items:center}
+@media (max-width:860px){.lage-cols{grid-template-columns:1fr;gap:36px}}
+.lage p.big{font-family:var(--serif);font-weight:340;font-size:clamp(21px,2.6vw,29px);line-height:1.42;max-width:22em}
+.lage p.big em{font-style:italic;color:var(--lake)}
+.dist{margin-top:34px;border-top:1px solid var(--line);padding:0}
+.dist li{display:flex;justify-content:space-between;align-items:baseline;list-style:none;border-bottom:1px solid var(--line-soft);padding:13px 2px;font-size:15px}
+.dist li b{font-family:var(--serif);font-weight:420;font-size:18px}
+.map-wrap{position:relative}
+.map-wrap svg{width:100%;height:auto;display:block}
+.map-cap{margin-top:12px;font-size:11px;letter-spacing:.24em;text-transform:uppercase;color:var(--concrete);font-weight:500;text-align:right}
+
+/* ---------- preis / besichtigung ---------- */
+.preis{background:var(--umber);color:var(--paper);margin-top:60px}
+.preis-inner{max-width:1180px;margin:0 auto;padding:110px 28px 100px;display:grid;grid-template-columns:1fr 1fr;gap:70px}
+@media (max-width:860px){.preis-inner{grid-template-columns:1fr;gap:50px;padding:80px 28px}}
+.preis .mono{color:var(--oak)}
+.preis h2{font-family:var(--serif);font-weight:330;font-size:clamp(38px,5.6vw,68px);line-height:1.04;margin-top:20px;letter-spacing:-.012em}
+.preis h2 em{font-style:italic}
+.preis .note{margin-top:26px;color:rgba(247,244,239,.62);font-size:15px;max-width:30em;line-height:1.75}
+form{display:grid;grid-template-columns:1fr 1fr;gap:18px 16px;align-content:start}
+.f-field{display:flex;flex-direction:column;gap:8px;min-width:0}
+.f-field.wide{grid-column:1/-1}
+label{font-size:11px;letter-spacing:.24em;text-transform:uppercase;font-weight:500;color:rgba(247,244,239,.66)}
+input,textarea{
+  width:100%;min-width:0;
+  font-family:var(--sans);font-size:15.5px;color:var(--paper);
+  background:transparent;border:0;border-bottom:1px solid rgba(247,244,239,.32);
+  padding:10px 2px;border-radius:0;outline:none;transition:border-color .25s ease;
+}
+input::placeholder,textarea::placeholder{color:rgba(247,244,239,.32)}
+input:focus,textarea:focus{border-bottom-color:var(--oak)}
+textarea{resize:vertical;min-height:72px}
+.f-send{
+  grid-column:1/-1;margin-top:10px;justify-self:start;
+  font-family:var(--sans);font-size:13px;letter-spacing:.22em;text-transform:uppercase;font-weight:600;
+  color:var(--umber);background:var(--paper);border:0;border-radius:999px;padding:16px 30px;cursor:pointer;
+  transition:background .25s ease,color .25s ease;
+}
+.f-send:hover{background:var(--oak);color:var(--paper)}
+.f-ok{grid-column:1/-1;font-family:var(--serif);font-style:italic;font-size:19px;color:var(--oak);display:none}
+form.sent .f-ok{display:block}
+form.sent .f-send{display:none}
+
+/* ---------- footer ---------- */
+footer{background:var(--umber);color:rgba(247,244,239,.6);border-top:1px solid rgba(247,244,239,.14)}
+.foot-inner{max-width:1180px;margin:0 auto;padding:26px 28px;display:flex;flex-wrap:wrap;gap:12px 30px;justify-content:space-between;font-size:13px}
+footer a{color:rgba(247,244,239,.85);text-decoration:none;border-bottom:1px solid rgba(247,244,239,.28);padding-bottom:2px}
+footer a:hover{color:var(--oak);border-color:var(--oak)}
+.foot-inner .fl{display:flex;gap:26px}
+
+/* ---------- responsive: stage ---------- */
+@media (max-width:760px){
+  .cap-band{padding:90px 20px 22px}
+  .cap .r-name{font-size:30px}
+  .cap .r-meta{font-size:12.5px}
+  .caps{min-height:84px}
+  .stage-head{padding:20px 16px 20px 84px}
+  .hero-inner{padding:0 20px 26px}
+  .facts{flex-direction:column;align-items:flex-start;gap:20px}
+  .intro,.eckdaten,.lage{padding-left:20px;padding-right:20px}
+}
+@media (max-width:560px){
+  .plan{display:none}
+  .bar{display:block}
+}
+</style>
+</head>
+<body>
+
+<a class="pill" href="/">&larr; 25</a>
+
+<!-- ============ HERO ============ -->
+<header class="hero">
+  <div class="hero-img"><img src="assets/facade.webp" alt="DOMUS — Seehaus Meridian: Fassade aus Holz und Sichtbeton über dem Infinity-Pool, goldene Stunde am See" fetchpriority="high"></div>
+  <div class="hero-top"><span class="mono">Domus &middot; Privatverkauf</span></div>
+  <div class="hero-inner">
+    <h1>Seehaus <em>Meridian</em></h1>
+    <p class="sub">Ein Haus, das man scrollen kann.</p>
+    <div class="facts">
+      <div class="facts-list">
+        <span><b>7.5</b> Zimmer</span>
+        <span><b>340</b> m&sup2; Wohnfl&auml;che</span>
+        <span><b>28 m</b> Seeanstoss</span>
+      </div>
+      <a class="cta" href="#rundgang" id="ctaWalk">Rundgang starten
+        <svg width="12" height="14" viewBox="0 0 12 14" fill="none" aria-hidden="true"><path d="M6 1v11M1.5 8L6 12.5 10.5 8" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      </a>
+    </div>
+  </div>
+</header>
+
+<!-- ============ INTRO ============ -->
+<section class="intro">
+  <p class="mono">Der Rundgang &middot; 80 Bilder &middot; ein Weg</p>
+  <p>Kein Bildkarussell. Kein Video, das ohne Sie weiterl&auml;uft. Scrollen Sie — und Sie gehen durch das Haus, <em>Schritt f&uuml;r Schritt</em>, vom Entr&eacute;e bis an den See.</p>
+  <p class="aside">Die folgende Sequenz f&uuml;hrt in einer einzigen, ungeschnittenen Bewegung durch das Erdgeschoss. Ihr Scrollrad ist die Kamera: vorw&auml;rts, r&uuml;ckw&auml;rts, anhalten — Sie bestimmen das Tempo.</p>
+</section>
+
+<!-- ============ DER RUNDGANG ============ -->
+<section id="rundgang" aria-label="Der Rundgang — 80 Bilder durch das Erdgeschoss">
+  <div class="stage" id="stage">
+    <canvas id="walkCv" aria-hidden="true"></canvas>
+    <div class="bar" aria-hidden="true"><i id="barFill"></i></div>
+    <div class="stage-head">
+      <span class="mono">Der Rundgang</span>
+      <span id="frameChip">Bild 001/080</span>
+    </div>
+    <div class="cap-band">
+      <div class="inner">
+        <div class="caps" id="caps"></div>
+        <div class="plan" aria-hidden="true">
+          <svg width="170" height="96" viewBox="0 0 170 96">
+            <path class="path-bg" id="planBg" d="M10 86 L10 46 L60 46 L60 20 L88 20 L88 46 L128 46 L160 46"/>
+            <path class="path-fg" id="planFg" d="M10 86 L10 46 L60 46 L60 20 L88 20 L88 46 L128 46 L160 46"/>
+            <circle class="tick" r="2.5" cx="10" cy="86"/>
+            <circle class="tick" r="2.5" cx="35" cy="46"/>
+            <circle class="tick" r="2.5" cx="74" cy="20"/>
+            <circle class="tick" r="2.5" cx="108" cy="46"/>
+            <circle class="tick" r="2.5" cx="160" cy="46"/>
+            <circle class="pdot" id="planDot" r="4" cx="10" cy="86"/>
+          </svg>
+          <div class="plabel" id="planLabel">Entr&eacute;e</div>
+        </div>
+      </div>
+    </div>
+    <div class="veil" id="veil"><span>Rundgang wird geladen</span><span class="dotty"></span></div>
+  </div>
+</section>
+
+<!-- reduced-motion fallback: five stills -->
+<section class="rm-walk" id="rundgang-stills" aria-label="Der Rundgang in f&uuml;nf Bildern">
+  <div class="rm-head">
+    <p class="mono">Der Rundgang &middot; in f&uuml;nf Bildern</p>
+  </div>
+  <figure>
+    <img loading="lazy" src="assets/walk/w008.webp" alt="Entrée: langer Flur mit Eichenparkett und Kunstwerk" width="1024" height="576">
+    <figcaption><div class="r-name">Entr&eacute;e</div><div class="r-meta"><b>Ankommen &middot; 16 m&sup2;</b> — Eiche unter den F&uuml;ssen, Kunst an der Wand, das Licht schon vom See.</div></figcaption>
+  </figure>
+  <figure>
+    <img loading="lazy" src="assets/walk/w028.webp" alt="Wohnraum: doppelte Raumhöhe, Kamin aus Sichtbeton, Glasfront zum Garten" width="1024" height="576">
+    <figcaption><div class="r-name">Wohnraum</div><div class="r-meta"><b>Wohnen &middot; 84 m&sup2;</b> — Sichtbeton, sechs Meter Luft.</div></figcaption>
+  </figure>
+  <figure>
+    <img loading="lazy" src="assets/walk/w042.webp" alt="Treppe: freitragende Eichenstufen entlang der Galerie" width="1024" height="576">
+    <figcaption><div class="r-name">Treppe</div><div class="r-meta"><b>Aufgang zur Galerie</b> — Eiche, freitragend, kein sichtbarer Tr&auml;ger.</div></figcaption>
+  </figure>
+  <figure>
+    <img loading="lazy" src="assets/walk/w056.webp" alt="Küche: Natursteininsel mit Barstühlen, Blick zum See" width="1024" height="576">
+    <figcaption><div class="r-name">K&uuml;che</div><div class="r-meta"><b>K&uuml;che &middot; 32 m&sup2;</b> — eine Insel aus Naturstein, f&uuml;nf Meter, dem See zugewandt.</div></figcaption>
+  </figure>
+  <figure>
+    <img loading="lazy" src="assets/walk/w075.webp" alt="Terrasse: raumhohe Schiebetüren öffnen sich zum Rasen und zum See" width="1024" height="576">
+    <figcaption><div class="r-name">Terrasse</div><div class="r-meta"><b>Seeseite</b> — die T&uuml;ren geben den See frei; der Garten endet erst am Wasser.</div></figcaption>
+  </figure>
+</section>
+
+<!-- ============ ECKDATEN ============ -->
+<section class="eckdaten">
+  <div class="sec-head"><h2>Eckdaten</h2><span class="mono">Objekt Nr. M-71</span></div>
+  <div class="grid">
+    <div class="cell"><div class="k">Grundst&uuml;ck</div><div class="v">1&rsquo;480 m&sup2;<small>S&uuml;dwest, leicht geneigt zum Ufer</small></div></div>
+    <div class="cell"><div class="k">Wohnfl&auml;che</div><div class="v">340 m&sup2;<small>zzgl. 96 m&sup2; Terrassen</small></div></div>
+    <div class="cell"><div class="k">Zimmer</div><div class="v">7.5<small>davon 4 Schlafzimmer, 3 B&auml;der</small></div></div>
+    <div class="cell"><div class="k">Baujahr</div><div class="v">2024<small>Erstbezug</small></div></div>
+    <div class="cell"><div class="k">Energie</div><div class="v">Minergie-A<small>W&auml;rmepumpe, Photovoltaik 18 kWp</small></div></div>
+    <div class="cell"><div class="k">Seeanstoss</div><div class="v">28 m<small>eigener Uferstreifen, Badeplatz</small></div></div>
+    <div class="cell"><div class="k">Pool</div><div class="v">Infinity, 12 m<small>beheizt, Sichtachse zum See</small></div></div>
+    <div class="cell"><div class="k">Garage</div><div class="v">3 Pl&auml;tze<small>zzgl. 2 Aussenpl&auml;tze, Ladestationen</small></div></div>
+  </div>
+</section>
+
+<!-- ============ LAGE ============ -->
+<section class="lage">
+  <div class="sec-head"><h2>Lage</h2><span class="mono">Meridian am See</span></div>
+  <div class="lage-cols">
+    <div>
+      <p class="big">Am ruhigen Westufer, wo die Stras&shy;se endet und der Wald beginnt. Das Grundst&uuml;ck f&auml;llt sanft zum Wasser — <em>der See ist nicht Aussicht, sondern Adresse.</em></p>
+      <ul class="dist">
+        <li><span>Eigener Badeplatz</span><b>0 Min.</b></li>
+        <li><span>Dorfkern &amp; Schule</span><b>4 Min.</b></li>
+        <li><span>Bahnhof (S-Bahn)</span><b>9 Min.</b></li>
+        <li><span>Stadtzentrum</span><b>24 Min.</b></li>
+        <li><span>Flughafen</span><b>36 Min.</b></li>
+      </ul>
+    </div>
+    <div class="map-wrap">
+      <svg viewBox="0 0 520 400" role="img" aria-label="Lageskizze: Grundstück am Westufer des Sees">
+        <rect width="520" height="400" fill="none"/>
+        <!-- lake -->
+        <path d="M300 -10 C 250 60, 260 120, 300 180 C 340 240, 330 320, 290 410 L 540 410 L 540 -10 Z"
+              fill="#6E93A8" opacity=".16"/>
+        <path d="M300 -10 C 250 60, 260 120, 300 180 C 340 240, 330 320, 290 410"
+              fill="none" stroke="#6E93A8" stroke-width="1.6"/>
+        <!-- shore hatching -->
+        <g stroke="#6E93A8" stroke-width="1" opacity=".4">
+          <path d="M296 40 l14 6"/><path d="M288 90 l14 6"/><path d="M290 140 l14 6"/>
+          <path d="M306 195 l14 6"/><path d="M316 250 l14 6"/><path d="M310 305 l14 6"/><path d="M298 355 l14 6"/>
+        </g>
+        <!-- roads -->
+        <g stroke="#8D8A84" stroke-width="1.3" fill="none" opacity=".75">
+          <path d="M-10 120 C 90 110, 160 130, 218 150 C 240 158, 250 175, 252 196"/>
+          <path d="M-10 300 C 80 290, 170 292, 240 268"/>
+          <path d="M118 116 C 122 180, 130 240, 152 293"/>
+        </g>
+        <!-- forest -->
+        <g fill="none" stroke="#8D8A84" opacity=".55">
+          <circle cx="70" cy="52" r="9"/><circle cx="98" cy="40" r="7"/><circle cx="122" cy="58" r="8"/>
+          <circle cx="52" cy="80" r="7"/><circle cx="90" cy="74" r="6"/>
+          <circle cx="60" cy="356" r="8"/><circle cx="90" cy="368" r="6"/><circle cx="34" cy="338" r="6"/>
+        </g>
+        <!-- parcel -->
+        <path d="M226 168 L292 176 L302 246 L236 252 Z" fill="#A9825A" opacity=".18"/>
+        <path d="M226 168 L292 176 L302 246 L236 252 Z" fill="none" stroke="#A9825A" stroke-width="1.8"/>
+        <!-- house dot -->
+        <circle cx="258" cy="204" r="6.5" fill="#A9825A"/>
+        <circle cx="258" cy="204" r="12.5" fill="none" stroke="#A9825A" opacity=".5"/>
+        <!-- labels -->
+        <g font-family="Instrument Sans, Arial, sans-serif" fill="#24221E">
+          <text x="430" y="200" font-size="13" letter-spacing="4" fill="#6E93A8" transform="rotate(90 430 200)" text-anchor="middle">DER SEE</text>
+          <text x="258" y="278" font-size="11" letter-spacing="3" text-anchor="middle" fill="#A9825A">DOMUS</text>
+          <text x="60 " y="130" font-size="10" letter-spacing="2" fill="#8D8A84">SEESTRASSE</text>
+          <text x="46" y="316" font-size="10" letter-spacing="2" fill="#8D8A84">ZUM DORF</text>
+        </g>
+        <!-- north -->
+        <g transform="translate(36,36)" stroke="#24221E" fill="none" opacity=".7">
+          <circle r="13"/><path d="M0 8 L0 -8 M0 -8 l-4 5 M0 -8 l4 5"/>
+          <text x="0" y="-19" font-size="10" text-anchor="middle" fill="#24221E" stroke="none" font-family="Instrument Sans, Arial, sans-serif">N</text>
+        </g>
+      </svg>
+      <div class="map-cap">Skizze, nicht massstabsgetreu</div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ PREIS / BESICHTIGUNG ============ -->
+<section class="preis" id="besichtigung">
+  <div class="preis-inner">
+    <div>
+      <p class="mono">Preis</p>
+      <h2>Auf <em>Anfrage.</em></h2>
+      <p class="note">Verkauf direkt durch die Eigent&uuml;merschaft, diskret und ohne Bieterverfahren. Dossier mit Grundrissen, Baubeschrieb und Energieausweis erhalten Sie nach pers&ouml;nlichem Kontakt.</p>
+    </div>
+    <form id="visitForm" novalidate>
+      <div class="f-field"><label for="fName">Name</label><input id="fName" name="name" type="text" placeholder="Vor- und Nachname" autocomplete="name"></div>
+      <div class="f-field"><label for="fMail">E-Mail</label><input id="fMail" name="email" type="email" placeholder="name@beispiel.ch" autocomplete="email"></div>
+      <div class="f-field wide"><label for="fDate">Wunschtermin</label><input id="fDate" name="date" type="text" placeholder="z.&thinsp;B. Samstagvormittag"></div>
+      <div class="f-field wide"><label for="fMsg">Nachricht</label><textarea id="fMsg" name="msg" placeholder="Optional — was m&ouml;chten Sie sehen?"></textarea></div>
+      <button class="f-send" type="submit">Besichtigung anfragen</button>
+      <p class="f-ok">Danke — wir melden uns innert 24 Stunden. Diskretion ist selbstverst&auml;ndlich.</p>
+    </form>
+  </div>
+</section>
+
+<footer>
+  <div class="foot-inner">
+    <span>DOMUS — Seehaus Meridian &middot; site 71 &middot; FABLE/25</span>
+    <span class="fl">
+      <a href="/">&larr; 25 &middot; the collection</a>
+      <a href="/71-domus/guide/">guide &amp; prompt &rarr;</a>
+    </span>
+  </div>
+</footer>
+
+<script>
+(function(){
+'use strict';
+var REDUCED = matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+/* ---------- room captions, ranges verified against extracted frames ---------- */
+var ROOMS=[
+  {from:1, to:15, name:"Entrée",   plan:"Entrée",
+   meta:"<b>Ankommen · 16 m²</b> — Eiche unter den Füssen, Kunst an der Wand, das Licht schon vom See."},
+  {from:16,to:34, name:"Wohnraum", plan:"Wohnraum",
+   meta:"<b>Wohnen · 84 m²</b> — Sichtbeton, sechs Meter Luft."},
+  {from:35,to:45, name:"Treppe",   plan:"Treppe",
+   meta:"<b>Aufgang zur Galerie</b> — Eiche, freitragend, kein sichtbarer Träger."},
+  {from:46,to:64, name:"Küche",    plan:"Küche",
+   meta:"<b>Küche · 32 m²</b> — eine Insel aus Naturstein, fünf Meter, dem See zugewandt."},
+  {from:65,to:80, name:"Terrasse", plan:"Terrasse",
+   meta:"<b>Seeseite</b> — die Türen geben den See frei; der Garten endet erst am Wasser."}
+];
+
+/* build caption nodes */
+var capsBox=document.getElementById('caps');
+if(capsBox){
+  ROOMS.forEach(function(r){
+    var d=document.createElement('div');d.className='cap';
+    d.innerHTML='<div class="r-name">'+r.name+'</div><div class="r-meta">'+r.meta+'</div>';
+    capsBox.appendChild(d);
+  });
+}
+
+/* ---------- CTA: with reduced motion the scrub section is hidden — retarget to the stills ---------- */
+var cta=document.getElementById('ctaWalk');
+if(cta&&REDUCED) cta.setAttribute('href','#rundgang-stills');
+
+/* ---------- the scrub ---------- */
+(function(){
+  if(REDUCED) return;
+  var wrap=document.getElementById('rundgang'), stage=document.getElementById('stage');
+  var cv=document.getElementById('walkCv'); if(!cv||!wrap) return;
+  var ctx=cv.getContext('2d');
+  var N=80, imgs=new Array(N), started=false;
+  var target=0, shown=0, curDrawn=-1, curRoom=-1, firstReady=false;
+  var chip=document.getElementById('frameChip'), veil=document.getElementById('veil');
+  var barFill=document.getElementById('barFill');
+  var capEls=capsBox?capsBox.children:[];
+  var planFg=document.getElementById('planFg'), planDot=document.getElementById('planDot');
+  var planLabel=document.getElementById('planLabel');
+  var planBg=document.getElementById('planBg');
+  var planLen=planBg?planBg.getTotalLength():0;
+  var ticks=document.querySelectorAll('.plan .tick');
+
+  function src(i){ return 'assets/walk/w'+String(i+1).padStart(3,'0')+'.webp'; }
+
+  /* interleaved load order: coarse pass first so any scrub position has a neighbour */
+  function loadAll(){
+    if(started) return; started=true;
+    var order=[],step,i,seen={};
+    for(step=8;step>=1;step=step>>1){ for(i=0;i<N;i+=step){ if(!seen[i]){seen[i]=1;order.push(i);} } }
+    order.forEach(function(idx,k){
+      var im=new Image();
+      im.onload=function(){
+        imgs[idx]=im;
+        if(idx===0 && !firstReady){ firstReady=true; if(veil) veil.classList.add('off'); draw(0,true); }
+      };
+      im.onerror=function(){ imgs[idx]=null; };
+      /* stagger kickoff slightly to keep the main thread breathing */
+      setTimeout(function(){ im.src=src(idx); }, Math.floor(k/10)*16);
+    });
+  }
+  if('IntersectionObserver' in window){
+    new IntersectionObserver(function(en,io){
+      if(en[0].isIntersecting){ loadAll(); io.disconnect(); }
+    },{rootMargin:'600px'}).observe(wrap);
+  } else loadAll();
+
+  /* sizing: contain-fit on umber stage (cinema letterbox on portrait) */
+  var W=0,H=0,DPR=1;
+  function resize(){
+    DPR=Math.min(2,window.devicePixelRatio||1);
+    W=stage.clientWidth; H=stage.clientHeight;
+    cv.width=Math.round(W*DPR); cv.height=Math.round(H*DPR);
+    curDrawn=-1; draw(Math.round(shown),true);
+  }
+  addEventListener('resize',resize,{passive:true});
+
+  function nearestLoaded(i){
+    if(imgs[i]) return i;
+    for(var d=1;d<N;d++){
+      if(i-d>=0&&imgs[i-d]) return i-d;
+      if(i+d<N&&imgs[i+d]) return i+d;
+    }
+    return -1;
+  }
+
+  function draw(i,force){
+    i=Math.max(0,Math.min(N-1,i));
+    var j=nearestLoaded(i); if(j<0) return;
+    if(j===curDrawn&&!force) return;
+    curDrawn=j;
+    var im=imgs[j];
+    ctx.fillStyle='#1B1915'; ctx.fillRect(0,0,cv.width,cv.height);
+    /* hybrid fit: cover on landscape, width-filling gentle crop on portrait (no sliver letterbox) */
+    var contain=Math.min(cv.width/im.width, cv.height/im.height);
+    var cover=Math.max(cv.width/im.width, cv.height/im.height);
+    var s=Math.max(contain, Math.min(cover, contain*1.45));
+    var dw=im.width*s, dh=im.height*s;
+    var dy=(dh>=cv.height)? (cv.height-dh)/2 : (cv.height-dh)*0.42;
+    ctx.drawImage(im,(cv.width-dw)/2,dy,dw,dh);
+    if(chip) chip.textContent='Bild '+String(j+1).padStart(3,'0')+'/080';
+  }
+
+  function setRoom(fr){ /* fr = 1-based frame */
+    var ri=-1;
+    for(var k=0;k<ROOMS.length;k++){ if(fr>=ROOMS[k].from&&fr<=ROOMS[k].to){ri=k;break;} }
+    if(ri===curRoom||ri<0) return;
+    curRoom=ri;
+    for(k=0;k<capEls.length;k++) capEls[k].classList.toggle('on',k===ri);
+    if(planLabel) planLabel.textContent=ROOMS[ri].plan;
+    for(k=0;k<ticks.length;k++) ticks[k].classList.toggle('done',k<=ri);
+  }
+
+  function setProgress(p){ /* 0..1 */
+    if(planLen&&planFg&&planDot){
+      planFg.style.strokeDasharray=planLen+' '+planLen;
+      planFg.style.strokeDashoffset=String(planLen*(1-p));
+      var pt=planBg.getPointAtLength(planLen*p);
+      planDot.setAttribute('cx',pt.x); planDot.setAttribute('cy',pt.y);
+    }
+    if(barFill) barFill.style.width=(p*100).toFixed(2)+'%';
+  }
+
+  var inView=false;
+  function onScroll(){
+    var r=wrap.getBoundingClientRect();
+    var span=r.height-innerHeight;
+    var p=span>0? -r.top/span : 0;
+    /* 2% dead zones: frame 1 / 80 hold while the stage docks & undocks */
+    p=(p-0.02)/0.96;
+    p=Math.max(0,Math.min(1,p));
+    target=p*(N-1);
+    inView=r.top<innerHeight&&r.bottom>0;
+    document.body.classList.toggle('in-walk', r.top<=0&&r.bottom>=innerHeight);
+  }
+  addEventListener('scroll',onScroll,{passive:true});
+
+  resize(); onScroll();
+
+  (function tick(){
+    if(inView||!firstReady){
+      shown+=(target-shown)*0.28;
+      if(Math.abs(target-shown)<0.01) shown=target;
+      var f=Math.round(shown);
+      draw(f,false);
+      setRoom(f+1);
+      setProgress(N>1? shown/(N-1):0);
+    }
+    requestAnimationFrame(tick);
+  })();
+})();
+
+/* ---------- form mock ---------- */
+var form=document.getElementById('visitForm');
+if(form) form.addEventListener('submit',function(e){
+  e.preventDefault();
+  form.classList.add('sent');
+});
+})();
+</script>
+<script src="../shop.js" defer></script>
+</body>
+</html>
