@@ -167,7 +167,7 @@ body.in-walk .pill:hover{opacity:1}
 /* caption band */
 .cap-band{
   position:absolute;left:0;right:0;bottom:0;z-index:4;pointer-events:none;
-  padding:120px 26px 30px;
+  padding:120px 26px 86px; /* Platz fuer die Shop-Kaufleiste */
   background:linear-gradient(to top, rgba(20,17,13,.82), rgba(20,17,13,.42) 55%, rgba(20,17,13,0));
   color:var(--paper);
 }
@@ -334,7 +334,7 @@ footer a:hover{color:var(--oak);border-color:var(--oak)}
     <div class="bar" aria-hidden="true"><i id="barFill"></i></div>
     <div class="stage-head">
       <span class="mono">Der Rundgang</span>
-      <span id="frameChip">Bild 001/080</span>
+      <span id="frameChip">Bild 001/121</span>
     </div>
     <div class="cap-band">
       <div class="inner">
@@ -364,23 +364,23 @@ footer a:hover{color:var(--oak);border-color:var(--oak)}
     <p class="mono">Der Rundgang &middot; in f&uuml;nf Bildern</p>
   </div>
   <figure>
-    <img loading="lazy" src="assets/walk/w008.webp" alt="Entrée: langer Flur mit Eichenparkett und Kunstwerk" width="1024" height="576">
+    <img loading="lazy" src="assets/walk/w012.webp" alt="Entrée: langer Flur mit Eichenparkett und Kunstwerk" width="1600" height="900">
     <figcaption><div class="r-name">Entr&eacute;e</div><div class="r-meta"><b>Ankommen &middot; 16 m&sup2;</b> — Eiche unter den F&uuml;ssen, Kunst an der Wand, das Licht schon vom See.</div></figcaption>
   </figure>
   <figure>
-    <img loading="lazy" src="assets/walk/w028.webp" alt="Wohnraum: doppelte Raumhöhe, Kamin aus Sichtbeton, Glasfront zum Garten" width="1024" height="576">
+    <img loading="lazy" src="assets/walk/w042.webp" alt="Wohnraum: doppelte Raumhöhe, Kamin aus Sichtbeton, Glasfront zum Garten" width="1600" height="900">
     <figcaption><div class="r-name">Wohnraum</div><div class="r-meta"><b>Wohnen &middot; 84 m&sup2;</b> — Sichtbeton, sechs Meter Luft.</div></figcaption>
   </figure>
   <figure>
-    <img loading="lazy" src="assets/walk/w042.webp" alt="Treppe: freitragende Eichenstufen entlang der Galerie" width="1024" height="576">
+    <img loading="lazy" src="assets/walk/w063.webp" alt="Treppe: freitragende Eichenstufen entlang der Galerie" width="1600" height="900">
     <figcaption><div class="r-name">Treppe</div><div class="r-meta"><b>Aufgang zur Galerie</b> — Eiche, freitragend, kein sichtbarer Tr&auml;ger.</div></figcaption>
   </figure>
   <figure>
-    <img loading="lazy" src="assets/walk/w056.webp" alt="Küche: Natursteininsel mit Barstühlen, Blick zum See" width="1024" height="576">
+    <img loading="lazy" src="assets/walk/w085.webp" alt="Küche: Natursteininsel mit Barstühlen, Blick zum See" width="1600" height="900">
     <figcaption><div class="r-name">K&uuml;che</div><div class="r-meta"><b>K&uuml;che &middot; 32 m&sup2;</b> — eine Insel aus Naturstein, f&uuml;nf Meter, dem See zugewandt.</div></figcaption>
   </figure>
   <figure>
-    <img loading="lazy" src="assets/walk/w075.webp" alt="Terrasse: raumhohe Schiebetüren öffnen sich zum Rasen und zum See" width="1024" height="576">
+    <img loading="lazy" src="assets/walk/w113.webp" alt="Terrasse: raumhohe Schiebetüren öffnen sich zum Rasen und zum See" width="1600" height="900">
     <figcaption><div class="r-name">Terrasse</div><div class="r-meta"><b>Seeseite</b> — die T&uuml;ren geben den See frei; der Garten endet erst am Wasser.</div></figcaption>
   </figure>
 </section>
@@ -499,15 +499,15 @@ var REDUCED = matchMedia('(prefers-reduced-motion: reduce)').matches;
 
 /* ---------- room captions, ranges verified against extracted frames ---------- */
 var ROOMS=[
-  {from:1, to:15, name:"Entrée",   plan:"Entrée",
+  {from:1, to:23, name:"Entrée",   plan:"Entrée",
    meta:"<b>Ankommen · 16 m²</b> — Eiche unter den Füssen, Kunst an der Wand, das Licht schon vom See."},
-  {from:16,to:34, name:"Wohnraum", plan:"Wohnraum",
+  {from:24, to:52, name:"Wohnraum", plan:"Wohnraum",
    meta:"<b>Wohnen · 84 m²</b> — Sichtbeton, sechs Meter Luft."},
-  {from:35,to:45, name:"Treppe",   plan:"Treppe",
+  {from:53, to:69, name:"Treppe",   plan:"Treppe",
    meta:"<b>Aufgang zur Galerie</b> — Eiche, freitragend, kein sichtbarer Träger."},
-  {from:46,to:64, name:"Küche",    plan:"Küche",
+  {from:70, to:97, name:"Küche",    plan:"Küche",
    meta:"<b>Küche · 32 m²</b> — eine Insel aus Naturstein, fünf Meter, dem See zugewandt."},
-  {from:65,to:80, name:"Terrasse", plan:"Terrasse",
+  {from:98, to:121, name:"Terrasse", plan:"Terrasse",
    meta:"<b>Seeseite</b> — die Türen geben den See frei; der Garten endet erst am Wasser."}
 ];
 
@@ -531,7 +531,9 @@ if(cta&&REDUCED) cta.setAttribute('href','#rundgang-stills');
   var wrap=document.getElementById('rundgang'), stage=document.getElementById('stage');
   var cv=document.getElementById('walkCv'); if(!cv||!wrap) return;
   var ctx=cv.getContext('2d');
-  var N=80, imgs=new Array(N), started=false;
+  var N=121, imgs=new Array(N), started=false;
+  /* Aufloesungs-Set: scharfe 1600er fuer grosse Screens, 960er fuer kleine */
+  var SET=(Math.min(screen.width,innerWidth)*(window.devicePixelRatio||1))>=1100?"walk":"walk-s";
   var target=0, shown=0, curDrawn=-1, curRoom=-1, firstReady=false;
   var chip=document.getElementById('frameChip'), veil=document.getElementById('veil');
   var barFill=document.getElementById('barFill');
@@ -542,13 +544,13 @@ if(cta&&REDUCED) cta.setAttribute('href','#rundgang-stills');
   var planLen=planBg?planBg.getTotalLength():0;
   var ticks=document.querySelectorAll('.plan .tick');
 
-  function src(i){ return 'assets/walk/w'+String(i+1).padStart(3,'0')+'.webp'; }
+  function src(i){ return 'assets/'+SET+'/w'+String(i+1).padStart(3,'0')+'.webp'; }
 
   /* interleaved load order: coarse pass first so any scrub position has a neighbour */
   function loadAll(){
     if(started) return; started=true;
     var order=[],step,i,seen={};
-    for(step=8;step>=1;step=step>>1){ for(i=0;i<N;i+=step){ if(!seen[i]){seen[i]=1;order.push(i);} } }
+    for(step=16;step>=1;step=step>>1){ for(i=0;i<N;i+=step){ if(!seen[i]){seen[i]=1;order.push(i);} } }
     order.forEach(function(idx,k){
       var im=new Image();
       im.onload=function(){
@@ -585,21 +587,32 @@ if(cta&&REDUCED) cta.setAttribute('href','#rundgang-stills');
     return -1;
   }
 
-  function draw(i,force){
-    i=Math.max(0,Math.min(N-1,i));
-    var j=nearestLoaded(i); if(j<0) return;
-    if(j===curDrawn&&!force) return;
-    curDrawn=j;
-    var im=imgs[j];
-    ctx.fillStyle='#1B1915'; ctx.fillRect(0,0,cv.width,cv.height);
-    /* hybrid fit: cover on landscape, width-filling gentle crop on portrait (no sliver letterbox) */
+  function paint(im,alpha){
     var contain=Math.min(cv.width/im.width, cv.height/im.height);
     var cover=Math.max(cv.width/im.width, cv.height/im.height);
     var s=Math.max(contain, Math.min(cover, contain*1.45));
     var dw=im.width*s, dh=im.height*s;
     var dy=(dh>=cv.height)? (cv.height-dh)/2 : (cv.height-dh)*0.42;
+    ctx.globalAlpha=alpha;
     ctx.drawImage(im,(cv.width-dw)/2,dy,dw,dh);
-    if(chip) chip.textContent='Bild '+String(j+1).padStart(3,'0')+'/080';
+    ctx.globalAlpha=1;
+  }
+  function draw(pos,force){
+    /* pos ist float: floor-Frame voll, ceil-Frame mit Restanteil drueberblenden -> fluessig */
+    pos=Math.max(0,Math.min(N-1,pos));
+    var fl=Math.floor(pos), ce=Math.min(N-1,fl+1), frac=pos-fl;
+    var jf=nearestLoaded(fl); if(jf<0) return;
+    var key=jf*1000+Math.round(frac*64);
+    if(key===curDrawn&&!force) return;
+    curDrawn=key;
+    var im=imgs[jf];
+    ctx.fillStyle='#1B1915'; ctx.fillRect(0,0,cv.width,cv.height);
+    paint(im,1);
+    if(frac>0.02&&imgs[ce]&&ce!==jf) paint(imgs[ce],frac);
+    if(chip) chip.textContent='Bild '+String(Math.round(pos)+1).padStart(3,'0')+'/121';
+    return;
+    /* alter Pfad entfernt: */
+    /* hybrid fit: cover on landscape, width-filling gentle crop on portrait (no sliver letterbox) */
   }
 
   function setRoom(fr){ /* fr = 1-based frame */
@@ -640,11 +653,10 @@ if(cta&&REDUCED) cta.setAttribute('href','#rundgang-stills');
 
   (function tick(){
     if(inView||!firstReady){
-      shown+=(target-shown)*0.28;
-      if(Math.abs(target-shown)<0.01) shown=target;
-      var f=Math.round(shown);
-      draw(f,false);
-      setRoom(f+1);
+      shown+=(target-shown)*0.25;
+      if(Math.abs(target-shown)<0.005) shown=target;
+      draw(shown,false);
+      setRoom(Math.round(shown)+1);
       setProgress(N>1? shown/(N-1):0);
     }
     requestAnimationFrame(tick);
