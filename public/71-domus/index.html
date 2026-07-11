@@ -148,6 +148,7 @@ body.in-walk .pill:hover{opacity:1}
   transition:opacity .7s ease;font-size:12px;letter-spacing:.34em;text-transform:uppercase;
 }
 .stage .veil.off{opacity:0;pointer-events:none}
+.stage .veil::after{content:attr(data-p);margin-left:10px;font-variant-numeric:tabular-nums;opacity:.75}
 .veil .dotty{display:inline-block;width:5px;height:5px;border-radius:50%;background:var(--oak);margin-left:12px;animation:pulse 1.1s ease-in-out infinite}
 @keyframes pulse{0%,100%{opacity:.25;transform:scale(.8)}50%{opacity:1;transform:scale(1.15)}}
 
@@ -552,21 +553,25 @@ if(cta&&REDUCED) cta.setAttribute('href','#rundgang-stills');
     if(started) return; started=true;
     var order=[],step,i,seen={};
     for(step=16;step>=1;step=step>>1){ for(i=0;i<N;i+=step){ if(!seen[i]){seen[i]=1;order.push(i);} } }
-    order.forEach(function(idx,k){
-      var im=new Image();
+    var loaded=0;
+    order.forEach(function(idx){
+      var im=new Image(); im.decoding="async";
       im.onload=function(){
-        imgs[idx]=im;
-        if(idx===0 && !firstReady){ firstReady=true; if(veil) veil.classList.add('off'); draw(0,true); }
+        var done=function(){ imgs[idx]=im; loaded++;
+          if(veil&&!firstReady) veil.setAttribute("data-p", Math.round(loaded/N*100)+"%");
+          if(!firstReady && loaded>=Math.ceil(N/4) && imgs[0]){ firstReady=true; veil&&veil.classList.add('off'); draw(0,true); }
+          else if(firstReady){ curDrawn=-1; } /* frisch geladene Frames sofort nutzbar */
+        };
+        if(im.decode){ im.decode().then(done).catch(done); } else done();
       };
       im.onerror=function(){ imgs[idx]=null; };
-      /* stagger kickoff slightly to keep the main thread breathing */
-      setTimeout(function(){ im.src=src(idx); }, Math.floor(k/10)*16);
+      im.src=src(idx);
     });
   }
   if('IntersectionObserver' in window){
     new IntersectionObserver(function(en,io){
       if(en[0].isIntersecting){ loadAll(); io.disconnect(); }
-    },{rootMargin:'600px'}).observe(wrap);
+    },{rootMargin:'1600px'}).observe(wrap);
   } else loadAll();
 
   /* sizing: contain-fit on umber stage (cinema letterbox on portrait) */
@@ -600,21 +605,15 @@ if(cta&&REDUCED) cta.setAttribute('href','#rundgang-stills');
     ctx.globalAlpha=1;
   }
   function draw(pos,force){
-    /* pos ist float: floor-Frame voll, ceil-Frame mit Restanteil drueberblenden -> fluessig */
+    /* nearest frame, KEIN Crossfade: das Ueberblenden bewegter Frames erzeugte Doppelkonturen */
     pos=Math.max(0,Math.min(N-1,pos));
-    var fl=Math.floor(pos), ce=Math.min(N-1,fl+1), frac=pos-fl;
-    var jf=nearestLoaded(fl); if(jf<0) return;
-    var key=jf*1000+Math.round(frac*64);
-    if(key===curDrawn&&!force) return;
-    curDrawn=key;
-    var im=imgs[jf];
+    var i=Math.round(pos);
+    var j=nearestLoaded(i); if(j<0) return;
+    if(j===curDrawn&&!force) return;
+    curDrawn=j;
     ctx.fillStyle='#1B1915'; ctx.fillRect(0,0,cv.width,cv.height);
-    paint(im,1);
-    if(frac>0.02&&imgs[ce]&&ce!==jf) paint(imgs[ce],frac);
-    if(chip) chip.textContent='Bild '+String(Math.round(pos)+1).padStart(3,'0')+'/121';
-    return;
-    /* alter Pfad entfernt: */
-    /* hybrid fit: cover on landscape, width-filling gentle crop on portrait (no sliver letterbox) */
+    paint(imgs[j],1);
+    if(chip) chip.textContent='Bild '+String(j+1).padStart(3,'0')+'/121';
   }
 
   function setRoom(fr){ /* fr = 1-based frame */
