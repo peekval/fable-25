@@ -531,6 +531,7 @@ if(cta&&REDUCED) cta.setAttribute('href','#rundgang-stills');
   var wrap=document.getElementById('rundgang'), stage=document.getElementById('stage');
   var cv=document.getElementById('walkCv'); if(!cv||!wrap) return;
   var ctx=cv.getContext('2d');
+  ctx.imageSmoothingEnabled=true; ctx.imageSmoothingQuality="high";
   var N=121, imgs=new Array(N), started=false;
   /* Aufloesungs-Set: scharfe 1600er fuer grosse Screens, 960er fuer kleine */
   var SET=(Math.min(screen.width,innerWidth)*(window.devicePixelRatio||1))>=1100?"walk":"walk-s";
@@ -571,9 +572,10 @@ if(cta&&REDUCED) cta.setAttribute('href','#rundgang-stills');
   /* sizing: contain-fit on umber stage (cinema letterbox on portrait) */
   var W=0,H=0,DPR=1;
   function resize(){
-    DPR=Math.min(2,window.devicePixelRatio||1);
+    DPR=Math.min(1.5,window.devicePixelRatio||1); /* 1920er-Frames: weniger Upscale auf Retina */
     W=stage.clientWidth; H=stage.clientHeight;
     cv.width=Math.round(W*DPR); cv.height=Math.round(H*DPR);
+    ctx.imageSmoothingEnabled=true; ctx.imageSmoothingQuality="high"; /* reset nach resize */
     curDrawn=-1; draw(Math.round(shown),true);
   }
   addEventListener('resize',resize,{passive:true});
