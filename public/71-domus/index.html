@@ -544,7 +544,9 @@ if(cta&&REDUCED) cta.setAttribute('href','#rundgang-stills');
   var planLen=planBg?planBg.getTotalLength():0;
   var ticks=document.querySelectorAll('.plan .tick');
 
-  var SET=(Math.min(screen.width,innerWidth)*(window.devicePixelRatio||1))>=1100?'rundgang-hd':'rundgang-sd';
+  var px=Math.min(screen.width,innerWidth)*(window.devicePixelRatio||1);
+  /* dreistufig: UHD 2560 fuer grosse/Retina-Screens, HD 1536, SD 960 */
+  var SET=px>=1900?'rundgang-uhd':(px>=1100?'rundgang-hd':'rundgang-sd');
   var DUR=10, ready=false, started=false, curRoom=-1;
   var target=0, shown=0;
 
