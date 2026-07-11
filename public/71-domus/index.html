@@ -141,7 +141,7 @@ body.in-walk .pill:hover{opacity:1}
   position:sticky;top:0;height:100vh;height:100svh;overflow:hidden;
   background:var(--umber);
 }
-#walkCv{position:absolute;inset:0;width:100%;height:100%;display:block}
+
 .stage .veil{
   position:absolute;inset:0;display:flex;align-items:center;justify-content:center;
   background:var(--umber);color:rgba(247,244,239,.6);z-index:5;
@@ -165,6 +165,7 @@ body.in-walk .pill:hover{opacity:1}
   font-weight:500;text-transform:uppercase;background:rgba(27,25,21,.3);
 }
 
+.stage video{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;object-position:50% 42%;background:#1B1915}
 /* caption band */
 .cap-band{
   position:absolute;left:0;right:0;bottom:0;z-index:4;pointer-events:none;
@@ -331,7 +332,7 @@ footer a:hover{color:var(--oak);border-color:var(--oak)}
 <!-- ============ DER RUNDGANG ============ -->
 <section id="rundgang" aria-label="Der Rundgang — 80 Bilder durch das Erdgeschoss">
   <div class="stage" id="stage">
-    <canvas id="walkCv" aria-hidden="true"></canvas>
+    <video id="walkVid" muted playsinline preload="none" aria-label="Rundgang durch das Haus, gesteuert durch Scrollen"></video>
     <div class="bar" aria-hidden="true"><i id="barFill"></i></div>
     <div class="stage-head">
       <span class="mono">Der Rundgang</span>
@@ -365,23 +366,23 @@ footer a:hover{color:var(--oak);border-color:var(--oak)}
     <p class="mono">Der Rundgang &middot; in f&uuml;nf Bildern</p>
   </div>
   <figure>
-    <img loading="lazy" src="assets/walk/w012.webp" alt="Entrée: langer Flur mit Eichenparkett und Kunstwerk" width="1600" height="900">
+    <img loading="lazy" src="assets/still-1.webp" alt="Entrée: langer Flur mit Eichenparkett und Kunstwerk" width="1600" height="900">
     <figcaption><div class="r-name">Entr&eacute;e</div><div class="r-meta"><b>Ankommen &middot; 16 m&sup2;</b> — Eiche unter den F&uuml;ssen, Kunst an der Wand, das Licht schon vom See.</div></figcaption>
   </figure>
   <figure>
-    <img loading="lazy" src="assets/walk/w042.webp" alt="Wohnraum: doppelte Raumhöhe, Kamin aus Sichtbeton, Glasfront zum Garten" width="1600" height="900">
+    <img loading="lazy" src="assets/still-2.webp" alt="Wohnraum: doppelte Raumhöhe, Kamin aus Sichtbeton, Glasfront zum Garten" width="1600" height="900">
     <figcaption><div class="r-name">Wohnraum</div><div class="r-meta"><b>Wohnen &middot; 84 m&sup2;</b> — Sichtbeton, sechs Meter Luft.</div></figcaption>
   </figure>
   <figure>
-    <img loading="lazy" src="assets/walk/w063.webp" alt="Treppe: freitragende Eichenstufen entlang der Galerie" width="1600" height="900">
+    <img loading="lazy" src="assets/still-3.webp" alt="Treppe: freitragende Eichenstufen entlang der Galerie" width="1600" height="900">
     <figcaption><div class="r-name">Treppe</div><div class="r-meta"><b>Aufgang zur Galerie</b> — Eiche, freitragend, kein sichtbarer Tr&auml;ger.</div></figcaption>
   </figure>
   <figure>
-    <img loading="lazy" src="assets/walk/w085.webp" alt="Küche: Natursteininsel mit Barstühlen, Blick zum See" width="1600" height="900">
+    <img loading="lazy" src="assets/still-4.webp" alt="Küche: Natursteininsel mit Barstühlen, Blick zum See" width="1600" height="900">
     <figcaption><div class="r-name">K&uuml;che</div><div class="r-meta"><b>K&uuml;che &middot; 32 m&sup2;</b> — eine Insel aus Naturstein, f&uuml;nf Meter, dem See zugewandt.</div></figcaption>
   </figure>
   <figure>
-    <img loading="lazy" src="assets/walk/w113.webp" alt="Terrasse: raumhohe Schiebetüren öffnen sich zum Rasen und zum See" width="1600" height="900">
+    <img loading="lazy" src="assets/still-5.webp" alt="Terrasse: raumhohe Schiebetüren öffnen sich zum Rasen und zum See" width="1600" height="900">
     <figcaption><div class="r-name">Terrasse</div><div class="r-meta"><b>Seeseite</b> — die T&uuml;ren geben den See frei; der Garten endet erst am Wasser.</div></figcaption>
   </figure>
 </section>
@@ -526,17 +527,14 @@ if(capsBox){
 var cta=document.getElementById('ctaWalk');
 if(cta&&REDUCED) cta.setAttribute('href','#rundgang-stills');
 
-/* ---------- the scrub ---------- */
+/* ---------- the scrub: direktes Video-Scrubbing ----------
+   Keyframe-only h264 (-g 1): der Hardware-Decoder springt verlustfrei auf jede
+   Zeit -> currentTime wird vom Scroll gedaempft gefuehrt. Kein Frame-Jonglieren,
+   kein Decode-Jank, natives Scaling = scharf. */
 (function(){
   if(REDUCED) return;
   var wrap=document.getElementById('rundgang'), stage=document.getElementById('stage');
-  var cv=document.getElementById('walkCv'); if(!cv||!wrap) return;
-  var ctx=cv.getContext('2d');
-  ctx.imageSmoothingEnabled=true; ctx.imageSmoothingQuality="high";
-  var N=121, imgs=new Array(N), started=false;
-  /* Aufloesungs-Set: scharfe 1600er fuer grosse Screens, 960er fuer kleine */
-  var SET=(Math.min(screen.width,innerWidth)*(window.devicePixelRatio||1))>=1100?"walk":"walk-s";
-  var target=0, shown=0, curDrawn=-1, curRoom=-1, firstReady=false;
+  var v=document.getElementById('walkVid'); if(!v||!wrap) return;
   var chip=document.getElementById('frameChip'), veil=document.getElementById('veil');
   var barFill=document.getElementById('barFill');
   var capEls=capsBox?capsBox.children:[];
@@ -546,87 +544,49 @@ if(cta&&REDUCED) cta.setAttribute('href','#rundgang-stills');
   var planLen=planBg?planBg.getTotalLength():0;
   var ticks=document.querySelectorAll('.plan .tick');
 
-  function src(i){ return 'assets/'+SET+'/w'+String(i+1).padStart(3,'0')+'.webp'; }
+  var SET=(Math.min(screen.width,innerWidth)*(window.devicePixelRatio||1))>=1100?'rundgang-hd':'rundgang-sd';
+  var DUR=10, ready=false, started=false, curRoom=-1;
+  var target=0, shown=0;
 
-  /* interleaved load order: coarse pass first so any scrub position has a neighbour */
-  function loadAll(){
+  function load(){
     if(started) return; started=true;
-    var order=[],step,i,seen={};
-    for(step=16;step>=1;step=step>>1){ for(i=0;i<N;i+=step){ if(!seen[i]){seen[i]=1;order.push(i);} } }
-    var loaded=0;
-    order.forEach(function(idx){
-      var im=new Image(); im.decoding="async";
-      im.onload=function(){
-        var done=function(){ imgs[idx]=im; loaded++;
-          if(veil&&!firstReady) veil.setAttribute("data-p", Math.round(loaded/N*100)+"%");
-          if(!firstReady && loaded>=Math.ceil(N/4) && imgs[0]){ firstReady=true; veil&&veil.classList.add('off'); draw(0,true); }
-          else if(firstReady){ curDrawn=-1; } /* frisch geladene Frames sofort nutzbar */
-        };
-        if(im.decode){ im.decode().then(done).catch(done); } else done();
-      };
-      im.onerror=function(){ imgs[idx]=null; };
-      im.src=src(idx);
+    v.preload='auto';
+    v.src='assets/'+SET+'.mp4';
+    v.load();
+    v.addEventListener('loadedmetadata',function(){ DUR=v.duration||10; });
+    v.addEventListener('progress',function(){
+      if(ready||!veil) return;
+      try{
+        var b=v.buffered, have=b.length?b.end(0):0;
+        veil.setAttribute('data-p', Math.min(99,Math.round(have/(DUR||10)*100))+'%');
+      }catch(e){}
     });
+    v.addEventListener('canplaythrough',unveil);
+    /* Fallback: manche Browser feuern canplaythrough bei preload zoegerlich */
+    var t=setInterval(function(){ if(v.readyState>=3){ unveil(); } if(ready) clearInterval(t); },400);
+  }
+  function unveil(){
+    if(ready) return; ready=true;
+    if(veil) veil.classList.add('off');
+    try{ v.currentTime=0.001; }catch(e){}
   }
   if('IntersectionObserver' in window){
     new IntersectionObserver(function(en,io){
-      if(en[0].isIntersecting){ loadAll(); io.disconnect(); }
+      if(en[0].isIntersecting){ load(); io.disconnect(); }
     },{rootMargin:'1600px'}).observe(wrap);
-  } else loadAll();
+  } else load();
 
-  /* sizing: contain-fit on umber stage (cinema letterbox on portrait) */
-  var W=0,H=0,DPR=1;
-  function resize(){
-    DPR=Math.min(1.5,window.devicePixelRatio||1); /* 1920er-Frames: weniger Upscale auf Retina */
-    W=stage.clientWidth; H=stage.clientHeight;
-    cv.width=Math.round(W*DPR); cv.height=Math.round(H*DPR);
-    ctx.imageSmoothingEnabled=true; ctx.imageSmoothingQuality="high"; /* reset nach resize */
-    curDrawn=-1; draw(Math.round(shown),true);
-  }
-  addEventListener('resize',resize,{passive:true});
-
-  function nearestLoaded(i){
-    if(imgs[i]) return i;
-    for(var d=1;d<N;d++){
-      if(i-d>=0&&imgs[i-d]) return i-d;
-      if(i+d<N&&imgs[i+d]) return i+d;
-    }
-    return -1;
-  }
-
-  function paint(im,alpha){
-    var contain=Math.min(cv.width/im.width, cv.height/im.height);
-    var cover=Math.max(cv.width/im.width, cv.height/im.height);
-    var s=Math.max(contain, Math.min(cover, contain*1.45));
-    var dw=im.width*s, dh=im.height*s;
-    var dy=(dh>=cv.height)? (cv.height-dh)/2 : (cv.height-dh)*0.42;
-    ctx.globalAlpha=alpha;
-    ctx.drawImage(im,(cv.width-dw)/2,dy,dw,dh);
-    ctx.globalAlpha=1;
-  }
-  function draw(pos,force){
-    /* nearest frame, KEIN Crossfade: das Ueberblenden bewegter Frames erzeugte Doppelkonturen */
-    pos=Math.max(0,Math.min(N-1,pos));
-    var i=Math.round(pos);
-    var j=nearestLoaded(i); if(j<0) return;
-    if(j===curDrawn&&!force) return;
-    curDrawn=j;
-    ctx.fillStyle='#1B1915'; ctx.fillRect(0,0,cv.width,cv.height);
-    paint(imgs[j],1);
-    if(chip) chip.textContent='Bild '+String(j+1).padStart(3,'0')+'/121';
-  }
-
-  function setRoom(fr){ /* fr = 1-based frame */
-    var ri=-1;
-    for(var k=0;k<ROOMS.length;k++){ if(fr>=ROOMS[k].from&&fr<=ROOMS[k].to){ri=k;break;} }
+  /* Raum-Captions: Frame-Ranges (Basis 121 @12fps) -> Sekunden */
+  function setRoom(t){
+    var fr=t*12+1, ri=-1;
+    for(var k=0;k<ROOMS.length;k++){ if(fr>=ROOMS[k].from&&fr<=ROOMS[k].to+0.99){ri=k;break;} }
     if(ri===curRoom||ri<0) return;
     curRoom=ri;
     for(k=0;k<capEls.length;k++) capEls[k].classList.toggle('on',k===ri);
     if(planLabel) planLabel.textContent=ROOMS[ri].plan;
     for(k=0;k<ticks.length;k++) ticks[k].classList.toggle('done',k<=ri);
   }
-
-  function setProgress(p){ /* 0..1 */
+  function setProgress(p){
     if(planLen&&planFg&&planDot){
       planFg.style.strokeDasharray=planLen+' '+planLen;
       planFg.style.strokeDashoffset=String(planLen*(1-p));
@@ -641,24 +601,26 @@ if(cta&&REDUCED) cta.setAttribute('href','#rundgang-stills');
     var r=wrap.getBoundingClientRect();
     var span=r.height-innerHeight;
     var p=span>0? -r.top/span : 0;
-    /* 2% dead zones: frame 1 / 80 hold while the stage docks & undocks */
     p=(p-0.02)/0.96;
     p=Math.max(0,Math.min(1,p));
-    target=p*(N-1);
+    target=p*DUR;
     inView=r.top<innerHeight&&r.bottom>0;
     document.body.classList.toggle('in-walk', r.top<=0&&r.bottom>=innerHeight);
   }
   addEventListener('scroll',onScroll,{passive:true});
-
-  resize(); onScroll();
+  onScroll();
 
   (function tick(){
-    if(inView||!firstReady){
+    if(inView&&ready){
       shown+=(target-shown)*0.25;
-      if(Math.abs(target-shown)<0.005) shown=target;
-      draw(shown,false);
-      setRoom(Math.round(shown)+1);
-      setProgress(N>1? shown/(N-1):0);
+      if(Math.abs(target-shown)<0.004) shown=target;
+      /* nie in den seek-Rueckstau schreiben: nur setzen, wenn der Decoder frei ist */
+      if(!v.seeking && Math.abs(v.currentTime-shown)>1/48){
+        try{ v.currentTime=shown; }catch(e){}
+      }
+      if(chip) chip.textContent='Bild '+String(Math.min(121,Math.round(shown*12)+1)).padStart(3,'0')+'/121';
+      setRoom(shown);
+      setProgress(DUR>0? shown/DUR:0);
     }
     requestAnimationFrame(tick);
   })();
